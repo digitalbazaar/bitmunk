@@ -1,0 +1,21 @@
+{
+   "_id_" : "bitmunk.catalog.CustomCatalog",
+   "_group_" : "defaults",
+   "_version_" : "Bitmunk 3.0",
+   "_merge_" : {
+      "bitmunk.catalog.CustomCatalog" : {
+         "listingSyncInterval" : 30,
+         "testNetAccessInterval" : 60,
+         "uploadListings" : true,
+         "autoSell" : {
+            "enabled" : false,
+            "payeeSchemeId" : 0
+         },
+         "portMapping": {
+            "enabled": false,
+            "externalPort": 0,
+            "description": "Bitmunk"
+         }
+      }
+   }
+}

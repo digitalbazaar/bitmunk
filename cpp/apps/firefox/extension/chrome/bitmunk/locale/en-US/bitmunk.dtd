@@ -1,0 +1,7 @@
+<!ENTITY  bitmunk.name             "Bitmunk">
+<!ENTITY  bitmunkToolbar.name      "Bitmunk Toolbar">
+<!ENTITY  bitmunkOptions.label     "Options">
+<!ENTITY  bitmunkToolbar.accesskey "O">
+<!ENTITY  bitmunkSidebar.name      "Bitmunk Sidebar">
+<!ENTITY  bitmunkSidebar.accesskey "O">
+

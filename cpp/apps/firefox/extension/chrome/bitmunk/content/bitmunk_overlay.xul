@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+
+<overlay id="bitmunk-overlay"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <script type="application/x-javascript"
+          src="chrome://bitmunk/content/common.js"/>
+
+  <script type="application/x-javascript"
+          src="chrome://bitmunk/content/json2.js"/>
+
+  <script type="application/x-javascript"
+          src="chrome://bitmunk/content/webservices.js"/>
+
+  <script type="application/x-javascript"
+          src="chrome://bitmunk/content/bitmunk-urls.js"/>
+
+  <script type="application/x-javascript"
+          src="chrome://bitmunk/content/bitmunk.js"/>
+
+  <statusbar id="status-bar">
+    <statusbarpanel class="statusbarpanel-iconic"
+                    id="bitmunk-status"
+                    context="bitmunk-status-context-menu"
+                    oncommand="manageBitmunk();"
+                    onpaneload="updateBitmunkStatus();">
+      <image id="bitmunk-status-image" width="16" height="16"
+             src="chrome://bitmunk/content/bitmunk16-offline.png"
+             onload="updateBitmunkStatus();"/>
+      <label id="bitmunk-status-label" value="offline"/>
+    </statusbarpanel>
+    <menupopup id="bitmunk-status-context-menu">
+      <menuitem id="bitmunk-control-label" 
+                label="Manage Bitmunk Software" oncommand="manageBitmunk();"/>
+      <menuseparator/>
+      <menuitem label="Help" oncommand="showBitmunkHelp();"/>
+      <menuitem label="Bitmunk Website" oncommand="showBitmunkWebsite();"/>
+    </menupopup>
+  </statusbar>
+
+</overlay> 

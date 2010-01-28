@@ -1,0 +1,52 @@
+#!/bin/sh -e
+### BEGIN INIT INFO
+# Provides:          bitmunk3
+# Required-Start:    $local_fs $remote_fs $network $syslog
+# Required-Stop:     $local_fs $remote_fs $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+#
+# bitmunk3 This init.d script is used to start bitmunk3.
+. /lib/lsb/init-functions
+
+test -f /etc/default/rcS && . /etc/default/rcS
+test -f /etc/default/bitmunk3 && . /etc/default/bitmunk3
+
+# Setup 
+USERNAME=bitmunk
+PIDFILE=/var/run/bitmunk3.pid
+DAEMON=/usr/bin/bitmunk3
+
+# Check the run cases
+case $1 in
+   start)
+      log_daemon_msg "Starting Bitmunk P2P node" "bitmunk3"
+      ulimit -c unlimited
+      start-stop-daemon --start --quiet -d /home/bitmunk --background --oknodo -c bitmunk --make-pidfile --pidfile $PIDFILE --startas $DAEMON -- --log-level m --log /home/bitmunk/.bitmunk3/bitmunk3.log --log-rotation-size 10485760 --log-max-rotated 30
+      log_end_msg 0
+   ;;
+   stop)
+      log_daemon_msg "Stopping Bitmunk P2P node" "bitmunk3"
+      start-stop-daemon --stop --oknodo --quiet --pidfile $PIDFILE --retry KILL/3
+      log_end_msg 0
+   ;;
+   reload | force-reload)
+      log_daemon_msg "Reloading Bitmunk P2P node configuration" "bitmunk3"
+      ulimit -c unlimited
+      start-stop-daemon --stop --oknodo --quiet --pidfile $PIDFILE --retry KILL/3
+      start-stop-daemon --start --quiet -d /home/bitmunk --background --oknodo -c bitmunk --make-pidfile --pidfile $PIDFILE --startas $DAEMON -- --log-level m --log /home/bitmunk/.bitmunk3/bitmunk3.log --log-rotation-size 10485760 --log-max-rotated 30
+      log_end_msg 0
+   ;;
+   restart)
+      log_daemon_msg "Restarting Bitmunk P2P node" "bitmunk3"
+      ulimit -c unlimited
+      start-stop-daemon --stop --oknodo --quiet --pidfile $PIDFILE --retry KILL/3
+      start-stop-daemon --start --quiet -d /home/bitmunk --background --oknodo -c bitmunk --make-pidfile --pidfile $PIDFILE --startas $DAEMON -- --log-level m --log /home/bitmunk/.bitmunk3/bitmunk3.log --log-rotation-size 10485760 --log-max-rotated 30
+      log_end_msg 0
+   ;;
+   *)
+      log_success_msg "Usage: /etc/init.d/bitmunk3 {start|stop|restart|reload|force-reload}"
+      exit 1
+   ;;
+esac

@@ -1,0 +1,55 @@
+/* Bitmunk App Login CSS */
+#login {
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+padding: 50px;
+overflow: auto;
+}
+
+#loginDialog {
+width: 500px;
+margin: 0 auto;
+}
+
+.dialogScroll {
+bottom: 0;
+}
+
+/* Login Form Styling */
+.formInfo {
+margin: 10px 50px;
+text-align: center;
+}
+
+#loginActivity {
+visibility: hidden;
+float: left;
+}
+
+.submitLine {
+text-align: right;
+margin: 10px 140px;
+}
+
+.inputLabel {
+width: 130px;
+}
+
+#loginUsername, #loginPassword {
+width: 196px;
+}
+
+.separator {
+margin: 0 4px;
+color: #888;
+}
+
+.feedback {
+margin: 5px 50px;
+text-align: center;
+border-top: 0;
+border-bottom: 1px solid #888;
+}

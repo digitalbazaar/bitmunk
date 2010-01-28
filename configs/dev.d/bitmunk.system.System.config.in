@@ -1,0 +1,9 @@
+{
+   "_id_" : "bitmunk.system.System",
+   "_group_" : "defaults",
+   "_version_" : "Bitmunk 3.0",
+   "_merge_" : {
+      "bitmunk.system.System" : {
+      }
+   }
+}

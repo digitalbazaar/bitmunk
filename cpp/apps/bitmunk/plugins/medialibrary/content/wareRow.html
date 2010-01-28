@@ -1,0 +1,24 @@
+<tr id="row-${wareId}" class="wareRow" title="Click to edit">
+   <td class="selectCol">
+      <input id="fileSelect-${wareId}" class="fileSelect" type="checkbox" />
+   </td>
+   <td class="typeCol">
+      <img src="${typeImage}" alt="${typeName}"
+         title="${typeName}" width="16" height="16" />
+   </td>
+   <td id="fileTitle-${mediaId}" class="titleCol">
+      <span id="title-${mediaId}">${title|default:"N/A"}</span>
+   </td>
+   <td id="fileContributor-${mediaId}" class="contributorCol">
+      <span id="contributor-$(mediaId}">${contributor|default:"N/A"}</span>
+   </td>
+   <td class="paymentCol">
+      <span id="payment-${wareId}"></span>
+   </td>
+   <td class="statusCol">
+      <span id="status-${wareId}"></span>
+   </td>
+   <td class="feedbackCol">
+      <span id="feedback-${wareId}"></span>
+   </td>
+</tr>

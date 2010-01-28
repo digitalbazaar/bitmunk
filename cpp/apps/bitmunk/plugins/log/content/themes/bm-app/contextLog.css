@@ -1,0 +1,9 @@
+/* Bitmunk Personal Edition Support CSS */
+
+#contextLog {
+border: thin solid black;
+width: 100%;
+}
+
+#contextLog.log {
+}

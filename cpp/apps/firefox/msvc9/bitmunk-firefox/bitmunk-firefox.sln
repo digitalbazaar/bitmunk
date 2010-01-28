@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual C++ Express 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bitmunk-components", "bitmunk-components\bitmunk-components.vcproj", "{573271BF-9A8D-4985-A692-36785FF0241A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bitmunk-mimehandler", "bitmunk-mimehandler\bitmunk-mimehandler.vcproj", "{9F80564D-8435-4423-A945-47F31BE9DD60}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{573271BF-9A8D-4985-A692-36785FF0241A}.Debug|Win32.ActiveCfg = Release|Win32
+		{573271BF-9A8D-4985-A692-36785FF0241A}.Debug|Win32.Build.0 = Release|Win32
+		{573271BF-9A8D-4985-A692-36785FF0241A}.Release|Win32.ActiveCfg = Release|Win32
+		{573271BF-9A8D-4985-A692-36785FF0241A}.Release|Win32.Build.0 = Release|Win32
+		{9F80564D-8435-4423-A945-47F31BE9DD60}.Debug|Win32.ActiveCfg = Release|Win32
+		{9F80564D-8435-4423-A945-47F31BE9DD60}.Debug|Win32.Build.0 = Release|Win32
+		{9F80564D-8435-4423-A945-47F31BE9DD60}.Release|Win32.ActiveCfg = Release|Win32
+		{9F80564D-8435-4423-A945-47F31BE9DD60}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

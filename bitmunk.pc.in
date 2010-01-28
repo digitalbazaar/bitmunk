@@ -1,0 +1,6 @@
+Name: bitmunk
+Description: Bitmunk Collabortive Content Distribution Software
+Requires: monarch
+Version: 3.2.0
+Cflags: @@CFLAGS@@
+Libs: @@LIBS@@ -lpthread -lcrypto -lssl -lexpat -lsqlite3

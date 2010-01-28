@@ -1,0 +1,211 @@
+<div id="testPage" class="screen">
+   <h1 class="pageHeader">Test</h1>
+   
+   <h3>Directives</h3>
+   <div>
+      <h4>Presets</h4>
+      <p>
+         <button id="audioDirectiveButton" class="gray on"
+            title="Creates download for Test Song 1">
+            <span>Audio Download</span>
+         </button>
+         
+         <button id="collectionDirectiveButton" class="gray on"
+            title="Creates download for Test Album 1">
+            <span>Collection Download</span>
+         </button>
+      </p>
+      
+      <h4>Custom Directive</h4>
+      <textarea id="customDirective" class="formTextArea"
+         rows="8" cols="80"></textarea>
+      
+      <div id="customDirective-feedback"></div>
+      
+      <p>
+         <button id="customDirectiveButton" type="submit" class="gray on">
+            <span>Create Directive</span>
+         </button>
+      </p>
+      
+      <h4>Created Directives</h4>
+      <ul id="createdDirectives"></ul>
+   </div>
+   
+   <h3>Events</h3>
+   <div>
+      <p>
+         <button id="subscribeButton" class="gray on">
+            <span>Subscribe</span>
+         </button>
+         <button id="sendEventButton" class="gray on">
+            <span>Send Event</span>
+         </button>
+         <button id="addDaemonEventsButton" class="gray on">
+            <span>Add 10 Daemon Events</span>
+         </button>
+         <button id="unsubscribeButton" class="gray on">
+            <span>Unsubscribe</span>
+         </button>
+         <button id="testShutdownButton" class="gray on">
+            <span>Shutdown</span>
+         </button>
+         <button id="testRestartButton" class="gray on">
+            <span>Restart</span>
+         </button>
+      </p>
+      
+      <p>Observer ID: <span id="observerId">None</span></p>
+   </div>
+   
+   <h3>User Access Control</h3>
+   <div>
+      <p class="formLine">
+         <span class="label">Username</span><input
+            id="accessUsername" class="formInput" type="text" value="" />
+      </p>
+      
+      <p class="formLine">
+         <span class="label">IP address</span><input
+            id="accessIp" class="formInput" type="text" value="" />
+         <span>(* indicates all IPs)</span>
+      </p>
+      
+      <p class="formLine">
+         <span class="label">Access</span>
+         
+         <input id="grant" name="accessGroup" type="radio" value="grant"
+            checked="checked" />
+         <label for="grant">Grant</label>
+         
+         <input id="revoke" name="accessGroup" type="radio" value="revoke" />
+         <label for="revoke">Revoke</label>
+      </p>
+      
+      <p class="submitLine">
+         <button id="accessButton" class="gray on">
+            <span>Change Access</span>
+         </button>
+      </p>
+      
+      <h4>Access Rules</h4>
+      <ul id="accessRules"></ul>
+   </div>
+   
+   <h3>Template Test</h3>
+   <div>
+      <p class="formLine">
+         <span class="label">Key</span><input
+            id="templateKey" class="formInput" type="text" />
+      </p>
+      
+      <p class="formLine">
+         <span class="label">Value</span><input
+            id="templateValue" class="formInput" type="text" />
+      </p>
+      
+      <p class="submitLine">
+         <button id="templateButton" class="gray on">
+            <span>Test Template</span>
+         </button>
+      </p>
+      
+      <h4>Template Results</h4>
+      <div id="templateResults"></div>
+   </div>
+   
+   <h3>Logging</h3>
+   <div>
+      <p>Click a button and check log for message of that type:</p>
+      
+      <button class="gray on" onclick="bitmunk.log.error('test', 'error')">
+         <span>Error</span>
+      </button>
+      <button class="gray on" onclick="bitmunk.log.warning('test', 'warning')">
+         <span>Warning</span>
+      </button>
+      <button class="gray on" onclick="bitmunk.log.info('test', 'info')">
+         <span>Info</span>
+      </button>
+      <button class="gray on" onclick="bitmunk.log.debug('test', 'debug')">
+         <span>Debug</span>
+      </button>
+      <button class="gray on" onclick="bitmunk.log.verbose('test', 'verbose')">
+         <span>Verbose</span>
+      </button>
+   </div>
+   
+   <h3>Models</h3>
+   <div>
+       <p class="formLine">
+          <span class="label">Input Value</span><input
+            id="testModelInput" class="formInput" type="text" size="20" />
+       </p>
+       <p class="submitLine">
+          <button id="modelButton" class="gray on"
+            title="Test the data model and model update events">
+            <span>Test Model</span>
+          </button>
+       </p>
+       
+       <p class="formLine">
+         <span class="label">Model Value</span>
+         <span id="testModelValue">N/A</span>
+       </p>
+   </div>
+   
+   <h3>Task Management</h3>
+   <div>
+      <p>
+         <button id="testTaskButton" class="gray on"
+            title="Run a task that completes">
+            <span>Test Task</span>
+         </button>
+         
+         <button id="testTaskAbortButton" class="gray on"
+            title="Run a task that aborts and does not complete">
+            <span>Test Abort</span>
+         </button>
+      </p>
+   </div>
+   
+   <h3>Notifications</h3>
+   <div>
+      <p>
+         <input
+            id="testMessagesSticky" type="checkbox"
+            name="testMessagesSticky" value="true" />
+         <label for="testMessagesSticky">Sticky</label>
+         
+         <button id="testDefaultMessageButton" class="gray on"
+            title="Create a default message">
+            <span>Default</span>
+         </button>
+         
+         <button id="testOkMessageButton" class="gray on"
+            title="Create an OK message">
+            <span>Ok</span>
+         </button>
+         
+         <button id="testInfoMessageButton" class="gray on"
+            title="Create an Info message">
+            <span>Info</span>
+         </button>
+         
+         <button id="testWarningMessageButton" class="gray on"
+            title="Create a Warning message">
+            <span>Warning</span>
+         </button>
+         
+         <button id="testErrorMessageButton" class="gray on"
+            title="Create an Error message">
+            <span>Error</span>
+         </button>
+      </p>
+   </div>
+   
+   <h3>Other Tools</h3>
+   <div>
+      <p><a href="#test-dyno-stats">DynamicObject Statistics</a></p>
+   </div>
+</div>

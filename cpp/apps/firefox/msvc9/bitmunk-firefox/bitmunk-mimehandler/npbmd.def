@@ -1,0 +1,5 @@
+LIBRARY npbmd
+EXPORTS
+   NP_Initialize
+   NP_GetEntryPoints
+   NP_Shutdown

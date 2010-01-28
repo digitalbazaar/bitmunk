@@ -1,0 +1,244 @@
+/*-- Bitmunk App Purchases CSS --*/
+
+#purchases {
+}
+
+#purchaseBrowser {
+clear: both;
+}
+
+.recommendations {
+text-align: right;
+}
+
+/*-- Purchases Table --*/
+.purchasesTable {
+width: 100%;
+}
+
+.purchasesTable tbody:hover {
+background: #7a7a7a;
+}
+
+.purchasesTable th, .purchasesTable td {
+overflow: hidden;
+padding: 4px;
+}
+
+/* Columns */
+td.typeCol, td.titleCol, td.contributorCol,
+td.feedbackCol, td.statusCol, td.progressCol {
+cursor: pointer;
+}
+
+.typeCol, .feedbackCol {
+width: 16px;
+text-align: center;
+}
+
+.mediaCol {
+/*width: 256px;*/
+}
+
+.statusCol {
+width: 150px;
+}
+
+td.progressCol {
+width: 100px;
+text-align: right;
+font-weight: bold;
+}
+
+.removeCol {
+width: 16px;
+}
+
+#purchasesActivity {
+float: left;
+margin: 10px 6px;
+}
+
+/* Progress Bar */
+.progressBar {
+display: inline-block;
+position: relative;
+min-width: 400px;
+height: 20px;
+background-color: #888;
+border: 2px solid #444;
+}
+
+.progressFill {
+height: 20px;
+background-color: #f6800a;
+}
+
+/*-- Control Table --*/
+.controlTable {
+width: 100%;
+}
+
+.controlTable tbody tr:first-child {
+border-bottom-width: 0;
+}
+
+.controlTable tbody tr {
+border-top: 1px solid #888;
+}
+
+.controlTable tr.disabled, .controlTable tr.deleted {
+color: #888;
+}
+
+.controlTable tr.deleted {
+background: url(/bitmunk/images/row-disabled.png);
+}
+
+.controlTable tbody tr:hover {
+background-color: #7a7a7a;
+}
+
+/*-- Control Table Elements --*/
+.emptyRow td {
+text-align: center;
+}
+
+.selectCol {
+width: 14px;
+padding: 4px 6px 2px 6px;
+}
+
+/*-- Purchase Statuses --*/
+.status-ok, .status-error, .status-warning, .status-busy,
+.status-disabled, .status-ready, .status-download, .status-paused {
+display: inline-block;
+height: 16px;
+padding-left: 20px;
+background: url(/bitmunk/images/status-ok.png) no-repeat left top;
+}
+
+.status-error {
+background: url(/bitmunk/images/status-error.png) no-repeat left top;
+}
+
+.status-warning {
+background: url(/bitmunk/images/status-warning.png) no-repeat left top;
+}
+
+.status-busy {
+background: url(/bitmunk/images/status-pending.png) no-repeat left top;
+}
+
+.status-disabled {
+background: url(/bitmunk/images/status-disabled.png) no-repeat left top;
+}
+
+.status-ready {
+background: url(/bitmunk/images/status-ready.png) no-repeat left top;
+}
+
+.status-download {
+background: url(/bitmunk/images/status-download.png) no-repeat left top;
+/*background: url(/bitmunk/images/status-download.gif) no-repeat left top;*/
+}
+
+.status-paused {
+background: url(/bitmunk/images/status-paused.png) no-repeat left top;
+}
+
+/*-- Dialog --*/
+#purchaseDialog {
+}
+
+.dialogSection {
+margin: 0 0 20px 0;
+}
+
+.line * {
+vertical-align: middle;
+}
+
+.key {
+display: inline-block;
+width: 100px;
+font-weight: bold;
+}
+
+#removeButton {
+float: left;
+}
+
+#purchaseButton {
+margin-right: 10px;
+}
+
+#dialogActivity {
+visibility: hidden;
+float: left;
+margin: 0 10px;
+line-height: 18px;
+}
+
+/*-- Lines and Labels --*/
+.line {
+margin: 0 0 6px 0;
+}
+
+.center {
+text-align: center;
+}
+
+/* Media Display */
+#media-link {
+float: left;
+margin: 0 18px 20px 18px;
+}
+
+#media-image {
+width: 64px;
+height: 64px;
+}
+
+#media-title {
+font-size: 20px;
+font-weight: bold;
+margin-bottom: 10px;
+}
+
+#media-contributor {
+font-size: 14px;
+font-weight: bold;
+margin-bottom: 10px;
+}
+
+/* Pool & Stats Tables */
+#pool-table, #stats-table {
+width: 100%;
+}
+
+#pool-table td {
+width: 25%;
+}
+
+#stats-table td {
+width: 20%;
+}
+
+/* Account & Price */
+#purchaseSection, #statisticsSection {
+clear: left;
+}
+
+.rightCol {
+text-align: right;
+}
+
+#accountSelect {
+width: 500px;
+font-size: 11px;
+}
+
+#priceInput {
+width: 60px;
+}

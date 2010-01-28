@@ -1,0 +1,9 @@
+/* Bitmunk Personal Edition Support CSS */
+
+#logView {
+}
+
+#logView table {
+border: thin solid black;
+width: 100%;
+}

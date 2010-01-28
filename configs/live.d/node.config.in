@@ -1,0 +1,23 @@
+{
+   "_id_" : "node",
+   "_group_" : "defaults",
+   "_version_" : "Bitmunk 3.0",
+   "_merge_" : {
+      "node" : {
+         "bitmunkUrl" : "http://@BITMUNK_API_HOST@:@BITMUNK_API_PORT@",
+         "secureBitmunkUrl" : "https://@BITMUNK_API_HOST@:@BITMUNK_API_PORT@",
+         "host" : "@BITMUNK_LOCAL_API_HOST@",
+         "port" : @BITMUNK_LOCAL_API_PORT@,
+         "maxConnectionCount" : 100,
+         "maxThreadCount" : 100,
+         "bitmunkHomePath" : "{BITMUNK_HOME}",
+         "modulePath" : "@BITMUNK_MODULES_DIR@",
+         "profilePath" : "profiles",
+         "usersPath" : "users",
+         "sslGenerate" : @NODE_SSL_GENERATE@,
+         "sslCertificate" : "@NODE_SSL_CERTIFICATE@",
+         "sslPrivateKey" : "@NODE_SSL_KEY@",
+         "sslCAFile" : "@NODE_SSL_CA_FILE@"
+      }
+   }
+}

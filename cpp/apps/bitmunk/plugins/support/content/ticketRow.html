@@ -1,0 +1,20 @@
+<tr class="ticketRow">
+  <td class="iconColumn">
+    <a href="/home/tickets/{$ticket.id}">
+    <img class="viewIcon"
+      src="/themes/{$pageTheme}/images/icons/view.png"
+      alt="View" title="View Ticket {$ticket.id}" /></a>
+  </td>
+  <td class="subjectColumn">
+    <p>
+      <a href="/home/tickets/{$ticket.id}"
+        title="View Ticket {$ticket.id}">
+        {$ticket.subject|truncate:80|escape}</a>
+    </p>
+  </td>
+  <td>{$ticket.status|capitalize}</td>
+  <td>{$ticket.date}</td>
+  <td class="descriptionColumn">
+    <p>{$ticket.description|truncate:80}</p>
+  </td>
+</tr>

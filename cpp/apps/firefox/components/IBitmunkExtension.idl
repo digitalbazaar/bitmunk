@@ -1,0 +1,11 @@
+/**
+ * The Interface into the Bitmunk plugin/extension. 
+ */ 
+#include "nsISupports.idl"
+
+[scriptable, uuid(f1dab993-22bb-4416-9471-afd19dc9dd85)]
+interface nsIBitmunkExtension : nsISupports {
+  boolean getBitmunkPort(out long port);
+  boolean launchBitmunk(out long pid);
+  boolean terminateBitmunk(in long pid);
+};

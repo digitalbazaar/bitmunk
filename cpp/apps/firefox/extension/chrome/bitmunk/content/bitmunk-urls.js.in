@@ -1,0 +1,4 @@
+BPE_API_PORT=@BITMUNK_LOCAL_API_PORT@
+
+BPE_URL="http://localhost:"
+BPE_SSL_URL="https://localhost:"

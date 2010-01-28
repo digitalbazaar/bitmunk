@@ -1,0 +1,31 @@
+Source: bitmunk3
+Section: net
+Priority: optional
+Maintainer: Digital Bazaar, Inc. <support@digitalbazaar.com>
+Homepage: http://bitmunk.com/
+Build-Depends: debhelper (>= 6.0.0), autotools-dev
+Standards-Version: 3.8.0
+
+Package: bitmunk3
+Architecture: any
+Depends: ${shlibs:Depends}, monarch3 (>= 3.2)
+Description: Legal peer-to-peer media purchase and sales engine
+ Bitmunk 3.0 is a complete re-write of the Bitmunk software in C++. This
+ software can be used to legally purchase and sell digital content via
+ peer-to-peer networks.
+ .
+ This package contains the base software for a Bitmunk node, which is usually
+ specialized and extended by using plug-ins.
+
+Package: bitmunk3-mod-system
+Architecture: any
+Depends: ${shlibs:Depends}, bitmunk3 (>= 3.0)
+Description: Bitmunk System modules
+ Bitmunk 3.0 is a complete re-write of the Bitmunk software in C++. This
+ software can be used to legally purchase and sell digital content via
+ peer-to-peer networks.
+ .
+ This package contains the Bitmunk System modules which are used to 
+ process robot.txt requests, statistics, directives, and events.
+
+

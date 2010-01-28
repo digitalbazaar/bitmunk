@@ -1,0 +1,191 @@
+<div id="purchases" class="screen">
+   <div id="purchaseBrowser">
+      <h1 class="pageHeader">Purchases</h1>
+      
+      <div class="hintBox">
+         This page lets you monitor your purchases from the marketplace.<br />
+         Add new purchases by browsing our catalog at bitmunk.com.
+         <a href="http://bitmunk.com/wiki/market-buy-tutorial" class="external">Learn More</a>
+      </div>
+      
+      <table id="purchases" class="sortable controlTable">
+         <thead>
+            <tr>
+               <th class="typeCol" title="The type of media"></th>
+               <th class="titleCol">Title</th>
+               <th class="contributorCol">Contributor</th>
+               <th class="statusCol"
+                  title="The current download status">Status</th>
+               <th class="progressCol"
+                  title="The progress of the download">Progress</th>
+               <th class="feedbackCol"
+                  title="Feedback indicator"></th>
+               <th class="removeCol"
+                  title="Stop and remove the download"></th>
+            </tr>
+         </thead>
+         <tbody id="purchaseRows">
+            <tr class="emptyRow">
+               <td colspan="7">
+                  <span>No purchases</span>
+               </td>
+            </tr>
+         </tbody>
+      </table>
+      
+      <p id="purchasesActivity">
+         <img src="/bitmunk/images/status-busy.gif" />
+         <span class="activityMessage">Please wait...</span>
+      </p>
+      
+      <div class="recommendations">
+         <p>Visit <a href="http://bitmunk.com/browse"
+            class="external">bitmunk.com</a> to find great new Indie music!</p>
+      </div>
+   </div>
+   
+   <div id="purchaseDialog" class="dialog popup">
+      <div class="dialogHeader">
+         <span id="purchaseDialog-title" class="dialogTitle"></span>
+         
+         <button id="dialogClose" class="close"
+            title="Close purchase dialog">
+            <span>Close</span>
+         </button>
+      </div>
+      
+      <div class="dialogScroll">
+         <div class="dialogContent">
+            <div id="mediaSection" class="dialogSection">
+               <a id="media-link" class="external"
+                  href="http://bitmunk.com/browse"
+                  title="View on Bitmunk"><img id="media-image"
+                  src="/bitmunk/images/404.png" alt="" /></a>
+               
+               <h1 id="media-title"></h1>
+               
+               <h2 id="media-contributor"></h2>
+            </div>
+            
+            <div id="purchaseSection" class="dialogSection">
+               <div id="sellerSection" class="line center">
+                  <table id="pool-table" class="sortable">
+                     <thead>
+                        <tr>
+                           <th>Sellers</th>
+                           <th class="rightCol">Min Price</th>
+                           <th class="rightCol">Median Price</th>
+                           <th class="rightCol">Max Price</th>
+                        </tr>
+                     </thead>
+                     <tfoot id="pool-totals">
+                        <tr>
+                           <td>
+                              <span id="pool-sellers"></span>
+                           </td>
+                           <td class="rightCol">
+                              <span id="pool-minTotal"></span>
+                           </td>
+                           <td class="rightCol">
+                              <span id="pool-medTotal"></span>
+                           </td>
+                           <td class="rightCol">
+                              <span id="pool-maxTotal"></span>
+                           </td>
+                        </tr>
+                     </tfoot>
+                     <tbody id="pool-empty" class="hidden">
+                        <tr>
+                           <td colspan="4">No Sellers Available</td>
+                        </tr>
+                     </tbody>
+                     <tbody id="pool-rows" class="hidden"></tbody>
+                  </table>
+               </div>
+               
+               <div class="line center">
+                  <select id="accountSelect" class="formSelect"></select>
+                  $ <input id="priceInput" class="formInput priceInput"
+                     type="text" value="0.00" />
+                  
+               </div>
+               
+               <p class="center">Select an account and enter the maximum price
+               you are willing to pay for this item.<br />
+               Bitmunk will attempt to purchase it from Sellers in
+               the marketplace for less than the maximum you set.</p>
+            </div>
+            
+            <div id="statisticsSection" class="dialogSection hidden">
+               <div class="line center">
+                  
+                  <table id="stats-table" class="sortable">
+                     <thead>
+                        <tr>
+                           <th>Status</th>
+                           <th>Progress</th>
+                           <th>Downloaded</th>
+                           <th>Rate</th>
+                           <th>ETA</th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        <tr>
+                           <td>
+                              <span id="downloadStatus"
+                                 class="status-busy">Loading</span>
+                              </td>
+                           <td><span id="downloadProgress"></span></td>
+                           <td><span id="downloadBytes">0 KiB</span></td>
+                           <td><span id="downloadRate">0.0 KiB/s</span></td>
+                           <td><span id="downloadEta"></span></td>
+                        </tr>
+                     </tbody>
+                  </table>
+               </div>
+               
+               <div class="line center">
+                  <span class="progressBar">
+                     <span id="progressFill"></span>
+                  </span>
+               </div>
+            </div>
+            
+            <div id="feedbackBox" class="feedback dialogSection">
+               <button id="clearButton" class="clear"
+                  alt="" title="Clear feedback messages"></button>
+               <div id="feedback"></div>
+            </div>
+         </div>
+      </div>
+      
+      <div class="dialogStatus">
+         <button id="removeButton" class="gray off"
+            title="Cancel and remove this purchase">
+            <span>Cancel Purchase</span>
+         </button>
+         
+         <span id="dialogActivity">
+            <img src="/bitmunk/images/status-busy.gif" />
+            <span class="activityMessage">Please wait...</span>
+         </span>
+         
+         <button id="purchaseButton" class="gray off"
+            title="Purchase this media">
+            <span>Purchase</span>
+         </button>
+         
+         <button id="pauseButton" class="gray off"
+            title="Pause download">
+            <span>Pause</span>
+         </button>
+         
+         <button id="resumeButton" class="gray off"
+            title="Resume download">
+            <span>Resume</span>
+         </button>
+      </div>
+   </div>
+   
+   <div id="overlay"></div>
+</div>

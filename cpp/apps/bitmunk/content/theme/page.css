@@ -1,0 +1,892 @@
+/*-- Bitmunk App Page CSS --*/
+
+/*-- Top-level --*/
+* {
+margin: 0;
+padding: 0;
+} 
+
+html {
+height: 100%;
+}
+
+body {
+width: 100%;
+height: 100%;
+text-align: left;
+font-size: 11px;
+font-family: verdana, "trebuchet MS", helvetica, sans-serif;
+color: #ddd;
+background: #777 url(/bitmunk/images/body-bg.png);
+}
+
+p {
+margin: 10px 0;
+}
+
+img {
+margin: 0;
+padding: 0;
+border: 0;
+vertical-align: bottom;
+}
+
+/* Link styles, must be assigned in this order */
+a:link, a:visited {
+color: #ff9600;
+text-decoration: none;
+}
+
+a:hover, a:active {
+color: #ff9600;
+text-decoration: underline;
+}
+
+ul, ol {
+margin: 10px 0;
+padding: 0 0 0 30px;
+}
+
+table {
+/* Remove border spacing */
+border-collapse: collapse;
+border: 0;
+}
+
+thead tr  {
+border-bottom: 1px solid #ccc;
+}
+
+tfoot tr {
+border-top: 1px solid #ccc;
+}
+
+th {
+padding: 2px 6px;
+white-space: nowrap;
+font-size: 12px;
+color: #ff9600;
+text-align: left;
+}
+
+td {
+padding: 4px 6px;
+font-size: 11px;
+text-align: left;
+}
+
+fieldset {
+border: 0;
+}
+
+legend {
+color: #f6800a;
+font-weight: bold;
+font-size: 13px;
+}
+
+/*
+label {
+display: block;
+float: left;
+line-height: normal;
+vertical-align: top;
+font-weight: bold;
+}
+*/
+
+select optgroup option {
+margin-left: 20px;
+}
+
+.hidden {
+display: none;
+}
+
+.busy {
+cursor: wait;
+}
+
+/*-- Header --*/
+#header {
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+height: 44px;
+/*background-color: #999;*/
+background-color: #f6900a;
+border-bottom: 2px solid #444;
+}
+
+#bitmunk-logo {
+margin: 2px 6px;
+color: #fff;
+font-size: 34px;
+font-weight: bold;
+}
+
+#app-logo {
+position: absolute;
+top: 2px;
+right: 10px;
+color: #fff;
+font-size: 24px;
+font-weight: bold;
+}
+
+/* System Links */
+.systemLinks {
+display: inline-block;
+}
+
+#logoutLink {
+}
+
+#shutdownLink {
+}
+
+/* Page footer */
+#footer {
+position: absolute;
+bottom: 0;
+left: 0;
+right: 0;
+height: 36px;
+font-size: 10px;
+color: #333;
+background-color: #999;
+border-top: 2px solid #444;
+}
+
+#footer p {
+display: inline-block;
+margin: 0 20px;
+padding: 10px 0;
+}
+
+#footer a {
+color: #333;
+font-weight: bold;
+}
+
+.username {
+font-weight: bold;
+}
+
+#copyright {
+float: right;
+}
+
+/*-- Desktop --*/
+#pane-desktop {
+position: absolute;
+top: 46px;
+bottom: 38px;
+left: 0;
+right: 0;
+overflow: hidden;
+}
+
+h1.pageHeader {
+font-size: 22px;
+border-bottom: 1px solid #ccc;
+margin-bottom: 10px;
+}
+
+/* Screen Content */
+#pane-screen {
+position: absolute;
+top: 0;
+bottom: 0;
+left: 200px;
+right: 0;
+background-color: #777;
+overflow: auto;
+}
+
+.screen {
+padding: 10px;
+}
+
+/* Screen Navigation */
+#pane-screen-menu {
+position: absolute;
+top: 0;
+bottom: 0;
+left: 0;
+width: 200px;
+background: #444 url(/bitmunk/images/menu-bg.png) repeat-y;
+overflow: auto;
+}
+
+.menuHeader, .systemHeader {
+height: 30px;
+background: url(/bitmunk/images/menulinks.png) no-repeat 0 0;
+}
+
+.menuHeader span, .systemHeader span {
+margin: 0 10px;
+line-height: 28px;
+font-size: 13px;
+font-weight: bold;
+}
+
+.menuLinks, .systemLinks {
+border: 0;
+margin: 0;
+padding: 0;
+list-style-type: none;
+}
+
+.systemLinks {
+padding-bottom: 30px;
+}
+
+.menuLinks li, .systemLinks li {
+width: 200px;
+height: 30px;
+background: url(/bitmunk/images/menulinks.png) no-repeat 0 -30px;
+}
+
+.menuLinks li:hover, .menuLinks li.selected {
+background: url(/bitmunk/images/menulinks.png) no-repeat 0 -60px;
+}
+
+.systemLinks li:hover, .systemLinks li.selected {
+background: url(/bitmunk/images/menulinks.png) no-repeat 0 -90px;
+}
+
+.menuLinks li a, .systemLinks li a {
+display: block;
+width: 198px;
+height: 30px;
+color: #222;
+border: 0;
+text-decoration: none;
+}
+
+.systemLinks li a:hover {
+color: #fff;
+}
+
+.menuLinks span, .systemLinks span {
+margin: 0 10px;
+font-weight: bold;
+line-height: 28px;
+}
+
+/*-- Table Styling --*/
+table.sortable {
+border-collapse: separate;
+border-spacing: 0;
+}
+
+table.sortable thead tr {
+border: none;
+}
+
+table.sortable thead th {
+background-color: #666;
+color: #ccc;
+border-color: #999 #555 #555 #999;
+border-style: solid;
+border-width: 1px;
+cursor: default;
+}
+
+table.sortable thead th:hover {
+background-color: #777;
+}
+
+table.sortable thead th a {
+display: inline-block;
+width: 100%;
+margin: 0;
+padding: 0;
+color: #ccc;
+text-decoration: none;
+cursor: pointer;
+}
+
+table.sortable tbody td {
+border-bottom: 1px solid #888;
+}
+
+table.sortable tfoot td {
+border-bottom: 1px solid #999;
+}
+
+.sort-asc {
+background: url(/bitmunk/images/sort-down.png) center right no-repeat;
+}
+
+.sort-desc {
+background: url(/bitmunk/images/sort-up.png) center right no-repeat;
+}
+
+/*-- Form Styling --*/
+.formLine {
+margin: 10px 0 0;
+}
+
+.submitLine {
+margin-top: 10px;
+}
+
+.formInfo {
+margin: 10px 100px;
+}
+
+.formInput, .formSelect, .formTextArea {
+color: #333;
+border: 1px solid #333;
+background: #bbb;
+}
+
+.formInput:hover, .formSelect:hover, .formTextArea:hover {
+border: 1px solid #ff9600;
+}
+
+.formInput[disabled], .formSelect[disabled], .formTextArea[disabled] {
+color: #ccc;
+background-color: #666;
+border-color: #bbb;
+font-style: italic;
+}
+
+.formInput {
+height: 16px;
+padding: 1px;
+}
+
+/*
+.formSelect {
+height: 20px;
+}
+
+.formSelect option {
+height: 18px;
+}
+*/
+
+.inputLabel {
+display: block;
+float: left;
+margin-right: 10px;
+text-align: right;
+}
+
+.hintBox {
+width: 450px;
+margin: 10px auto;
+padding: 10px;
+background-color: #888;
+border: 1px solid #444;
+-moz-border-radius: 6px;
+-webkit-border-radius: 6px;
+}
+
+/*-- Button Styles --*/
+button.gray, button.green {
+min-width: 70px;
+padding: 1px 10px;
+line-height: 16px;
+font-size: 11px;
+font-weight: bold;
+color: #555;
+background: url(/bitmunk/images/button-gray.png) repeat-x 0 0;
+border: 1px solid #555;
+-moz-border-radius: 3px;
+-webkit-border-radius: 3px;
+cursor: pointer;
+}
+
+button.gray.on:hover {
+color: #444;
+border-color: #444;
+}
+
+button.gray.on:active {
+color: #444;
+background-position: 0 -20px;
+border-color: #444;
+}
+
+button.gray.off {
+color: #888;
+border-color: #aaa;
+}
+
+button.green {
+color: #252;
+background-image: url(/bitmunk/images/button-green.png);
+border-color: #252;
+}
+
+button.green.on {
+color: #252;
+border-color: #252;
+}
+
+button.green.on:hover {
+color: #242;
+border-color: #242;
+}
+
+button.green.on:active {
+color: #242;
+background-position: 0 -20px;
+border-color: #242;
+}
+
+button.green.off {
+color: #181;
+border-color: #181;
+}
+
+button.off {
+cursor: default;
+}
+
+/*-- Help & Info Buttons --*/
+button.info, button.help, a.help {
+width: 20px;
+height: 20px;
+vertical-align: top;
+background: url(/bitmunk/images/button-help.png) no-repeat 0 0;
+border: 0 none;
+cursor: pointer;
+}
+
+a.help {
+display: inline-block;
+}
+
+button.info *, button.help *, a.help * {
+display: none;
+}
+
+button.info {
+background-image: url(/bitmunk/images/button-info.png);
+}
+
+button.info:hover, button.help:hover, a.help:hover{
+background-position: -20px 0;
+}
+
+button.info:active, button.help:active, a.help:active{
+background-position: -40px 0;
+}
+
+/*-- Remove Button --*/
+button.remove {
+width: 16px;
+height: 16px;
+background: url(/bitmunk/images/button-remove.png) no-repeat -16px 0;
+border: 0 none;
+cursor: pointer;
+}
+
+button.remove * {
+display: none;
+}
+
+button.remove.on:hover {
+background-position: -32px 0;
+}
+
+button.remove.on:active {
+background-position: -48px 0;
+}
+
+button.remove.off {
+background-position: 0 0;
+cursor: default;
+}
+
+/*-- Close Button --*/
+.dialog button.close {
+position: absolute;
+top: 5px;
+right: 5px;
+}
+
+button.close {
+width: 20px;
+height: 20px;
+background: url(/bitmunk/images/button-close-20.png) no-repeat 0 0;
+border: none;
+cursor: pointer;
+}
+
+button.close * {
+display: none;
+}
+
+button.close:hover {
+background-position: -20px 0;
+}
+
+button.close:active {
+background-position: -40px 0;
+}
+
+/*-- Edit & Examine Buttons --*/
+button.edit, button.examine {
+width: 20px;
+height: 20px;
+background: url(/bitmunk/images/button-edit.png) no-repeat 0 0;
+border: none;
+cursor: pointer;
+}
+
+button.examine {
+background-image: url(/bitmunk/images/button-examine.png);
+}
+
+button.edit *, button.examine * {
+display: none;
+}
+
+button.edit:hover, button.examine:hover {
+background-position: -20px 0;
+}
+
+button.edit:active, button.examine:active {
+background-position: -40px 0;
+}
+
+/* Form Feedback */
+.inputFeedback, .formFeedback {
+font-weight: bold;
+color: #a50000;
+}
+
+/* Page Feedback Boxes */
+.feedback {
+display: none;
+clear: both;
+margin: 10px;
+padding-top: 2px;
+border-top: 1px solid #888;
+}
+
+.feedback .info, .feedback .warning, .feedback .error {
+margin: 5px 20px 5px 5px;
+padding-left: 24px;
+line-height: 16px;
+
+font-weight: bold;
+background: url(/bitmunk/images/feedback-info.png) no-repeat;
+}
+
+.feedback .warning {
+background: url(/bitmunk/images/feedback-warning.png) no-repeat;
+}
+
+.feedback .error {
+background: url(/bitmunk/images/feedback-error.png) no-repeat;
+}
+
+.feedback button.clear {
+float: right;
+width: 16px;
+height: 16px;
+background: url(/bitmunk/images/button-remove.png) no-repeat -16px 0;
+border: 0 none;
+cursor: pointer;
+}
+
+.feedback button.clear:hover {
+background-position: -32px 0;
+}
+
+.feedback button.clear:active {
+background-position: -48px 0;
+}
+
+
+/*-- Inline Info --*/
+.infoSection {
+margin: 10px 0;
+padding: 10px 0;
+border: 1px dashed #d1d1d1;
+border-width: 1px 0;
+}
+
+/*-- Loading --*/
+#loading {
+padding: 100px 0;
+text-align: center;
+}
+
+/*-- Editor Overlay --*/
+#overlay {
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+background-color: #444;
+width: 100%;
+height: 100%;
+filter: alpha(opacity=50);
+-moz-opacity: 0.5;
+-khtml-opacity: 0.5;
+opacity: 0.5;
+z-index: 10;
+}
+
+/*-- Dialog --*/
+.popup {
+display: none;
+position: fixed;
+top: 50px;
+left: 50%;
+width: 720px;
+height: 400px;
+margin-left: -360px;
+z-index: 100;
+}
+
+.dialog {
+background: #777 url(/bitmunk/images/dialog-bg.png) top left repeat-x;
+border: 2px solid #444;
+-moz-border-radius: 10px;
+-webkit-border-radius: 10px;
+}
+
+.dialogHeader {
+height: 32px;
+padding: 0 25px 0 10px;
+line-height: 28px;
+overflow: hidden;
+}
+
+.dialogTitle {
+font-size: 18px;
+color: #fff;
+font-weight: bold;
+}
+
+.dialogControls {
+height: 20px;
+padding: 4px 10px;
+border-bottom: 2px solid #444;
+}
+
+.dialogFlow {
+}
+
+.dialogScroll {
+position: absolute;
+top: 32px;
+left: 0;
+right: 0;
+bottom: 32px;
+overflow: auto;
+}
+
+.dialogContent {
+display: block;
+padding: 10px;
+}
+
+.dialogStatus {
+position: absolute;
+left: 0;
+right: 0;
+bottom: 0;
+height: 20px;
+padding: 5px 10px;
+text-align: right;
+border-top: 2px solid #444;
+}
+
+/*-- Offline --*/
+#offline {
+padding: 50px 0;
+}
+
+#offlineBox {
+width: 500px;
+margin: 0 auto;
+background-color: #777;
+border: 2px solid #444;
+-moz-border-radius: 10px;
+-webkit-border-radius: 10px;
+}
+
+#offlineBox h1 {
+margin: 10px;
+text-align: center;
+}
+
+#offlineBox p {
+margin: 10px;
+}
+
+/*-- Filebrowser --*/
+.filebrowser {
+text-align: left;
+}
+
+.filebrowser-path {
+margin-bottom: 10px;
+padding-left: 24px;
+white-space: nowrap;
+background: url(/bitmunk/images/folder.png) no-repeat left center;
+}
+
+.filebrowser-path-entry {
+height: 20px;
+padding: 1px 4px;
+line-height: 18px;
+color: #333;
+font-size: 12px;
+font-weight: bold;
+background-color: #bbb;
+border: 1px solid #333;
+overflow: hidden;
+}
+
+.filebrowser-browser {
+height: 200px;
+margin: 10px 0;
+}
+
+table.filebrowser-table {
+width: 100%;
+}
+
+thead.filebrowser-header {
+display: block;
+height: 22px;
+}
+
+tbody.filebrowser-content {
+height: 176px;
+overflow: auto;
+display: block;
+border: 1px solid #888;
+}
+
+table.filebrowser-table .nameCol {
+width: 600px;
+}
+
+table.filebrowser-table .sizeCol {
+width: 100px;
+}
+
+table.filebrowser-table td.sizeCol {
+text-align: right;
+}
+
+tr.filebrowser-row {
+cursor: pointer;
+}
+
+div.busy tr.filebrowser-row {
+cursor: wait;
+}
+
+tr.filebrowser-row:hover {
+background-color: #888;
+}
+
+table.filebrowser-table tr.filebrowser-row td {
+border: none;
+}
+
+tr.filebrowser-highlight {
+color: #444;
+background-color: #999;
+}
+
+.full-path {
+display: none;
+}
+
+.filebrowser-directory {
+font-weight: bold;
+}
+
+.filebrowser-file {
+}
+
+.non-readable {
+color: #666;
+font-style: italic;
+}
+
+.filebrowser-select {
+margin-top: 10px;
+text-align: right;
+}
+
+/*-- Messages & JGrowl --*/
+#messages {
+position: absolute;
+bottom: 38px;
+right: 20px;
+z-index: 1000;
+}
+
+.jGrowl-notification, .jGrowl-closer {
+display: none;
+clear: right;
+float: right;
+position: relative;
+min-width: 200px;
+min-height: 24px;
+margin-bottom: 10px;
+padding: 2px 26px 2px 34px;
+text-align: left;
+line-height: 22px;
+font-weight: bold;
+color: #777;
+background: #ddd url(/bitmunk/images/feedback-general-24.png) no-repeat 2px 2px;
+border: 1px solid #999;
+-moz-border-radius: 16px;
+-webkit-border-radius: 16px;
+}
+
+.jGrowl-notification .close {
+position: absolute;
+right: 6px;
+z-index: 99;
+font-size: 16px;
+font-weight: bold;
+cursor: pointer;
+}
+
+.jGrowl-notification.ok {
+color: #181;
+background: #a6ef7b url(/bitmunk/images/feedback-ok-24.png) no-repeat 2px 2px;
+border: 1px solid #181;
+}
+
+.jGrowl-notification.info {
+color: #38b;
+background: #d6e7f1 url(/bitmunk/images/feedback-info-24.png) no-repeat 2px 2px;
+border: 1px solid #38b;
+}
+
+.jGrowl-notification.warning {
+color: #d86119;
+background: #f1d9b0 url(/bitmunk/images/feedback-warning-24.png) no-repeat 2px 2px;
+border: 1px solid #d86119;
+}
+
+.jGrowl-notification.error {
+color: #a50000;
+background: #f1d7e6 url(/bitmunk/images/feedback-error-24.png) no-repeat 2px 2px;
+border: 1px solid #dc5757;
+}
+
+.jGrowl-notification .message a {
+color: inherit;
+text-decoration: underline;
+}
+

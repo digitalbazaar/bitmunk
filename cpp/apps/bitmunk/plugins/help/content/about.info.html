@@ -1,0 +1,21 @@
+{if defined('loading') && loading}
+   <img src="/bitmunk/images/status-busy.gif"/><span>Loading...</span>
+{else}
+   {if defined('error')}
+      <span>${error|escape}</span>
+   {else}
+      Name: ${name|escape}<br/>
+      Version: ${version|escape}<br/>
+      Homepage: <a href="${homepage|escape}">${homepage|escape}</a><br/>
+      {if defined('authors')}
+         Authors:
+         <ul>
+         {for author in authors}
+            <li><a href="${author.homepage|escape}">${author.name|escape}</a> &lt;<a href="mailto:${author.email|escape}">${author.email|escape}</a>&gt;</li>
+         {forelse}
+            <li>None</li>
+         {/for}
+         </ul>
+      {/if}
+   {/if}
+{/if}

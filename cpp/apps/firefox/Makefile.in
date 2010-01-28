@@ -1,0 +1,255 @@
+# Variables used in this Makefile
+NAME=bitmunk
+ZIPEXCLUDE=-x \*.swp -x \*.svn/\* -x \*~
+BITMUNK_RELEASE_MODE=@BITMUNK_RELEASE_MODE@
+
+BITMUNK_DIST_DIR = @BITMUNK_DIR@/dist
+BITMUNK_LIB_DIR = $(BITMUNK_DIST_DIR)/lib
+BITMUNK_BIN_DIR = $(BITMUNK_DIST_DIR)/bin
+BITMUNK_XPT_DIR = $(BITMUNK_DIST_DIR)/xpt
+BITMUNK_XPI_DIR = $(BITMUNK_DIST_DIR)/xpi
+BITMUNK_MODULES_DIR = $(BITMUNK_DIST_DIR)/modules
+
+BITMUNK_COMPONENT = @LIB_PREFIX@bitmunk-components.@SHARED_LIB_EXTENSION@ 
+BITMUNK_MIME_HANDLER = @LIB_PREFIX@npbmd.@SHARED_LIB_EXTENSION@ 
+DISTRIBUTION_LIBRARIES = @LIB_PREFIX@bmcommon.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@bmdata.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@bmprotocol.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@moapp.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@mocompress.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@moconfig.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@mocrypto.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@modata.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@moevent.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@mofiber.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@moio.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@mohttp.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@mokernel.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@mologging.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@momodest.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@monet.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@mort.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@mosql.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@mosqlite3.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@moupnp.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@moutil.@SHARED_LIB_EXTENSION@ \
+                         @LIB_PREFIX@movalidation.@SHARED_LIB_EXTENSION@ 
+
+MODULE_LIBRARIES = @LIB_PREFIX@bmnode.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmbfp.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmcustomcatalog.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmeventreactor.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmeventreactor-downloadstate.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmfilebrowser.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmmedialibrary.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmnegotiate.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmperuserdb.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmportmapper.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmpurchase.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmsell.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmsystem.@SHARED_LIB_EXTENSION@ \
+                   @LIB_PREFIX@bmwebui.@SHARED_LIB_EXTENSION@ 
+
+WEBUI_PLUGINS = help log login main purchase medialibrary settings
+
+PKI_FILES = bitmunk-ca-file.pem
+
+ifeq (@BITMUNK_RELEASE_MODE@,no)
+WEBUI_PLUGINS += support debug test
+endif
+
+ifeq (@BITMUNK_RELEASE_MODE@,yes)
+CONFIG_FILES = app.config \
+               bitmunk.bfp.Bfp.config \
+               bitmunk.catalog.CustomCatalog.config \
+               bitmunk.medialibrary.MediaLibrary.config \
+               bitmunk.purchase.Purchase.config \
+               bitmunk.sell.Sell.config \
+               bitmunk.system.System.config \
+               bitmunk.webui.WebUi.config \
+               events.config \
+               node.config
+else
+CONFIG_FILES = app.config \
+               bitmunk.bfp.Bfp.config \
+               bitmunk.catalog.CustomCatalog.config \
+               bitmunk.medialibrary.MediaLibrary.config \
+               bitmunk.purchase.Purchase.config \
+               bitmunk.sell.Sell.config \
+               bitmunk.system.System.config \
+               bitmunk.webui.WebUi.config \
+               events.config \
+               node.config
+endif
+
+EXTERNAL_WINDOWS_LIBRARIES = pthreadGCE2.dll \
+                             charset1.dll \
+                             libiconv2.dll \
+                             sqlite3.dll \
+                             libexpat.dll \
+                             mgwz.dll \
+                             mingwm10.dll \
+                             libgnurx-0.dll \
+                             libeay32.dll \
+                             ssleay32.dll
+
+EXTERNAL_MACOS_LIBRARIES = /sw/lib/libsqlite3.0.dylib
+
+.PHONY: all components plugins help clean
+
+all: platform-xpi
+
+components:
+	cd components && $(MAKE)
+
+plugins:
+	cd plugins && $(MAKE)
+
+ifeq (@BITMUNK_PLATFORM@,windows)
+platform-xpi: 
+else
+platform-xpi: components plugins
+endif
+	$(RM) $(BITMUNK_XPI_DIR)/bitmunk-@BITMUNK_PLATFORM@.xpi
+
+	# Create all of the necessary directories
+	mkdir -p dist
+	mkdir -p extension/components
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/libs
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/modules
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/extensions
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/content
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/components
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/plugins
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/configs/conf.d
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/webuiplugins
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/pki
+
+	# Copy all of the files into the extension folder
+ifeq (@BITMUNK_PLATFORM@,windows)
+	cp -LR msvc9/bitmunk-firefox/bitmunk-components/$(BITMUNK_COMPONENT) \
+		extension/platform/@FIREFOX_PLATFORM@/components
+
+else
+	cp -LR $(BITMUNK_LIB_DIR)/$(BITMUNK_COMPONENT) \
+		extension/platform/@FIREFOX_PLATFORM@/components
+endif
+
+ifeq (@BITMUNK_PLATFORM@,macos)
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/plugins/bitmunk-mimehandler.plugin/Contents
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/plugins/bitmunk-mimehandler.plugin/Contents/MacOS
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/plugins/bitmunk-mimehandler.plugin/Contents/Resources
+	cp -LR plugins/Info.plist \
+		extension/platform/@FIREFOX_PLATFORM@/plugins/bitmunk-mimehandler.plugin/Contents/
+	cp -LR plugins/Resources \
+		extension/platform/@FIREFOX_PLATFORM@/plugins/bitmunk-mimehandler.plugin/Contents/
+	cp -LR $(BITMUNK_LIB_DIR)/$(BITMUNK_MIME_HANDLER) \
+		extension/platform/@FIREFOX_PLATFORM@/plugins/bitmunk-mimehandler.plugin/Contents/MacOS/bitmunk-mimehandler
+	$(foreach lib,$(EXTERNAL_MACOS_LIBRARIES),cp -LR $(lib) extension/platform/@FIREFOX_PLATFORM@/libs &&) true
+endif
+
+ifeq (@BITMUNK_PLATFORM@,windows)
+	cp -LR msvc9/bitmunk-firefox/bitmunk-mimehandler/$(BITMUNK_MIME_HANDLER) \
+		extension/platform/@FIREFOX_PLATFORM@/plugins
+endif
+
+ifeq (@BITMUNK_PLATFORM@,linux)
+	cp -LR $(BITMUNK_LIB_DIR)/$(BITMUNK_MIME_HANDLER) \
+		extension/platform/@FIREFOX_PLATFORM@/plugins
+endif
+	cp -LR ../bitmunk/content \
+		extension/platform/@FIREFOX_PLATFORM@
+	$(foreach lib,$(DISTRIBUTION_LIBRARIES),cp -LR $(BITMUNK_LIB_DIR)/$(lib) extension/platform/@FIREFOX_PLATFORM@/libs &&) true
+	$(foreach mod,$(MODULE_LIBRARIES),cp -LR $(BITMUNK_MODULES_DIR)/bpe/$(mod) extension/platform/@FIREFOX_PLATFORM@/modules &&) true
+
+ifeq (@BITMUNK_PLATFORM@,windows)
+	$(foreach lib,$(EXTERNAL_WINDOWS_LIBRARIES),cp -LR @MONARCH_DIR@/dist/lib/$(lib) extension/platform/@FIREFOX_PLATFORM@/libs &&) true
+	cp -LRp $(BITMUNK_BIN_DIR)/bitmunk.exe \
+		extension/platform/@FIREFOX_PLATFORM@/libs/bitmunk.exe
+	touch extension/platform/@FIREFOX_PLATFORM@/libs/bitmunk.exe.local
+	cp -LR msvc9/bitmunk-firefox/bitmunk-components/IBitmunkExtension.xpt \
+		extension/components/
+	@STRIP@ @STRIP_FLAGS@ extension/platform/@FIREFOX_PLATFORM@/libs/bitmunk.exe
+else
+	cp -LRp $(BITMUNK_BIN_DIR)/bitmunk \
+		extension/platform/@FIREFOX_PLATFORM@/
+	cp -LR $(BITMUNK_XPT_DIR)/*.xpt extension/components/
+	@STRIP@ @STRIP_FLAGS@ extension/platform/@FIREFOX_PLATFORM@/bitmunk
+endif
+	cp extension/chrome.manifest.jar extension/chrome.manifest
+	$(RM) extension/chrome/$(NAME).jar
+	cd extension/chrome/$(NAME) && \
+		zip -r ../$(NAME).jar content locale $(ZIPEXCLUDE)
+
+	# Copy the proper configuration files over
+	cp @BITMUNK_DIR@/configs/firefox-plugin.config \
+		extension/platform/@FIREFOX_PLATFORM@/configs/default.config
+ifeq ($(BITMUNK_RELEASE_MODE),yes)
+	$(foreach config,$(CONFIG_FILES),cp -LR @BITMUNK_DIR@/configs/live.d/$(config) extension/platform/@FIREFOX_PLATFORM@/configs/conf.d/ &&) true
+else
+	$(foreach config,$(CONFIG_FILES),cp -LR @BITMUNK_DIR@/configs/dev.d/$(config) extension/platform/@FIREFOX_PLATFORM@/configs/conf.d/ &&) true
+endif
+
+	# Copy all of the webui plugins to the proper location
+	$(foreach plugin,$(WEBUI_PLUGINS),cp -LR @BITMUNK_DIR@/cpp/apps/bitmunk/plugins/$(plugin) extension/platform/@FIREFOX_PLATFORM@/webuiplugins &&) true
+
+	# Copy all of the PKI files to the proper location
+	$(foreach pkifile,$(PKI_FILES),cp -LR @BITMUNK_DIR@/pki/$(pkifile) extension/platform/@FIREFOX_PLATFORM@/pki &&) true
+
+	# Strip all of the libraries and create the final XPI package.
+ifeq (@BITMUNK_PLATFORM@,windows)
+	@echo "Not stripping any windows libraries..."
+else
+	@STRIP@ @STRIP_FLAGS@ `find extension/platform/@FIREFOX_PLATFORM@/libs -name "*.@SHARED_LIB_EXTENSION@"`
+	@STRIP@ @STRIP_FLAGS@ `find extension/platform/@FIREFOX_PLATFORM@/modules -name "*.@SHARED_LIB_EXTENSION@"`
+endif
+
+	# Set the auto-login to false.
+	@sed -i -e "s/\"auto\" \: true/\"auto\" \: false/g" extension/platform/@FIREFOX_PLATFORM@/configs/conf.d/app.config
+
+	@mkdir -p @BITMUNK_DIR@/dist/xpi/
+	@cd extension && \
+	zip @BITMUNK_DIR@/dist/xpi/bitmunk-@BITMUNK_PLATFORM@.xpi \
+		chrome.manifest \
+		chrome/$(NAME).jar \
+		defaults/preferences/bitmunk.js \
+		install.rdf LICENSE searchplugins/bitmunk.src \
+		searchplugins/bitmunk.png components/*.xpt \
+		`find platform` \
+		-x \*/content/test/\* \
+		$(ZIPEXCLUDE)
+	@cp extension/chrome.manifest.flat extension/chrome.manifest
+
+	@echo "Build of bitmunk-@BITMUNK_PLATFORM@.xpi complete."
+
+	# Sign the XPI file
+	#rm -rf dist/bitmunk-linux
+	#mkdir -p dist/bitmunk-linux
+	#mv dist/bitmunk-linux.xpi dist/bitmunk-linux
+	#cd dist/bitmunk-linux && \
+	#unzip bitmunk-linux.xpi && \
+	#rm bitmunk-linux.xpi
+	#cd dist && \
+	#cd dist/bitmunk-linux && \
+	#zip ../bitmunk-linux.xpi META-INF/zigbert.rsa && \
+	#zip -r -D ../bitmunk-linux.xpi * -x META-INF/zigbert.rsa && \
+	#rm -rf bitmunk-linux
+
+clean: clean-xpi
+	rm -rf build
+	rm -rf dist
+
+clean-xpi:
+	make -C components clean
+	make -C plugins clean
+	$(RM) dist/bitmunk-@BITMUNK_PLATFORM@.xpi
+	$(RM) extension/chrome/$(NAME).jar
+	$(RM) extension/components/*.xpt
+	$(RM) -rf extension/platform/@FIREFOX_PLATFORM@/components/*
+	$(RM) -rf extension/platform/@FIREFOX_PLATFORM@/plugins/*
+	$(RM) -rf extension/platform/@FIREFOX_PLATFORM@/content/*
+	$(RM) -rf extension/platform/@FIREFOX_PLATFORM@/libs/*
+	$(RM) -rf extension/platform/@FIREFOX_PLATFORM@/configs/*
+	$(RM) -rf extension/platform/@FIREFOX_PLATFORM@/modules/*
+	$(RM) -rf extension/platform/@FIREFOX_PLATFORM@/webuiplugins/*
+	$(RM) -rf extension/platform/@FIREFOX_PLATFORM@/pki/*

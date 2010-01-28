@@ -1,0 +1,233 @@
+# The top-level Makefile that is used to build the Bitmunk software.
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+
+# Setup variables needed for source distribution
+
+# setup conditional GTK subdirs
+ifeq (@BUILD_GTK_UI@,yes)
+GTKUI_SUBDIR = cpp/gtkui
+GTKUI_MODULE = bmgtkui
+endif
+
+FLASH_SUBDIRS := cpp/apps/bitmunk
+EXECUTABLE_SUBDIRS := cpp/apps/bitmunk \
+                      cpp/tests
+
+SUBDIRS := cpp/common \
+           cpp/protocol \
+           cpp/node \
+           cpp/data \
+           cpp/bfp \
+           cpp/peruserdb \
+           cpp/portmapper \
+           cpp/purchase \
+           cpp/sell \
+           cpp/system \
+           cpp/negotiate \
+           cpp/filebrowser \
+           cpp/customcatalog \
+           cpp/medialibrary \
+           cpp/webui \
+           cpp/eventreactor \
+           cpp/eventreactor-downloadstate \
+           $(GTKUI_SUBDIR) \
+           cpp/test \
+           $(EXECUTABLE_SUBDIRS)
+
+INSTALL_APPLICATIONS := \
+	dist/bin/bitmunk
+
+INSTALL_BASE_LIBS := \
+	dist/lib/libbmcommon.so \
+	dist/lib/libbmprotocol.so
+
+INSTALL_BASE_CONFIGS := \
+	configs/live.d/app.config \
+	configs/live.d/events.config \
+	configs/live.d/login.config \
+	configs/live.d/node.config
+
+INSTALL_BASE_MODS := \
+	dist/lib/libbmnode.so
+
+INSTALL_SYSTEM_MOD_CONFIGS := \
+	configs/live.d/bitmunk.system.System.config
+
+INSTALL_SYSTEM_MODS := \
+	dist/lib/libbmsystem.so
+
+ifndef PRINT_DIRECTORIES
+PRINT_DIRECTORIES_OPTS = --no-print-directory -s
+endif
+ifdef PRINT_COMMANDS
+PRINT_COMMANDS_OPTS = PRINT_COMMANDS=$(PRINT_COMMANDS)
+endif
+MAKE_JOB_OPTS ?= -j -l 3.0
+
+MAKE_CMD = $(PRINT_COMMANDS_OPTS) $(MAKE) $(MAKE_JOB_OPTS) $(PRINT_DIRECTORIES_OPTS)
+MAKE_DIR = $(PRINT_COMMANDS_OPTS) $(MAKE_CMD) -C $(dir)
+
+# Which platform we're building for
+BUILD_FOR_LINUX=@BUILD_FOR_LINUX@
+BUILD_FOR_WINDOWS=@BUILD_FOR_WINDOWS@
+BUILD_FOR_MACOS=@BUILD_FOR_MACOS@
+
+# The Bitmunk node modules
+COMMON_MODULES = bmnode bmsystem bmbfp bmnegotiate bmsell
+
+BPE_MODULES = $(COMMON_MODULES) bmperuserdb bmpurchase bmfilebrowser bmcustomcatalog bmmedialibrary bmeventreactor bmeventreactor-downloadstate bmwebui bmportmapper $(GTKUI_MODULE) $(ADMIN_MODULE)
+
+ifeq ($(BUILD_FOR_LINUX),yes)
+LINUX_LIBS_DIR = @BITMUNK_DIR@/dist/lib
+LINUX_BPE_MODULES_DIR = @BITMUNK_DIR@/dist/modules/bpe
+LINUX_BPE_MODULES = $(patsubst %,lib%.so, $(BPE_MODULES))
+LINUX_BPE_MODULE_FILES = $(patsubst %,$(LINUX_BPE_MODULES_DIR)/lib%.so, $(BPE_MODULES))
+LINUX_MODULE_FILES = $(LINUX_BPE_MODULE_FILES)
+endif
+
+ifeq ($(BUILD_FOR_WINDOWS),yes)
+WINDOWS_LIBS_DIR = @BITMUNK_DIR@/dist/lib
+WINDOWS_BPE_MODULES_DIR = @BITMUNK_DIR@/dist/modules/bpe
+WINDOWS_BPE_MODULES = $(patsubst %,%.dll, $(BPE_MODULES))
+WINDOWS_BPE_MODULE_FILES = $(patsubst %,$(WINDOWS_BPE_MODULES_DIR)/%.dll, $(BPE_MODULES))
+WINDOWS_MODULE_FILES = $(WINDOWS_BPE_MODULE_FILES)
+WINDOWS_BFP_FILES = $(patsubst %,$(BFPS_DIR)/%.dll, $(BFPS))
+endif
+
+ifeq ($(BUILD_FOR_MACOS),yes)
+MACOS_LIBS_DIR = @BITMUNK_DIR@/dist/lib
+MACOS_BPE_MODULES_DIR = @BITMUNK_DIR@/dist/modules/bpe
+MACOS_BPE_MODULES = $(patsubst %,lib%.dylib, $(BPE_MODULES))
+MACOS_BPE_MODULE_FILES = $(patsubst %,$(MACOS_BPE_MODULES_DIR)/lib%.dylib, $(BPE_MODULES))
+MACOS_MODULE_FILES = $(MACOS_BPE_MODULE_FILES)
+MACOS_BFP_FILES = $(patsubst %,$(BFPS_DIR)/lib%.dylib, $(BFPS))
+endif
+
+.PHONY: all verbose clean test internal-docs clean-docs link-monarch-libs
+
+all: link-monarch-libs
+	@$(foreach dir,$(SUBDIRS),IGNORE_DEPENDENCIES=true $(MAKE_DIR) build-headers &&) true
+	@$(foreach dir,$(SUBDIRS),$(MAKE_DIR) build-objects build-libraries &&) true
+	@$(foreach dir,$(EXECUTABLE_SUBDIRS),$(MAKE_DIR) build-executables &&) true
+	@$(foreach dir,$(FLASH_SUBDIRS),$(MAKE_DIR) build-flash &&) true
+	@$(MAKE_CMD) link-modules
+
+clean:
+	@rm -rf build
+	@rm -rf dist
+	@echo "Removed all objects, libraries and modules."
+
+link-monarch-libs:
+ifeq ($(BUILD_FOR_LINUX),yes)
+	@mkdir -p $(LINUX_LIBS_DIR)
+	@ln -sf @MONARCH_DIR@/dist/lib/* $(LINUX_LIBS_DIR)
+endif
+ifeq ($(BUILD_FOR_WINDOWS),yes)
+	@mkdir -p $(WINDOWS_LIBS_DIR)
+	@ln -sf @MONARCH_DIR@/dist/lib/* $(WINDOWS_LIBS_DIR)
+endif
+ifeq ($(BUILD_FOR_MACOS),yes)
+	@mkdir -p $(MACOS_LIBS_DIR)
+	@ln -sf @MONARCH_DIR@/dist/lib/* $(MACOS_LIBS_DIR)
+endif
+
+link-modules: $(LINUX_MODULE_FILES) $(WINDOWS_MODULE_FILES) $(MACOS_MODULE_FILES)
+ifeq ($(BUILD_FOR_LINUX),yes)
+$(LINUX_BPE_MODULE_FILES):
+	@mkdir -p $(LINUX_BPE_MODULES_DIR)
+	@ln -sf $(LINUX_LIBS_DIR)/$(@F) $(LINUX_BPE_MODULES_DIR)/$(@F)
+endif
+ifeq ($(BUILD_FOR_WINDOWS),yes)
+$(WINDOWS_BPE_MODULE_FILES): 
+	@mkdir -p $(WINDOWS_BPE_MODULES_DIR)
+	@ln -sf $(WINDOWS_LIBS_DIR)/$(@F) $(WINDOWS_BPE_MODULES_DIR)/$(@F)
+endif
+ifeq ($(BUILD_FOR_MACOS),yes)
+$(MACOS_BPE_MODULE_FILES): 
+	@mkdir -p $(MACOS_BPE_MODULES_DIR)
+	@ln -sf $(MACOS_LIBS_DIR)/$(@F) $(MACOS_BPE_MODULES_DIR)/$(@F)
+endif
+
+# Note: When building for multiple archs this will see all the tests and
+#       will likely fail for non-current archs.  This method is used since
+#       it will work for single arch builds and is difficult to know which
+#       arch to specify otherwise.
+test: all
+	./bitmunk-run dist/bin/bitmunk-unit-tests
+
+clean-docs:
+	rm -rf docs/bitmunk-api-@BITMUNK_MAJORMINOR@
+
+external-docs: docs/bitmunk-@FULL_DOTTED_VERSION@.tar.bz2
+	@echo "Decompressing external bitmunk-@FULL_DOTTED_VERSION@ source distribution..."
+	@rm -rf docs/bitmunk-api-@BITMUNK_MAJORMINOR@
+	@rm -rf docs/bitmunk-@FULL_DOTTED_VERSION@
+	@cd docs && tar jxf bitmunk-@FULL_DOTTED_VERSION@.tar.bz2
+	@mkdir -p docs/bitmunk-api-@BITMUNK_MAJORMINOR@
+	@echo "Generating external C++ API documentation..."
+	@cd docs/bitmunk-@FULL_DOTTED_VERSION@ && doxygen ../../setup/external-docs.doxygen
+
+rest-api-docs:
+	@rm -rf docs/bitmunk-rest-api
+	@./setup/restdoc.py `git ls-files | grep Service.cpp` -o docs/rest-api
+
+verbose:
+	PRINT_DIRECTORIES=true $(MAKE) all
+
+verbose-commands:
+	PRINT_DIRECTORIES=true PRINT_COMMANDS=true $(MAKE) all
+
+valgrind:
+	./bitmunk-valgrind dist/bin/bitmunk-unit-tests
+
+packages:
+ifeq (@BUILD_FIREFOX_PLUGIN@,yes)
+	@make -C cpp/apps/firefox clean
+	@make -C cpp/apps/firefox all
+else
+	@echo "Building Debian packages..."
+	@rm -f debian
+	@rm -f installers/packages/*
+	@ln -s installers/debian debian
+	@LD_LIBRARY_PATH=libs/@BITMUNK_PLATFORM@/ dpkg-buildpackage -us -uc -rfakeroot -b 
+	@echo "Moving packages to installers/packages..."
+	@rm ../bitmunk@BITMUNK_VERSION_MAJOR@*changes
+	@mkdir -p installers/packages
+	@mv ../bitmunk@BITMUNK_VERSION_MAJOR@*deb installers/packages
+endif
+
+install: install-base
+
+install-base:
+	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
+	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@
+	@mkdir -p $(PREFIX)@sysconfdir@/init.d
+	@mkdir -p $(PREFIX)@bindir@
+	@mkdir -p $(PREFIX)@libdir@
+	@mkdir -p $(PREFIX)@datadir@/bitmunk@BITMUNK_VERSION_MAJOR@/templates
+
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ executables in $(PREFIX)@bindir@..."
+	@$(foreach app,$(INSTALL_APPLICATIONS),install -m 755 $(app) $(PREFIX)@bindir@/$(notdir $(app))@BITMUNK_VERSION_MAJOR@ &&) true
+
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base libraries in $(PREFIX)@libdir@..."
+	@$(foreach lib,$(INSTALL_BASE_LIBS),install -m 644 $(lib) $(PREFIX)@libdir@/$(notdir $(lib)) &&) true
+
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
+	@install -m 644 $(INSTALL_BASE_CONFIG) $(PREFIX)@BITMUNK_SYSTEM_CONFIG@
+	@install -m 644 $(INSTALL_BASE_CONFIGS) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
+
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base templates in $(PREFIX)@datadir@/bitmunk@BITMUNK_VERSION_MAJOR@/templates..."
+	@install -m 644 templates/*tpl $(PREFIX)@datadir@/bitmunk@BITMUNK_VERSION_MAJOR@/templates
+
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
+	@$(foreach lib,$(INSTALL_BASE_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
+
+install-system:
+	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
+	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ system configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
+	@$(foreach conf,$(INSTALL_SYSTEM_MOD_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@/$(notdir $(conf)) &&) true
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ system modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
+	@$(foreach lib,$(INSTALL_SYSTEM_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true

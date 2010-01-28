@@ -1,0 +1,49 @@
+#container {
+    border: thin solid black;
+}
+
+#header {
+    border: thin solid red;
+    text-align: center;
+}
+
+#menu {
+    border: thin solid green;
+}
+
+#footer {
+    border: thin solid blue;
+}
+
+/* progress bar container */
+.progressbar {
+  border:1px solid black;
+  width:200px;
+  height:20px;
+  position:relative;
+  color:black;
+}
+
+/* color bar */
+.progressbar div.progress {
+  position:absolute;
+  width:0;
+  height:100%;
+  overflow:hidden;
+  background-color:#369;
+}
+
+/* text on bar */
+.progressbar div.progress .text {
+  position:absolute;
+  text-align:center;
+  color:white;
+}
+
+/* text off bar */
+.progressbar div.text {
+  position:absolute;
+  width:100%;
+  height:100%;
+  text-align:center;
+}

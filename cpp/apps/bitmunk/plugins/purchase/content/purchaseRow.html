@@ -1,0 +1,26 @@
+<tr id="purchaseRow-${dsId}" class="purchaseRow"
+   title="Click to open the purchase dialog">
+   <td class="typeCol">
+      <img src="${typeImage}" alt="${typeName}"
+         title="${typeName}" width="16" height="16"/>
+   </td>
+   <td class="titleCol">
+      <span class="mediaTitle">${title}</span>
+   </td>
+   <td class="contributorCol">
+      <span class="mediaContributor">${contributor}</span>
+   </td>
+   <td class="statusCol">
+      <span id="status-${dsId}" class="status-busy">Loading</span>
+   </td>
+   <td class="progressCol">
+      <span id="progress-${dsId}">0%</span>
+   </td>
+   <td class="feedbackCol">
+      <span id="feedback-${dsId}"></span>
+   </td>
+   <td class="removeCol">
+      <button id="removeButton-${dsId}" class="remove off"
+         title="Cancel and remove purchase"></button>
+   </td>
+</tr>

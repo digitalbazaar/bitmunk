@@ -1,0 +1,369 @@
+<div id="settingsPage" class="screen">
+   <div id="settings">
+      <h1 class="pageHeader">Settings</h1>
+      
+      <h3>Directories</h3>
+      
+      <div id="directorySection">
+         <div class="formLine">
+            <span class="label">Download Directory</span><input
+               id="downloadPath" class="formInput settingsPath" type="text"
+               value="" />
+            
+            <button id="downloadSelect" class="gray on">
+               <span>Select</span>
+            </button>
+            
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#download-directory"
+               title="Help: Download directory">
+               <span>Help</span></a>
+         </div>
+         
+         <p class="formInfo">The directory your purchases will be stored in
+         when complete.</p>
+         
+         <div class="formLine">
+            <span class="label">Temporary Directory</span><input
+               id="temporaryPath" class="formInput settingsPath" type="text"
+               value="" />
+            
+            <button id="tempSelect" class="gray on">
+               <span>Select</span>
+            </button>
+            
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#temporary-directory"
+               title="Help: Temporary working directory">
+               <span>Help</span></a>
+         </div>
+         
+         <p class="formInfo">The directory where temporary download files will
+         be stored.</p>
+      </div>
+      
+      <h3>Purchasing</h3>
+      <div class="purchasingSection">
+         <div class="formLine">
+            <span class="label">Max Download Rate</span><input
+               id="maxDownloadRate" class="formInput settingsInteger" type="text"
+               value="" />
+            <label for="maxDownloadRate">KiB/s</label>
+            
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#max-download-rate"
+               title="Help: Maximum download rate">
+               <span>Help</span></a>
+         </div>
+         
+         <p class="formInfo">The maximum download rate in kilobytes per second
+         (1024 KiB/s is equivalent to 1 MiB/s).</p>
+         
+         <div class="formLine">
+            <span class="label">Max Excess Bandwidth</span><input
+               id="maxExcessBandwidth" class="formInput settingsInteger" type="text"
+               value="" />
+            <label for=maxExcessBandwidth>KiB/s</label>
+            
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#max-excess-bandwidth"
+               title="Help: Maximum excess download bandwidth">
+               <span>Help</span></a>
+         </div>
+         
+         <p class="formInfo">The maximum excess download bandwidth to allow
+         before starting to download from additional sellers.
+         Specified in kilobytes per second
+         (1024 KiB/s is equivalent to 1 MiB/s).</p>
+
+         <div class="formLine">
+            <span class="label">Max Concurrent Pieces</span><input
+               id="maxPieces" class="formInput settingsInteger" type="text"
+               value="" />
+            <label for=maxPieces>pieces</label>
+            
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#max-pieces"
+               title="Help: Maximum pieces">
+               <span>Help</span></a>
+         </div>
+         
+         <p class="formInfo">The maximum number of file pieces to download at
+         one time. This setting applies to each downloading file
+         individually.</p>
+      </div>
+      
+      <h3>Selling</h3>
+      <div class="sellingSection">
+         <div class="formLine">
+            <span class="label">Max Upload Rate</span><input
+               id="maxUploadRate" class="formInput settingsInteger" type="text"
+               value="" />
+            <label for="maxUploadRate">KiB/s</label>
+            
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#max-upload-rate"
+               title="Help: Maximum upload rate">
+               <span>Help</span></a>
+         </div>
+         
+         <p class="formInfo">The maximum upload rate in kilobytes per second
+         (1024 KiB/s is equivalent to 1 MiB/s).</p>
+         
+         <div class="formLine">
+            <span class="label">Auto-sell Purchases</span><input
+               id="enableAutoSell" class="formInput" type="checkbox"
+               name="enableAutoSell" value="true" />
+            <label for="enableAutoSell">Enable</label>
+            
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#auto-sell"
+               title="Help: Auto-sell purchases">
+               <span>Help</span></a>
+         </div>
+         
+         <p class="formInfo">
+            When enabled your purchases will automatically be available for
+            sale on the Bitmunk network using your default payment scheme or an
+            automatically created scheme that you can edit.
+         </p>
+      </div>
+      
+      <h3 class="sectionHeader">Network Access</h3>
+      <div id="accessSection">
+         <p class="formInfo">To sell items on the Bitmunk network other users
+         must be able to connect to your software.</p>
+         
+         <div class="formLine">
+            <span class="label">Universal Plug and Play</span><input
+               id="enableUPnP" class="formInput" type="checkbox"
+               name="enableUPnP" value="true" />
+            <label for="enableUPnP">Enable UPnP</label>
+            
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#upnp"
+               title="Help: UPnP">
+               <span>Help</span></a>
+         </div>
+         
+         <p class="formInfo">If you have an Internet connection through a
+         gateway or firewall you may need to enable UPnP to allow users
+         outside your local network to connect to you.</p>
+         
+         <p class="formInfo">
+            <a class="external" href="http://en.wikipedia.org/wiki/Universal_Plug_and_Play">What is Universal Plug and Play?</a>
+         </p>
+         
+         <div class="formLine">
+            <span class="label">External (router) Port</span><input
+               id="externalPort" class="formInput settingsInteger" type="text"
+               value="" />
+               
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#external-port"
+               title="Help: External (router) port">
+               <span>Help</span></a>
+         </div>
+         
+         <p class="formInfo">You can let Bitmunk pick a
+         local port for you or choose one yourself with this option.</p>
+         <p class="formInfo"><strong>Warning</strong>: Changing this setting
+         will force your software to immediately restart.</p>
+      </div>
+      
+      <h3>Logging</h3>
+      <div id="loggingSection">
+         <div class="formLine">
+            <span class="label">History Size</span><input
+               id="mainLogCapacity" class="formInput settingsInteger" type="text"
+               value="" />
+            <label for="mainLogCapacity">messages</label>
+            
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#main-log"
+               title="Help: Main log settings">
+               <span>Help</span></a>
+         </div>
+         
+         <p class="formInfo">Adjust the number of messages stored in the log.</p>
+         
+         <div class="formLine">
+            <span class="label">Main Log Level</span><select
+               id="mainLogLevel" class="formSelect settingsSelect">
+               <optgroup label="None">
+                  <option label="none" value="none">None</option>
+               </optgroup>
+               <optgroup label="Less">
+                  <option label="error" value="error">Error</option>
+                  <option label="warning" value="warning">Warning (Recommended)</option>
+                  <option label="info" value="info">Info</option>
+               </optgroup>
+               <optgroup label="More">
+                  <option label="debug" value="debug">Debug</option>
+                  <option label="verbose" value="verbose">Verbose</option>
+               </optgroup>
+               <optgroup label="Everything">
+                  <option label="max" value="max">Maximum</option>
+               </optgroup>
+            </select>
+            
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#logging"
+               title="Help: Log settings">
+               <span>Help</span></a>
+            
+            <button id="mainLogInfo" class="info"
+               title="Info: Display log level descriptions below">
+               <span>Info</span>
+            </button>
+         </div>
+         
+         <p class="formInfo">
+            The Main Log records the most recent information, warning
+            and error messages reported by the client.
+         </p>
+         
+         <div class="formLine">
+            <span class="label">Console Log Level</span><select
+               id="consoleLogLevel" class="formSelect settingsSelect">
+               <optgroup label="None">
+                  <option label="none" value="none">None</option>
+               </optgroup>
+               <optgroup label="Less">
+                  <option label="error" value="error">Error</option>
+                  <option label="warning" value="warning">Warning (Recommended)</option>
+                  <option label="info" value="info">Info</option>
+               </optgroup>
+               <optgroup label="More">
+                  <option label="debug" value="debug">Debug</option>
+                  <option label="verbose" value="verbose">Verbose</option>
+               </optgroup>
+               <optgroup label="Everything">
+                  <option label="max" value="max">Maximum</option>
+               </optgroup>
+            </select>
+            
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#console-log"
+               title="Help: Console log settings">
+               <span>Help</span></a>
+            
+            <button id="consoleLogInfo" class="info"
+               title="Info: Display log level descriptions below">
+               <span>Info</span>
+            </button>
+         </div>
+         
+         <p class="formInfo">
+            The Console Log can be viewed with
+            <a href="http://www.getfirebug.com/">Firebug</a> or any browser tool
+            that supports the <code>console.log</code> function.
+         </p>
+         
+         <div id="logInfo" class="formInfo hidden">
+            <table class="sortable">
+               <thead>
+                  <tr>
+                     <th>Level</th>
+                     <th>Description</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td>None</td>
+                     <td>No logging will be done.
+                        <em>Not Recommended.</em>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>Error</td>
+                     <td>Logs critical problems only.</td>
+                  </tr>
+                  <tr>
+                     <td>Warning</td>
+                     <td>Logs Errors and Warnings about potential problems.
+                        <strong>Recommended level for normal use.</strong>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>Info</td>
+                     <td>Logs Errors, Warnings and non-important information
+                        notices.
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>Debug</td>
+                     <td>Also log coarse internal messages.
+                        <em>Recommended only for developers.</em>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>Verbose</td>
+                     <td>Also log detailed internal messages.
+                        <em>Recommended only for developers.</em>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>Max</td>
+                     <td>Log everything.
+                        <em>Recommended only for developers.</em>
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
+      </div>
+      
+      <h3>Caching</h3>
+      <div id="cacheSection">
+         <div class="formLine">
+            <span class="label">Resource Caching</span><input
+               id="cacheResources" class="formInput" type="checkbox"
+               name="cacheResources" value="true" />
+            <label for="cacheResources">Enable</label>
+            
+            <a class="external help"
+               href="http://bitmunk.com/wiki/bpe-settings#caching"
+               title="Help: Web browser resource caching">
+               <span>Help</span></a>
+         </div>
+         
+         <p class="formInfo">
+            When enabled the web browser will cache resources to make page
+            rendering times quicker.
+         </p>
+      </div>
+      
+      <div id="feedbackBox-general" class="feedback">
+         <div id="feedback-general"></div>
+      </div>
+      
+      <div class="submitLine">
+         <button id="saveButton" class="gray off" title="Save your settings">
+            <span>Save</span>
+         </button>
+      </div>
+   </div>
+   
+   <div id="directoryDialog" class="dialog popup">
+      <div class="dialogHeader">
+         <span class="dialogTitle">Select Directory</span>
+         
+         <button id="directoryClose" class="close"
+            title="Cancel selection and close">
+            <span>Close</span>
+         </button>
+      </div>
+      
+      <div class="dialogScroll">
+         <div class="dialogContent">
+            <p>Choose a directory</p>
+            
+            <div id="directoryBrowser"></div>
+         </div>
+      </div>
+   </div>
+   
+   <div id="overlay"></div>
+   
+</div>

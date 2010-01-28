@@ -1,0 +1,11 @@
+{
+   "_id_" : "bitmunk.sell.Sell",
+   "_group_" : "defaults",
+   "_version_" : "Bitmunk 3.0",
+   "_merge_" : {
+      "bitmunk.sell.Sell" : {
+         "sampleUrl" : "http://@BITMUNK_API_HOST@:@BITMUNK_SAMPLE_API_PORT@",
+         "maxUploadRate": 0
+      }
+   }
+}

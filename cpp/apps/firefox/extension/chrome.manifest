@@ -1,0 +1,4 @@
+overlay	chrome://browser/content/browser.xul	chrome://bitmunk/content/bitmunk.xul
+content	bitmunk chrome/bitmunk/content/
+locale  bitmunk en-US chrome/bitmunk/locale/en-US/
+

@@ -1,0 +1,37 @@
+/**
+ * Copyright (c) 2009 Digital Bazaar, Inc.  All rights reserved.
+ *
+ * Bitmunk App Test CSS
+ */
+
+h3 {
+margin: 20px 0 10px 0;
+padding-bottom: 2px;
+border-bottom: 1px solid #888;
+}
+
+h4 {
+margin: 10px 0;
+}
+
+#customDirective {
+width: 698px;
+}
+
+span.label {
+display: inline-block;
+min-width: 100px;
+margin-right: 20px;
+font-weight: bold;
+}
+
+label {
+display: inline;
+float: none;
+margin-right: 10px;
+font-weight: normal;
+}
+
+.submitLine {
+margin-left: 120px;
+}

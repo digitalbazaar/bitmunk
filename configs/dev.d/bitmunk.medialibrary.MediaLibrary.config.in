@@ -1,0 +1,13 @@
+{
+   "_id_" : "bitmunk.medialibrary.MediaLibrary",
+   "_group_" : "defaults",
+   "_version_" : "Bitmunk 3.0",
+   "_merge_" : {
+      "bitmunk.medialibrary.MediaLibrary" : {
+         "database" : {
+            "url" : "sqlite3://bitmunk.medialibrary.MediaLibrary/medialibrary.db",
+            "connections" : 1
+         }
+      }
+   }
+}

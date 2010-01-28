@@ -1,0 +1,3 @@
+overlay	chrome://browser/content/browser.xul	chrome://bitmunk/content/bitmunk_overlay.xul
+content	bitmunk jar:chrome/bitmunk.jar!/content/
+locale  bitmunk en-US jar:chrome/bitmunk.jar!/locale/en-US/

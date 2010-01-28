@@ -1,0 +1,16 @@
+/*
+ * Copyright (c) 2009 Digital Bazaar, Inc.  All rights reserved.
+ *
+ * Bitmunk App Support Page CSS
+ */
+
+#supportPage {
+}
+
+#ticketsTable {
+width: 100%;
+}
+
+.removeCol {
+width: 16px;
+}

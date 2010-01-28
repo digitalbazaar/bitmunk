@@ -1,0 +1,14 @@
+{for chunk in messageChunks}
+  {for message in chunk}
+  <tr>
+    <td>${message.timestamp.toJSON()}</td>
+    <td>${message.level}</td>
+    <td>${message.category}</td>
+    <td>${message.full}</td>
+  </tr>
+  {/for}
+{forelse}
+  <tr colspan="4">
+    <td>No log messages. Log level can be changed on the <a href="#settings">settings</a> page.</td>
+  </tr>
+{/for}

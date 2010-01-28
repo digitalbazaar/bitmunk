@@ -1,0 +1,89 @@
+# This file contains basic Makefile includes that contain all building
+# instructions for all binaries and packages.
+
+.PHONY: all build-setup build-clean build-directories build-headers build-objects build-xpts build-flash build-min-js build-libraries build-executables clean clean-objects clean-libraries clean-flash clean-min-js
+
+all: build-headers build-objects build-libraries build-executables build-flash build-min-js build-xpts
+
+BUILD_FOR_LINUX=@BUILD_FOR_LINUX@
+BUILD_FOR_WINDOWS=@BUILD_FOR_WINDOWS@
+BUILD_FOR_MACOS=@BUILD_FOR_MACOS@
+
+AR_FLAGS = cr
+MONARCH = $(realpath @MONARCH_DIR@)
+BITMUNK = $(realpath @BITMUNK_DIR@)
+INCLUDES = \
+	-I$(MONARCH)/dist/include \
+	-I$(BITMUNK)/dist/include \
+	-I$(BITMUNK)/dist/internal/include \
+	-I@XULRUNNER_INCLUDE_DIRECTORY@ \
+	-I@XULRUNNER_INCLUDE_DIRECTORY@/java \
+	-I@XULRUNNER_INCLUDE_DIRECTORY@/plugin \
+	-I@XULRUNNER_INCLUDE_DIRECTORY@/xpcom \
+	-I@XULRUNNER_INCLUDE_DIRECTORY@/string 
+
+XULIDL_INCLUDES= -I @XULRUNNER_IDL_DIRECTORY@
+
+CWD = $(shell pwd)
+ifndef HEADER_DIST_DIR
+HEADER_DIST_DIR = dist/include/bitmunk/$(notdir $(CWD))
+endif
+
+# Platform agnostic variables
+XPIDL = @XPIDL@
+
+# Build rules common to each platform
+ifdef PRINT_COMMANDS
+PCMD=
+else
+PCMD=@
+endif
+
+.SECONDEXPANSION:
+
+# Build rules specific to each platform
+
+ifeq ($(BUILD_FOR_LINUX),yes)
+include @BITMUNK_DIR@/setup/Makefile.linux
+endif
+ifeq ($(BUILD_FOR_MACOS),yes)
+include @BITMUNK_DIR@/setup/Makefile.macos
+endif
+ifeq ($(BUILD_FOR_WINDOWS),yes)
+include @BITMUNK_DIR@/setup/Makefile.mingw32
+endif
+
+build-setup:
+
+build-clean:
+
+$(ALL_DIRECTORIES):
+	mkdir -p $@
+
+clean: build-clean clean-libraries clean-objects clean-flash clean-min-js
+
+build-headers: $(ALL_HEADERS)
+
+build-objects: $(ALL_DIRECTORIES) $(ALL_SOURCES) $(ALL_OBJECTS)
+
+build-xpts: $(ALL_DIRECTORIES) $(ALL_GENERATED_HEADERS) $(ALL_XPTS)
+
+build-flash: $(ALL_DIRECTORIES) $(ALL_FLASH)
+
+build-min-js: $(ALL_DIRECTORIES) $(ALL_MIN_JS)
+
+build-libraries: $(ALL_DIRECTORIES) $(ALL_LIBRARIES)
+
+build-executables: $(ALL_DIRECTORIES) $(ALL_EXECUTABLES)
+
+clean-objects:
+	$(PCMD) rm -rf $(LIBRARY_OBJECTS) $(EXECUTABLE_OBJECTS)
+
+clean-libraries:
+	$(PCMD) rm -rf $(LIBRARIES)
+
+clean-flash:
+	$(PCMD) rm -rf $(ALL_FLASH)
+
+clean-min-js:
+	$(PCMD) rm -rf $(ALL_MIN_JS)

@@ -1,0 +1,10 @@
+# Makefile to compile the module in this directory
+
+HEADERS = $(wildcard *.h)
+SOURCES = $(wildcard *.cpp)
+LIBRARIES = bmmedialibrary
+DYNAMIC_LINK_LIBRARIES = mort moutil momodest mofiber modata moio monet mohttp moconfig mosql mosqlite3 movalidation mologging mokernel bmnode bmcommon bmprotocol bmdata
+DYNAMIC_MACOS_LIBRARIES = mocrypto modata mologging mofiber moevent movalidation moapp mocompress
+
+# ----------- Standard Makefile
+include @BITMUNK_DIR@/setup/Makefile.base

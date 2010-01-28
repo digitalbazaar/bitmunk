@@ -1,0 +1,41 @@
+# Mycroft Search Plugin for Mozilla, Firebird, Netscape 6+, Beonix browsers
+# Mycroft Homepage: http://mycroft.mozdev.org
+#
+# SearchSite: Bitmunk (www.bitmunk.com)
+# Status: Working
+#
+# Original Author: Manu Sporny <msporny@digital-bazar.com>
+# This file is released to the public domain.
+# Created: 19 Mar 2005
+#
+# Country: US
+# Language: en
+# Category: Computer/File Sharing
+
+<search
+  version="7.1" 
+  name="Bitmunk"
+  description="Bitmunk Search" 
+  method="GET"
+  queryCharset="ISO-8859-1"
+  action="http://www.bitmunk.com/search.php" 
+  searchForm="http://www.bitmunk.com/search.php" 
+  routeType="internet"
+>
+
+<input name="sourceid" value="mozilla-search">
+<input name="terms" user>
+
+<interpret 
+ resultListStart="<b>Artist</b>"
+ resultListEnd="<td class='bitmunkfooter'>"
+ resultItemStart='<td class="" style="border: #000000 solid; border-width: 0px 0px 1px 0px;">'
+ resultItemEnd='<img src="images/sellerssm.png" border="0" width="18" height="16">&nbsp;List Sellers (1)</a></td>'
+>
+</search>
+
+<browser
+ update="http://mycroft.mozdev.org/plugins/bitmunk.src" 
+ updateIcon="http://mycroft.mozdev.org/plugins/bitmunk.png" 
+ updateCheckDays="3" 
+>

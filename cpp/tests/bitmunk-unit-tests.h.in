@@ -1,0 +1,15 @@
+/*
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
+ */
+#ifndef bitmunk_unit_tests_H
+#define bitmunk_unit_tests_H
+
+#define TEST_DATA_DIRECTORY "@BITMUNK_DIR@/../bmtest/"
+#define MODULES_DIRECTORY "@BITMUNK_MODULES_DIR@"
+#define PROFILES_DIRECTORY "@BITMUNK_PROFILES_DIR@"
+#define TEMPLATE_DIRECTORY "@BITMUNK_DIR@/templates/"
+#define SSL_CERTIFICATE_FILE "@BITMUNK_DIR@/ssl/nodessl.crt"
+#define SSL_PRIVATE_KEY_FILE "@BITMUNK_DIR@/ssl/nodessl.key"
+#define SSL_CA_FILE "@NODE_SSL_CA_FILE@"
+
+#endif

@@ -1,0 +1,56 @@
+<div id="login">
+   <div id="loginDialog" class="dialog">
+      <div class="dialogHeader">
+         <span class="dialogTitle">Log In</span>
+      </div>
+      
+      <div class="dialogFlow">
+         <div class="dialogContent">
+            <p class="formInfo">Please log in with your Bitmunk username and
+            password:</p>
+            
+            <div class="formLine">
+               <label for="loginUsername" class="inputLabel">Username</label>
+               <input id="loginUsername" class="formInput" type="text" />
+            </div>
+            
+            <div id="feedbackBox-username" class="feedback">
+               <div id="feedback-username"></div>
+            </div>
+            
+            <div class="formLine">
+               <label for="loginPassword" class="inputLabel">Password</label>
+               <input id="loginPassword" class="formInput" type="password" />
+            </div>
+            
+            <div id="feedbackBox-password" class="feedback">
+               <div id="feedback-password"></div>
+            </div>
+            
+            <div id="feedbackBox-general" class="feedback">
+               <div id="feedback-general"></div>
+            </div>
+            
+            <div class="submitLine">
+               <span id="loginActivity">
+                  <img src="/bitmunk/images/status-busy.gif" />
+                  <span class="activityMessage"></span>
+               </span>
+               
+               <button id="loginButton" class="gray on"
+                  title="Log in to the Bitmunk Personal Edition">
+                  <span>Log In</span>
+               </button>
+            </div>
+            
+            <div id="loginMessage"></div>
+            
+            <p class="formInfo">
+               <a class="external" href="https://bitmunk.com/home/join">Join Bitmunk for free!</a>
+               <span class="separator">|</span>
+               <a class="external" href="https://bitmunk.com/home/password?emailCode=">Forgot your password?</a>
+            </p>
+         </div>
+      </div>
+   </div>
+</div>

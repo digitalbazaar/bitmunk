@@ -1,0 +1,10 @@
+#!/bin/sh
+# Basic script to setup proper environment for running a Bitmunk app
+
+case "`uname -s`" in
+   [Ll]inux)
+      LD_LIBRARY_PATH=@BITMUNK_DIR@/dist/lib "$@" ;;
+   [Dd]arwin)
+      DYLD_LIBRARY_PATH=@BITMUNK_DIR@/dist/lib:/sw/lib "$@" ;;
+   *) echo "unknown platform"; exit 1 ;;
+esac

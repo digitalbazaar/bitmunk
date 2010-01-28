@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<dialog id="bitmunk_mgg"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	title="Bitmunk Options"
+        style="width: 30em;"
+        persist="screenX screenY"
+        screenX="24" screenY="24">
+
+  <script src="chrome://bitmunk/content/bitmunk.js"/>
+
+  <hbox>
+    <separator orient="vertical" class="thin"/>
+    <vbox flex="1">
+      <separator class="thin"/>
+      <hbox align="center">
+        <textbox id="dialog.input" flex="1"/>
+        <button label="Default Node URL"
+                oncommand="setDefaultNodeURL();"/>
+      </hbox>
+      <hbox align="center">
+        <radiogroup onchange="toggleLock();">
+          <radio label="lock"/>
+          <radio label="unlock"/>
+        </radiogroup>
+        <spacer flex="1"/>
+      </hbox>
+    </vbox>
+  </hbox>
+
+</dialog> 

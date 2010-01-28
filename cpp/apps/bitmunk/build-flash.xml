@@ -1,0 +1,10 @@
+<flex-config>
+   <compiler>
+      <include-libraries>
+         <library>flash/as3crypto/as3crypto.swc</library>
+      </include-libraries>
+      <source-path>
+         <path-element>flash</path-element>
+      </source-path>
+   </compiler>
+</flex-config>

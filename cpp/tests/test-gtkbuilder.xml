@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!--Generated with glade3 3.4.0 on Tue Nov 20 14:05:37 2007 -->
+<interface>
+  <object class="GtkWindow" id="window1">
+    <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+    <child>
+      <placeholder/>
+    </child>
+  </object>
+</interface>

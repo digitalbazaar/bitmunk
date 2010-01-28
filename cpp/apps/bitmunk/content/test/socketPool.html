@@ -1,0 +1,266 @@
+<html>
+   <head>
+      <style> 
+      canvas {
+        background: black;
+      }
+      </style> 
+      <script type="text/javascript" src="/bitmunk/js/swfobject/swfobject.js"></script>
+      
+      <script type="text/javascript">
+      // load time and global seed
+      var gLoadTime = +new Date();
+      var gSeed = Math.random() + gLoadTime;
+      
+      // collect mouse data for random generation
+      var gMouseBytes = [];
+      document.onmousemove = function(e)
+      {
+         if(gMouseBytes.length < 1024)
+         {
+            gMouseBytes.push((e.clientX ^ e.clientY) & 0xFF);
+         }
+      };
+      
+      var flashvars = {};
+      var params = {};
+      var attributes = {};
+      
+      params.allowscriptaccess = "always";
+      
+      swfobject.embedSWF(
+         "/bitmunk/SocketPool.swf", "socketPool", "400", "224", "9.0.0",
+         "/bitmunk/js/swfobject/expressInstall.swf",
+         flashvars, params, attributes);
+
+      var socketId = '0';
+      
+      function sp_init()
+      {
+         document.getElementById('socketPool').init();
+         document.getElementById('feedback').innerHTML =
+            'SocketPool initialized';
+         return false;
+      }
+      
+      function sp_cleanup()
+      {
+         document.getElementById('socketPool').cleanup();
+         document.getElementById('feedback').innerHTML =
+            'SocketPool cleaned up';
+         return false;
+      }
+      
+      function sp_create()
+      {
+         socketId = document.getElementById('socketPool').create();
+         document.getElementById('feedback').innerHTML =
+            'Socket ID: ' + socketId;
+         return false;
+      }
+      
+      function sp_destroy()
+      {
+         document.getElementById('socketPool').destroy(socketId);
+         document.getElementById('feedback').innerHTML = 
+            'Socket ' + socketId + ' destroyed';
+         return false;
+      }
+
+      function sp_connect()
+      {
+         document.getElementById('socketPool').connect(
+            socketId, 'localhost', 19300, 19845);
+      }
+
+      function sp_send()
+      {
+         var req = "GET /bitmunk HTTP/1.0\r\n\r\n";
+         var bytes = [];
+         for(var i = 0; i < req.length; i++)
+         {
+            bytes.push(req.charCodeAt(i));
+         }
+         document.getElementById('socketPool').send(socketId, bytes);
+      }
+
+      function sp_close()
+      {
+         document.getElementById('socketPool').close(socketId);
+      }
+      
+      function connected(e)
+      {
+         console.log('connected', e);
+      }
+      
+      function dataReceived(bytes)
+      {
+         console.log('data received', bytes);
+         var str = '';
+         for(var i = 0; i < bytes.length; i++)
+         {
+            str += String.fromCharCode(bytes[i]);
+         }
+         console.log(str);
+      }
+      
+      function ioError(e)
+      {
+         console.log('ioError', e);
+      }
+
+      function ioError(e)
+      {
+         console.log('securityError', e);
+      }
+      
+      function sp_subscribe()
+      {
+         var sp = document.getElementById('socketPool');
+         var fb = document.getElementById('feedback');
+         sp.subscribe('connect', 'connected');
+         sp.subscribe('socketData', 'dataReceived');
+         sp.subscribe('ioError', 'ioError');
+         sp.subscribe('securityError', 'securityError');
+         fb.innerHTML = 'Subscribed to events'
+         return false;
+      }
+
+      // FIXME: replace with call from tls.js
+      function getRandomBytes(count)
+      {
+         var b = [];
+         var n = 0;
+         
+         // timing
+         b[n++] = (+new Date() - gLoadTime) & 0xFF;
+         b[n++] = (b[n - 2] ^ +new Date()) & 0xFF;
+
+         // iterate over properties in navigator
+         for(var p in navigator)
+         {
+            // if we have enough bytes, quit
+            if(b.length == count)
+            {
+               break;
+            }
+            
+            var obj = navigator[p];
+            switch(obj.constructor)
+            {
+               case Object:
+               case Array:
+                  obj = JSON.stringify(obj);
+                  break;
+               case String:
+                  break;
+               case Number:
+                  obj = '' + obj;
+               default:
+                  // skip functions/handlers/etc.
+                  continue;
+            }
+            
+            for(var i = 0; i < obj.length; i++)
+            {
+               b[n++] = ((Math.random() * 256) ^ obj.charCodeAt(i)) & 0xFF;
+            }
+         }
+         
+         // get some collected mouse bytes
+         var mb = gMouseBytes.splice(0, count);
+         
+         /* Park-Miller "minimal standard" 31 bit PRNG, implemented with
+            David G. Carta's optimization: with 32 bit math and without
+            division (Public Domain). */
+         var hi, lo;
+         n = 0;
+         for(var x = 0; x < count; x++)
+         {
+            lo = 16807 * (gSeed & 0xFFFF);
+            hi = 16807 * (gSeed >> 16);
+            lo += (hi & 0x7FFF) << 16;
+            lo += hi >> 15;
+            lo = (lo & 0x7FFFFFFF) + (lo >> 31);
+            gSeed = lo & 0xFFFFFFFF;
+            
+            // throw in existing byte
+            gSeed = gSeed ^ b[n++];
+            if(n == b.length)
+            {
+               n = 0;
+            }
+            
+            // throw in mouse byte
+            if(n < mb.length)
+            {
+               gSeed = gSeed ^ mb[n];
+            }
+            // throw in pseudo-random byte
+            else
+            {
+               gSeed = gSeed ^ (Math.random() * 0xFFFFFFFF);
+            }
+            
+            b[x] = gSeed & 0xFF;
+         }
+
+         return b;
+      }
+
+      function do_random()
+      {
+         console.log('painting canvas');
+         var canvas = document.getElementById("canvas");
+         var ctx = canvas.getContext("2d");
+         var imgData = ctx.createImageData(canvas.width, canvas.height);
+
+         // generate random bytes
+         var bytes = getRandomBytes(canvas.width * canvas.height * 3);
+         var n = 0;
+         for(var x = 0; x < imgData.width; x++)
+         {
+            for(var y = 0; y < imgData.height; y++)
+            {
+               // index of the pixel in the array
+               var idx = (x + y * imgData.width) * 4;
+
+               // set values
+               imgData.data[idx + 0] = bytes[n++]; // Red channel
+               imgData.data[idx + 1] = bytes[n++]; // Green channel
+               imgData.data[idx + 2] = bytes[n++]; // Blue channel
+               imgData.data[idx + 3] = 255;        // Alpha channel
+            }
+         }
+
+         ctx.putImageData(imgData, 0, 0);
+         console.log('done');
+      }
+
+      </script>
+   </head>
+   <body>
+      <div id=socketPool>
+         <p>Could not load the flash SocketPool.</p>
+      </div>
+      <p>Use the controls below to test the SocketPool.</p>
+      <div id="controls">
+         <button id="init" onclick="javascript:return sp_init();">init</button>
+         <button id="cleanup" onclick="javascript:return sp_cleanup();">cleanup</button>
+         <button id="create" onclick="javascript:return sp_create();">create socket</button>
+         <button id="destroy" onclick="javascript:return sp_destroy();">destroy socket</button>
+         <button id="subscribe" onclick="javascript:return sp_subscribe();">subscribe</button>
+         <button id="connect" onclick="javascript:return sp_connect();">connect</button>
+         <button id="send" onclick="javascript:return sp_send();">send</button>
+         <button id="close" onclick="javascript:return sp_close();">close</button>
+         <button id="random" onclick="javascript:return do_random();">random</button>
+      </div>
+      <p>Feedback from the flash SocketPool:</p>
+      <div id="feedback">
+      None
+      </div>
+      <canvas id="canvas" width="300" height="300"></canvas>
+      <!-- <textarea id="foo" cols=80 rows=5></textarea> -->
+   </body>
+</html>

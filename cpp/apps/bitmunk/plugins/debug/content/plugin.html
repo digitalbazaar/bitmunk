@@ -1,0 +1,19 @@
+<ul>
+{for plugin in plugins}
+   <li>
+      ID: ${plugin.pluginId}<br/>
+      Name: ${plugin.name}<br/>
+      Homepage: <a href="${plugin.homepage|escape}">${plugin.homepage|escape}</a><br/>
+      Authors: <br/>
+      <ul>
+      {for author in plugin.authors}
+         <li>${author.name} &lt;<a href="mailto:${author.email|escape}">${author.email|escape}</a>&gt;</li>
+      {forelse}
+         None
+      {/for}
+      </ul>
+   </li>
+{forelse}
+<span>No plugins found.</span>
+{/for}
+</ul>

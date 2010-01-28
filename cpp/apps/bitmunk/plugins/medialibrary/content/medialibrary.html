@@ -1,0 +1,305 @@
+<div id="mediaLibrary" class="screen">
+   <div id="libraryBrowser">
+      <h1 class="pageHeader">Media Library</h1>
+      
+      <div class="hintBox">
+         Use this page to manage the content you are selling in your Media Library.
+         <a href="http://bitmunk.com/wiki/market-sell-tutorial" class="external">Learn More</a>
+      </div>
+      
+      <table id="libraryTable" class="sortable controlTable">
+         <thead>
+            <tr>
+               <th class="selectCol"></th>
+               <th class="typeCol"></th>
+               <th id="sort-title" class="titleCol sortCol"
+                  title="Sort by title">Title</th>
+               <th id="sort-contributor" class="contributorCol sortCol"
+                  title="Sort by contributor">Contributor</th>
+               <th class="paymentCol">Payment</th>
+               <th class="statusCol">Status</th>
+               <th class="feedbackCol"></th>
+            </tr>
+         </thead>
+         <tfoot id="libraryControl">
+            <tr>
+               <td class="selectCol">
+                  <input id="fileSelectAll" type="checkbox" />
+               </td>
+               <td colspan="3" class="buttonCol">
+                  <button id="browserDelete" class="gray on"
+                     title="Delete the selected items">
+                     <span>Delete</span>
+                  </button>
+                  
+                  <button id="browserAdd" class="gray on"
+                     title="Add a new item to your Media Library">
+                     <span>Add</span>
+                  </button>
+               </td>
+               <td class="paymentCol">
+                  <button id="browserResync" class="gray on"
+                     title="Synchronize your catalog with Bitmunk now">
+                     <span>Resync</span>
+                  </button>
+               </td>
+               <td colspan="2" class="statusCol">
+                  <span id="browserActivity" class="hidden">
+                     <img src="/bitmunk/images/status-busy.gif"
+                        alt="" title="Please wait..." />
+                     <span class="activityMessage">Please wait...</span>
+                  </span>
+               </td>
+            </tr>
+         </tfoot>
+         <tbody id="wareRows">
+            <tr class="emptyRow">
+               <td colspan="7">
+                  <span id="browserMessage">Loading...</span>
+               </td>
+            </tr>
+         </tbody>
+      </table>
+      
+      <div id="browserPaging" class="paging hidden">
+         <span class="paging-prev">&#171; Previous</span>
+         | Page <span class="paging-pages"></span> |
+         <span class="paging-next">Next &#187;</span>
+         
+         <span class="results">
+            <span class="paging-perpage"></span>
+            <span class="paging-text">Per Page</span>
+         </span>
+      </div>
+      
+      <div id="feedbackBox-browser" class="feedback dialogSection">
+         <button id="clearButton-browser" class="clear"
+            alt="" title="Clear feedback messages"></button>
+         <div id="feedback-browser"></div>
+      </div>
+   </div>
+   
+   <div id="wareEditor" class="dialog popup">
+      <div class="dialogHeader">
+         <span id="wareEditor-title" class="dialogTitle"></span>
+         
+         <button id="editorClose" class="close"
+            title="Close editor without saving changes">
+            <span>Close</span>
+         </button>
+      </div>
+      
+      <div class="dialogScroll">
+         <div class="dialogContent">
+            <div id="fileFinder">
+               <p>Please select a file using the file finder below.</p>
+               
+               <div id="wareFileBrowser"></div>
+            </div>
+            
+            <div id="mediaFinder" class="hidden">
+               <p>Please select a media using the media finder below.</p>
+               
+               <div id="mediaBrowser"></div>
+            </div>
+            
+            <div id="mediaSection" class="dialogSection">
+               <a id="media-link" class="external"
+                  href="http://bitmunk.com/browse"
+                  title="View on Bitmunk"><img id="media-image"
+                  src="/bitmunk/images/404-sm.png" alt="" /></a>
+               
+               <h1 id="media-title"></h1>
+               
+               <h2 id="media-contributor"></h2>
+            </div>
+            
+            <div id="fileSection" class="dialogSection">
+               <div class="detail">
+                  <span class="key">File</span><input
+                     id="file-path" class="formInput"
+                     type="text" value="" readonly="readonly" />
+                  <button id="file-view" class="examine"
+                     title="View extra file details">
+                     <span>View</span>
+                  </button>
+               </div>
+               
+               <div id="fileDetails" class="hidden">
+                  <div class="detail">
+                     <span class="key">ID</span>
+                     <span id="file-id"></span>
+                  </div>
+                  <div class="detail">
+                     <span class="key">Content</span>
+                     <span id="file-extension"></span>
+                     <span id="file-type"></span>
+                  </div>
+                  <div class="detail">
+                     <span class="key">Size/Bitrate</span>
+                     <span id="file-size"></span> /
+                     <span id="file-bitrate"></span>
+                  </div>
+               </div>
+            </div>
+            
+            <div id="wareSection" class="dialogSection">
+               <div class="detail">
+                  <span class="key">Description</span><input
+                     id="ware-description" class="formInput"
+                     type="text" value="" />
+                  <!-- button id="ware-edit" class="edit">
+                     <span>Edit</span>
+                  </button -->
+               </div>
+               
+               <p class="formInfo">Describe the file that you are selling.</p>
+            </div>
+            
+            <div id="paymentSection" class="dialogSection">
+               <div class="detail">
+                  <span class="key">Payment</span><select
+                     id="payment-select" class="formSelect"></select>
+                  
+                  <button id="schemeEdit" class="gray on"
+                     title="Edit the selected Payment Scheme">
+                     <span>Edit</span>
+                  </button>
+               </div>
+               
+               <div class="formInfo">
+                  <button id="schemeDelete" class="gray on"
+                     title="Remove the selected Payment Scheme">
+                     <span>Delete</span>
+                  </button>
+                  
+                  <button id="schemeNew" class="gray on"
+                     title="Create a new Payment Scheme">
+                     <span>New</span>
+                  </button>
+               </div>
+               
+               <p class="formInfo">Select the payment you receive each time you
+               sell this file.</p>
+            </div>
+            
+            <div id="feedbackBox-ware" class="feedback">
+               <button id="clearButton-ware" class="clear"
+                  alt="" title="Clear ware feedback messages"></button>
+               <div id="feedback-ware"></div>
+            </div>
+         </div>
+      </div>
+      
+      <div class="dialogStatus">
+         <div id="editorActivity">
+            <img src="/bitmunk/images/status-busy.gif" />
+            <span class="activityMessage">Please wait...</span>
+         </div>
+         
+         <button id="editorSave" class="gray off"
+            title="Save changes and close dialog">
+            <span>Save</span>
+         </button>
+      </div>
+   </div>
+   
+   <div id="paymentEditor" class="dialog popup">
+      <div class="dialogHeader">
+         <span id="paymentEditor-title" class="dialogTitle"></span>
+         
+         <button id="schemeClose" class="close"
+            title="Close editor without saving changes">
+            <span>Close</span>
+         </button>
+      </div>
+      
+      <div class="dialogScroll">
+         <div class="dialogContent">
+            <div class="dialogSection">
+               <p id="modificationWarning"></p>
+               
+               <div class="detail">
+                  <span class="key">Name</span><input
+                     id="schemeDescription" class="formInput"
+                     type="text" value="New Payment Scheme" />
+               </div>
+               
+               <p class="formInfo">Enter a name to identify this
+               payment scheme.</p>
+               
+               <div class="detail">
+                  <span class="key">Default Scheme</span><input
+                     id="isAutoSellScheme" class="formInput" type="checkbox"
+                     name="enableUPnP" value="true" />
+                  <span>
+                     Set this as the default payment scheme for Auto-sell.
+                  </span>
+                  <a class="external help" title="Help: Default payment scheme"
+                  href="http://bitmunk.com/wiki/bpe-settings#default-payment-scheme">
+                  <span>Help</span></a>
+               </div>
+            </div>
+            
+            <div class="dialogSection">
+               <div id="paymentDisplay">
+                  <table id="payeeTable" class="sortable controlTable">
+                     <thead>
+                        <tr>
+                           <th></th>
+                           <th>Account</th>
+                           <th class="amountCol">Amount</th>
+                        <th>Description</th>
+                        </tr>
+                     </thead>
+                     <tfoot id="libraryControl">
+                        <tr>
+                           <td class="selectCol">
+                              <input id="payeeSelectAll" type="checkbox" />
+                           </td>
+                           <td colspan="3" class="buttonCol">
+                              <button id="payeeDelete" class="gray on"
+                                 title="Delete the selected payee">
+                                 <span>Delete</span>
+                              </button>
+                              <button id="payeeAdd" class="gray on"
+                                 title="Add a new payee to the Payment Scheme">
+                                 <span>Add</span>
+                              </button>
+                           </td>
+                        </tr>
+                     </tfoot>
+                     <tbody id="payeeRows"></tbody>
+                  </table>
+               </div>
+               
+               <p class="formInfo">Choose an account and specify the amount
+               you will get paid each time the entire file is bought from
+               you.</p>
+            </div>
+            
+            
+            <div id="feedbackBox-payment" class="feedback">
+               <button id="clearButton-payment" class="clear" alt="" 
+                  title="Clear payment scheme feedback messages"></button>
+               <div id="feedback-payment"></div>
+            </div>
+         </div>
+      </div>
+      
+      <div class="dialogStatus">
+         <div id="paymentActivity">
+            <img src="/bitmunk/images/status-busy.gif" />
+            <span class="activityMessage">Please wait...</span>
+         </div>
+         
+         <button id="schemeSave" class="gray on"
+            title="Save changes and close dialog">
+            <span>Save</span>
+         </button>
+      </div>
+   </div>
+   
+   <div id="overlay"></div>
+   
+</div>

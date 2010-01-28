@@ -1,0 +1,40 @@
+{
+   "_id_" : "bitmunk.webui.WebUi",
+   "_group_" : "defaults",
+   "_version_" : "Bitmunk 3.0",
+   "_include_" : [
+      {
+         "path": "@BITMUNK_WEBUI_PLUGINS_DIR@",
+         "includeSubdirectories": true,
+         "substituteKeywords": true
+      }
+   ],
+   "_merge_" : {
+      "bitmunk.webui.WebUi" : {
+         "cache" : {
+            "resources" : true
+         },
+         "loggers" : {
+            "console" : {
+               "level" : "warning"
+            },
+            "log" : {
+              "capacity" : 1000,
+              "level" : "warning"
+            }
+         },
+         "main" : "bitmunk.webui.Main",
+         "sessionDatabase" : {
+            "url" : "sqlite3://bitmunk.webui.WebUi/sessiondb.db",
+            "connections" : 1
+         },
+         "flash" : {
+            "policyServer" : {
+               "host" : "@BITMUNK_LOCAL_API_HOST@",
+               "port" : @BITMUNK_FLASH_POLICY_PORT@
+            }
+         },
+         "plugins" : {}
+      }
+   }
+}

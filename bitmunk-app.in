@@ -1,0 +1,11 @@
+#!/bin/sh
+# Run the Bitmunk app
+
+case "`uname -s`" in
+   [Ll]inux)
+      PLATFORM=linux ;;
+   [Dd]arwin)
+      PLATFORM=macos ;;
+   *) echo "unknown platform"; exit 1 ;;
+esac
+@BITMUNK_DIR@/bitmunk-run @BITMUNK_DIR@/dist/bin/bitmunk "$@"

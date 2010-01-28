@@ -1,0 +1,5 @@
+#!/bin/sh
+# Run the Bitmunk app in GDB. Command line options are passed to the bitmunk
+# application.
+
+@BITMUNK_DIR@/bitmunk-run gdb --args "$@"

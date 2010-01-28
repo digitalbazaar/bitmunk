@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<div>
+   <h2>DynamicObject Debugging Statistics</h2>
+   
+   <h3>Count Statistics</h3>
+   <button id="refresh-dyno-counts">Refresh</button>
+   <br/>
+   <span id="dyno-counts-status"></span>
+   <table>
+      <thead>
+         <tr>
+            <th rowspan="2">Type</th>
+            <th colspan="3">Counts</th>
+            <th colspan="3">Bytes</th>
+         </tr>
+         <tr>
+            <th>Live</th>
+            <th>Dead</th>
+            <th>Max</th>
+            <th>Live</th>
+            <th>Dead</th>
+            <th>Max</th>
+         </tr>
+      </thead>
+      <tbody id="dyno-counts">
+      </tbody>
+   </table>
+
+   <h3>KeyCount Statistics</h3>
+   <button id="refresh-dyno-key-counts">Refresh</button>
+   <br/>
+   <span id="dyno-key-counts-status"></span>
+   <table>
+      <thead>
+         <tr>
+            <th rowspan="2">Key</th>
+            <th colspan="3">Counts</th>
+            <th colspan="3">Bytes</th>
+         </tr>
+         <tr>
+            <th>Live</th>
+            <th>Dead</th>
+            <th>Max</th>
+            <th>Live</th>
+            <th>Dead</th>
+            <th>Max</th>
+         </tr>
+      </thead>
+      <tbody id="dyno-key-counts">
+      </tbody>
+   </table>
+</div>

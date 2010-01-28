@@ -1,0 +1,37 @@
+{
+   "_id_" : "bitmunk.bpe.dev",
+   "_group_" : "before system user",
+   "_version_" : "Bitmunk 3.0",
+   "_include_" : [
+      "dev.config"
+   ],
+   "_merge_" : {
+      "app" : {
+         "logging" : {
+            "level" : "max"
+         },
+         "login" : {
+            "auto" : false
+         }
+      },
+      "bitmunk.bfp.Bfp" : {
+         "cachePath" : "bitmunk.bfp.Bfp/cache"
+      },
+      "bitmunk.webui.WebUi" : {
+         "flash" : {
+            "policyServer" : {
+               "host" : "0.0.0.0",
+               "port" : 19845
+            }
+         }
+      },
+      "node" : {
+         "host" : "0.0.0.0",
+         "port" : 19300,
+         "modulePath" : "@BITMUNK_DIR@/dist/modules/bpe",
+         "login" : {
+            "auto" : false
+         }
+      }
+   }
+}

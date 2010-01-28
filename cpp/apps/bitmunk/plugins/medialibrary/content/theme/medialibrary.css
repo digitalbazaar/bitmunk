@@ -1,0 +1,309 @@
+/*
+ * Copyright (c) 2009 Digital Bazaar, Inc.  All rights reserved.
+ *
+ * Bitmunk App Media Library CSS
+ */
+
+#mediaLibrary {
+}
+
+/*-- Control Table --*/
+.controlTable {
+width: 100%;
+}
+
+.controlTable tbody tr:first-child {
+border-bottom-width: 0;
+}
+
+.controlTable tbody tr {
+border-top: 1px solid #888;
+}
+
+.controlTable tr.disabled, .controlTable tr.deleted {
+color: #888;
+}
+
+.controlTable tr.deleted {
+background: url(/bitmunk/plugins/bitmunk.webui.MediaLibrary/images/row-disabled.png);
+}
+
+.controlTable tbody tr:hover {
+background-color: #7a7a7a;
+}
+
+/*-- Control Table Columns --*/
+.emptyRow td {
+text-align: center;
+}
+
+.sortImage {
+vertical-align: middle;
+}
+
+th.sortCol {
+/*cursor: pointer;*/
+}
+
+th.sortCol:hover {
+background-color: #888;
+}
+
+.selectCol {
+width: 14px;
+padding: 4px 6px 2px 6px;
+}
+
+/*
+td.selectCol {
+background: url(/bitmunk/plugins/bitmunk.webui.MediaLibrary/images/grip.png) center left no-repeat;
+cursor: move;
+}
+*/
+
+.buttonCol {
+}
+
+/*-- Browser Table Columns  --*/
+td.feedbackCol, td.typeCol, td.titleCol, td.contributorCol, td.paymentCol,
+td.statusCol {
+cursor: pointer;
+}
+
+.feedbackCol {
+width: 16px;
+}
+
+.typeCol {
+width: 16px;
+}
+
+.paymentCol {
+width: 100px;
+}
+
+td.paymentCol {
+text-align: right;
+}
+
+.statusCol {
+width: 100px;
+white-space: nowrap;
+}
+
+/*
+.searchBox {
+float: right;
+height: 20px;
+margin: 2px 0 2px 10px;
+}
+
+#searchInput {
+width: 220px;
+}
+*/
+
+/*-- Media Library Browser --*/
+#libraryBrowser {
+clear: both;
+}
+
+#browserAdd {
+margin-left: 10px;
+}
+
+#browserPaging {
+position: relative;
+text-align: center;
+margin: 10px 0;
+height: 16px;
+}
+
+.paging-prev, .paging-next {
+color: #888;
+}
+
+.results {
+position: absolute;
+top: 0;
+right: 0;
+}
+
+.paging-selected {
+margin: 0 3px;
+color: #ddd;
+font-weight: bold;
+}
+
+.paging-link {
+margin: 0 3px;
+}
+
+/*-- Media Library Ware Editor --*/
+#wareEditor {
+}
+
+.dialogSection {
+margin: 0 0 20px 0;
+}
+
+.detail {
+margin-bottom: 5px;
+}
+
+.detail * {
+vertical-align: middle;
+}
+
+.key {
+display: inline-block;
+width: 100px;
+font-weight: bold;
+}
+
+#editorActivity, #paymentActivity {
+display: inline-block;
+visibility: hidden;
+float: left;
+}
+
+/* Ware Details */
+#media-link {
+float: left;
+margin: 0 18px 20px 18px;
+}
+
+#media-image {
+width: 64px;
+height: 64px;
+}
+
+#media-title {
+font-size: 20px;
+font-weight: bold;
+margin-bottom: 10px;
+}
+
+#media-contributor {
+font-size: 14px;
+font-weight: bold;
+margin-bottom: 10px;
+}
+
+#fileSection {
+clear: left;
+}
+
+#file-path, #ware-description {
+width: 496px;
+}
+
+#payment-select {
+width: 500px;
+}
+
+#schemeDelete {
+float: right;
+}
+
+/*-- Payment Scheme Editor --*/
+#paymentEditor {
+width: 820px;
+margin-left: -410px;
+z-index: 200;
+}
+
+#modificationWarning {
+height: 24px;
+margin: 0 100px 20px;
+padding: 2px 16px 2px 34px;
+line-height: 24px;
+color: #e87119;
+font-weight: bold;
+text-align: center;
+background: #f1d9b0 url(/bitmunk/images/feedback-warning-24.png) no-repeat 2px 2px;
+border: 1px solid #e87119;
+-moz-border-radius: 16px;
+-webkit-border-radius: 16px;
+}
+
+.paymentControls {
+margin: 10px 0;
+}
+
+#schemeDescription {
+width: 596px;
+}
+
+/*-- Payment Table Columns --*/
+.positionCol {
+width: 54px;
+text-align: center;
+}
+
+.accountCol {
+}
+
+.amountCol {
+width: 64px;
+white-space: nowrap;
+}
+
+.iconCol {
+width: 16px;
+text-align: center;
+}
+
+.payeePosition {
+width: 30px;
+}
+
+.payeeAccount {
+width: 100%;
+}
+
+.payeeAmount {
+width: 60px;
+}
+
+.payeeDescription {
+width: 100%;
+}
+
+/*-- Media Library Statuses --*/
+.status-ok, .status-error, .status-warning, .status-busy,
+.status-disabled, .status-ready, .status-download, .status-paused {
+display: inline-block;
+height: 16px;
+padding-left: 20px;
+background: url(/bitmunk/images/status-ok.png) no-repeat left top;
+}
+
+.status-error {
+background: url(/bitmunk/images/status-error.png) no-repeat left top;
+}
+
+.status-warning {
+background: url(/bitmunk/images/status-warning.png) no-repeat left top;
+}
+
+.status-busy {
+background: url(/bitmunk/images/status-pending.png) no-repeat left top;
+}
+
+.status-disabled {
+background: url(/bitmunk/images/status-disabled.png) no-repeat left top;
+}
+
+.status-ready {
+background: url(/bitmunk/images/status-ready.png) no-repeat left top;
+}
+
+.status-download {
+background: url(/bitmunk/images/status-download.png) no-repeat left top;
+/*background: url(/bitmunk/images/status-download.gif) no-repeat left top;*/
+}
+
+.status-paused {
+background: url(/bitmunk/images/status-paused.png) no-repeat left top;
+}

@@ -1,0 +1,92 @@
+# This file contains platform-specific Makefile rules for building
+# platform-specific binaries and packages.
+
+# Windows-specific variables
+WINDOWS_CXX = @WINDOWS_CXX@
+WINDOWS_CXX_FLAGS = @CXXFLAGS@ -march=i686 -Wall -D_WIN32_WINNT=0x0501 @DEFS@
+WINDOWS_LD_FLAGS = @LDFLAGS@ -Wl,--enable-auto-import
+WINDOWS_INCLUDES = $(INCLUDES) -I$(MONARCH)/cpp/3rdparty/pthread/include -I$(MONARCH)/cpp/3rdparty/openssl/include -I$(MONARCH)/cpp/3rdparty/expat/include -I$(MONARCH)/cpp/3rdparty/mysql/include -I$(MONARCH)/cpp/3rdparty/regex/include -I$(MONARCH)/cpp/3rdparty/sqlite3/include -I$(MONARCH)/cpp/3rdparty/zlib/include -I$(MONARCH)/cpp/3rdparty/iconv/include
+WINDOWS_DBLIB_DIR = $(MONARCH)/dist/lib
+WINDOWS_LIB_DIR = $(BITMUNK)/libs/windows
+WINDOWS_LIBS = -L$(WINDOWS_DBLIB_DIR) -L$(WINDOWS_LIB_DIR)
+WINDOWS_AR = @WINDOWS_AR@
+WINDOWS_AS = @WINDOWS_AS@
+DYNAMIC_WINDOWS_LIBRARIES := $(DYNAMIC_LINK_LIBRARIES) $(DYNAMIC_WINDOWS_LIBRARIES)
+WINDOWS_DLLWRAP = @WINDOWS_DLLWRAP@
+WINDOWS_DLLWRAP_FLAGS = --as=$(WINDOWS_AS) --export-all --driver-name $(WINDOWS_CXX) -s
+WINDOWS_BUILD_DIR = $(BITMUNK)/build/$(subst $(BITMUNK)/cpp/,,$(CWD))
+WINDOWS_DIST_DIR = $(BITMUNK)/dist
+WINDOWS_LIB_DIR = $(WINDOWS_DIST_DIR)/lib
+WINDOWS_BIN_DIR = $(WINDOWS_DIST_DIR)/bin
+WINDOWS_XPT_DIR = $(WINDOWS_DIST_DIR)/xpt
+WINDOWS_XPI_DIR = $(WINDOWS_DIST_DIR)/xpi
+WINDOWS_MODULES_DIR = $(WINDOWS_DIST_DIR)/modules
+WINDOWS_HEADER_FILES := $(patsubst %.h, $(BITMUNK)/$(HEADER_DIST_DIR)/%.h, $(HEADERS))
+WINDOWS_LIBRARY_SOURCES := $(patsubst %.cpp,$(WINDOWS_BUILD_DIR)/%.cpp, $(SOURCES))
+WINDOWS_EXECUTABLE_SOURCES := $(patsubst %,$(WINDOWS_BUILD_DIR)/%.cpp, $(EXECUTABLES))
+LIBRARY_OBJECTS := $(patsubst %.cpp,$(WINDOWS_BUILD_DIR)/%-windows.o, $(SOURCES))
+EXECUTABLE_OBJECTS := $(patsubst %,$(WINDOWS_BUILD_DIR)/%-windows.o, $(EXECUTABLES))
+WINDOWS_EXECUTABLES := $(patsubst %,$(WINDOWS_BIN_DIR)/%.exe, $(EXECUTABLES))
+WINDOWS_DEPENDENCIES := $(patsubst %.cpp,$(WINDOWS_BUILD_DIR)/%-windows.P, $(SOURCES))
+WINDOWS_DEPENDENCIES += $(patsubst %.cpp,-windows%.P, $(WINDOWS_EXECUTABLE_SOURCES))
+
+#WINDOWS_LIBRARIES := $(patsubst %,$(WINDOWS_LIB_DIR)/%.lib, $(LIBRARIES))
+WINDOWS_LIBRARIES = $(patsubst %,$(WINDOWS_LIB_DIR)/%.dll, $(LIBRARIES))
+
+ALL_GENERATED_HEADERS := $(patsubst %.idl,$(WINDOWS_BUILD_DIR)/%.h, $(IDL_SOURCES))
+ALL_XPTS := $(patsubst %.idl,$(WINDOWS_XPT_DIR)/%.xpt, $(IDL_SOURCES))
+ALL_HEADERS += $(WINDOWS_HEADER_FILES)
+ALL_SOURCES += $(WINDOWS_LIBRARY_SOURCES) $(WINDOWS_EXECUTABLE_SOURCES) 
+ALL_OBJECTS += $(LIBRARY_OBJECTS) $(EXECUTABLE_OBJECTS) 
+ALL_LIBRARIES += $(WINDOWS_LIBRARIES)
+ALL_EXECUTABLES += $(WINDOWS_EXECUTABLES)
+ALL_DIRECTORIES += $(WINDOWS_BUILD_DIR) $(WINDOWS_DIST_DIR) $(WINDOWS_LIB_DIR) $(WINDOWS_BIN_DIR) $(WINDOWS_MODULES_DIR) $(WINDOWS_XPT_DIR) $(WINDOWS_XPI_DIR)
+
+ifndef IGNORE_DEPENDENCIES
+-include $(WINDOWS_DEPENDENCIES)
+endif
+
+$(WINDOWS_HEADER_FILES): 
+	$(PCMD) mkdir -p $(dir $@)
+	$(PCMD) ln -sf $(subst $(BITMUNK)/$(HEADER_DIST_DIR)/,$(CWD)/,$@) $@
+
+# You can build either multiple executables per directory, or multiple
+# libraries per directory, but not both.
+ifdef EXECUTABLES
+$(WINDOWS_EXECUTABLE_SOURCES):
+	$(PCMD) mkdir -p $(dir $@)
+	$(PCMD) ln -sf $(subst $(WINDOWS_BUILD_DIR)/,$(CWD)/,$@) $@
+else
+$(WINDOWS_LIBRARY_SOURCES):
+	$(PCMD) mkdir -p $(dir $@)
+	$(PCMD) ln -sf $(subst $(WINDOWS_BUILD_DIR)/,$(CWD)/,$@) $@
+endif
+
+$(WINDOWS_BUILD_DIR)/%.h: %.idl
+	@echo "Building $@..."
+	$(PCMD) $(XPIDL) -m header $(XULIDL_INCLUDES)  -o $(basename $@) $<
+
+$(WINDOWS_XPT_DIR)/%.xpt: %.idl
+	@echo "Generating dist/$(subst .P,.o,$(subst $(BITMUNK)/dist/,,$@))..."
+	$(PCMD) $(XPIDL) -m typelib $(XULIDL_INCLUDES) -o $(basename $@) $<
+
+%-windows.o %-windows.P: %.cpp
+	@echo "Compiling build/$(subst .P,.o,$(subst $(BITMUNK)/build/,,$@))..."
+	$(PCMD) $(WINDOWS_CXX) $(WINDOWS_CXX_FLAGS) -c -MD -o $(basename $@).o $(WINDOWS_INCLUDES) -I. $<
+	$(PCMD) cp $(basename $@).d $(basename $@).P; \
+		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' -e '/^$$/ d' -e 's/$$/ :/' < $(basename $@).d >> $(basename $@).P; \
+		rm -f $(basename $@).d
+
+%.dll: $(LIBRARY_OBJECTS)
+	@echo "Linking $(subst $(BITMUNK)/,,$@)..."
+	$(PCMD) $(WINDOWS_CXX) -shared $(WINDOWS_LD_FLAGS) $(WINDOWS_LIBS) -o $@ $^ $(DYNAMIC_WINDOWS_LIBRARIES:%=-l%) $(EXTRA_WINDOWS_LIBRARIES:%=-l%)
+
+%.lib: $(LIBRARY_OBJECTS)
+	@echo "Linking $(subst $(BITMUNK)/,,$@)..."
+	$(PCMD) $(WINDOWS_AR) $(AR_FLAGS) $@ $(LIBRARY_OBJECTS)
+
+ifdef EXECUTABLES
+$(WINDOWS_EXECUTABLES): $(EXECUTABLE_OBJECTS) $(STATIC_WINDOWS_LIBRARIES) $(DYNAMIC_WINDOWS_LIBRARIES:%=$(WINDOWS_LIB_DIR)/%.dll)
+	@echo "Linking dist/bin/$(@F)..."
+	$(PCMD) $(WINDOWS_CXX) $(WINDOWS_CXX_FLAGS) $(WINDOWS_LD_FLAGS) -L$(WINDOWS_LIB_DIR) -o $@ $(WINDOWS_BUILD_DIR)/$(basename $(@F))-windows.o $(DYNAMIC_WINDOWS_LIBRARIES:%=-l%) $(DYNAMIC_EXECUTABLE_LIBRARIES:%=-l%) $(EXTRA_WINDOWS_LIBRARIES)
+endif

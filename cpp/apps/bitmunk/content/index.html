@@ -1,0 +1,127 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+      <title>Bitmunk Personal Edition</title>
+      <link href="bitmunk/theme/page.css" rel="stylesheet" type="text/css" />
+      <link rel="shortcut icon" href="bitmunk/images/favicon.ico" />
+      
+      <!-- 'nonbitmunk.all.js' is a virtual name that contains all core
+      non-bitmunk javascript files. See the plugin config file for main
+      to edit. -->
+      <script type="text/javascript" src="bitmunk/js/nonbitmunk.all.js"></script>
+      <!--
+      <script type="text/javascript" src="bitmunk/js/jquery.js"></script>
+      <script type="text/javascript" src="bitmunk/js/jquery.cookie.js"></script>
+      <script type="text/javascript" src="bitmunk/js/jquery.form.js"></script>
+      <script type="text/javascript" src="bitmunk/js/jquery.history.js"></script>
+      <script type="text/javascript" src="bitmunk/js/jquery.jgrowl.min.js"></script>
+      <script type="text/javascript" src="bitmunk/js/jquery.sparkline.min.js"></script>
+      <script type="text/javascript" src="bitmunk/js/jquery.timers.js"></script>
+      <script type="text/javascript" src="bitmunk/js/json2.js"></script>
+      <script type="text/javascript" src="bitmunk/js/swfobject/swfobject.js"></script>
+      <script type="text/javascript" src="bitmunk/js/trimpath-template-1.0.38.js"></script>
+      -->
+      
+      <!-- 'bitmunk.all.js' is a virtual name that contains all core bitmunk
+      javascript files. See the plugin config file for main to edit. -->
+      <script type="text/javascript" src="bitmunk/js/bitmunk.all.js"></script>
+      <!--
+      <script type="text/javascript" src="bitmunk/js/bitmunk.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.debug.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.util.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.log.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.task.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.resource.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.sys.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.xhr.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.api.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.user.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.events.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.model.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.view.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.tabbedpane.js"></script>
+      <script type="text/javascript" src="bitmunk/js/bitmunk.main.js"></script>
+      -->
+      <script type="text/javascript">
+      // called when flash is ready
+      window.hpm = window.hpm || {};
+      window.hpm.ready = function()
+      {
+         if($.browser.msie === true)
+         {
+            // IE calls javascript on the thread of the external object
+            // (in this case flash) ... which will either run concurrently
+            // with other javascript or pre-empt any running javascript in
+            // the middle of its execution (BAD!) ... calling setTimeout()
+            // will schedule the javascript to run on the javascript thread
+            // and solve this EVIL problem
+            setTimeout(function() { jQuery(bitmunk.main); }, 0);
+         }
+         else
+         {
+            jQuery(bitmunk.main);
+         }
+      }
+      
+      // embed flash xhr proxy
+      var flashvars = {};
+      var params = { allowscriptaccess: "always" };
+      var attributes = {};
+      swfobject.embedSWF(
+         "bitmunk/HttpPoolManager.swf", "httpPoolManager",
+         "0", "0", "9.0.0",
+         "bitmunk/js/swfobject/expressInstall.swf",
+         flashvars, params, attributes,
+         function(e)
+         {
+            // flash loaded successfully
+            if(e.success)
+            {
+               bitmunk.log.info('index',
+                  'Bitmunk flash loaded, waiting for it to initialize...');
+            }
+            // flash failed to load
+            else
+            {
+               bitmunk.log.error('index', 'Bitmunk flash failed to load.');
+            }
+         });
+      </script>
+   </head>
+   
+   <body>
+      <div id="container">
+         <div id="header">
+            <img id="bitmunk-logo" src="/bitmunk/images/bitmunk-logo-40.png"
+               alt="Bitmunk" title="Bitmunk" />
+            <img id="app-logo" src="/bitmunk/images/personal-edition.png"
+               alt="Personal Edition" title="Personal Edition beta" />
+         </div>
+         
+         <div id="pane-desktop"></div>
+         
+         <div id="messages"></div>
+         
+         <div id="footer">
+            <p id="copyright">
+               <img src="/bitmunk/images/lock.png" alt="" title="Secured" />
+               <a href="http://bitmunk.com/wiki/technical-faq#bpe-security" class="external">Secured</a>
+               |
+               <a href="mailto:support@bitmunk.com">Bitmunk Customer Support</a>
+               |
+               <span>Bitmunk&trade; &#169; 2004-2010 Digital Bazaar</span>
+            </p>
+            <p id="logged-in"></p>
+         </div>
+      </div>
+      
+      <div id="httpPoolManager">
+         <p>Could not initialize flash. Please make sure you have
+         Adobe Shockwave Flash Player plugin version 10 or newer installed.</p>
+      </div>
+      
+      <div id="queued-bitmunk-directive" class="hidden"></div>
+   </body>
+</html>

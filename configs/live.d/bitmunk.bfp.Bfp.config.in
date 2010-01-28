@@ -1,0 +1,10 @@
+{
+   "_id_" : "bitmunk.bfp.Bfp",
+   "_group_" : "defaults",
+   "_version_" : "Bitmunk 3.0",
+   "_merge_" : {
+      "bitmunk.bfp.Bfp" : {
+         "cachePath" : "bitmunk.bfp.Bfp/cache"
+      }
+   }
+}
