@@ -12,7 +12,7 @@ const STATE_UNKNOWN   = 0;
 const STATE_OFFLINE   = 1;
 const STATE_ONLINE    = 2;
 const STATE_LOADING   = 3;
-const gBitmunkState = STATE_UNKNOWN;
+var gBitmunkState = STATE_UNKNOWN;
 
 /**
  * The polling interval. Set to 15 seconds.
@@ -47,6 +47,44 @@ var gBpeUrl = BPE_URL + '19200';
 var gDirectives = [];
 
 /**
+ * Called when the window first loads the bitmunk status overlay. This is used
+ * to determine the current state of the bitmunk app.
+ */
+function onWindowLoad()
+{
+   _bitmunkLog('onBrowserLoad()');
+   
+   // do a quick poll
+   pollBitmunk(function(online)
+   {
+      _bitmunkLog('onBrowserLoad(): in poll callback: ' + online);
+      
+      if(online)
+      {
+         gBitmunkState = STATE_ONLINE;
+         
+         // start regular polling
+         startBitmunkPolling({interval: gPollInterval});
+      }
+      else
+      {
+         // bitmunk app is offline, do not poll until the user clicks the on
+         // status overlay interface
+         gBitmunkState = STATE_OFFLINE;
+      }
+      
+      // update the status display
+      updateStatusDisplay();
+   });
+   
+   // remove the window listener
+   window.removeEventListener('load', onWindowLoad, false);
+}
+
+// add an event listener for when the window loads
+window.addEventListener('load', onWindowLoad, false);
+
+/**
  * Opens a new tab or reuses an existing one that has been marked for use with
  * this extension and that still contains the BPE url.
  * 
@@ -55,6 +93,12 @@ var gDirectives = [];
 function getBitmunkTab()
 {
    var rval = null;
+   
+   _bitmunkLog('getBitmunkTab()');
+   
+   // FIXME: a future may be able to keep a reference to the bitmunk tab
+   // around, clearing it when the tab is closed ... but it would also need
+   // to clear it if someone navigates way to a different base URL
    
    // get the window mediator
    var wm = Components
@@ -74,7 +118,7 @@ function getBitmunkTab()
       {
          // get the next tab and its web browser
          var tab = tabs.childNodes[i];
-         var webBrowser = tabBrowser.getBrowserAtIndex(index);
+         var webBrowser = tabBrowser.getBrowserAtIndex(i);
          
          // FIXME: if the port number changes, this will not match the
          // tab any more, do we care?
@@ -132,34 +176,6 @@ function getBitmunkTab()
 }
 
 /**
- * Called when the browser first starts up and loads the bitmunk status
- * overlay. This is used to determine the current state of the bitmunk app.
- */
-function onBrowserLoad()
-{
-   // do a quick poll
-   pollBitmunk(function(online)
-   {
-      if(online)
-      {
-         gBitmunkState = STATE_ONLINE;
-         
-         // start regular polling
-         startBitmunkPolling({interval: gPollInterval});
-      }
-      else
-      {
-         // bitmunk app is offline, do not poll until the user clicks the on
-         // status overlay interface
-         gBitmunkState = STATE_OFFLINE;
-      }
-      
-      // update the status display
-      updateStatusDisplay();
-   });
-}
-
-/**
  * Called when a user left clicks on something in the Bitmunk status bar
  * overlay that is meant to start and view their Bitmunk app.
  * 
@@ -172,21 +188,16 @@ function onBrowserLoad()
  */
 function manageBitmunk()
 {
+   _bitmunkLog('manageBitmunk(): current state: ' + gBitmunkState);
+   
    switch(gBitmunkState)
    {
       case STATE_OFFLINE:
-         // start the bitmunk app, open the main page on success
-         startBitmunk(
-         {
-            success: function()
-            {
-               // get (open) the bitmunk tab
-               getBitmunkTab();
-            }
-         });
+         // start the bitmunk app
+         startBitmunk();
          break;
       case STATE_ONLINE:
-         openBitmunkTab();
+         getBitmunkTab();
          break;
       case STATE_LOADING:
       case STATE_UNKNOWN:
@@ -200,10 +211,13 @@ function manageBitmunk()
  * will be called with a single parameter: either true, if the Bitmunk
  * application is online, or false if it is not.
  * 
- * @param cb the function to call with the true/false result.
+ * @param cb the function to call with the true/false result and, if false, a
+ *           message explaining why.
  */
 function pollBitmunk(cb)
 {
+   _bitmunkLog('pollBitmunk()');
+   
    // if we're not online, the port might have changed, so refresh it
    if(gBitmunkState != STATE_ONLINE)
    {
@@ -222,28 +236,80 @@ function pollBitmunk(cb)
       gBpeUrl = BPE_URL + port.value;
    }
    
-   sendRequest(
+   var xhr = new XMLHttpRequest();
+   if(!xhr)
    {
-      url: gBpeUrl + '/api/3.0/system/test/ping',
-      success: function(xhr, obj)
+      _bitmunkLog('pollBitmunk(): could not create XMLHttpRequest');
+      cb(false, 'Could not create XMLHttpRequest.');
+   }
+   else
+   {
+      _bitmunkLog('pollBitmunk(): creating request');
+      
+      // called if a connection error occurs
+      xhr.onerror = function()
       {
-         cb(true);
-      },
-      error: function(xhr, obj)
+         _bitmunkLog('pollBitmunk(): could not connect');
+         cb(false, 'Could not connect to the webservice.');
+      };
+      
+      // called whenever the request worked
+      xhr.onload = function()
       {
-         cb(false);
-      }
-   });
+         // an error occurred if the HTTP response status is 400+
+         _bitmunkLog('pollBitmunk(): response: ' + xhr.responseText);
+         var error = '';
+         if(xhr.status >= 400)
+         {
+            error = '' + xhr.status + ' ' + xhr.statusText;
+         }
+         else
+         {
+            try
+            {
+               // convert content from JSON
+               var obj = JSON.parse(xhr.responseText);
+               if(obj.echo !== 'ping')
+               {
+                  error = 'Unrecognized response.';
+               }
+            }
+            catch(e)
+            {
+               error = 'Unrecognized response. JSON parse error.';
+            }
+         }
+         
+         if(error.length > 0)
+         {
+            _bitmunkLog('pollBitmunk(): ' + error);
+            cb(false, error);
+         }
+         else
+         {
+            _bitmunkLog('pollBitmunk(): success');
+            cb(true);
+         }
+      };
+      
+      _bitmunkLog('pollBitmunk(): sending request...');
+      
+      // open the URL
+      xhr.open('GET', gBpeUrl + '/api/3.0/system/test/echo?echo=ping', true);
+      
+      // set accept request header and send the request
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.send(null);
+   }
 }
 
 /**
  * Starts the Bitmunk application if it is currently offline.
- * 
- * @param options:
- *           success: a callback to call if successful.
  */
-function startBitmunk(options)
+function startBitmunk()
 {
+   _bitmunkLog('startBitmunk()');
+   
    // stop any existing polling
    stopBitmunkPolling();
    
@@ -288,15 +354,21 @@ function startBitmunk(options)
                interval: 1000,
                stateChanged: function()
                {
-                  // stop old polling
+                  // stop polling
                   stopBitmunkPolling();
                   
                   if(gBitmunkState == STATE_ONLINE)
                   {
-                     // bitmunk successfully started
-                     if(options.success)
+                     _bitmunkLog('startBitmunk(): bitmunk is now ONLINE');
+                     
+                     // bitmunk successfully started, open tab
+                     try
                      {
-                        options.success();
+                        getBitmunkTab();
+                     }
+                     catch(e)
+                     {
+                        _bitmunkLog('getBitmunkTab exception: ' + e);
                      }
                      
                      // start polling at a regular interval
@@ -307,9 +379,10 @@ function startBitmunk(options)
          }
          else
          {
+            _bitmunkLog('startBitmunk(): bitmunk failed to start');
+            
             // bitmunk failed to start
             gBitmunkState = STATE_OFFLINE;
-            stopBitmunkPolling();
          }
       }
    });
@@ -324,23 +397,28 @@ function startBitmunk(options)
  */
 function startBitmunkPolling(options)
 {
+   _bitmunkLog('startBitmunkPolling()');
+   
    /* Start polling, do so using setTimeout so that we wait for the network
       activity to complete before doing the next poll. Otherwise, over time,
       due to network latency, we might start spawning off more than one poll
       at a time. */
    var poll = function()
    {
+      _bitmunkLog('poll()');
+      
       pollBitmunk(function(online)
       {
          var oldState = gBitmunkState;
          if(online)
          {
+            _bitmunkLog('poll(): setting state to ONLINE');
             gBitmunkState = STATE_ONLINE;
          }
          else
          {
             var now = +new Date();
-            if(gBitmunkState != STATE_LOADING || now > gMaximumLoadTime)
+            if(gBitmunkState != STATE_LOADING || now >= gMaximumLoadTime)
             {
                /*
                // FIXME: notify the user that the bitmunk app failed to start
@@ -349,6 +427,7 @@ function startBitmunkPolling(options)
                }
                */
                
+               _bitmunkLog('poll(): setting state to OFFLINE');
                gBitmunkState = STATE_OFFLINE;
             }
          }
@@ -356,6 +435,7 @@ function startBitmunkPolling(options)
          // schedule next poll
          gPollIntervalId = getCurrentWindow().setTimeout(
             poll, options.interval);
+         _bitmunkLog('poll(): next poll in ' + options.interval);
 
          // handle state change
          if(oldState != gBitmunkState)
@@ -394,6 +474,8 @@ function stopBitmunkPolling()
  */
 function updateStatusDisplay()
 {
+   _bitmunkLog('updateStatusDisplay()');
+   
    statusImage = document.getElementById('bitmunk-status-image');
    statusLabel = document.getElementById('bitmunk-status-label');
    //controlLabel = document.getElementById('bitmunk-control-label');
@@ -402,15 +484,18 @@ function updateStatusDisplay()
    switch(gBitmunkState)
    {
       case STATE_ONLINE:
+         _bitmunkLog('updateStatusDisplay(): ONLINE');
          statusImage.src = 'chrome://bitmunk/content/bitmunk16-online.png';
          statusLabel.value = 'online';
          break;
       case STATE_OFFLINE:
+         _bitmunkLog('updateStatusDisplay(): OFFLINE');
          statusImage.src = 'chrome://bitmunk/content/bitmunk16-offline.png';
          statusLabel.value = 'offline';
          break;
       case STATE_LOADING:
       case STATE_UNKNOWN:
+         _bitmunkLog('updateStatusDisplay(): LOADING');
          statusImage.src = 'chrome://bitmunk/content/bitmunk16-offline.png';
          statusLabel.value = 'loading';
          break;
@@ -425,6 +510,8 @@ function updateStatusDisplay()
  */
 function sendDirective(doc, bmd)
 {
+   _bitmunkLog('sendDirective()');
+   
    var e = doc.createEvent('Events');
    e.initEvent('bitmunk-directive-queued', true, true);
    e.detail = bmd;
@@ -440,7 +527,7 @@ function sendDirective(doc, bmd)
  */
 function queueDirective(bmd)
  {
-   _bitmunkLog('Process Bitmunk Directive: ' + bmd);
+   _bitmunkLog('Queuing Bitmunk Directive: ' + bmd);
    
    if(gBitmunkState == STATE_ONLINE)
    {
