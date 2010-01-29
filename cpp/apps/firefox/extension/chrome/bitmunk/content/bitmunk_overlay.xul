@@ -23,15 +23,15 @@
                     id="bitmunk-status"
                     context="bitmunk-status-context-menu"
                     oncommand="manageBitmunk();"
-                    onpaneload="updateBitmunkStatus();">
+                    onpaneload="onBrowserLoad();">
       <image id="bitmunk-status-image" width="16" height="16"
-             src="chrome://bitmunk/content/bitmunk16-offline.png"
-             onload="updateBitmunkStatus();"/>
-      <label id="bitmunk-status-label" value="offline"/>
+             src="chrome://bitmunk/content/bitmunk16-offline.png"/>
+      <label id="bitmunk-status-label" value="loading"/>
     </statusbarpanel>
     <menupopup id="bitmunk-status-context-menu">
       <menuitem id="bitmunk-control-label" 
-                label="Manage Bitmunk Software" oncommand="manageBitmunk();"/>
+                label="Manage Bitmunk Software"
+                oncommand="manageBitmunk();"/>
       <menuseparator/>
       <menuitem label="Help" oncommand="showBitmunkHelp();"/>
       <menuitem label="Bitmunk Website" oncommand="showBitmunkWebsite();"/>
