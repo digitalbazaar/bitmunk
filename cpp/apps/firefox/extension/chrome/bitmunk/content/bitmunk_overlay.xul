@@ -22,8 +22,7 @@
     <statusbarpanel class="statusbarpanel-iconic"
                     id="bitmunk-status"
                     context="bitmunk-status-context-menu"
-                    oncommand="manageBitmunk();"
-                    onpaneload="onBrowserLoad();">
+                    oncommand="manageBitmunk();">
       <image id="bitmunk-status-image" width="16" height="16"
              src="chrome://bitmunk/content/bitmunk16-offline.png"/>
       <label id="bitmunk-status-label" value="loading"/>

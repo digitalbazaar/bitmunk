@@ -27,6 +27,8 @@ const XHR_DONE             = 4;
  */
 function sendRequest(options)
 {
+   _bitmunkLog('sendRequest()');
+   
    // set data to null if not specified
    if(options.data === undefined)
    {
@@ -36,6 +38,8 @@ function sendRequest(options)
    var xhr = new XMLHttpRequest();
    if(!xhr)
    {
+      _bitmunkLog('sendRequest(): could not create XMLHttpRequest');
+      
       var obj =
       {
          code: 0,
@@ -53,6 +57,8 @@ function sendRequest(options)
    }
    else
    {
+      _bitmunkLog('sendRequest(): setting up onreadystate');
+      
       // called whenever the xhr state changes:
       xhr.onreadystatechange = function()
       {
@@ -63,17 +69,23 @@ function sendRequest(options)
                   is zero, then XMLHttpRequest will fail -- we preempt that
                   from happening here and simply return null as our response
                   data. */
+               _bitmunkLog('sendRequest(): headers received');
+               
                if(xhr.status == 204 ||
                   xhr.getResponseHeader('Content-Length') == 0)
                {
+                  _bitmunkLog('sendRequest(): header 204 or 0 content-length');
+                  
                   // call success
                   if(options.success)
                   {
+                     _bitmunkLog('sendRequest(): calling success');
                      options.success(xhr, null);
                   }
                   // call complete
                   if(options.complete(xhr, null))
                   {
+                     _bitmunkLog('sendRequest(): calling complete');
                      options.complete(xhr, null);
                   }
                   
@@ -86,15 +98,20 @@ function sendRequest(options)
                // an error occurred if the HTTP response status is 400+
                var error = (xhr.status >= 400);
                
+               _bitmunkLog('sendRequest(): XHR done, error: ' + error);
+               
                // convert content from JSON
                var obj;
                try
                {
                   // convert content from JSON
                   obj = JSON.parse(xhr.responseText);
+                  _bitmunkLog('sendRequest(): JSON parsed');
                }
                catch(e)
                {
+                  _bitmunkLog('sendRequest(): JSON parse error: ' + e);
+                  
                   // exception
                   obj =
                   {
@@ -148,15 +165,18 @@ function sendRequest(options)
          }
       };
       
+      // open the URL
+      var method = options.data ? 'POST' : 'GET';
+      xhr.open(method, options.url, true);
+      
       // set request headers
       xhr.setRequestHeader('Accept', 'application/json');
       if(options.data)
       {
          xhr.setRequestHeader('Content-Type', 'application/json');
       }
-     
-      // open the URL and send any data asynchronously
-      xhr.open(options.method, options.url, true);
+      
+      // send any data asynchronously
       xhr.send(options.data);
    }
 }

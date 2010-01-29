@@ -47,6 +47,44 @@ var gBpeUrl = BPE_URL + '19200';
 var gDirectives = [];
 
 /**
+ * Called when the window first loads the bitmunk status overlay. This is used
+ * to determine the current state of the bitmunk app.
+ */
+function onWindowLoad()
+{
+   _bitmunkLog('onBrowserLoad()');
+   
+   // do a quick poll
+   pollBitmunk(function(online)
+   {
+      _bitmunkLog('onBrowserLoad(): in poll callback: ' + online);
+      
+      if(online)
+      {
+         gBitmunkState = STATE_ONLINE;
+         
+         // start regular polling
+         startBitmunkPolling({interval: gPollInterval});
+      }
+      else
+      {
+         // bitmunk app is offline, do not poll until the user clicks the on
+         // status overlay interface
+         gBitmunkState = STATE_OFFLINE;
+      }
+      
+      // update the status display
+      updateStatusDisplay();
+   });
+   
+   // remove the window listener
+   window.removeEventListener('load', onWindowLoad, false);
+}
+
+// add an event listener for when the window loads
+window.addEventListener('load', onWindowLoad, false);
+
+/**
  * Opens a new tab or reuses an existing one that has been marked for use with
  * this extension and that still contains the BPE url.
  * 
@@ -55,6 +93,12 @@ var gDirectives = [];
 function getBitmunkTab()
 {
    var rval = null;
+   
+   _bitmunkLog('getBitmunkTab()');
+   
+   // FIXME: a future may be able to keep a reference to the bitmunk tab
+   // around, clearing it when the tab is closed ... but it would also need
+   // to clear it if someone navigates way to a different base URL
    
    // get the window mediator
    var wm = Components
@@ -132,34 +176,6 @@ function getBitmunkTab()
 }
 
 /**
- * Called when the browser first starts up and loads the bitmunk status
- * overlay. This is used to determine the current state of the bitmunk app.
- */
-function onBrowserLoad()
-{
-   // do a quick poll
-   pollBitmunk(function(online)
-   {
-      if(online)
-      {
-         gBitmunkState = STATE_ONLINE;
-         
-         // start regular polling
-         startBitmunkPolling({interval: gPollInterval});
-      }
-      else
-      {
-         // bitmunk app is offline, do not poll until the user clicks the on
-         // status overlay interface
-         gBitmunkState = STATE_OFFLINE;
-      }
-      
-      // update the status display
-      updateStatusDisplay();
-   });
-}
-
-/**
  * Called when a user left clicks on something in the Bitmunk status bar
  * overlay that is meant to start and view their Bitmunk app.
  * 
@@ -172,6 +188,8 @@ function onBrowserLoad()
  */
 function manageBitmunk()
 {
+   _bitmunkLog('manageBitmunk(): current state: ' + gBitmunkState);
+   
    switch(gBitmunkState)
    {
       case STATE_OFFLINE:
@@ -186,7 +204,7 @@ function manageBitmunk()
          });
          break;
       case STATE_ONLINE:
-         openBitmunkTab();
+         getBitmunkTab();
          break;
       case STATE_LOADING:
       case STATE_UNKNOWN:
@@ -204,6 +222,8 @@ function manageBitmunk()
  */
 function pollBitmunk(cb)
 {
+   _bitmunkLog('pollBitmunk()');
+   
    // if we're not online, the port might have changed, so refresh it
    if(gBitmunkState != STATE_ONLINE)
    {
@@ -227,10 +247,12 @@ function pollBitmunk(cb)
       url: gBpeUrl + '/api/3.0/system/test/ping',
       success: function(xhr, obj)
       {
+         _bitmunkLog('pollBitmunk(): online');
          cb(true);
       },
       error: function(xhr, obj)
       {
+         _bitmunkLog('pollBitmunk(): offline');
          cb(false);
       }
    });
@@ -244,6 +266,8 @@ function pollBitmunk(cb)
  */
 function startBitmunk(options)
 {
+   _bitmunkLog('startBitmunk()');
+   
    // stop any existing polling
    stopBitmunkPolling();
    
@@ -324,6 +348,8 @@ function startBitmunk(options)
  */
 function startBitmunkPolling(options)
 {
+   _bitmunkLog('startBitmunkPolling()');
+   
    /* Start polling, do so using setTimeout so that we wait for the network
       activity to complete before doing the next poll. Otherwise, over time,
       due to network latency, we might start spawning off more than one poll
@@ -381,6 +407,8 @@ function startBitmunkPolling(options)
  */
 function stopBitmunkPolling()
 {
+   _bitmunkLog('stopBitmunkPolling()');
+   
    // clear any old interval ID
    if(gPollIntervalId !== null)
    {
@@ -394,6 +422,8 @@ function stopBitmunkPolling()
  */
 function updateStatusDisplay()
 {
+   _bitmunkLog('updateStatusDisplay()');
+   
    statusImage = document.getElementById('bitmunk-status-image');
    statusLabel = document.getElementById('bitmunk-status-label');
    //controlLabel = document.getElementById('bitmunk-control-label');
@@ -425,6 +455,8 @@ function updateStatusDisplay()
  */
 function sendDirective(doc, bmd)
 {
+   _bitmunkLog('sendDirective()');
+   
    var e = doc.createEvent('Events');
    e.initEvent('bitmunk-directive-queued', true, true);
    e.detail = bmd;
@@ -440,7 +472,7 @@ function sendDirective(doc, bmd)
  */
 function queueDirective(bmd)
  {
-   _bitmunkLog('Process Bitmunk Directive: ' + bmd);
+   _bitmunkLog('Queuing Bitmunk Directive: ' + bmd);
    
    if(gBitmunkState == STATE_ONLINE)
    {
