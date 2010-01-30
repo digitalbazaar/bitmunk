@@ -2,298 +2,569 @@
  * The Bitmunk extension Javascript functionality for the main Firefox UI.
  *
  * @author Manu Sporny
+ * @author Dave Longley
  */
 
 /**
- * Contains the global Bitmunk extension online status.
+ * The current state of the Bitmunk application.
  */
-var gBitmunkOnline = false;
+const STATE_UNKNOWN   = 0;
+const STATE_OFFLINE   = 1;
+const STATE_ONLINE    = 2;
+const STATE_LOADING   = 3;
+var gBitmunkState = STATE_UNKNOWN;
 
 /**
- * Flag that shows the management UI after startup.
+ * The polling interval. Set to 15 seconds.
  */
-var gShowManagementUiAfterStartup = false;
+const gPollInterval = 15000;
 
 /**
- * Interval ID for checking to see if the Bitmunk Software is online.
+ * Interval ID for polling to see if the Bitmunk app is online.
  */
-var gOnlineIntervalId = null;
+var gPollIntervalId = null;
 
 /**
- * The last time a software start was attempted.
+ * The maximum amount of time to allow for the Bitmunk app's webservices to
+ * come online before assuming failure.
  */
-var gLastStartupAttempt = 0;
+const gMaximumLoadTime = 15000;
 
 /**
- * The action that should be executed whenever the Bitmunk node comes online.
+ * Stores the time when the Bitmunk app was started.
  */
-var gStartupAction = null; 
+var gBitmunkStartTime = +new Date();
 
 /**
  * The complete BPE URL, which may be modified whenever a communication error
  * occurs.
  */
-var gBpeUrl = BPE_URL + "19200"
+var gBpeUrl = BPE_URL + '19200';
 
 /**
- * Start the Bitmunk node if it is not running and open a new tab showing 
- * the status of the Bitmunk software once the node is operational.
+ * A queue of Bitmunk directives to be processed.
  */
-function manageBitmunk()
-{
-   if(gBitmunkOnline)
-   {
-	   mainWindow = getCurrentWindow();
-	   newTab = mainWindow.getBrowser().addTab(
-	      gBpeUrl + "/bitmunk");
-	   mainWindow.getBrowser().selectedTab = newTab;
-	}
-	else
-	{
-      gShowManagementUiAfterStartup = true;
-      startBitmunkApplication();
-   }
-}
+var gDirectives = [];
 
 /**
- * Sets a timer to update the interface from time to time to show the person
- * on the current system the status of the Bitmunk software.
+ * Called when the window first loads the bitmunk status overlay. This is used
+ * to determine the current state of the bitmunk app.
  */
-function updateBitmunkStatus()
+function onWindowLoad()
 {
-   sendJsonRequest(gBpeUrl + "/api/3.0/system/test/echo",
-      updateBitmunkStatusDisplay, "{}");
-
-   if(gOnlineIntervalId == null)
-   {
-      gOnlineIntervalId = 
-         getCurrentWindow().setInterval(updateBitmunkStatus, 3000);
-   }
-}
-
-/**
- * Updates the Firefox display window with the updated status.
- */
-function updateBitmunkStatusDisplay(obj)
-{
-   var online = true;
+   _bitmunkLog('onBrowserLoad()');
    
-   // if "type" is defined in obj, there was an exception.
-   if(obj.code == 0)
+   // do a quick poll
+   pollBitmunk(function(online)
    {
-      online = false;
-   }
-
-   // if the old status doesn't equal the new status, update the UI
-   if(gBitmunkOnline != online)
-   {
-      gBitmunkOnline = online;
-
-      statusImage = document.getElementById("bitmunk-status-image");
-      statusLabel = document.getElementById("bitmunk-status-label");
-      controlLabel = document.getElementById("bitmunk-control-label");
-
-      // update the image and the label
+      _bitmunkLog('onBrowserLoad(): in poll callback: ' + online);
+      
       if(online)
       {
-         statusImage.src = "chrome://bitmunk/content/bitmunk16-online.png";
-         statusLabel.value = "online";
+         gBitmunkState = STATE_ONLINE;
+         
+         // start regular polling
+         startBitmunkPolling({interval: gPollInterval});
       }
       else
       {
-         statusImage.src = "chrome://bitmunk/content/bitmunk16-offline.png";
-         statusLabel.value = "offline";
+         // bitmunk app is offline, do not poll until the user clicks the on
+         // status overlay interface
+         gBitmunkState = STATE_OFFLINE;
       }
-   }
+      
+      // update the status display
+      updateStatusDisplay();
+   });
+   
+   // remove the window listener
+   window.removeEventListener('load', onWindowLoad, false);
+}
 
-   // check to see if there should be any start-up actions that are queued
-   if(gBitmunkOnline)
+// add an event listener for when the window loads
+window.addEventListener('load', onWindowLoad, false);
+
+/**
+ * Opens a new tab or reuses an existing one that has been marked for use with
+ * this extension and that still contains the BPE url.
+ * 
+ * @return the tab pointing at the BPE's interface.
+ */
+function getBitmunkTab()
+{
+   var rval = null;
+   
+   _bitmunkLog('getBitmunkTab()');
+   
+   // FIXME: a future may be able to keep a reference to the bitmunk tab
+   // around, clearing it when the tab is closed ... but it would also need
+   // to clear it if someone navigates way to a different base URL
+   
+   // get the window mediator
+   var wm = Components
+      .classes['@mozilla.org/appshell/window-mediator;1']
+      .getService(Components.interfaces.nsIWindowMediator);
+   
+   // check each browser instance for our attribute and URL
+   var found = false;
+   var be = wm.getEnumerator('navigator:browser');
+   while(!found && be.hasMoreElements())
    {
-      if(gStartupAction != null)
+      var browserWindow = be.getNext();
+      var tabBrowser = browserWindow.gBrowser;
+      var tabs = tabBrowser.tabContainer;
+      
+      for(var i = 0; !found && i < tabs.childNodes.length; i++)
       {
-         // check to see if there is a pending start-up action
-         gStartupAction();
-         gStartupAction = null;
-      }
-      else if(gShowManagementUiAfterStartup)
-      {
-         // check to see if the management UI should be shown after start-up
-         gShowManagementUiAfterStartup = false;
-         manageBitmunk();
+         // get the next tab and its web browser
+         var tab = tabs.childNodes[i];
+         var webBrowser = tabBrowser.getBrowserAtIndex(i);
+         
+         // FIXME: if the port number changes, this will not match the
+         // tab any more, do we care?
+         
+         // if the tab contains our custom attribute and its URL starts with
+         // the BPE URL, then we want to use it
+         if(tab.hasAttribute('bitmunk-extension') &&
+            webBrowser.currentURI.spec.indexOf(gBpeUrl + '/bitmunk') != -1)
+         {
+            // select the tab
+            tabBrowser.selectedTab = tab;
+            rval = tab;
+            
+            // focus this browser window in case another one has focus
+            browserWindow.focus();
+            found = true;
+         }
       }
    }
-   else
+   
+   // get the current focused tab browser
+   var tabBrowser = getCurrentWindow().getBrowser();
+   
+   if(!found)
+   {
+      // add a new tab pointing at the BPE and go to it
+      var newTab = tabBrowser.addTab(gBpeUrl + '/bitmunk');
+      newTab.setAttribute('bitmunk-extension', 'true');
+      tabBrowser.selectedTab = newTab;
+      rval = newTab;
+   }
+   
+   // handle any queued directives
+   if(gDirectives.length > 0)
+   {
+      // add a load event listener to handle queued directives
+      var sendDirectives = function()
+      {
+         var doc = newTabBrowser.contentDocument;
+         
+         // send queued directives
+         while(gDirectives.length > 0)
+         {
+            sendDirective(doc, gDirectives.splice(0, 1)[0]);
+         }
+         
+         // remove event listener
+         webBrowser.removeEventListener('load', sendDirectives, true);
+      };
+      var webBrowser = tabBrowser.getBrowserForTab(rval);
+      webBrowser.addEventListener('load', sendDirectives, true);
+   }
+   
+   return rval;
+}
+
+/**
+ * Called when a user left clicks on something in the Bitmunk status bar
+ * overlay that is meant to start and view their Bitmunk app.
+ * 
+ * The ensuing behavior depends on the current state of the Bitmunk app:
+ * 
+ * STATE_ONLINE: The Bitmunk app is online, so open a tab and visit its URL.
+ * STATE_OFFLINE: The Bitmunk app is offline, so attempt to start it.
+ * STATE_LOADING: The Bitmunk app is starting up already, so ignore.
+ * STATE_UNKNOWN: The state of the Bitmunk app is being determined, so ignore.
+ */
+function manageBitmunk()
+{
+   _bitmunkLog('manageBitmunk(): current state: ' + gBitmunkState);
+   
+   switch(gBitmunkState)
+   {
+      case STATE_OFFLINE:
+         // start the bitmunk app
+         startBitmunk();
+         break;
+      case STATE_ONLINE:
+         getBitmunkTab();
+         break;
+      case STATE_LOADING:
+      case STATE_UNKNOWN:
+         // ignore
+         break;
+   }
+}
+
+/**
+ * Checks to see if the Bitmunk application is online. The given callback
+ * will be called with a single parameter: either true, if the Bitmunk
+ * application is online, or false if it is not.
+ * 
+ * @param cb the function to call with the true/false result and, if false, a
+ *           message explaining why.
+ */
+function pollBitmunk(cb)
+{
+   _bitmunkLog('pollBitmunk()');
+   
+   // if we're not online, the port might have changed, so refresh it
+   if(gBitmunkState != STATE_ONLINE)
    {
       // get the plugin
       var plugin = Components
-      .classes["@bitmunk.com/xpcom;1"]
+      .classes['@bitmunk.com/xpcom;1']
       .getService()
       .QueryInterface(
          Components.interfaces.nsIBitmunkExtension);
-   
-      // retrieve the port number for the plugin, if it exists
-      _bitmunkLog("launchBitmunk(): retrieving Bitmunk node port...");
-      var port = {};
-      plugin.getBitmunkPort(port);
-      _bitmunkLog("launchBitmunk(): Bitmunk node port: " + port.value);
-      gBpeUrl = BPE_URL + port.value;
-   }
-}
-
-/**
- * Kicks off a thread to start the Bitmunk application if it isn't
- * running on the specified host and port.
- *
- * @param callback the callback function to call with the status of the
- *        echo test performed in this call. If the object has a code == 0,
- *        then the bitmunk application is offline.
- */
-function startBitmunkApplication(callback)
-{
-   if(callback == null)
-   {
-      sendJsonRequest(gBpeUrl + "/api/3.0/system/test/echo", 
-         launchBitmunk, "{}");
-   }
-   else
-   {
-      sendJsonRequest(gBpeUrl + "/api/3.0/system/test/echo", 
-         callback, "{}");
-   }
-}
-
-/**
- * Launches the Bitmunk application if it is currently offline.
- */
-function launchBitmunk(obj)
-{
-   var now = new Date();
-
-   _bitmunkLog("launchBitmunk() called: " + now.getTime());
-
-   // Check to see if the object has a status of online. If the
-   // connection failed, assume the Bitmunk application is offline
-   // and start it.
-   if((obj.code == 0) && ((now.getTime() - gLastStartupAttempt) > 10000))
-   {
-      gLastStartupAttempt = now.getTime();
-      _bitmunkLog("launchBitmunk(): attempting to launch application.");
-
-      var plugin = Components
-         .classes["@bitmunk.com/xpcom;1"]
-         .getService()
-         .QueryInterface(
-            Components.interfaces.nsIBitmunkExtension);
       
-      // retrieve the port number for the plugin
-      _bitmunkLog("launchBitmunk(): retrieving Bitmunk node port...");
+      // get the port number for the plugin
+      _bitmunkLog('pollBitmunk(): getting bitmunk node port...');
       var port = {};
       plugin.getBitmunkPort(port);
-      _bitmunkLog("launchBitmunk(): Bitmunk node port: " + port.value);
+      _bitmunkLog('pollBitmunk(): bitmunk node port: ' + port.value);
       gBpeUrl = BPE_URL + port.value;
-
-      // launch the Bitmunk application
-      var pid = {};
-      if(plugin.launchBitmunk(pid));
-      {
-         _bitmunkLog("Bitmunk PID: " + pid.value);
-      }
+   }
+   
+   var xhr = new XMLHttpRequest();
+   if(!xhr)
+   {
+      _bitmunkLog('pollBitmunk(): could not create XMLHttpRequest');
+      cb(false, 'Could not create XMLHttpRequest.');
    }
    else
    {
-      _bitmunkLog("launchBitmunk(): application launch denied.");
+      _bitmunkLog('pollBitmunk(): creating request');
+      
+      // called if a connection error occurs
+      xhr.onerror = function()
+      {
+         _bitmunkLog('pollBitmunk(): could not connect');
+         cb(false, 'Could not connect to the webservice.');
+      };
+      
+      // called whenever the request worked
+      xhr.onload = function()
+      {
+         // an error occurred if the HTTP response status is 400+
+         _bitmunkLog('pollBitmunk(): response: ' + xhr.responseText);
+         var error = '';
+         if(xhr.status >= 400)
+         {
+            error = '' + xhr.status + ' ' + xhr.statusText;
+         }
+         else
+         {
+            try
+            {
+               // convert content from JSON
+               var obj = JSON.parse(xhr.responseText);
+               if(obj.echo !== 'ping')
+               {
+                  error = 'Unrecognized response.';
+               }
+            }
+            catch(e)
+            {
+               error = 'Unrecognized response. JSON parse error.';
+            }
+         }
+         
+         if(error.length > 0)
+         {
+            _bitmunkLog('pollBitmunk(): ' + error);
+            cb(false, error);
+         }
+         else
+         {
+            _bitmunkLog('pollBitmunk(): success');
+            cb(true);
+         }
+      };
+      
+      _bitmunkLog('pollBitmunk(): sending request...');
+      
+      // open the URL
+      xhr.open('GET', gBpeUrl + '/api/3.0/system/test/echo?echo=ping', true);
+      
+      // set accept request header and send the request
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.send(null);
    }
 }
 
 /**
- * Open a tab to display the Bitmunk P2P Plugin help page.
+ * Starts the Bitmunk application if it is currently offline.
  */
-function showBitmunkProcessDirective(bmdFile)
- {
-   _bitmunkLog("Process Bitmunk Directive: " + bmdFile);
-
-   mainWindow = getCurrentWindow();
-   contentWindow = mainWindow.getBrowser().contentWindow; 
-   documentWindow = mainWindow.getBrowser().documentWindow; 
-   var intervalId;
-
-	/**
-	 * The Bitmunk Process Observer is used to process onload events for 
-	 * BMD plugin windows after the command to load the chrome window is
-	 * executed.
-	 */
-	bitmunkProcessObserver = 
-	{
-	   setBmdContent: function()
-	   {
-	      // get the content document and the bmdFile for the document
-	      mainWindow = getCurrentWindow();
-         contentDocument = mainWindow.getBrowser().contentDocument;
-
-         // get the directive element
-         var directiveElem = 
-            contentDocument.getElementById("queued-bitmunk-directive");
-
-         // if the directive element was found, set the inner HTML, otherwise
-         // try again in 250ms.
-         if(directiveElem != null)
-         {
-            directiveElem.innerHTML = bmdFile;
-            mainWindow.clearInterval(intervalId);
-         }
-	   }
-	};
-
-	// create the start-up action that should run when the bitmunk node is
-	// verified to be operational
-   var startupAction = function() 
-   {   
-      // load the Bitmunk chrome page to process the BMD file
-      contentWindow.location.replace(
-         gBpeUrl + "/bitmunk#purchases");
+function startBitmunk()
+{
+   _bitmunkLog('startBitmunk()');
    
-      // FIXME: This is a fairly nasty way to get this done, we should be 
-      // waiting for an onload event, but both the content and document windows 
-      // are destroyed at some point after this call. 
-      intervalId = 
-         mainWindow.setInterval(bitmunkProcessObserver.setBmdContent, 250);
+   // stop any existing polling
+   stopBitmunkPolling();
+   
+   // start the Bitmunk application if it is offline
+   pollBitmunk(function(online)
+   {
+      if(online)
+      {
+         _bitmunkLog('startBitmunk(): bitmunk has already started.');
+         
+         // restart polling
+         startBitmunkPolling({interval: gPollInterval});
+      }
+      else
+      {
+         _bitmunkLog('startBitmunk(): starting bitmunk @ ' +new Date());
+         
+         // bitmunk is now loading
+         gBitmunkState = STATE_LOADING;
+         
+         // get the plugin
+         var plugin = Components
+            .classes['@bitmunk.com/xpcom;1']
+            .getService()
+            .QueryInterface(Components.interfaces.nsIBitmunkExtension);
+         
+         // start the bitmunk app
+         var pid = {};
+         if(plugin.launchBitmunk(pid))
+         {
+            _bitmunkLog('startBitmunk(): bitmunk PID: ' + pid.value);
+            
+            // reset bitmunk start time
+            gBitmunkStartTime = +new Date();
+            
+            /* There might be a small delay between when the bitmunk process
+             * starts up and when its webservices come online. For that reason,
+             * we do some short-interval polling here until we change state.
+             * Then we start polling at a normal interval to monitor state.
+             */
+            startBitmunkPolling({
+               interval: 1000,
+               stateChanged: function()
+               {
+                  // stop polling
+                  stopBitmunkPolling();
+                  
+                  if(gBitmunkState == STATE_ONLINE)
+                  {
+                     _bitmunkLog('startBitmunk(): bitmunk is now ONLINE');
+                     
+                     // bitmunk successfully started, open tab
+                     try
+                     {
+                        getBitmunkTab();
+                     }
+                     catch(e)
+                     {
+                        _bitmunkLog('getBitmunkTab exception: ' + e);
+                     }
+                     
+                     // start polling at a regular interval
+                     startBitmunkPolling({interval: gPollInterval});
+                  }
+               }
+            });
+         }
+         else
+         {
+            _bitmunkLog('startBitmunk(): bitmunk failed to start');
+            
+            // bitmunk failed to start
+            gBitmunkState = STATE_OFFLINE;
+         }
+      }
+   });
+}
+
+/**
+ * Starts polling the Bitmunk app to see if it is online or not.
+ * 
+ * @param options:
+ *           interval: the polling interval.
+ *           stateChanged: a function to call once the state changes.
+ */
+function startBitmunkPolling(options)
+{
+   _bitmunkLog('startBitmunkPolling()');
+   
+   /* Start polling, do so using setTimeout so that we wait for the network
+      activity to complete before doing the next poll. Otherwise, over time,
+      due to network latency, we might start spawning off more than one poll
+      at a time. */
+   var poll = function()
+   {
+      _bitmunkLog('poll()');
+      
+      pollBitmunk(function(online)
+      {
+         var oldState = gBitmunkState;
+         if(online)
+         {
+            _bitmunkLog('poll(): setting state to ONLINE');
+            gBitmunkState = STATE_ONLINE;
+         }
+         else
+         {
+            var now = +new Date();
+            if(gBitmunkState != STATE_LOADING || now >= gMaximumLoadTime)
+            {
+               /*
+               // FIXME: notify the user that the bitmunk app failed to start
+               if(gBitmunkState == STATE_LOADING)
+               {
+               }
+               */
+               
+               _bitmunkLog('poll(): setting state to OFFLINE');
+               gBitmunkState = STATE_OFFLINE;
+            }
+         }
+         
+         // schedule next poll
+         gPollIntervalId = getCurrentWindow().setTimeout(
+            poll, options.interval);
+         _bitmunkLog('poll(): next poll in ' + options.interval);
+
+         // handle state change
+         if(oldState != gBitmunkState)
+         {
+            // update status display
+            updateStatusDisplay();
+            
+            // handle callback
+            if(options.stateChanged)
+            {
+               options.stateChanged();
+            }
+         }
+      });
    };
    
-   // check to see if the node is online, if it is then run the startupAction,
-   // otherwise wait for the node to come online and then run the startupAction.
-   if(gBitmunkOnline == true)
+   // schedule first poll
+   gPollIntervalId = getCurrentWindow().setTimeout(poll, options.interval);
+}
+
+/**
+ * Stops polling the Bitmunk app.
+ */
+function stopBitmunkPolling()
+{
+   // clear any old interval ID
+   if(gPollIntervalId !== null)
    {
-      startupAction();
-   }
-   else
-   {
-      startBitmunkApplication();
-      gStartupAction = startupAction;
+      clearTimeout(gPollIntervalId);
+      gPollIntervalId = null;
    }
 }
 
 /**
- * Open a tab to display the Bitmunk P2P Plugin help page.
+ * Updates the status display based on the current state.
+ */
+function updateStatusDisplay()
+{
+   _bitmunkLog('updateStatusDisplay()');
+   
+   statusImage = document.getElementById('bitmunk-status-image');
+   statusLabel = document.getElementById('bitmunk-status-label');
+   //controlLabel = document.getElementById('bitmunk-control-label');
+
+   // update the image and the label based on the current state
+   switch(gBitmunkState)
+   {
+      case STATE_ONLINE:
+         _bitmunkLog('updateStatusDisplay(): ONLINE');
+         statusImage.src = 'chrome://bitmunk/content/bitmunk16-online.png';
+         statusLabel.value = 'online';
+         break;
+      case STATE_OFFLINE:
+         _bitmunkLog('updateStatusDisplay(): OFFLINE');
+         statusImage.src = 'chrome://bitmunk/content/bitmunk16-offline.png';
+         statusLabel.value = 'offline';
+         break;
+      case STATE_LOADING:
+      case STATE_UNKNOWN:
+         _bitmunkLog('updateStatusDisplay(): LOADING');
+         statusImage.src = 'chrome://bitmunk/content/bitmunk16-offline.png';
+         statusLabel.value = 'loading';
+         break;
+   }
+}
+
+/**
+ * Sends a directive to the BPE via an event.
+ * 
+ * @param doc the page document.
+ * @param bmd the directive to send.
+ */
+function sendDirective(doc, bmd)
+{
+   _bitmunkLog('sendDirective()');
+   
+   var e = doc.createEvent('Events');
+   e.initEvent('bitmunk-directive-queued', true, true);
+   e.detail = bmd;
+   doc.dispatchEvent(e);
+}
+
+/**
+ * Queues a Bitmunk Directive. If the Bitmunk app is already online, the
+ * directive is sent immediately. Otherwise, the directive is queued and
+ * an attempt is made to start the Bitmunk app. 
+ * 
+ * @param bmd the bitmunk directive.
+ */
+function queueDirective(bmd)
+ {
+   _bitmunkLog('Queuing Bitmunk Directive: ' + bmd);
+   
+   if(gBitmunkState == STATE_ONLINE)
+   {
+      // get the Bitmunk tab and send the directive
+      var tab = getBitmunkTab();
+      sendDirective(tab.contentDocument, bmd);
+   }
+   else
+   {
+      // queue the directive and attempt to manage bitmunk
+      gDirectives.push(bmd);
+      manageBitmunk();
+   }
+}
+
+/**
+ * Opens a tab to display the Bitmunk P2P Plugin help page.
  */
 function showBitmunkHelp()
  {
-   _bitmunkLog("Showing Bitmunk Help");
+   _bitmunkLog('Showing Bitmunk Help');
          
-   mainWindow = getCurrentWindow();
-   newTab = mainWindow.getBrowser().addTab(
-      "chrome://bitmunk/content/help.html");
+   var mainWindow = getCurrentWindow();
+   var newTab = mainWindow.getBrowser().addTab(
+      'chrome://bitmunk/content/help.html');
    mainWindow.getBrowser().selectedTab = newTab;   
 }
 
 /**
- * Open a tab to display the Bitmunk Website.
+ * Opens a tab to display the Bitmunk Website.
  */
 function showBitmunkWebsite()
 {
-   _bitmunkLog("Showing Bitmunk Website");
+   _bitmunkLog('Showing Bitmunk Website');
    
-   mainWindow = getCurrentWindow();
-   newTab = mainWindow.getBrowser().addTab("http://bitmunk.com/");
+   var mainWindow = getCurrentWindow();
+   var newTab = mainWindow.getBrowser().addTab('http://bitmunk.com/');
    mainWindow.getBrowser().selectedTab = newTab;   
 }
 
@@ -305,14 +576,14 @@ const bitmunkDirectiveObserver =
 {
    observe: function(subject, topic, data)
    {
-      if(topic == "bitmunk-directive")
+      if(topic == 'bitmunk-directive')
       {
-         showBitmunkProcessDirective(data);
+         queueDirective(data);
       }
    }
 };
 
-// register the Bitmunk directive observer.
-const service = Components.classes["@mozilla.org/observer-service;1"]
+// register the Bitmunk directive observer
+const service = Components.classes['@mozilla.org/observer-service;1']
    .getService(Components.interfaces.nsIObserverService);
-service.addObserver(bitmunkDirectiveObserver, "bitmunk-directive", false);
+service.addObserver(bitmunkDirectiveObserver, 'bitmunk-directive', false);
