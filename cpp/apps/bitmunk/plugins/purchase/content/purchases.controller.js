@@ -526,30 +526,37 @@
       // TODO: decide to only clear the queue if it's a purchase directive
       // as we might have different directives in the future
       
-      // get directive queue element and then clear the queue
+      // get directive queue element
       var element = $('#bitmunk-directive-queue');
-      if(element && element.directiveQueue)
+      if(element)
       {
-         // save a reference to the queue and then clear it
-         var queue = element.directiveQueue;
-         element.directiveQueue = [];
-         
-         // handle all directives in the old queue
-         $.each(queue, function(i, directive)
+         // save the old queue and clear it
+         var json = e.innerHTML;
+         element.innerHTML = '';
+         try
          {
-            // post directive to the backend, if successful, we'll receive
-            // an event...if not, the default handler will catch the error
-            bitmunk.api.proxy(
+            // parse and handle all directives in the old queue
+            var queue = JSON.parse(json);
+            $.each(queue, function(i, directive)
             {
-               method: 'POST',
-               url: bitmunk.api.root + 'system/directives',
-               params: { nodeuser: bitmunk.user.getUserId() },
-               data: directive
+               // post directive to the backend, if successful, we'll receive
+               // an event...if not, the default handler will catch the error
+               bitmunk.api.proxy(
+               {
+                  method: 'POST',
+                  url: bitmunk.api.root + 'system/directives',
+                  params: { nodeuser: bitmunk.user.getUserId() },
+                  data: directive
+               });
             });
-         });
+         }
+         catch(e)
+         {
+            bitmunk.log.debug(
+               sLogCategory, 'Exception while processing queued directives', e);
+         }
       }
    };
-   
    
    /**
     * Download Action

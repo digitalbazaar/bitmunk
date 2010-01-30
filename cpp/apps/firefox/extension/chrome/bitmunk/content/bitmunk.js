@@ -90,11 +90,11 @@ window.addEventListener('load', onWindowLoad, false);
  * 
  * @return the tab pointing at the BPE's interface.
  */
-function getBitmunkTab()
+function openBitmunkTab()
 {
    var rval = null;
    
-   _bitmunkLog('getBitmunkTab()');
+   _bitmunkLog('openBitmunkTab()');
    
    // FIXME: a future may be able to keep a reference to the bitmunk tab
    // around, clearing it when the tab is closed ... but it would also need
@@ -160,7 +160,7 @@ function getBitmunkTab()
          // send queued directives, clear queue
          var queue = gDirectives;
          gDirectives = [];
-         sendDirectives(newTabBrowser.contentDocument, queue);
+         sendDirectives(tabBrowser.contentDocument, queue);
          
          // remove event listener
          webBrowser.removeEventListener('load', sendQueuedDirectives, true);
@@ -194,7 +194,7 @@ function manageBitmunk()
          startBitmunk();
          break;
       case STATE_ONLINE:
-         getBitmunkTab();
+         openBitmunkTab();
          break;
       case STATE_LOADING:
       case STATE_UNKNOWN:
@@ -317,6 +317,9 @@ function startBitmunk()
       {
          _bitmunkLog('startBitmunk(): bitmunk has already started.');
          
+         // open bitmunk tab
+         openBitmunkTab();
+         
          // restart polling
          startBitmunkPolling({interval: gPollInterval});
       }
@@ -358,14 +361,14 @@ function startBitmunk()
                   {
                      _bitmunkLog('startBitmunk(): bitmunk is now ONLINE');
                      
-                     // bitmunk successfully started, open tab
                      try
                      {
-                        getBitmunkTab();
+                        // bitmunk successfully started, open tab
+                        openBitmunkTab();
                      }
                      catch(e)
                      {
-                        _bitmunkLog('getBitmunkTab exception: ' + e);
+                        _bitmunkLog('openBitmunkTab exception: ' + e);
                      }
                      
                      // start polling at a regular interval
@@ -414,8 +417,8 @@ function startBitmunkPolling(options)
          }
          else
          {
-            var now = +new Date();
-            if(gBitmunkState != STATE_LOADING || now >= gMaximumLoadTime)
+            var elapsed = (+new Date()) - gBitmunkStartTime;
+            if(gBitmunkState != STATE_LOADING || elapsed >= gMaximumLoadTime)
             {
                /*
                // FIXME: notify the user that the bitmunk app failed to start
@@ -509,19 +512,34 @@ function sendDirectives(doc, bmds)
 {
    _bitmunkLog('sendDirectives()');
    
-   var e = contentDocument.getElementById('bitmunk-directive-queue');
+   var e = doc.getElementById('bitmunk-directive-queue');
    if(e)
    {
-      // create queue if it doesn't exist yet
-      if(e.directiveQueue === undefined || e.directiveQueue === null)
+      // get any existing directive queue
+      var queue;
+      var json = e.innerHTML;
+      if(json === '')
       {
-         e.directiveQueue = bmds;
+         // no existing queue
+         queue = bmds;
       }
       else
       {
-         // append the directives
-         e.directiveQueue = e.directiveQueue.concat(bmds);
+         try
+         {
+            // append to the current queue
+            queue = JSON.parse(json);
+            queue = queue.concat(bmds);
+         }
+         catch(ex)
+         {
+            // overwrite bogus queue
+            queue = bmds;
+         }
       }
+      
+      // update queue element
+      e.innerHTML = JSON.stringify(queue);
       
       // send an event
       var ev = doc.createEvent('Events');
@@ -555,9 +573,10 @@ function queueDirective(bmd)
    {
       if(gBitmunkState == STATE_ONLINE)
       {
-         // get the Bitmunk tab and send the directive
-         var tab = getBitmunkTab();
-         sendDirectives(tab.contentDocument, [obj]);
+         // open the Bitmunk tab and send the directive
+         openBitmunkTab();
+         var tabBrowser = getCurrentWindow().getBrowser();
+         sendDirectives(tabBrowser.contentDocument, [obj]);
       }
       else
       {
