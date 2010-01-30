@@ -57,6 +57,21 @@ static NPNetscapeFuncs gGeckoFunctionTable;
 //#define LINUX_DEBUG_MODE    1
 #define SEND_BMD_TO_BITMUNK 1
 
+// clear NPAPI functions (use C style symbols)
+extern "C"
+{
+#if defined(WIN32)
+NPError OSCALL NP_Initialize(NPNetscapeFuncs* geckoFunctions);
+#else
+NPError OSCALL NP_Initialize(
+   NPNetscapeFuncs* geckoFunctions, NPPluginFuncs* pFuncs);
+#endif
+NPError OSCALL NP_GetEntryPoints(NPPluginFuncs* pFuncs);
+NPError OSCALL NP_Shutdown();
+char* NP_GetMIMEDescription();
+NPError OSCALL NP_GetValue(void* future, NPPVariable valueType, void* value);
+}
+
 // a buffer for storing streaming BMD data
 struct BmdBuffer
 {
