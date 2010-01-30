@@ -21,13 +21,12 @@
 		<key>application/x-bitmunk-directive</key>
 		<dict>
 			<key>WebPluginTypeDescription</key>
-			<string>Bitmunk Direcive</string>
+			<string>Bitmunk Directive</string>
 		</dict>
 	</dict>
 	<key>WebPluginDescription</key>
 	<string>Processes Bitmunk directives, such as purchase requests, via the browser.</string>
 	<key>WebPluginName</key>
-	<string>Bitmunk Directive Processing Plugin</string>
+	<string>Bitmunk Directive Processor Plugin</string>
 </dict>
 </plist>
-

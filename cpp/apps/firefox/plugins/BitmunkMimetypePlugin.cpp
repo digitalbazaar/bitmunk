@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2010 Digital Bazaar, Inc. All rights reserved.
  */
 
 /*
@@ -85,13 +85,15 @@ struct BmdBuffer
  * 
  * @param mimeType the mimetype that was detected in the browser.
  * @param instance the instance that received the event, should be NULL.
- * @param mode the mode that was used to open the plugin (ie: embedded, or 
- *             full-screen)
+ * @param mode the mode that was used to open the plugin (ie: embedded,
+ *             full-screen, or background)
  * @param argc the argument count for the instance creation.
  * @param argn the argument names associated with the object/embed.
  * @param argv the argument values associated with the argument names.
  * @param saved the saved state that is passed in from the last destruction of
  *              the plugin -- where it was created.
+ *
+ * @return an NP error code.
  */
 static NPError BmpNewInstance(
    NPMIMEType mime_type, NPP instance,
@@ -118,6 +120,8 @@ static NPError BmpNewInstance(
  * @param save a pointer that can be set to state information that can be
  *             allocated in this method -- it will be passed to the next
  *             call to create a new instance.
+ *
+ * @return an NP error code.
  */
 static NPError BmpDestroyInstance(NPP instance, NPSavedData** save)
 {
@@ -217,6 +221,8 @@ static bool allocateBmdBufferSpace(BmdBuffer* buffer, int amount)
  *    (as in mode NP_NORMAL).
  *    NP_SEEK: Stream data randomly accessible by the plug-in as needed,
  *    through calls to NPN_RequestRead.
+ *
+ * @return an NP error code.
  */
 static NPError BmpNewStream(
    NPP instance, NPMIMEType type, NPStream* stream,
@@ -268,7 +274,9 @@ static NPError BmpNewStream(
  *    button or indirectly by some action such as deleting the instance or
  *    initiating higher-priority network operations.
  *    NPRES_NETWORK_ERR: Stream failed due to problems with network, disk I/O,
- *    lack of memory, or other problems. 
+ *    lack of memory, or other problems.
+ *
+ * @return an NP error code.
  */
 static NPError BmpDestroyStream(NPP instance, NPStream* stream, NPReason reason)
 {
