@@ -517,30 +517,35 @@
    };
    
    /**
-    * FIXME: make the comment below make sense:
+    * Called when a N bitmunk directives have been queued.
     * 
-    * Called the bitmunk directive queue should be checked.
-    * 
-    * @param event the event that triggered the check or null.
+    * @param event the event or null if called on startup.
     */
-   var directiveQueued = function(event)
+   var directivesQueued = function(event)
    {
       // TODO: decide to only clear the queue if it's a purchase directive
       // as we might have different directives in the future
       
-      // get queued directive and then clear the queue
-      var json = $('#queued-bitmunk-directive').text();
-      $('#queued-bitmunk-directive').empty();
-      if(json && json.length > 0)
+      // get directive queue element and then clear the queue
+      var element = $('#bitmunk-directive-queue');
+      if(element && element.directiveQueue)
       {
-         // post directive to the backend, if successful, we'll receive
-         // an event...if not, the default handler will catch the error
-         bitmunk.api.proxy(
+         // save a reference to the queue and then clear it
+         var queue = element.directiveQueue;
+         element.directiveQueue = [];
+         
+         // handle all directives in the old queue
+         $.each(queue, function(i, directive)
          {
-            method: 'POST',
-            url: bitmunk.api.root + 'system/directives',
-            params: { nodeuser: bitmunk.user.getUserId() },
-            data: JSON.parse(json)
+            // post directive to the backend, if successful, we'll receive
+            // an event...if not, the default handler will catch the error
+            bitmunk.api.proxy(
+            {
+               method: 'POST',
+               url: bitmunk.api.root + 'system/directives',
+               params: { nodeuser: bitmunk.user.getUserId() },
+               data: directive
+            });
          });
       }
    };
@@ -667,13 +672,11 @@
          'bitmunk-purchase-DownloadState-feedbackUpdated',
          feedbackUpdated);
       
-      // load any already queued purchase directive
-      directiveQueued(null);
+      // load any already queued purchase directives
+      directivesQueued(null);
       
       // bind to receive future purchase directives
-      $(window).bind(
-         'bitmunk-directive-queued',
-         directiveQueued);
+      $(window).bind('bitmunk-directives-queued', directivesQueued);
       
       // FIXME: update view with download state information
       

@@ -155,21 +155,18 @@ function getBitmunkTab()
    if(gDirectives.length > 0)
    {
       // add a load event listener to handle queued directives
-      var sendDirectives = function()
+      var sendQueuedDirectives = function()
       {
-         var doc = newTabBrowser.contentDocument;
-         
-         // send queued directives
-         while(gDirectives.length > 0)
-         {
-            sendDirective(doc, gDirectives.splice(0, 1)[0]);
-         }
+         // send queued directives, clear queue
+         var queue = gDirectives;
+         gDirectives = [];
+         sendDirectives(newTabBrowser.contentDocument, queue);
          
          // remove event listener
-         webBrowser.removeEventListener('load', sendDirectives, true);
+         webBrowser.removeEventListener('load', sendQueuedDirectives, true);
       };
       var webBrowser = tabBrowser.getBrowserForTab(rval);
-      webBrowser.addEventListener('load', sendDirectives, true);
+      webBrowser.addEventListener('load', sendQueuedDirectives, true);
    }
    
    return rval;
@@ -503,19 +500,34 @@ function updateStatusDisplay()
 }
 
 /**
- * Sends a directive to the BPE via an event.
+ * Notifies the BPE that N directives have been queued via an event.
  * 
  * @param doc the page document.
- * @param bmd the directive to send.
+ * @param bmds the array of bmds to send.
  */
-function sendDirective(doc, bmd)
+function sendDirectives(doc, bmds)
 {
-   _bitmunkLog('sendDirective()');
+   _bitmunkLog('sendDirectives()');
    
-   var e = doc.createEvent('Events');
-   e.initEvent('bitmunk-directive-queued', true, true);
-   e.detail = bmd;
-   doc.dispatchEvent(e);
+   var e = contentDocument.getElementById('bitmunk-directive-queue');
+   if(e)
+   {
+      // create queue if it doesn't exist yet
+      if(e.directiveQueue === undefined || e.directiveQueue === null)
+      {
+         e.directiveQueue = bmds;
+      }
+      else
+      {
+         // append the directives
+         e.directiveQueue = e.directiveQueue.concat(bmds);
+      }
+      
+      // send an event
+      var ev = doc.createEvent('Events');
+      ev.initEvent('bitmunk-directives-queued', true, true);
+      e.dispatchEvent(ev);
+   }
 }
 
 /**
@@ -527,19 +539,27 @@ function sendDirective(doc, bmd)
  */
 function queueDirective(bmd)
  {
-   _bitmunkLog('Queuing Bitmunk Directive: ' + bmd);
+   _bitmunkLog('Queuing Bitmunk directive: ' + bmd);
    
-   if(gBitmunkState == STATE_ONLINE)
+   try
    {
-      // get the Bitmunk tab and send the directive
-      var tab = getBitmunkTab();
-      sendDirective(tab.contentDocument, bmd);
+      JSON.parse(bmd);
+      if(gBitmunkState == STATE_ONLINE)
+      {
+         // get the Bitmunk tab and send the directive
+         var tab = getBitmunkTab();
+         sendDirectives(tab.contentDocument, [bmd]);
+      }
+      else
+      {
+         // queue the directive and attempt to manage bitmunk
+         gDirectives.push(bmd);
+         manageBitmunk();
+      }
    }
-   else
+   catch(e)
    {
-      // queue the directive and attempt to manage bitmunk
-      gDirectives.push(bmd);
-      manageBitmunk();
+      _bitmunkLog('Could not queue Bitmunk directive. JSON parse error.');
    }
 }
 
