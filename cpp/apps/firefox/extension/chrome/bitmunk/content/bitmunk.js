@@ -541,25 +541,30 @@ function queueDirective(bmd)
  {
    _bitmunkLog('Queuing Bitmunk directive: ' + bmd);
    
+   var obj = null;
    try
    {
-      JSON.parse(bmd);
-      if(gBitmunkState == STATE_ONLINE)
-      {
-         // get the Bitmunk tab and send the directive
-         var tab = getBitmunkTab();
-         sendDirectives(tab.contentDocument, [bmd]);
-      }
-      else
-      {
-         // queue the directive and attempt to manage bitmunk
-         gDirectives.push(bmd);
-         manageBitmunk();
-      }
+      obj = JSON.parse(bmd);
    }
    catch(e)
    {
       _bitmunkLog('Could not queue Bitmunk directive. JSON parse error.');
+   }
+   
+   if(obj !== null)
+   {
+      if(gBitmunkState == STATE_ONLINE)
+      {
+         // get the Bitmunk tab and send the directive
+         var tab = getBitmunkTab();
+         sendDirectives(tab.contentDocument, [obj]);
+      }
+      else
+      {
+         // queue the directive and attempt to manage bitmunk
+         gDirectives.push(obj);
+         manageBitmunk();
+      }
    }
 }
 
