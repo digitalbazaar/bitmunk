@@ -25,7 +25,7 @@
 		</dict>
 	</dict>
 	<key>WebPluginDescription</key>
-	<string>Processes Bitmunk directives, such as purchase requests,  via the browser.</string>
+	<string>Processes Bitmunk directives, such as purchase requests, via the browser.</string>
 	<key>WebPluginName</key>
 	<string>Bitmunk Directive Processing Plugin</string>
 </dict>
