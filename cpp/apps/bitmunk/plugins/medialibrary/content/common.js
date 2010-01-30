@@ -7,7 +7,7 @@
 (function($)
 {
    // log category
-   var sLogCategory = 'bitmun.medialibrary.common';
+   var sLogCategory = 'bitmunk.medialibrary.common';
    
    var sScriptTask = bitmunk.resource.getScriptTask(
       'bitmunk.webui.MediaLibrary', 'common.js');
