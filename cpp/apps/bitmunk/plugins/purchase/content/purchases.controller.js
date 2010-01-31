@@ -697,7 +697,7 @@
          $('#messages').jGrowl(msg,
          {
             sticky: false,
-            theme: 'ok'
+            theme: 'info'
          });
       });
       $(window).bind('bitmunk-directive-error', function(event)
