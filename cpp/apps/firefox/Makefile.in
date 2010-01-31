@@ -52,7 +52,11 @@ MODULE_LIBRARIES = @LIB_PREFIX@bmnode.@SHARED_LIB_EXTENSION@ \
 
 WEBUI_PLUGINS = help log login main purchase medialibrary settings
 
+ifeq (@BITMUNK_RELEASE_MODE@,no)
+PKI_FILES = test-bitmunk-ca-file.pem
+else
 PKI_FILES = bitmunk-ca-file.pem
+endif
 
 ifeq (@BITMUNK_RELEASE_MODE@,no)
 WEBUI_PLUGINS += support debug test
