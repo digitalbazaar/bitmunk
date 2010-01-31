@@ -555,6 +555,8 @@ function directiveStarted()
 {
    _bitmunkLog('Downloading Bitmunk directive.');
    
+   openBitmunkTab();
+   var doc = getCurrentWindow().getBrowser().contentDocument;
    var e = doc.getElementById('bitmunk-directive-queue');
    if(e)
    {
@@ -613,6 +615,8 @@ function directiveError(msg)
 {
    _bitmunkLog('Error when downloading Bitmunk directive.');
    
+   openBitmunkTab();
+   var doc = getCurrentWindow().getBrowser().contentDocument;
    var e = doc.getElementById('bitmunk-directive-queue');
    if(e)
    {
