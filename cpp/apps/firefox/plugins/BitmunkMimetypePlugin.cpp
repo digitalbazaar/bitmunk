@@ -109,6 +109,27 @@ static NPError BmpNewInstance(
    printf("BmpNewInstance\n");
 #endif
    
+#ifdef SEND_BMD_TO_BITMUNK
+   // get the service manager
+   nsCOMPtr<nsIServiceManager> svcMgr;
+   nsresult rv = NS_GetServiceManager(getter_AddRefs(svcMgr));
+   if(!NS_FAILED(rv))
+   {
+      // get the observer service
+      nsCOMPtr<nsIObserverService> observerService;
+      rv = svcMgr->GetServiceByContractID(
+         "@mozilla.org/observer-service;1",
+         NS_GET_IID(nsIObserverService),
+         getter_AddRefs(observerService));
+      if(!NS_FAILED(rv))
+      {
+         // notify observers that a bitmunk directive has started
+         observerService->NotifyObservers(
+            NULL, "bitmunk-directive-started", NULL);
+      }
+   }
+#endif
+
    // ensure that the instance passed is valid
    return (instance == NULL) ? NPERR_INVALID_INSTANCE_ERROR : NPERR_NO_ERROR;
 }
@@ -240,27 +261,6 @@ static NPError BmpNewStream(
    printf("BmpNewStream\n");
 #endif
    
-#ifdef SEND_BMD_TO_BITMUNK
-   // get the service manager
-   nsCOMPtr<nsIServiceManager> svcMgr;
-   nsresult rv = NS_GetServiceManager(getter_AddRefs(svcMgr));
-   if(!NS_FAILED(rv))
-   {
-      // get the observer service
-      nsCOMPtr<nsIObserverService> observerService;
-      rv = svcMgr->GetServiceByContractID(
-         "@mozilla.org/observer-service;1",
-         NS_GET_IID(nsIObserverService),
-         getter_AddRefs(observerService));
-      if(!NS_FAILED(rv))
-      {
-         // notify observers that a bitmunk directive has started
-         observerService->NotifyObservers(
-            NULL, "bitmunk-directive-started", NULL);
-      }
-   }
-#endif
-
    // use normal streaming
    *stype = (uint16)NP_NORMAL;
    
