@@ -364,7 +364,7 @@ static NPError BmpDestroyStream(NPP instance, NPStream* stream, NPReason reason)
                NULL, "bitmunk-directive-error", utf16.get());
          }
          // network error
-         else if(reason == NPRES_NETWORK_ERROR)
+         else if(reason == NPRES_NETWORK_ERR)
          {
             // set error message
             NS_CStringToUTF16(
