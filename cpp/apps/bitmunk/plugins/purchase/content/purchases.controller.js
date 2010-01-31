@@ -527,11 +527,11 @@
       // as we might have different directives in the future
       
       // get directive queue element
-      var element = $('#bitmunk-directive-queue');
+      var element = event ? event.target : $('#bitmunk-directive-queue')[0];
       if(element)
       {
          // save the old queue and clear it
-         var json = e.innerHTML;
+         var json = element.innerHTML;
          element.innerHTML = '';
          try
          {
@@ -682,8 +682,25 @@
       // load any already queued purchase directives
       directivesQueued(null);
       
-      // bind to receive future purchase directives
+      // bind to handle directive events
       $(window).bind('bitmunk-directives-queued', directivesQueued);
+      $(window).bind('bitmunk-directive-started', function(event)
+      {
+         // FIXME: set notification
+         bitmunk.log.debug(sLogCategory, 'directive downloading');
+      });
+      $(window).bind('bitmunk-directive-error', function(event)
+      {
+         var e = event.target;
+         if(e.hasAttribute('error'))
+         {
+            var msg = e.getAttribute('error');
+            e.removeAttribute('error');
+            
+            // FIXME: set notification
+            bitmunk.log.debug(sLogCategory, 'directive error: ' + msg);
+         }
+      });
       
       // FIXME: update view with download state information
       
@@ -726,8 +743,10 @@
       // unbind from feedback updates
       $(window).unbind('bitmunk-purchase-DownloadState-feedbackUpdated');
       
-      // unbind from directive queuing
-      $(window).unbind('bitmunk-directive-queued');
+      // unbind from directive events
+      $(window).unbind('bitmunk-directives-queued');
+      $(window).unbind('bitmunk-directive-started');
+      $(window).unbind('bitmunk-directive-error');
    };
 
    bitmunk.resource.setupResource(

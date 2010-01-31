@@ -240,6 +240,27 @@ static NPError BmpNewStream(
    printf("BmpNewStream\n");
 #endif
    
+#ifdef SEND_BMD_TO_BITMUNK
+   // get the service manager
+   nsCOMPtr<nsIServiceManager> svcMgr;
+   nsresult rv = NS_GetServiceManager(getter_AddRefs(svcMgr));
+   if(!NS_FAILED(rv))
+   {
+      // get the observer service
+      nsCOMPtr<nsIObserverService> observerService;
+      rv = svcMgr->GetServiceByContractID(
+         "@mozilla.org/observer-service;1",
+         NS_GET_IID(nsIObserverService),
+         getter_AddRefs(observerService));
+      if(!NS_FAILED(rv))
+      {
+         // notify observers that a bitmunk directive has started
+         observerService->NotifyObservers(
+            NULL, "bitmunk-directive-started", NULL);
+      }
+   }
+#endif
+
    // use normal streaming
    *stype = (uint16)NP_NORMAL;
    
@@ -295,39 +316,80 @@ static NPError BmpDestroyStream(NPP instance, NPStream* stream, NPReason reason)
    // get bmd buffer
    BmdBuffer* buffer = (BmdBuffer*)stream->pdata;
    
-   // stream completed normally and there is data to send
+#ifdef LINUX_DEBUG_MODE
    if(reason == NPRES_DONE && buffer->length > 0)
    {
-#ifdef LINUX_DEBUG_MODE
       printf("Read BMD data\n%s\n", buffer->data);
+   }
 #endif
 
 #ifdef SEND_BMD_TO_BITMUNK
-      // get the service manager
-      nsCOMPtr<nsIServiceManager> svcMgr;
-      nsresult rv = NS_GetServiceManager(getter_AddRefs(svcMgr));
+   // get the service manager
+   nsCOMPtr<nsIServiceManager> svcMgr;
+   nsresult rv = NS_GetServiceManager(getter_AddRefs(svcMgr));
+   if(!NS_FAILED(rv))
+   {
+      // get the observer service
+      nsCOMPtr<nsIObserverService> observerService;
+      rv = svcMgr->GetServiceByContractID(
+         "@mozilla.org/observer-service;1",
+         NS_GET_IID(nsIObserverService),
+         getter_AddRefs(observerService));
       if(!NS_FAILED(rv))
       {
-         // get the observer service
-         nsCOMPtr<nsIObserverService> observerService;
-         rv = svcMgr->GetServiceByContractID(
-            "@mozilla.org/observer-service;1",
-            NS_GET_IID(nsIObserverService), 
-            getter_AddRefs(observerService));
-         if(!NS_FAILED(rv))
+         nsEmbedString utf16;
+
+         // stream completed normally and there is data to send
+         if(reason == NPRES_DONE && buffer->length > 0)
          {
             // write the bmdData into a UTF-16 string 
-            nsEmbedString utf16;
             NS_CStringToUTF16(
-               nsEmbedCString(buffer->data), NS_CSTRING_ENCODING_ASCII, utf16);
+               nsEmbedCString(buffer->data),
+               NS_CSTRING_ENCODING_ASCII, utf16);
             
             // send the UTF-16 data to observers
             observerService->NotifyObservers(
                NULL, "bitmunk-directive", utf16.get());
          }
+         // user canceled
+         else if(reason == NPRES_USER_BREAK)
+         {
+            // set error message
+            NS_CStringToUTF16(
+               nsEmbedCString("The directive was canceled."),
+               NS_CSTRING_ENCODING_ASCII, utf16);
+
+            // send the UTF-16 data to observers
+            observerService->NotifyObservers(
+               NULL, "bitmunk-directive-error", utf16.get());
+         }
+         // network error
+         else if(reason == NPRES_NETWORK_ERROR)
+         {
+            // set error message
+            NS_CStringToUTF16(
+               nsEmbedCString("There was a network error."),
+               NS_CSTRING_ENCODING_ASCII, utf16);
+
+            // send the UTF-16 data to observers
+            observerService->NotifyObservers(
+               NULL, "bitmunk-directive-error", utf16.get());
+         }
+         // no data
+         else
+         {
+            // set error message
+            NS_CStringToUTF16(
+               nsEmbedCString("The directive was empty."),
+               NS_CSTRING_ENCODING_ASCII, utf16);
+
+            // send the UTF-16 data to observers
+            observerService->NotifyObservers(
+               NULL, "bitmunk-directive-error", utf16.get());
+         }
       }
-#endif
    }
+#endif
    
    // free bmd buffer
    if(buffer != NULL)

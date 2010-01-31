@@ -549,14 +549,30 @@ function sendDirectives(doc, bmds)
 }
 
 /**
- * Queues a Bitmunk Directive. If the Bitmunk app is already online, the
+ * Called when the browser has started to download a Bitmunk directive.
+ */
+function directiveStarted()
+{
+   _bitmunkLog('Downloading Bitmunk directive.');
+   
+   var e = doc.getElementById('bitmunk-directive-queue');
+   if(e)
+   {
+      var ev = doc.createEvent('Events');
+      ev.initEvent('bitmunk-directive-started', true, true);
+      e.dispatchEvent(ev);
+   }
+}
+
+/**
+ * Queues a Bitmunk directive. If the Bitmunk app is already online, the
  * directive is sent immediately. Otherwise, the directive is queued and
  * an attempt is made to start the Bitmunk app. 
  * 
  * @param bmd the bitmunk directive.
  */
 function queueDirective(bmd)
- {
+{
    _bitmunkLog('Queuing Bitmunk directive: ' + bmd);
    
    var obj = null;
@@ -588,12 +604,32 @@ function queueDirective(bmd)
 }
 
 /**
+ * Called when the browser encounters an error while downloading a Bitmunk
+ * directive.
+ * 
+ * @param msg the error message.
+ */
+function directiveError(msg)
+{
+   _bitmunkLog('Error when downloading Bitmunk directive.');
+   
+   var e = doc.getElementById('bitmunk-directive-queue');
+   if(e)
+   {
+      var ev = doc.createEvent('Events');
+      ev.initEvent('bitmunk-directive-error', true, true);
+      e.setAttribute('error', msg);
+      e.dispatchEvent(ev);
+   }
+}
+
+/**
  * Opens a tab to display the Bitmunk P2P Plugin help page.
  */
 function showBitmunkHelp()
  {
    _bitmunkLog('Showing Bitmunk Help');
-         
+   
    var mainWindow = getCurrentWindow();
    var newTab = mainWindow.getBrowser().addTab(
       'chrome://bitmunk/content/help.html');
@@ -620,9 +656,17 @@ const bitmunkDirectiveObserver =
 {
    observe: function(subject, topic, data)
    {
-      if(topic == 'bitmunk-directive')
+      switch(topic)
       {
-         queueDirective(data);
+         case 'bitmunk-directive-started':
+            directiveStarted();
+            break;
+         case 'bitmunk-directive':
+            queueDirective(data);
+            break;
+         case 'bitmunk-directive-error':
+            directiveError(data);
+            break;
       }
    }
 };
@@ -630,4 +674,9 @@ const bitmunkDirectiveObserver =
 // register the Bitmunk directive observer
 const service = Components.classes['@mozilla.org/observer-service;1']
    .getService(Components.interfaces.nsIObserverService);
-service.addObserver(bitmunkDirectiveObserver, 'bitmunk-directive', false);
+service.addObserver(
+   bitmunkDirectiveObserver, 'bitmunk-directive-started', false);
+service.addObserver(
+   bitmunkDirectiveObserver, 'bitmunk-directive', false);
+service.addObserver(
+   bitmunkDirectiveObserver, 'bitmunk-directive-error', false);
