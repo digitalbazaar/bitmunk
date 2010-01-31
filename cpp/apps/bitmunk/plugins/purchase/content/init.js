@@ -66,6 +66,11 @@
             menu: {
                priority: 0.9
             }
+         },
+         {
+            type: bitmunk.resource.types.html,
+            resourceId: 'messages.html',
+            load: true
          }
       ],
       task: sScriptTask

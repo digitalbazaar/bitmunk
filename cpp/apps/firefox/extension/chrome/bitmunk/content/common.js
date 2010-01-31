@@ -11,7 +11,7 @@
  */
 function _bitmunkLog(msg)
 {
-   debug_flag = true;
+   var debug_flag = false;
 
    // If debug mode is active, log the message to the console
    if(debug_flag)

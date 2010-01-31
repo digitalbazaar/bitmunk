@@ -533,27 +533,30 @@
          // save the old queue and clear it
          var json = element.innerHTML;
          element.innerHTML = '';
-         try
+         if(json != '')
          {
-            // parse and handle all directives in the old queue
-            var queue = JSON.parse(json);
-            $.each(queue, function(i, directive)
+            try
             {
-               // post directive to the backend, if successful, we'll receive
-               // an event...if not, the default handler will catch the error
-               bitmunk.api.proxy(
+               // parse and handle all directives in the old queue
+               var queue = JSON.parse(json);
+               $.each(queue, function(i, directive)
                {
-                  method: 'POST',
-                  url: bitmunk.api.root + 'system/directives',
-                  params: { nodeuser: bitmunk.user.getUserId() },
-                  data: directive
+                  // post directive to backend, if successful, we'll receive
+                  // an event...if not, default handler will catch the error
+                  bitmunk.api.proxy(
+                  {
+                     method: 'POST',
+                     url: bitmunk.api.root + 'system/directives',
+                     params: { nodeuser: bitmunk.user.getUserId() },
+                     data: directive
+                  });
                });
-            });
-         }
-         catch(e)
-         {
-            bitmunk.log.debug(
-               sLogCategory, 'Exception while processing queued directives', e);
+            }
+            catch(e)
+            {
+               bitmunk.log.debug(sLogCategory,
+                  'Exception while processing queued directives', e);
+            }
          }
       }
    };
@@ -686,19 +689,36 @@
       $(window).bind('bitmunk-directives-queued', directivesQueued);
       $(window).bind('bitmunk-directive-started', function(event)
       {
-         // FIXME: set notification
-         bitmunk.log.debug(sLogCategory, 'directive downloading');
+         // set info notification
+         var msg = $('#bitmunk-directive-started-message',
+            bitmunk.resource.get(
+               'bitmunk.webui.Purchase', 'messages.html', true))
+            .html();
+         $('#messages').jGrowl(msg,
+         {
+            sticky: false,
+            theme: 'ok'
+         });
       });
       $(window).bind('bitmunk-directive-error', function(event)
       {
          var e = event.target;
          if(e.hasAttribute('error'))
          {
-            var msg = e.getAttribute('error');
+            var err = e.getAttribute('error');
             e.removeAttribute('error');
             
-            // FIXME: set notification
-            bitmunk.log.debug(sLogCategory, 'directive error: ' + msg);
+            // set error notification
+            bitmunk.log.debug(sLogCategory, 'directive error: ' + err);
+            var msg = $('#bitmunk-directive-exception-message',
+               bitmunk.resource.get(
+                  'bitmunk.webui.Purchase', 'messages.html', true))
+               .html();
+            $('#messages').jGrowl(msg,
+            {
+               sticky: false,
+               theme: 'error'
+            });
          }
       });
       
