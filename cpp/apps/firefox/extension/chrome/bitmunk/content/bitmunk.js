@@ -568,14 +568,22 @@ function directiveStarted()
 {
    _bitmunkLog('Downloading Bitmunk directive.');
    
-   openBitmunkTab();
-   var doc = getCurrentWindow().getBrowser().contentDocument;
-   var e = doc.getElementById('bitmunk-directive-queue');
-   if(e)
+   if(gBitmunkState == STATE_ONLINE)
    {
-      var ev = doc.createEvent('Events');
-      ev.initEvent('bitmunk-directive-started', true, true);
-      e.dispatchEvent(ev);
+      openBitmunkTab();
+      var doc = getCurrentWindow().getBrowser().contentDocument;
+      var e = doc.getElementById('bitmunk-directive-queue');
+      if(e)
+      {
+         var ev = doc.createEvent('Events');
+         ev.initEvent('bitmunk-directive-started', true, true);
+         e.dispatchEvent(ev);
+      }
+   }
+   else
+   {
+      // attempt to manage bitmunk
+      manageBitmunk();
    }
 }
 
