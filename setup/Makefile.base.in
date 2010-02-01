@@ -1,7 +1,7 @@
 # This file contains basic Makefile includes that contain all building
 # instructions for all binaries and packages.
 
-.PHONY: all build-setup build-clean build-directories build-headers build-objects build-xpts build-flash build-min-js build-libraries build-executables clean clean-objects clean-libraries clean-flash clean-min-js
+.PHONY: all build-setup build-clean build-directories build-headers build-objects build-xpts build-flash build-min-js build-libraries build-executables clean clean-objects clean-libraries clean-executables clean-flash clean-min-js clean-xpts
 
 all: build-headers build-objects build-libraries build-executables build-flash build-min-js build-xpts
 
@@ -15,14 +15,7 @@ BITMUNK = $(realpath @BITMUNK_DIR@)
 INCLUDES = \
 	-I$(MONARCH)/dist/include \
 	-I$(BITMUNK)/dist/include \
-	-I$(BITMUNK)/dist/internal/include \
-	-I@XULRUNNER_INCLUDE_DIRECTORY@ \
-	-I@XULRUNNER_INCLUDE_DIRECTORY@/java \
-	-I@XULRUNNER_INCLUDE_DIRECTORY@/plugin \
-	-I@XULRUNNER_INCLUDE_DIRECTORY@/xpcom \
-	-I@XULRUNNER_INCLUDE_DIRECTORY@/string 
-
-XULIDL_INCLUDES= -I @XULRUNNER_IDL_DIRECTORY@
+	-I$(BITMUNK)/dist/internal/include
 
 CWD = $(shell pwd)
 ifndef HEADER_DIST_DIR
@@ -60,21 +53,21 @@ build-clean:
 $(ALL_DIRECTORIES):
 	mkdir -p $@
 
-clean: build-clean clean-libraries clean-objects clean-flash clean-min-js
+clean: build-clean clean-objects clean-libraries clean-executables clean-flash clean-min-js clean-xpts
 
 build-headers: $(ALL_HEADERS)
 
 build-objects: $(ALL_DIRECTORIES) $(ALL_SOURCES) $(ALL_OBJECTS)
 
-build-xpts: $(ALL_DIRECTORIES) $(ALL_GENERATED_HEADERS) $(ALL_XPTS)
+build-libraries: $(ALL_DIRECTORIES) $(ALL_LIBRARIES)
+
+build-executables: $(ALL_DIRECTORIES) $(ALL_EXECUTABLES)
 
 build-flash: $(ALL_DIRECTORIES) $(ALL_FLASH)
 
 build-min-js: $(ALL_DIRECTORIES) $(ALL_MIN_JS)
 
-build-libraries: $(ALL_DIRECTORIES) $(ALL_LIBRARIES)
-
-build-executables: $(ALL_DIRECTORIES) $(ALL_EXECUTABLES)
+build-xpts: $(ALL_DIRECTORIES) $(ALL_GENERATED_HEADERS) $(ALL_XPTS)
 
 clean-objects:
 	$(PCMD) rm -rf $(LIBRARY_OBJECTS) $(EXECUTABLE_OBJECTS)
@@ -82,8 +75,14 @@ clean-objects:
 clean-libraries:
 	$(PCMD) rm -rf $(LIBRARIES)
 
+clean-executables:
+	$(PCMD) rm -rf $(ALL_EXECUTABLES)
+
 clean-flash:
 	$(PCMD) rm -rf $(ALL_FLASH)
 
 clean-min-js:
 	$(PCMD) rm -rf $(ALL_MIN_JS)
+
+clean-xpts:
+	$(PCMD) rm -rf $(ALL_GENERATED_HEADERS) $(ALL_XPTS)

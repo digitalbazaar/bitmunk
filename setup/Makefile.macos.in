@@ -3,8 +3,8 @@
 
 # MacOS-specific variables
 MACOS_CXX = @MACOS_CXX@
-MACOS_CXX_FLAGS = @CXXFLAGS@ -Wall -fPIC -DMACOS $(MODULE_MACOS_CXX_FLAGS) @DEFS@
-MACOS_LD_FLAGS = @LDFLAGS@ -Wl,-dylib_compatibility_version,@BITMUNK_MAJORMINOR@ -Wl,-dylib_current_version,@FULL_DOTTED_VERSION@ -Wl,-flat_namespace
+MACOS_CXX_FLAGS = @CXXFLAGS@ -Wall -fPIC -DMACOS $(CXX_FLAGS) $(MODULE_MACOS_CXX_FLAGS) @DEFS@
+MACOS_LD_FLAGS = @LDFLAGS@ -Wl,-dylib_compatibility_version,@FULL_DOTTED_VERSION@ -Wl,-dylib_current_version,@FULL_DOTTED_VERSION@ -Wl,-flat_namespace $(LD_FLAGS)
 MACOS_INCLUDES = $(INCLUDES) -I/sw/include
 MACOS_DBLIB_DIR = $(MONARCH)/dist/lib
 MACOS_LIB_DIR = $(MACOS_DIST_DIR)/lib
@@ -60,11 +60,11 @@ endif
 
 $(MACOS_BUILD_DIR)/%.h: %.idl
 	@echo "Building $@..."
-	$(PCMD) $(XPIDL) -m header $(XULIDL_INCLUDES)  -o $(basename $@) $<
+	$(PCMD) $(XPIDL) -m header @XULRUNNER_IDL_FLAGS@ -o $(basename $@) $<
 
 $(MACOS_XPT_DIR)/%.xpt: %.idl
 	@echo "Generating dist/$(subst .P,.o,$(subst $(BITMUNK)/dist/,,$@))..."
-	$(PCMD) $(XPIDL) -m typelib $(XULIDL_INCLUDES) -o $(basename $@) $<
+	$(PCMD) $(XPIDL) -m typelib @XULRUNNER_IDL_FLAGS@ -o $(basename $@) $<
 
 %-macos.o %-macos.P: %.cpp $(ALL_GENERATED_HEADERS)
 	@echo "Compiling build/$(subst .P,.o,$(subst $(BITMUNK)/build/,,$@))..."

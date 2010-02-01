@@ -3,8 +3,8 @@
 
 # Windows-specific variables
 WINDOWS_CXX = @WINDOWS_CXX@
-WINDOWS_CXX_FLAGS = @CXXFLAGS@ -march=i686 -Wall -D_WIN32_WINNT=0x0501 @DEFS@
-WINDOWS_LD_FLAGS = @LDFLAGS@ -Wl,--enable-auto-import
+WINDOWS_CXX_FLAGS = @CXXFLAGS@ -march=i686 -Wall -D_WIN32_WINNT=0x0501 $(CXX_FLAGS) $(MODULE_WINDOWS_CXX_FLAGS) @DEFS@
+WINDOWS_LD_FLAGS = @LDFLAGS@ -Wl,--enable-auto-import $(LD_FLAGS)
 WINDOWS_INCLUDES = $(INCLUDES) -I$(MONARCH)/cpp/3rdparty/pthread/include -I$(MONARCH)/cpp/3rdparty/openssl/include -I$(MONARCH)/cpp/3rdparty/expat/include -I$(MONARCH)/cpp/3rdparty/mysql/include -I$(MONARCH)/cpp/3rdparty/regex/include -I$(MONARCH)/cpp/3rdparty/sqlite3/include -I$(MONARCH)/cpp/3rdparty/zlib/include -I$(MONARCH)/cpp/3rdparty/iconv/include
 WINDOWS_DBLIB_DIR = $(MONARCH)/dist/lib
 WINDOWS_LIB_DIR = $(BITMUNK)/libs/windows
@@ -64,11 +64,11 @@ endif
 
 $(WINDOWS_BUILD_DIR)/%.h: %.idl
 	@echo "Building $@..."
-	$(PCMD) $(XPIDL) -m header $(XULIDL_INCLUDES)  -o $(basename $@) $<
+	$(PCMD) $(XPIDL) -m header @XULRUNNER_IDL_FLAGS@ -o $(basename $@) $<
 
 $(WINDOWS_XPT_DIR)/%.xpt: %.idl
 	@echo "Generating dist/$(subst .P,.o,$(subst $(BITMUNK)/dist/,,$@))..."
-	$(PCMD) $(XPIDL) -m typelib $(XULIDL_INCLUDES) -o $(basename $@) $<
+	$(PCMD) $(XPIDL) -m typelib @XULRUNNER_IDL_FLAGS@ -o $(basename $@) $<
 
 %-windows.o %-windows.P: %.cpp
 	@echo "Compiling build/$(subst .P,.o,$(subst $(BITMUNK)/build/,,$@))..."
