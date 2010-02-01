@@ -157,12 +157,39 @@ function openBitmunkTab()
       newTab.setAttribute('bitmunk-extension', 'true');
       tabBrowser.selectedTab = newTab;
       rval = newTab;
+      
+      // add a listener for when BPE goes offline 
+      var webBrowser = tabBrowser.getBrowserForTab(rval);
+      webBrowser.addEventListener('bitmunk-offline', function()
+      {
+         // handle updating offline status more quickly
+         if(gBitmunkState == STATE_ONLINE)
+         {
+            // restart polling on a fast interval
+            stopBitmunkPolling();
+            startBitmunkPolling({
+               interval: 1000,
+               stateChanged: function()
+               {
+                  // stop polling
+                  stopBitmunkPolling();
+                  
+                  if(gBitmunkState == STATE_ONLINE)
+                  {
+                     // start polling at a regular interval
+                     startBitmunkPolling({interval: gPollInterval});
+                  }
+               }
+            });
+         }
+      }, true);
    }
    
    // handle any queued directives
    if(gDirectives.length > 0)
    {
       // add a load event listener to handle queued directives
+      var webBrowser = tabBrowser.getBrowserForTab(rval);
       var sendQueuedDirectives = function()
       {
          // send queued directives, clear queue
@@ -173,7 +200,6 @@ function openBitmunkTab()
          // remove event listener
          webBrowser.removeEventListener('load', sendQueuedDirectives, true);
       };
-      var webBrowser = tabBrowser.getBrowserForTab(rval);
       webBrowser.addEventListener('load', sendQueuedDirectives, true);
    }
    
