@@ -3,19 +3,5 @@ SOURCES = BitmunkExtension.cpp
 IDL_SOURCES = IBitmunkExtension.idl
 COMPONENT_LIBRARIES = bitmunk-components
 
-CXX_FLAGS = @XULRUNNER_CXX_FLAGS@
-LD_FLAGS = @XULRUNNER_LD_FLAGS@
-
-# ----------- Standard Makefile
-include @BITMUNK_DIR@/setup/Makefile.base
-
-# ---------- Platform specific flags
-DYNAMIC_LINUX_LIBRARIES += xpcomglue_s xpcom
-
-MACOS_CXX = g++ -isysroot /Developer/SDKs/MacOSX10.4u.sdk
-MACOS_CXX_FLAGS += -g -DMOZILLA_STRICT_API -DXP_UNIX -DXP_MACOSX -include "mozilla-config.h" -Wno-ctor-dtor-privacy -Wno-non-virtual-dtor -fno-rtti -I $(MACOS_BUILD_DIR)
-MACOS_LD_FLAGS = @LDFLAGS@ -Wl,-executable_path,/Library/Frameworks/XUL.framework/Versions/Current -framework XUL
-DYNAMIC_MACOS_LIBRARIES += xpcomglue_s xpcom nspr4 plds4 plc4
-
-@BITMUNK_DIR@/dist/lib/libbitmunk-components.dylib:
-	$(MACOS_CXX) -dynamiclib -o @BITMUNK_DIR@/dist/lib/libbitmunk-components.dylib @BITMUNK_DIR@/build/apps/firefox/components/BitmunkExtension-macos.o  -L/usr/local/gecko-sdk/lib $(DYNAMIC_MACOS_LIBRARIES:%=-l%) -Wl,-executable_path,/Library/Frameworks/XUL.framework/Versions/Current -framework XUL
+# Common Firefox Makefile
+include ../Makefile.common
