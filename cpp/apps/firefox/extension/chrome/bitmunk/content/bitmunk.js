@@ -135,6 +135,14 @@ function openBitmunkTab()
             // focus this browser window in case another one has focus
             browserWindow.focus();
             found = true;
+            
+            // if the URL is pointing at the offline page, set it to online
+            var url = webBrowser.currentURI.spec;
+            var lastIndex = url.lastIndexOf('#offline');
+            if(lastIndex != -1 && (lastIndex + 8 == url.length))
+            {
+               webBrowser.loadURI(gBpeUrl + '/bitmunk');
+            }
          }
       }
    }

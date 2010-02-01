@@ -1,6 +1,6 @@
 /**
  * Bitmunk Purchases Controller
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * Right now this controls the media library and the catalog. In the future
  * we might split these two apart if we decide the catalog should be an
@@ -8,6 +8,7 @@
  * 
  * @author Mike Johnson
  * @author Manu Sporny
+ * @author Dave Longley
  */
 (function($)
 {
@@ -291,21 +292,6 @@
       
       // add purchase row (automatically removes loading row)
       bitmunk.purchases.view.addPurchaseRow(ds);
-      
-      // show notification
-      if(bitmunk.getCurrentViewId() != 'purchases')
-      {
-         // set info notification
-         var msg = $('#bitmunk-directive-loaded-message',
-            bitmunk.resource.get(
-               'bitmunk.webui.Purchase', 'messages.html', true))
-            .html();
-         $('#messages').jGrowl(msg,
-         {
-            sticky: false,
-            theme: 'info'
-         });
-      }
    };
    
    /**
@@ -702,40 +688,6 @@
       
       // bind to handle directive events
       $(window).bind('bitmunk-directives-queued', directivesQueued);
-      $(window).bind('bitmunk-directive-started', function(event)
-      {
-         // set info notification
-         var msg = $('#bitmunk-directive-started-message',
-            bitmunk.resource.get(
-               'bitmunk.webui.Purchase', 'messages.html', true))
-            .html();
-         $('#messages').jGrowl(msg,
-         {
-            sticky: false,
-            theme: 'info'
-         });
-      });
-      $(window).bind('bitmunk-directive-error', function(event)
-      {
-         var e = event.target;
-         if(e.hasAttribute('error'))
-         {
-            var err = e.getAttribute('error');
-            e.removeAttribute('error');
-            
-            // set error notification
-            bitmunk.log.debug(sLogCategory, 'directive error: ' + err);
-            var msg = $('#bitmunk-directive-exception-message',
-               bitmunk.resource.get(
-                  'bitmunk.webui.Purchase', 'messages.html', true))
-               .html();
-            $('#messages').jGrowl(msg,
-            {
-               sticky: false,
-               theme: 'error'
-            });
-         }
-      });
       
       // FIXME: update view with download state information
       
@@ -762,7 +714,8 @@
       $(window).unbind('bitmunk-purchase-DownloadState-exception');
       
       // unbind from download state events
-      $(window).unbind('bitmunk-purchase-DownloadState-licenseAcquired');
+      $(window).unbind(
+         'bitmunk-purchase-DownloadState-licenseAcquired', licenseAcquired);
       $(window).unbind('bitmunk-purchase-DownloadState-downloadStarted');
       $(window).unbind('bitmunk-purchase-DownloadState-downloadPaused');
       $(window).unbind('bitmunk-purchase-DownloadState-downloadCompleted');
@@ -780,8 +733,6 @@
       
       // unbind from directive events
       $(window).unbind('bitmunk-directives-queued');
-      $(window).unbind('bitmunk-directive-started');
-      $(window).unbind('bitmunk-directive-error');
    };
 
    bitmunk.resource.setupResource(

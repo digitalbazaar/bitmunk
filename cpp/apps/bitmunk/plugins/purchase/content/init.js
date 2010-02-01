@@ -73,6 +73,71 @@
             load: true
          }
       ],
+      didLogin: function(task)
+      {
+         $(window).bind(
+            'bitmunk-purchase-DownloadState-licenseAcquired', function(event)
+         {
+            // show notification
+            if(bitmunk.getCurrentViewId() != 'purchases')
+            {
+               // set info notification
+               var msg = $('#bitmunk-directive-loaded-message',
+                  bitmunk.resource.get(
+                     'bitmunk.webui.Purchase', 'messages.html', true))
+                  .html();
+               $('#messages').jGrowl(msg,
+               {
+                  sticky: false,
+                  theme: 'info'
+               });
+            }
+         });
+         $(window).bind('bitmunk-directive-started', function(event)
+         {
+            var msgId = (bitmunk.getCurrentViewId() == 'purchases') ?
+               '#bitmunk-directive-started-purchases-message' :
+               '#bitmunk-directive-started-non-purchases-message';
+            
+            // set info notification
+            var msg = $(msgId,
+               bitmunk.resource.get(
+                  'bitmunk.webui.Purchase', 'messages.html', true))
+               .html();
+            $('#messages').jGrowl(msg,
+            {
+               sticky: false,
+               theme: 'info'
+            });
+         });
+         $(window).bind('bitmunk-directive-error', function(event)
+         {
+            var e = event.target;
+            if(e.hasAttribute('error'))
+            {
+               var err = e.getAttribute('error');
+               e.removeAttribute('error');
+               
+               // set error notification
+               bitmunk.log.debug(sLogCategory, 'directive error: ' + err);
+               var msg = $('#bitmunk-directive-exception-message',
+                  bitmunk.resource.get(
+                     'bitmunk.webui.Purchase', 'messages.html', true))
+                  .html();
+               $('#messages').jGrowl(msg,
+               {
+                  sticky: false,
+                  theme: 'error'
+               });
+            }
+         });
+      },
+      willLogout: function(task)
+      {
+         $(window).bind('bitmunk-purchase-DownloadState-licenseAcquired');
+         $(window).unbind('bitmunk-directive-started');
+         $(window).unbind('bitmunk-directive-error');
+      },      
       task: sScriptTask
    });
    sScriptTask.unblock();
