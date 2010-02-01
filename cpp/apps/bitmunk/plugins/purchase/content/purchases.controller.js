@@ -291,6 +291,21 @@
       
       // add purchase row (automatically removes loading row)
       bitmunk.purchases.view.addPurchaseRow(ds);
+      
+      // show notification
+      if(bitmunk.getCurrentViewId() != 'purchases')
+      {
+         // set info notification
+         var msg = $('#bitmunk-directive-loaded-message',
+            bitmunk.resource.get(
+               'bitmunk.webui.Purchase', 'messages.html', true))
+            .html();
+         $('#messages').jGrowl(msg,
+         {
+            sticky: false,
+            theme: 'info'
+         });
+      }
    };
    
    /**

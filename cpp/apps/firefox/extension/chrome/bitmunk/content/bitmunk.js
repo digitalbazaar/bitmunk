@@ -310,12 +310,20 @@ function startBitmunk()
    // stop any existing polling
    stopBitmunkPolling();
    
+   // bitmunk is now loading
+   gBitmunkState = STATE_LOADING;
+   updateStatusDisplay();
+   
    // start the Bitmunk application if it is offline
    pollBitmunk(function(online)
    {
       if(online)
       {
          _bitmunkLog('startBitmunk(): bitmunk has already started.');
+         
+         // switch state back to online
+         gBitmunkState = STATE_ONLINE;
+         updateStatusDisplay();
          
          // open bitmunk tab
          openBitmunkTab();
@@ -326,9 +334,6 @@ function startBitmunk()
       else
       {
          _bitmunkLog('startBitmunk(): starting bitmunk @ ' +new Date());
-         
-         // bitmunk is now loading
-         gBitmunkState = STATE_LOADING;
          
          // get the plugin
          var plugin = Components

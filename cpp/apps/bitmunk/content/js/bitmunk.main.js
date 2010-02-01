@@ -962,7 +962,7 @@ jQuery(function($) {
    };
    
    /**
-    * Start Bitmunk.
+    * Starts Bitmunk.
     */
    bitmunk.main = function()
    {
@@ -1052,6 +1052,16 @@ jQuery(function($) {
       });
       bitmunk.log.verbose(cat, 'main: done');
    };
+   
+   /**
+    * Gets the current view ID.
+    * 
+    * @return the current view ID.
+    */
+   /*bitmunk.getCurrentViewId() = function()
+   {
+      return sScreenPane.currentViewId;
+   };*/
    
    // register plugin
    var defaults = $.extend(true, {}, bitmunk.sys.corePluginDefaults);
