@@ -329,6 +329,7 @@ function startBitmunk()
          
          // bitmunk is now loading
          gBitmunkState = STATE_LOADING;
+         updateStatusDisplay();
          
          // get the plugin
          var plugin = Components
