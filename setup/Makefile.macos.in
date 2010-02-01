@@ -4,7 +4,8 @@
 # MacOS-specific variables
 MACOS_CXX = @MACOS_CXX@
 MACOS_CXX_FLAGS = @CXXFLAGS@ -Wall -fPIC -DMACOS $(CXX_FLAGS) $(MODULE_MACOS_CXX_FLAGS) @DEFS@
-MACOS_LD_FLAGS = @LDFLAGS@ -Wl,-dylib_compatibility_version,@FULL_DOTTED_VERSION@ -Wl,-dylib_current_version,@FULL_DOTTED_VERSION@ -Wl,-flat_namespace $(LD_FLAGS)
+MACOS_LD_FLAGS = @LDFLAGS@ -Wl,-flat_namespace $(LD_FLAGS)
+MACOS_LIBRARY_LD_FLAGS = -Wl,-dylib_compatibility_version,@FULL_DOTTED_VERSION@ -Wl,-dylib_current_version,@FULL_DOTTED_VERSION@
 MACOS_INCLUDES = $(INCLUDES) -I/sw/include
 MACOS_DBLIB_DIR = $(MONARCH)/dist/lib
 MACOS_LIB_DIR = $(MACOS_DIST_DIR)/lib
@@ -75,7 +76,7 @@ $(MACOS_XPT_DIR)/%.xpt: %.idl
 
 %.dylib: $(LIBRARY_OBJECTS)
 	@echo "Linking $(subst $(BITMUNK)/,,$@)..."
-	$(PCMD) $(MACOS_CXX) $(MACOS_LD_FLAGS) -install_name $(MACOS_LIB_DIR)/$(@F) $(MACOS_LIBS) -dynamiclib -o $@ $(LIBRARY_OBJECTS) $(DYNAMIC_MACOS_LIBRARIES:%=-l%)
+	$(PCMD) $(MACOS_CXX) $(MACOS_LD_FLAGS) $(MACOS_LIBRARY_LD_FLAGS) -install_name @loader_path/$(@F) $(MACOS_LIBS) -dynamiclib -o $@ $(LIBRARY_OBJECTS) $(DYNAMIC_MACOS_LIBRARIES:%=-l%)
 
 ifdef EXECUTABLES
 $(MACOS_EXECUTABLES): $(MACOS_BUILD_DIR)/$$(@F)-macos.o $(STATIC_MACOS_LIBRARIES)

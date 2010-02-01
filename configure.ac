@@ -648,7 +648,7 @@ AC_PATH_PROG([PKGCONFIG], [pkg-config])
 
 # Common part of XUL config
 if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
-   if test "x$PKGCONFIG" != "x" ; then
+   if test "x$PKGCONFIG" != "x" && $PKGCONFIG --exists libxul; then
       XULRUNNER_TYPE=["`$PKGCONFIG --variable=includetype libxul`"]
       XULRUNNER_SDK_DIR=["`$PKGCONFIG --variable=sdkdir libxul`"]
       XULRUNNER_IDL_DIR=["`$PKGCONFIG --variable=idldir libxul`"]
@@ -673,8 +673,8 @@ if test "$BUILD_FOR_LINUX" = "yes" ; then
       if test "x$XPIDL" = "x" ; then
          # non-pkg-config defaults
          AC_PATH_PROG([XPIDL], xpidl /usr/lib/xulrunner-1.9/xpidl,, $PATH /)
-         XULRUNNER_LD_FLAGS="-L/usr/lib/xulrunner-devel-1.9/sdk/lib"
          XULRUNNER_CXX_FLAGS="-I/usr/include/xulrunner-1.9/stable"
+         XULRUNNER_LD_FLAGS="-L/usr/lib/xulrunner-devel-1.9/sdk/lib"
          XULRUNNER_IDL_FLAGS="-I /usr/share/idl/xulrunner-1.9/stable"
       fi
       if test "x$XPIDL" = "x" ; then
@@ -847,6 +847,7 @@ AC_CONFIG_FILES([
 	cpp/apps/bitmunk/Makefile
 	cpp/apps/bitmunk/config.h
 	cpp/apps/firefox/Makefile
+	cpp/apps/firefox/Makefile.common
 	cpp/apps/firefox/components/Makefile
 	cpp/apps/firefox/extension/chrome/bitmunk/content/bitmunk-urls.js
 	cpp/apps/firefox/extension/install.rdf
@@ -911,8 +912,8 @@ AC_OUTPUT
 # Write a proper .gitignore file based on files that are generated
 GIT_IGNORE_FILES=".gitignore build dist autom4te.cache config.log config.status 
 configure"
-GIT_IGNORE_FILES+=$ac_config_files
-echo $GIT_IGNORE_FILES | sed -e "s/ /\n/g" > .gitignore
+GIT_IGNORE_FILES="$GIT_IGNORE_FILES $ac_config_files"
+echo $GIT_IGNORE_FILES | tr ' ' '\n' > .gitignore
 
 # Dump the path configuration
 echo -e "\n--------- Bitmunk Path Configuration -----------"

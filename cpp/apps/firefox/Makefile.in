@@ -188,7 +188,7 @@ endif
 	# Copy the proper configuration files over
 	cp @BITMUNK_DIR@/configs/firefox-plugin.config \
 		extension/platform/@FIREFOX_PLATFORM@/configs/default.config
-ifeq ($(BITMUNK_RELEASE_MODE),yes)
+ifeq (@BITMUNK_RELEASE_MODE@,yes)
 	$(foreach config,$(CONFIG_FILES),cp -LR @BITMUNK_DIR@/configs/live.d/$(config) extension/platform/@FIREFOX_PLATFORM@/configs/conf.d/ &&) true
 else
 	$(foreach config,$(CONFIG_FILES),cp -LR @BITMUNK_DIR@/configs/dev.d/$(config) extension/platform/@FIREFOX_PLATFORM@/configs/conf.d/ &&) true
