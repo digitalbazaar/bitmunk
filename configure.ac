@@ -201,7 +201,7 @@ fi
 
 dnl ---------- Linux configuration settings -----------------
 
-if test "$BUILD_FOR_LINUX" = "yes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
+if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
    dnl === Linux === Development ===
    BITMUNK_MODULES_DIR="$BITMUNK_DIR/dist/modules/bpe"
    BITMUNK_WEBUI_PLUGINS_DIR="$BITMUNK_DIR/cpp/apps/bitmunk/plugins"
@@ -225,7 +225,7 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_SYSTEM_USER_CONFIG="dev.config"
 fi
 fi
-if test "$BUILD_FOR_LINUX" = "yes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
+if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
    dnl === Linux === Release ===
    # If we're releasing the software, ensure that at least the prefix,
    # sysconfdir, and localstatedir variables are defined.
@@ -266,7 +266,7 @@ fi
 
 dnl ---------- Mac OS X configuration settings -----------------
 
-if test "$BUILD_FOR_MACOS" = "yes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
+if test "x$BUILD_FOR_MACOS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
    dnl === Mac OS === Development ===
    BITMUNK_MODULES_DIR="$BITMUNK_DIR/modules/macos"
    BITMUNK_WEBUI_PLUGINS_DIR="$BITMUNK_DIR/cpp/apps/bitmunk/plugins"
@@ -281,7 +281,7 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_LOCAL_API_PORT=19200
    BITMUNK_FLASH_POLICY_PORT=19943
    BITMUNK_MODULES_DIR="{RESOURCE_PATH}/modules"
-   BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/plugins"
+   BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
    BITMUNK_PURCHASE_TEMP_DIR="tmp"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="downloads"
    BITMUNK_PACKAGE_CONFIG=""
@@ -290,7 +290,7 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_SYSTEM_USER_CONFIG="dev.config"
 fi
 fi
-if test "$BUILD_FOR_MACOS" = "yes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
+if test "x$BUILD_FOR_MACOS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
    dnl === Mac OS === Release ===
    BITMUNK_MODULES_DIR="${libdir}/bitmunk$BITMUNK_VERSION_MAJOR"
    BITMUNK_WEBUI_PLUGINS_DIR="NOT_USED"
@@ -318,7 +318,7 @@ fi
 
 dnl ---------- Windows configuration settings -----------------
 
-if test "$BUILD_FOR_WINDOWS" = "yes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
+if test "x$BUILD_FOR_WINDOWS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
    dnl === Windows === Development ===
    BITMUNK_MODULES_DIR="../../bpe"
    BITMUNK_WEBUI_PLUGINS_DIR="../../plugins"
@@ -332,7 +332,7 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_LOCAL_API_PORT=19200
    BITMUNK_FLASH_POLICY_PORT=19943
    BITMUNK_MODULES_DIR="{RESOURCE_PATH}/modules"
-   BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/plugins"
+   BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
    BITMUNK_PURCHASE_TEMP_DIR="tmp"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="downloads"
    BITMUNK_PACKAGE_CONFIG="configs/dev.config"
@@ -342,7 +342,7 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_SYSTEM_USER_CONFIG="dev.config"
 fi
 fi
-if test "$BUILD_FOR_WINDOWS" = "yes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
+if test "x$BUILD_FOR_WINDOWS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
    dnl === Windows === Release ===
    BITMUNK_MODULES_DIR="NOT_USED"
    BITMUNK_WEBUI_PLUGINS_DIR="NOT_USED"
@@ -409,9 +409,9 @@ AC_ARG_ENABLE([docs],
 
 dnl ----------------- tests -----------------
 
-if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
+if test "x$BUILD_FIREFOX_PLUGIN" = "xyes" ; then
    BUILD_TESTS=no
-elif test "$BITMUNK_RELEASE_MODE" = "yes"; then
+elif test "x$BITMUNK_RELEASE_MODE" = "xyes"; then
    BUILD_TESTS=no
 else
    BUILD_TESTS=yes
@@ -443,12 +443,12 @@ AC_ARG_ENABLE([log-line-numbers],
    esac
    ],
    [DB_DISABLE_LOG_LINE_NUMBERS=no]) dnl Default value
-if test "$BUILD_FIREFOX_PLUGIN" = "yes"; then
-   if test "$BITMUNK_RELEASE_MODE" = "yes"; then
+if test "x$BUILD_FIREFOX_PLUGIN" = "xyes"; then
+   if test "x$BITMUNK_RELEASE_MODE" = "xyes"; then
       DB_DISABLE_LOG_LINE_NUMBERS=yes
    fi
 fi
-if test "$DB_DISABLE_LOG_LINE_NUMBERS" = "yes"; then
+if test "x$DB_DISABLE_LOG_LINE_NUMBERS" = "xyes"; then
    AC_DEFINE(DB_DISABLE_LOG_LINE_NUMBERS, 1,
       [Enable log line numbers.])
 fi
@@ -515,11 +515,12 @@ AC_ARG_WITH(config,
 dnl ----------------- profiles dir -----------------
 
 dnl default location of profiles.
-if test "x$BITMUNK_RELEASE_MODE" = xyes; then
+if test "x$BITMUNK_RELEASE_MODE" = xyes \
+   -o "x$BUILD_FIREFOX_PLUGIN" = "xyes" ; then
    BITMUNK_PROFILES_DIR="profiles"
 else
-   if test -d "${srcdir}/pki"; then
-      BITMUNK_PROFILES_DIR=`(cd ${srcdir}/pki && pwd)`
+   if test -d "${BITMUNK_DIR}/pki"; then
+      BITMUNK_PROFILES_DIR="$BITMUNK_DIR/pki"
    else
       AC_MSG_NOTICE(pki profiles dir not found)
       BITMUNK_PROFILES_DIR="profiles"
