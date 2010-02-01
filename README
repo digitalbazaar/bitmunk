@@ -1,0 +1,207 @@
+Introduction
+------------
+
+Bitmunk enables people that create digital content to distribute it through the
+Web and receive payment directly from their fans and customers. It is also 
+designed to help fans and customers distribute digital content on behalf of the 
+content creators in a way that is both legal and financially beneficial to the 
+creators, fans and customers. The technology is designed to be integrated 
+directly into web devices, finally making legal digital content distribution a 
+first-class citizen on the web.
+
+Bitmunk is also a reference implementation of the PaySwarm protocol.
+
+The Payswarm web platform is an open standard that enables web browsers and web 
+devices to perform micropayments and copyright-aware, peer-to-peer digital 
+media distribution.
+
+For more information on Bitmunk, visit: 
+
+http://bitmunk.com/wiki/
+
+For more information on PaySwarm, visit:
+
+http://payswarm.com/
+
+Features
+--------
+
+* Full implementation of the PaySwarm P2P client.
+* Firefox plugin to launch and manage the P2P client.
+* Complete end-to-end encryption via TLS
+* Verifiable identity and digital signature support via DSA and RSA
+* Web-browser based UI to purchase digital content on the P2P network.
+* Web-browser based UI to sell digital content on the P2P network.
+* Swarming download and upload support.
+* UPnP firewall and gateway device auto-configuration support
+* Upload and download rate control
+
+Getting Started
+---------------
+
+You must first have the Monarch web application framework checked out in the
+same directory as the Bitmunk source code. To get Monarch, follow these
+directions:
+
+http://github.com/digitalbazaar/monarch
+
+Once you have downloaded and installed Monarch, you will be able to compile
+Bitmunk.
+
+To compile and run on Linux:
+
+autoconf
+./configure
+make
+
+To compile and run on Intel Mac OS X:
+
+autoconf
+./configure --enable-macos
+make
+
+To compile for Windows XP, Vista, 7:
+* You must have the mingw32 compiler toolchain - the easiest way to get
+this working is to use Linux and cross-compile for Windows.
+
+autoconf
+./configure --enable-windows
+make
+
+To test the various subsystems in Linux and Mac OS X:
+
+make test
+
+System Details
+--------------
+
+The Bitmunk project serves as a reference implementation of the PaySwarm
+protocol. The reference implementation provides a high-performance 
+PaySwarm transaction engine, catalog management, swarming support and a 
+Firefox plugin to launch and control the software.
+
+An overview of each subsystem is provided below:
+
+bmbfp
+-----
+
+Provides the interface that is used by the Binary File Processor modules
+watermark and embed digital receipts in files that are purchased on the
+PaySwarm network.
+
+bmcommon
+--------
+
+Provides basic identity profile support, logging, digital signature support,
+type definitions, interfaces and input validation services that are used by
+many of the other Bitmunk libraries.
+
+bmcustomcatalog
+---------------
+
+Provides the REST API for remotely managing a customer's sales catalog.
+
+
+bmdata
+------
+
+Support libraries for processing MP3, AVI and PDF files.
+
+
+bmeventreactor
+--------------
+
+The event reactor is used to distribute events from the application server
+to any web-based front-end services.
+
+
+bmeventreactor-downloadstate
+----------------------------
+
+The download state event reactor plugin is used to distribute events specific
+to the swarming downloads that are being performed by the Bitmunk software.
+
+bmfilebrowser
+-------------
+
+Provides a REST API for browsing files on the filesystem.
+
+bmmedialibrary
+--------------
+
+The media library is used to manage and keep track of all of the media
+files that are bought and sold by the Bitmunk software. 
+
+bmnegotiate
+-----------
+
+Provides the interface for digital contract negotiation. Negotiation may
+occur over data transfer price, download/upload speed, bulk purchases and
+a variety of other negotiable items in a digital download contract.
+
+bmnode
+------
+
+The core of the Bitmunk application providing configuration, command-line
+processing, login management, identity certificate management, REST API
+initialization, inter-plugin messaging, monitoring services and micro-process
+management.
+
+bmperuserdb
+-----------
+
+The Bitmunk application allows multiple Bitmunk user accounts to utilize a 
+single node to buy and sell digital content. This module provides per-user
+management of download, upload and directory configuration options.
+
+bmportmapper
+------------
+
+The port mapping service is used to auto-configure firewalls and routing
+devices to allow peer-to-peer traffic to occur between peers on the Bitmunk
+network.
+
+bmprotocol
+----------
+
+Provides the Bitmunk Transfer Protocol implementation, which is based on
+HTTP with a number of header extensions for digital signature verification
+as well as the use of HTTP Trailers to digitally sign streaming content.
+
+bmpurchase
+----------
+
+The purchase module is used to pick sellers, negotiate contracts, calculate
+download prices, digitally sign contracts, acquire licenses, perform swarming
+downloads, and decrypt and verify purchases. 
+
+
+bmsell
+------
+
+The sell module is used to provide digital file samples, negotiate contracts,
+digitally sign contracts, perform swarming uploads and rate-limit based
+on bandwidth limits set by the seller.
+
+bmsystem
+--------
+
+Provides basic system services such as base configuration management, 
+events, purchase directive processing, responding to search spiders
+(robots.txt), software version response, and tracking software statistics.
+
+bmtest
+------
+
+Provides the basic interface that the unit tests use for the continuous
+integration tests that are performed as a part of every software commit and 
+build cycle.
+
+bmwebui
+-------
+
+The web user interface module provides all of the services that are used by
+web browsers when communicating with the Bitmunk application. These services
+include proxying support, Adobe Flash policy services, session management,
+redirect services, a session tracking database and a status service.
+
