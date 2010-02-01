@@ -1058,10 +1058,10 @@ jQuery(function($) {
     * 
     * @return the current view ID.
     */
-   bitmunk.getCurrentViewId() = function()
+   /*bitmunk.getCurrentViewId() = function()
    {
       return sScreenPane.currentViewId;
-   };
+   };*/
    
    // register plugin
    var defaults = $.extend(true, {}, bitmunk.sys.corePluginDefaults);
