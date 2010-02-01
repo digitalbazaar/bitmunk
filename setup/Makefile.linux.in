@@ -5,13 +5,10 @@
 
 INCLUDES += -I$(BITMUNK)/build/apps/firefox/components -I$(BITMUNK)/dist/internal/include @GTK_INCLUDES@
 
-#required for ubuntu build:
-#INCLUDES += -I/usr/include/nspr
-
 # Linux-specific variables
 LINUX_CXX = @LINUX_CXX@
-LINUX_CXX_FLAGS = @CXXFLAGS@ -march=i686 -Wall -fPIC $(MODULE_LINUX_CXX_FLAGS) -DBITMUNK_PLATFORM_LINUX @DEFS@
-LINUX_LD_FLAGS = @LDFLAGS@ -Wl,-rpath=@BITMUNK_MODULES_DIR@
+LINUX_CXX_FLAGS = @CXXFLAGS@ -march=i686 -Wall -fPIC $(CXX_FLAGS) $(MODULE_LINUX_CXX_FLAGS) @DEFS@
+LINUX_LD_FLAGS = @LDFLAGS@ -Wl,-rpath=@BITMUNK_MODULES_DIR@ $(LD_FLAGS)
 LINUX_INCLUDES = $(INCLUDES)
 LINUX_DBLIB_DIR = $(MONARCH)/dist/lib
 LINUX_LIBS = -L$(LINUX_DBLIB_DIR) -L$(LINUX_LIB_DIR) -L/usr/lib/mysql @GTK_LIBS@
@@ -69,11 +66,11 @@ endif
 
 $(LINUX_BUILD_DIR)/%.h: %.idl
 	@echo "Building $@..."
-	$(PCMD) $(XPIDL) -m header $(XULIDL_INCLUDES)  -o $(basename $@) $<
+	$(PCMD) $(XPIDL) -m header @XULRUNNER_IDL_FLAGS@ -o $(basename $@) $<
 
 $(LINUX_XPT_DIR)/%.xpt: %.idl
 	@echo "Generating dist/$(subst .P,.o,$(subst $(BITMUNK)/dist/,,$@))..."
-	$(PCMD) $(XPIDL) -m typelib $(XULIDL_INCLUDES) -o $(basename $@) $<
+	$(PCMD) $(XPIDL) -m typelib @XULRUNNER_IDL_FLAGS@ -o $(basename $@) $<
 
 %-linux.o %-linux.P: %.cpp $(ALL_GENERATED_HEADERS)
 	@echo "Compiling build/$(subst .P,.o,$(subst $(BITMUNK)/build/,,$@))..."

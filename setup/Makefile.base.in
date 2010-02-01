@@ -15,14 +15,7 @@ BITMUNK = $(realpath @BITMUNK_DIR@)
 INCLUDES = \
 	-I$(MONARCH)/dist/include \
 	-I$(BITMUNK)/dist/include \
-	-I$(BITMUNK)/dist/internal/include \
-	-I@XULRUNNER_INCLUDE_DIRECTORY@ \
-	-I@XULRUNNER_INCLUDE_DIRECTORY@/java \
-	-I@XULRUNNER_INCLUDE_DIRECTORY@/plugin \
-	-I@XULRUNNER_INCLUDE_DIRECTORY@/xpcom \
-	-I@XULRUNNER_INCLUDE_DIRECTORY@/string 
-
-XULIDL_INCLUDES= -I @XULRUNNER_IDL_DIRECTORY@
+	-I$(BITMUNK)/dist/internal/include
 
 CWD = $(shell pwd)
 ifndef HEADER_DIST_DIR

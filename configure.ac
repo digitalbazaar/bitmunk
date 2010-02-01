@@ -529,7 +529,7 @@ AC_ARG_WITH(profiles-dir,
 
 dnl ----------------- users dir -----------------
 
-dnl default development location of profiles.
+dnl default location of profiles.
 BITMUNK_USERS_DIR="users"
 
 AC_ARG_WITH(users-dir,
@@ -637,14 +637,16 @@ AC_PATH_PROG([PKGCONFIG], [pkg-config])
 # Common part of XUL config
 if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
    if test "x$PKGCONFIG" != "x" ; then
-      AC_PATH_PROG([XPIDL], [xpidl],,
-         [`$PKGCONFIG --variable=sdkdir libxul`/bin])
-      XULRUNNER_TYPE=[`$PKGCONFIG --variable=includetype libxul`]
-      XULRUNNER_LIB_DIRECTORY=[`$PKGCONFIG --variable=sdkdir libxul`/lib]
-      XULRUNNER_INCLUDE_DIRECTORY=[`$PKGCONFIG --variable=includedir libxul`/$XULRUNNER_TYPE]
-      XULRUNNER_IDL_DIRECTORY=[`$PKGCONFIG --variable=idldir libxul`/$XULRUNNER_TYPE]
+      XULRUNNER_TYPE=["`$PKGCONFIG --variable=includetype libxul`"]
+      XULRUNNER_SDK_DIR=["`$PKGCONFIG --variable=sdkdir libxul`"]
+      XULRUNNER_IDL_DIR=["`$PKGCONFIG --variable=idldir libxul`"]
+      AC_PATH_PROG([XPIDL], [xpidl],, [$XULRUNNER_SDK_DIR/bin])
+      XULRUNNER_CXX_FLAGS=["`$PKGCONFIG --cflags libxul`"]
+      XULRUNNER_LD_FLAGS=["`$PKGCONFIG --libs-only-L libxul`"]
+      XULRUNNER_IDL_FLAGS=["-I $XULRUNNER_IDL_DIR/$XULRUNNER_TYPE"]
    fi
-   # Platform specific sections below will setup XUL config if not setup here.
+   # Platform specific sections below and in Makefiles will setup XUL config
+   # if not setup here.
 fi
 
 # Conditional setup for Linux build
@@ -657,10 +659,11 @@ if test "$BUILD_FOR_LINUX" = "yes" ; then
 
    if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
       if test "x$XPIDL" = "x" ; then
+         # non-pkg-config defaults
          AC_PATH_PROG([XPIDL], xpidl /usr/lib/xulrunner-1.9/xpidl,, $PATH /)
-         XULRUNNER_LIB_DIRECTORY=/usr/lib/xulrunner-devel-1.9/sdk/lib
-         XULRUNNER_INCLUDE_DIRECTORY=/usr/include/xulrunner-1.9/stable
-         XULRUNNER_IDL_DIRECTORY=/usr/share/idl/xulrunner-1.9/stable
+         XULRUNNER_LD_FLAGS="-L/usr/lib/xulrunner-devel-1.9/sdk/lib"
+         XULRUNNER_CXX_FLAGS="-I/usr/include/xulrunner-1.9/stable"
+         XULRUNNER_IDL_FLAGS="-I /usr/share/idl/xulrunner-1.9/stable"
       fi
       if test "x$XPIDL" = "x" ; then
          AC_MSG_ERROR(xpidl not found)
@@ -700,10 +703,12 @@ if test "$BUILD_FOR_WINDOWS" = "yes" ; then
    if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
       # Setup the xulrunner variables
       if test "x$XPIDL" = "x" ; then
+         # non-pkg-config defaults
          AC_CHECK_PROGS(XPIDL, xpidl)
-         XULRUNNER_LIB_DIRECTORY="$BITMUNK_DIR/../gecko-sdk/lib"
-         XULRUNNER_INCLUDE_DIRECTORY="$BITMUNK_DIR/../gecko-sdk/include"
-         XULRUNNER_IDL_DIRECTORY="$BITMUNK_DIR/../gecko-sdk/idl"
+         # Note: setup in the vcproj config
+         #XULRUNNER_CXX_FLAGS=
+         #XULRUNNER_LD_FLAGS=
+         XULRUNNER_IDL_FLAGS="-I $BITMUNK_DIR/../gecko-sdk/idl"
       fi
       if test "x$XPIDL" = "x"; then
          AC_MSG_ERROR(xpidl not found)
@@ -732,10 +737,12 @@ if test "$BUILD_FOR_MACOS" = "yes" ; then
 
    if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
       if test "x$XPIDL" = "x" ; then
+         # non-pkg-config defaults
          AC_CHECK_PROGS(XPIDL, /usr/local/gecko-sdk/bin/xpidl xpidl)
-         XULRUNNER_LIB_DIRECTORY=/usr/local/gecko-sdk/lib
-         XULRUNNER_INCLUDE_DIRECTORY=/usr/local/gecko-sdk/include
-         XULRUNNER_IDL_DIRECTORY=/usr/local/gecko-sdk/idl
+         # Note: hard-coded values used in the Makefiles
+         #XULRUNNER_CXX_FLAGS=
+         #XULRUNNER_LD_FLAGS=
+         XULRUNNER_IDL_FLAGS="-I /usr/local/gecko-sdk/idl"
       fi
       if test "x$XPIDL" = "x"; then
          AC_MSG_ERROR(xpidl not found)
@@ -755,9 +762,9 @@ AC_SUBST(MACOS_AS)
 
 # Xulrunner is used to build the Firefox plugin
 AC_SUBST(XPIDL)
-AC_SUBST(XULRUNNER_LIB_DIRECTORY)
-AC_SUBST(XULRUNNER_INCLUDE_DIRECTORY)
-AC_SUBST(XULRUNNER_IDL_DIRECTORY)
+AC_SUBST(XULRUNNER_CXX_FLAGS)
+AC_SUBST(XULRUNNER_LD_FLAGS)
+AC_SUBST(XULRUNNER_IDL_FLAGS)
 
 # Platform variables
 AC_SUBST(BITMUNK_PLATFORM)
