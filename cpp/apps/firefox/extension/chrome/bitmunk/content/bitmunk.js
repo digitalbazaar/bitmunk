@@ -535,7 +535,7 @@ function updateStatusDisplay()
       case STATE_LOADING:
       case STATE_UNKNOWN:
          _bitmunkLog('updateStatusDisplay(): LOADING');
-         statusImage.src = 'chrome://bitmunk/content/bitmunk16-offline.png';
+         statusImage.src = 'chrome://bitmunk/content/bitmunk16-loading.gif';
          statusLabel.value = 'loading';
          break;
    }
