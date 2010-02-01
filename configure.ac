@@ -154,26 +154,37 @@ fi
 AC_SUBST(BITMUNK_RELEASE_MODE)
 
 dnl ------------- Bitmunk SSL information --------------------
-if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
-   NODE_SSL_GENERATE=true
-   NODE_SSL_CERTIFICATE="{RESOURCE_PATH}/pki/nodessl.crt"
-   NODE_SSL_KEY="{RESOURCE_PATH}/pki/nodessl.key"
-   NODE_SSL_CA_FILE="{RESOURCE_PATH}/pki/bitmunk-ca-file.pem"
-elif test "x$BITMUNK_RELEASE_MODE" = xno; then
-   NODE_SSL_GENERATE=true
-   NODE_SSL_CERTIFICATE="$BITMUNK_DIR/pki/nodessl.crt"
-   NODE_SSL_KEY="$BITMUNK_DIR/pki/nodessl.key"
-   NODE_SSL_CA_FILE="$BITMUNK_DIR/pki/test-bitmunk-ca-file.pem"
+if test "x$BITMUNK_RELEASE_MODE" = xyes; then
+   if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
+      NODE_SSL_GENERATE=true
+      NODE_SSL_CERTIFICATE="{RESOURCE_PATH}/pki/nodessl.crt"
+      NODE_SSL_KEY="{RESOURCE_PATH}/pki/nodessl.key"
+      NODE_SSL_CA_FILE="{RESOURCE_PATH}/pki/bitmunk-ca-file.pem"
+   else
+      # Often setup in a config file.
+      NODE_SSL_GENERATE=false
+      NODE_SSL_CERTIFICATE="/etc/bitmunk3/mysite.com.crt"
+      NODE_SSL_KEY="/etc/bitmunk3/mysite.com.key"
+      NODE_SSL_CA_FILE="/etc/bitmunk3/mysite-ca-file.pem"
+   fi
 else
-   NODE_SSL_GENERATE=false
-   NODE_SSL_CERTIFICATE="/etc/bitmunk3/mysite.com.crt"
-   NODE_SSL_KEY="/etc/bitmunk3/mysite.com.key"
-   NODE_SSL_CA_FILE="/etc/bitmunk3/mysite-ca-file.pem"
+   if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
+      NODE_SSL_GENERATE=true
+      NODE_SSL_CERTIFICATE="{RESOURCE_PATH}/pki/nodessl.crt"
+      NODE_SSL_KEY="{RESOURCE_PATH}/pki/nodessl.key"
+      NODE_SSL_CA_FILE="{RESOURCE_PATH}/pki/test-bitmunk-ca-file.pem"
+   else
+      NODE_SSL_GENERATE=true
+      NODE_SSL_CERTIFICATE="$BITMUNK_DIR/pki/nodessl.crt"
+      NODE_SSL_KEY="$BITMUNK_DIR/pki/nodessl.key"
+      NODE_SSL_CA_FILE="$BITMUNK_DIR/pki/test-bitmunk-ca-file.pem"
+   fi
 fi
+
 
 dnl ------------- Bitmunk API port numbers -------------------
 BITMUNK_LOCAL_API_HOST=localhost
-if test "$BITMUNK_RELEASE_MODE" = yes; then
+if test "x$BITMUNK_RELEASE_MODE" = xyes; then
    BITMUNK_API_HOST=bitmunk.com
    BITMUNK_API_PORT=8100
    BITMUNK_LOCAL_API_PORT=8100
