@@ -21,7 +21,7 @@
                     context="bitmunk-status-context-menu"
                     oncommand="manageBitmunk();">
       <image id="bitmunk-status-image" width="16" height="16"
-             src="chrome://bitmunk/content/bitmunk16-offline.png"/>
+             src="chrome://bitmunk/content/bitmunk16-loading.gif"/>
       <label id="bitmunk-status-label" value="loading"/>
     </statusbarpanel>
     <menupopup id="bitmunk-status-context-menu">
