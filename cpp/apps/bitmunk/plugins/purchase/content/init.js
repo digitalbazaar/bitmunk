@@ -134,7 +134,7 @@
       },
       willLogout: function(task)
       {
-         $(window).bind('bitmunk-purchase-DownloadState-licenseAcquired');
+         $(window).unbind('bitmunk-purchase-DownloadState-licenseAcquired');
          $(window).unbind('bitmunk-directive-started');
          $(window).unbind('bitmunk-directive-error');
       },      
