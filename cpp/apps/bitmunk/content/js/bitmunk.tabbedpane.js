@@ -49,6 +49,9 @@
             // store name of tabbed pane
             name: options.name,
             
+            // store the current view ID
+            currentViewId: null,
+            
             show: function(task)
             {
                bitmunk.log.debug(sLogCategory, '[%s] show()', tabbedPane.name);
@@ -299,6 +302,7 @@
                         }
                         mCurrentRequest = request;
                         mCurrentView = view;
+                        tabbedPane.currentViewId = viewId;
                         mCurrentView.data.show(task, mContentNode, request);
                      });
                   }
