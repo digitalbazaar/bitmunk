@@ -163,9 +163,11 @@ function openBitmunkTab()
    var webBrowser = tabBrowser.getBrowserForTab(rval);
    var onDocumentLoad = function()
    {
-      // add a listener for when the BPE goes offline 
-      tabBrowser.contentDocument.addEventListener('bitmunk-offline', function()
+      // add a listener for when the BPE goes offline
+      tabBrowser.contentDocument.addEventListener('bpe-offline', function()
       {
+         _bitmunkLog('BPE is going offline.');
+         
          // handle updating offline status more quickly
          if(gBitmunkState == STATE_ONLINE)
          {
@@ -459,8 +461,9 @@ function startBitmunkPolling(options)
             }
          }
          
-         // continue polling if state has not changed or state is not offline
-         if(oldState != gBitmunkState || gBitmunkState != STATE_OFFLINE)
+         // continue polling if the state has not changed to offline
+         // note that it the state should never be offline when polling starts
+         if(oldState == gBitmunkState || gBitmunkState != STATE_OFFLINE)
          {
             // schedule next poll
             gPollIntervalId = getCurrentWindow().setTimeout(

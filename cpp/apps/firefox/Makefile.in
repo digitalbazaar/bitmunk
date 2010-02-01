@@ -1,6 +1,6 @@
 # Variables used in this Makefile
 NAME=bitmunk
-ZIPEXCLUDE=-x \*.swp -x \*.svn/\* -x \*~
+ZIPEXCLUDE=-x \*.swp -x \*.svn/\* -x \*~ -x \*.in
 BITMUNK_RELEASE_MODE=@BITMUNK_RELEASE_MODE@
 
 BITMUNK_DIST_DIR = @BITMUNK_DIR@/dist

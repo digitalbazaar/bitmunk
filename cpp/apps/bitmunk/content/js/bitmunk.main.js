@@ -654,6 +654,10 @@ jQuery(function($) {
                $.event.trigger('bitmunk-offline', [{
                   message: 'Successful shutdown.'
                }]);
+               // send offline event to bitmunk extension
+               var ev = document.createEvent("Events");
+               ev.initEvent("bpe-offline", true, false);
+               document.dispatchEvent(ev);
             }
          });
       });
