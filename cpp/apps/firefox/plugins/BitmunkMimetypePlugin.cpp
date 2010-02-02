@@ -17,7 +17,7 @@
 #define OSCALL WINAPI
 #else
 #include <unistd.h>
-#define OSCALL 
+#define OSCALL
 #endif
 #include <fcntl.h>
 #include <string.h>
@@ -43,7 +43,7 @@
 static NPNetscapeFuncs gGeckoFunctionTable;
 
 /**
- * Define the MIME-type and plugin name description strings. 
+ * Define the MIME-type and plugin name description strings.
  */
 #define MIME_TYPES_HANDLED      "application/x-bitmunk-directive"
 #define PLUGIN_NAME             "Bitmunk Directive Processor"
@@ -57,7 +57,10 @@ static NPNetscapeFuncs gGeckoFunctionTable;
 //#define LINUX_DEBUG_MODE    1
 #define SEND_BMD_TO_BITMUNK 1
 
-// clear NPAPI functions (use C style symbols)
+// clear NPAPI functions (use C style symbols) for windows and linux, do not
+// do this for mac OS, it crashes on NP_EntryPoints ... it works on mac OS if
+// you do C++ mangling
+#if !defined(__APPLE__)
 extern "C"
 {
 #if defined(WIN32)
@@ -71,6 +74,7 @@ NPError OSCALL NP_Shutdown();
 char* NP_GetMIMEDescription();
 NPError OSCALL NP_GetValue(void* future, NPPVariable valueType, void* value);
 }
+#endif
 
 // a buffer for storing streaming BMD data
 struct BmdBuffer
@@ -82,7 +86,7 @@ struct BmdBuffer
 
 /**
  * Creates a new instance of the plugin.
- * 
+ *
  * @param mimeType the mimetype that was detected in the browser.
  * @param instance the instance that received the event, should be NULL.
  * @param mode the mode that was used to open the plugin (ie: embedded,
@@ -104,11 +108,11 @@ static NPError BmpNewInstance(
    fprintf(fp, "BmpNewInstance\n");
    fclose(fp);
 #endif
-   
+
 #ifdef LINUX_DEBUG_MODE
    printf("BmpNewInstance\n");
 #endif
-   
+
 #ifdef SEND_BMD_TO_BITMUNK
    // get the service manager
    nsCOMPtr<nsIServiceManager> svcMgr;
@@ -136,7 +140,7 @@ static NPError BmpNewInstance(
 
 /**
  * Destroys a previously created instance of the plugin.
- * 
+ *
  * @param instance the instance that received the event.
  * @param save a pointer that can be set to state information that can be
  *             allocated in this method -- it will be passed to the next
@@ -155,24 +159,24 @@ static NPError BmpDestroyInstance(NPP instance, NPSavedData** save)
 #ifdef LINUX_DEBUG_MODE
    printf("BmpDestroyInstance\n");
 #endif
-   
+
    // ensure that the instance passed is valid
-   return (instance == NULL) ? NPERR_INVALID_INSTANCE_ERROR : NPERR_NO_ERROR;   
+   return (instance == NULL) ? NPERR_INVALID_INSTANCE_ERROR : NPERR_NO_ERROR;
 }
 
 /**
  * Allocates enough space in the passed buffer to write "amount" bytes and
  * leave room for the null-terminator.
- * 
+ *
  * @param buffer the buffer to resize.
  * @param amount the amount to be written into the buffer.
- * 
+ *
  * @return true if successful, false if there was not enough memory.
  */
 static bool allocateBmdBufferSpace(BmdBuffer* buffer, int amount)
 {
    bool rval = true;
-   
+
    // ensure there is enough space, including the null-terminator
    amount++;
    int32 remaining = buffer->capacity - buffer->length;
@@ -190,7 +194,7 @@ static bool allocateBmdBufferSpace(BmdBuffer* buffer, int amount)
 #endif
       // not enough space, save old data
       char* oldData = buffer->data;
-      
+
       // try to allocate space (enough for old data, new data, and 1 null)
       int32 newCapacity = buffer->length + amount + 1;
       buffer->data = (char*)gGeckoFunctionTable.memalloc(newCapacity);
@@ -221,14 +225,14 @@ static bool allocateBmdBufferSpace(BmdBuffer* buffer, int amount)
          }
       }
    }
-   
+
    return rval;
 }
 
 /**
  * Called by the application whenever a new stream matching the MIME type of
  * the plugin is detected on a page.
- * 
+ *
  * @param instance the instance that received the event.
  * @param type the MIME-type that was specified for the embedded object or file.
  * @param stream the stream associated with the MIME-type.
@@ -256,14 +260,14 @@ static NPError BmpNewStream(
    fprintf(fp, "BmpNewStream\n");
    fclose(fp);
 #endif
-   
+
 #ifdef LINUX_DEBUG_MODE
    printf("BmpNewStream\n");
 #endif
-   
+
    // use normal streaming
    *stype = (uint16)NP_NORMAL;
-   
+
    // allocate bmd buffer
    stream->pdata = gGeckoFunctionTable.memalloc(sizeof(BmdBuffer));
    if(stream->pdata == NULL)
@@ -278,14 +282,14 @@ static NPError BmpNewStream(
       buffer->length = 0;
       buffer->data = NULL;
    }
-   
+
    return rval;
 }
 
 /**
  * Called by the application whenever a stream is destroyed for a particular
  * MIME type.
- * 
+ *
  * @param instance the instance that received the event.
  * @param stream the stream that was destroyed.
  * @param reason the reason the stream was destroyed.
@@ -308,14 +312,14 @@ static NPError BmpDestroyStream(NPP instance, NPStream* stream, NPReason reason)
    fprintf(fp, "BmpDestroyStream\n");
    fclose(fp);
 #endif
-   
+
 #ifdef LINUX_DEBUG_MODE
    printf("BmpDestroyStream\n");
 #endif
-   
+
    // get bmd buffer
    BmdBuffer* buffer = (BmdBuffer*)stream->pdata;
-   
+
 #ifdef LINUX_DEBUG_MODE
    if(reason == NPRES_DONE && buffer->length > 0)
    {
@@ -342,11 +346,11 @@ static NPError BmpDestroyStream(NPP instance, NPStream* stream, NPReason reason)
          // stream completed normally and there is data to send
          if(reason == NPRES_DONE && buffer->length > 0)
          {
-            // write the bmdData into a UTF-16 string 
+            // write the bmdData into a UTF-16 string
             NS_CStringToUTF16(
                nsEmbedCString(buffer->data),
                NS_CSTRING_ENCODING_ASCII, utf16);
-            
+
             // send the UTF-16 data to observers
             observerService->NotifyObservers(
                NULL, "bitmunk-directive", utf16.get());
@@ -390,7 +394,7 @@ static NPError BmpDestroyStream(NPP instance, NPStream* stream, NPReason reason)
       }
    }
 #endif
-   
+
    // free bmd buffer
    if(buffer != NULL)
    {
@@ -403,55 +407,55 @@ static NPError BmpDestroyStream(NPP instance, NPStream* stream, NPReason reason)
       gGeckoFunctionTable.memfree(stream->pdata);
       stream->pdata = NULL;
    }
-   
+
    return rval;
 }
 
 /**
  * Called by the application to determine if the plugin is ready to have
  * data written to it and the maximum number of bytes it can accept.
- * 
+ *
  * @param instance the instance that received the event.
  * @param stream the associated stream.
- * 
+ *
  * @return the maximum number of bytes the plugin can accept.
  */
 static int32 BmpWriteReady(NPP instance, NPStream* stream)
 {
    int32 rval = 0;
-   
+
    // return maximum bmd size - bytes already read - 1 for null-terminator
    BmdBuffer* buffer = (BmdBuffer*)stream->pdata;
    rval = MAX_BMD_SIZE - buffer->length - 1;
-   
+
 #ifdef LINUX_DEBUG_MODE
    printf("BmpWriteReady: %d\n", rval);
 #endif
-   
+
    return rval;
 }
 
 /**
  * Called by the application to write data to the plugin.
- * 
+ *
  * @param instance the instance that received the event.
  * @param stream the associated stream.
  * @param offset the offset into the entire stream, this is not the offset
  *               that valid bytes begin in the passed buffer.
  * @param len the length of the data.
  * @param buffer the buffer with the data.
- * 
+ *
  * @return the number of bytes written or -1 on error.
  */
 static int32 BmpWrite(
    NPP instance, NPStream* stream, int32 offset, int32 len, void* buffer)
 {
    int32 rval = -1;
-   
+
 #ifdef LINUX_DEBUG_MODE
    printf("BmpWrite: %d bytes\n", len);
 #endif
-   
+
    // allocate enough space in the bmd buffer
    BmdBuffer* b = (BmdBuffer*)stream->pdata;
    if(allocateBmdBufferSpace(b, len))
@@ -461,7 +465,7 @@ static int32 BmpWrite(
       b->length += len;
       rval = len;
    }
-   
+
    return rval;
 }
 
@@ -473,11 +477,11 @@ char* NP_GetMIMEDescription()
    fprintf(fp, "NP_GetMIMEDescription: %s\n", MIME_TYPES_DESCRIPTION);
    fclose(fp);
 #endif
-   
+
 #ifdef LINUX_DEBUG_MODE
    printf("NP_GetMIMEDescription: %s\n", MIME_TYPES_DESCRIPTION);
 #endif
-   
+
    return (char*)(MIME_TYPES_DESCRIPTION);
 }
 
@@ -489,15 +493,15 @@ NPError OSCALL NP_GetValue(void* future, NPPVariable valueType, void* value)
    fprintf(fp, "NP_GetValue\n");
    fclose(fp);
 #endif
-   
+
 #ifdef LINUX_DEBUG_MODE
    printf("NP_GetValue\n");
 #endif
 
    NPError err = NPERR_NO_ERROR;
-   
-   // check the type of the value and return the associated value 
-   switch(valueType) 
+
+   // check the type of the value and return the associated value
+   switch(valueType)
    {
       case NPPVpluginNameString:
          *((const char**)value) = PLUGIN_NAME;
@@ -509,7 +513,7 @@ NPError OSCALL NP_GetValue(void* future, NPPVariable valueType, void* value)
          err = NPERR_INVALID_PARAM;
          break;
    }
-   
+
    return err;
 }
 
@@ -580,7 +584,7 @@ NPError OSCALL NP_GetEntryPoints(NPPluginFuncs* pFuncs)
    fprintf(fp, "NP_GetEntryPoints done\n");
    fclose(fp);
 #endif
-   
+
    return rval;
 }
 
@@ -598,7 +602,7 @@ NPError OSCALL NP_Initialize(
    FILE* fp = fopen("C:\\temp\\bitmunk-firefox-plugin.log", "a");
    fprintf(fp, "NP_Initialize\n");
 #endif
-   
+
 #ifdef LINUX_DEBUG_MODE
    printf("NP_Initialize\n");
 #endif
@@ -632,16 +636,16 @@ NPError OSCALL NP_Initialize(
          memcpy(&gGeckoFunctionTable, geckoFunctions, sizeof(NPNetscapeFuncs));
       }
    }
-   
+
 #ifdef WINDOWS_DEBUG_MODE
    fprintf(fp, "NP_Initialize complete. rval=%i\n", rval);
    fclose(fp);
 #endif
-   
+
 #ifdef LINUX_DEBUG_MODE
    printf("NP_Initialize complete. rval=%i\n", rval);
 #endif
-   
+
    return rval;
 }
 
@@ -667,7 +671,7 @@ DEFINE_API_C(int) main(
       *unloadUpp = NewNPP_ShutdownProc(NP_Shutdown);
 #endif
    }
-   
+
    return rval;
 }
 
@@ -682,11 +686,11 @@ NPError OSCALL NP_Shutdown()
    fprintf(fp, "NP_Shutdown\n");
    fclose(fp);
 #endif
-   
+
 #ifdef LINUX_DEBUG_MODE
    printf("NP_Shutdown\n");
 #endif
-   
+
    return NPERR_NO_ERROR;
 }
 
