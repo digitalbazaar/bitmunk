@@ -163,7 +163,7 @@ bool BtpServer::addService(
          {
             if(mHttpConnectionServicer.addRequestServicer(&(*service), true))
             {
-               mSecureBtpServices.push_back(service);
+               mSecureServices[service->getPath()] = service;
                rval = true;
             }
          }
@@ -172,14 +172,14 @@ bool BtpServer::addService(
          {
             if(mHttpConnectionServicer.addRequestServicer(&(*service), false))
             {
-               mNonSecureBtpServices.push_back(service);
+               mNonSecureServices[service->getPath()] = service;
                rval = true;
             }
             else if(rval)
             {
                // ensure secure servicer is removed
                mHttpConnectionServicer.removeRequestServicer(&(*service), true);
-               mSecureBtpServices.remove(service);
+               mSecureServices.erase(service->getPath());
                rval = false;
             }
             else
@@ -229,13 +229,13 @@ void BtpServer::removeService(
       if(ssl == Node::SslOn || ssl == Node::SslAny)
       {
          mHttpConnectionServicer.removeRequestServicer(&(*service), true);
-         mSecureBtpServices.remove(service);
+         mSecureServices.erase(service->getPath());
       }
 
       if(ssl == Node::SslOff || ssl == Node::SslAny)
       {
          mHttpConnectionServicer.removeRequestServicer(&(*service), false);
-         mNonSecureBtpServices.remove(service);
+         mNonSecureServices.erase(service->getPath());
       }
    }
    mBtpServiceLock.unlock();
@@ -270,41 +270,23 @@ BtpServiceRef BtpServer::removeService(
    {
       if(ssl == Node::SslOn || ssl == Node::SslAny)
       {
-         BtpService* bs = static_cast<BtpService*>(
-            mHttpConnectionServicer.removeRequestServicer(path, true));
-         if(bs != NULL)
+         BtpServiceMap::iterator i = mSecureServices.find(path);
+         if(i != mSecureServices.end())
          {
-            BtpServiceList* list = &mSecureBtpServices;
-            for(BtpServiceList::iterator i = list->begin();
-                i != list->end(); i++)
-            {
-               if(&(**i) == bs)
-               {
-                  sslOn = *i;
-                  list->erase(i);
-                  break;
-               }
-            }
+            sslOn = i->second;
+            mHttpConnectionServicer.removeRequestServicer(path, true);
+            mSecureServices.erase(i);
          }
       }
 
       if(ssl == Node::SslOff || ssl == Node::SslAny)
       {
-         BtpService* bs = static_cast<BtpService*>(
-            mHttpConnectionServicer.removeRequestServicer(path, false));
-         if(bs != NULL)
+         BtpServiceMap::iterator i = mNonSecureServices.find(path);
+         if(i != mNonSecureServices.end())
          {
-            BtpServiceList* list = &mNonSecureBtpServices;
-            for(BtpServiceList::iterator i = list->begin();
-                i != list->end(); i++)
-            {
-               if(&(**i) == bs)
-               {
-                  sslOff = *i;
-                  list->erase(i);
-                  break;
-               }
-            }
+            sslOff = i->second;
+            mHttpConnectionServicer.removeRequestServicer(path, false);
+            mNonSecureServices.erase(i);
          }
       }
    }
@@ -348,6 +330,35 @@ BtpServiceRef BtpServer::removeService(
          }
       }
    }
+
+   return rval;
+}
+
+BtpServiceRef BtpServer::getService(const char* path, Node::SslStatus ssl)
+{
+   BtpServiceRef rval;
+
+   mBtpServiceLock.lock();
+   {
+      if(ssl == Node::SslOff || ssl == Node::SslAny)
+      {
+         BtpServiceMap::iterator i = mNonSecureServices.find(path);
+         if(i != mNonSecureServices.end())
+         {
+            rval = i->second;
+         }
+      }
+
+      if(rval.isNull() && ssl != Node::SslOff)
+      {
+         BtpServiceMap::iterator i = mSecureServices.find(path);
+         if(i != mSecureServices.end())
+         {
+            rval = i->second;
+         }
+      }
+   }
+   mBtpServiceLock.unlock();
 
    return rval;
 }

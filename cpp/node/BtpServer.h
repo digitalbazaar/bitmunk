@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_node_BtpServer_H
 #define bitmunk_node_BtpServer_H
@@ -9,6 +9,7 @@
 #include "monarch/http/HttpConnectionServicer.h"
 #include "monarch/net/SocketDataPresenterList.h"
 #include "monarch/net/SslContext.h"
+#include "monarch/util/StringTools.h"
 
 namespace bitmunk
 {
@@ -54,11 +55,13 @@ protected:
    monarch::net::Server::ServiceId mServiceId;
 
    /**
-    * The lists of secure and non-secure BtpServices.
+    * The secure and non-secure BtpServices.
     */
-   typedef std::list<bitmunk::protocol::BtpServiceRef> BtpServiceList;
-   BtpServiceList mSecureBtpServices;
-   BtpServiceList mNonSecureBtpServices;
+   typedef std::map<
+      const char*, bitmunk::protocol::BtpServiceRef,
+      monarch::util::StringComparator> BtpServiceMap;
+   BtpServiceMap mSecureServices;
+   BtpServiceMap mNonSecureServices;
 
    /**
     * A lock for manipulating the BtpServiceLists.
@@ -136,6 +139,20 @@ public:
    virtual bitmunk::protocol::BtpServiceRef removeService(
       const char* path, Node::SslStatus ssl = Node::SslAny,
       bool cleanup = true);
+
+   /**
+    * Gets a BtpService by its path.
+    *
+    * @param path the path for the BtpService to get.
+    * @param ssl to get a service regardless, use SslAny, to get a secure
+    *            or non-secure one, pass the appropriate SslStatus.
+    *
+    * @return the BtpService that was fetched, if there were two different
+    *         services and SslAny was provided, only the non-SSL service will
+    *         be returned.
+    */
+   virtual bitmunk::protocol::BtpServiceRef getService(
+      const char* path, Node::SslStatus ssl = Node::SslAny);
 
    /**
     * Gets this node's main host address.
