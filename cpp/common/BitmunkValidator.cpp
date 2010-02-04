@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/common/BitmunkValidator.h"
 
@@ -374,4 +374,27 @@ v::Validator* BitmunkValidator::identity()
          NULL)),
       "address", BitmunkValidator::address(),
       NULL);
+}
+
+v::Validator* BitmunkValidator::ipv4()
+{
+   return new v::Regex(
+      "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+      "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+      "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+      "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
+      "An IPv4 address must be in dotted-notation: "
+      "xxx.xxx.xxx.xxx");
+}
+
+v::Validator* BitmunkValidator::date()
+{
+   return new v::Regex(
+      "^[2-9][0-9]{3}-"
+      "(0[1-9]|1[0-2])-"
+      "([0-2][0-9]|3[0-1]) "
+      "([0-1][0-9]|2[0-3]):"
+      "([0-5][0-9]):"
+      "([0-5][0-9])$",
+      "Date must be of the format 'YYYY-MM-DD HH:MM:SS'.");
 }

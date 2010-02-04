@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_common_BitmunkValidators_H
 #define bitmunk_common_BitmunkValidators_H
@@ -186,6 +186,22 @@ public:
     * @return a pointer to the validator.
     */
    static monarch::validation::Validator* identity();
+
+   /**
+    * Creates a validator for validating IPv4 addresses.
+    *
+    * @return a pointer to the validator.
+    */
+   static monarch::validation::Validator* ipv4();
+
+   /**
+    * Creates a validator for validating dates with the format:
+    *
+    * 'YYYY-MM-DD HH:MM:SS'
+    *
+    * @return a pointer to the validator.
+    */
+   static monarch::validation::Validator* date();
 };
 
 } // end namespace common
