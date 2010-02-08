@@ -17,13 +17,12 @@ using namespace monarch::rt;
 using namespace monarch::util;
 
 BtpService::BtpService(const char* path, bool dynamicResources) :
-   HttpRequestServicer(path)
+   HttpRequestServicer(path),
+   mReadThrottler(NULL),
+   mWriteThrottler(NULL),
+   mDynamicResources(dynamicResources),
+   mAllowHttp1(false)
 {
-   // initialize variables
-   mReadThrottler = NULL;
-   mWriteThrottler = NULL;
-   mDynamicResources = dynamicResources;
-   mAllowHttp1 = false;
 }
 
 BtpService::~BtpService()
