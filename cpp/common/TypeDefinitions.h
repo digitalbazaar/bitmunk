@@ -46,6 +46,9 @@ typedef const char* WareId;
  * signature includes all of the data in the address, but lowercases the
  * data before processing it.
  *
+ * An Address may also optionally include a hash that can prove to an authority
+ * that it was previously validated by said authority.
+ *
  * Address
  * {
  *    "street" : string,
@@ -58,7 +61,8 @@ typedef const char* WareId;
  *    {
  *       "userId" : UserId (uint64),
  *       "profileId" : ProfileId (uint32)
- *    }
+ *    },
+ *    hash: string
  * }
  *
  * @member street a street, i.e. 1700 Kraft Drive, Ste. 2408.
@@ -69,6 +73,7 @@ typedef const char* WareId;
  * @member signature the signer's hex-encoded signature.
  * @member signer.userId the signer's user ID.
  * @member signer.profileId the signer's profile ID.
+ * @member hash a hash to prove to an authority that the address is validated.
  */
 typedef monarch::rt::DynamicObject Address;
 typedef monarch::rt::DynamicObjectIterator AddressIterator;

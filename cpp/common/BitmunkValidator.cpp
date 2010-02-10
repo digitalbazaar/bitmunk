@@ -336,6 +336,7 @@ v::Validator* BitmunkValidator::address()
             2,
             "The country code is too long. It must be exactly 2 characters."),
          NULL),
+      "hash", new v::Optional(new v::Type(String)),
       NULL);
 
    // FIXME: add support for signed addresses?
