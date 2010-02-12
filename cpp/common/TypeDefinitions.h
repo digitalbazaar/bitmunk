@@ -1075,7 +1075,7 @@ typedef const char* TransactionGroupType;
  *    "payees" : [] Payees,
  *    "total" : string,
  *    "ip" : string,
- *    "result" : CreditCardProcessingResult
+ *    "approved" : Boolean,
  *    "signature" : string,
  *    "signer" : Map
  *    {
@@ -1096,7 +1096,7 @@ typedef const char* TransactionGroupType;
  *               the deposit.
  * @member ip the IP address of the person performing the deposit (this is
  *            only applicable when a delegate is performing the deposit).
- * @member result the result of the deposit.
+ * @member approved true if the deposit was approved, false if not.
  * @member signatureVersion the signature's version.
  * @member signature the signer's hex-encoded signature.
  * @member signer.userId the signer's user ID.
@@ -1146,8 +1146,9 @@ typedef monarch::rt::DynamicObjectIterator WithdrawalIterator;
  *    "cvm" : string,
  *    "name" : string,
  *    "firstName" : string,
- *    "lastName" : string
- *    "address" : Address
+ *    "lastName" : string,
+ *    "address" : Address,
+ *    "errors" : [] CreditCardErrors
  * }
  *
  * @member type the type of credit card (i.e. visa, mastercard).
@@ -1159,23 +1160,23 @@ typedef monarch::rt::DynamicObjectIterator WithdrawalIterator;
  * @member firstName the first name on the credit card (optional).
  * @member lastName the last name on the credit card (optional).
  * @member address the credit card holder's address.
+ * @member errors any related CreditCardErrors from processing.
  */
 typedef monarch::rt::DynamicObject CreditCard;
 typedef monarch::rt::DynamicObjectIterator CreditCardIterator;
 
-typedef const char* CreditCardProcessingResult;
-#define CREDIT_CARD_PROCESSING_RESULT_UNPROCESSED      "unprocessed"
-#define CREDIT_CARD_PROCESSING_RESULT_APPROVED         "approved"
-#define CREDIT_CARD_PROCESSING_RESULT_DECLINED         "declined"
-#define CREDIT_CARD_PROCESSING_RESULT_FRAUD            "fraud"
-#define CREDIT_CARD_PROCESSING_RESULT_DUPLICATE        "duplicate"
-#define CREDIT_CARD_PROCESSING_RESULT_ERROR            "error"
-#define CREDIT_CARD_PROCESSING_RESULT_INVALID_TYPE     "invalidType"
-#define CREDIT_CARD_PROCESSING_RESULT_INVALID_NUMBER   "invalidNumber"
-#define CREDIT_CARD_PROCESSING_RESULT_INVALID_EXP_DATE "invalidExpDate"
-#define CREDIT_CARD_PROCESSING_RESULT_INVALID_CVM      "invalidCvm"
-#define CREDIT_CARD_PROCESSING_RESULT_INVALID_ADDRESS  "invalidAddress"
-#define CREDIT_CARD_PROCESSING_RESULT_INVALID_ZIP      "invalidZip"
+typedef const char* CreditCardError;
+#define CREDIT_CARD_ERROR_UNPROCESSED      "unprocessed"
+#define CREDIT_CARD_ERROR_DECLINED         "declined"
+#define CREDIT_CARD_ERROR_FRAUD            "fraud"
+#define CREDIT_CARD_ERROR_DUPLICATE        "duplicate"
+#define CREDIT_CARD_ERROR_ERROR            "error"
+#define CREDIT_CARD_ERROR_INVALID_TYPE     "invalidType"
+#define CREDIT_CARD_ERROR_INVALID_NUMBER   "invalidNumber"
+#define CREDIT_CARD_ERROR_INVALID_EXP_DATE "invalidExpDate"
+#define CREDIT_CARD_ERROR_INVALID_CVM      "invalidCvm"
+#define CREDIT_CARD_ERROR_INVALID_ADDRESS  "invalidAddress"
+#define CREDIT_CARD_ERROR_INVALID_ZIP      "invalidZip"
 
 /**
  * Defines a number of common exceptions used in Bitmunk.
