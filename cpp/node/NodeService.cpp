@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/node/NodeService.h"
 
@@ -81,9 +81,11 @@ bool NodeService::sendExceptionEvent(ExceptionRef e, BtpAction* action)
       // include exception message
       if(strlen(e->getMessage()) > 50)
       {
-         char tmp[53];
-         snprintf(tmp, 53, "%s...", e->getMessage());
-         details["exceptionMsg"] = tmp;
+         char tmp[50];
+         snprintf(tmp, 50, "%s", e->getMessage());
+         string str = tmp;
+         str.append("...");
+         details["exceptionMsg"] = str.c_str();
       }
       else
       {
@@ -115,44 +117,22 @@ bool NodeService::sendScrubbedEvent(Event& e, BtpAction* action)
       // get request header, get cookies
       CookieJar jar;
       jar.readCookies(&reqHeader, CookieJar::Client);
-      // Note: special knowledge of bitmunk-login cookie
-      DynamicObject cookie = jar.getCookie("bitmunk-login");
-      if(!cookie.isNull())
+      // Note: special knowledge of bitmunk website cookies
+      Cookie userIdCookie = jar.getCookie("bitmunk-user-id");
+      Cookie usernameCookie = jar.getCookie("bitmunk-username");
+      if(!userIdCookie.isNull())
       {
-         // url-decode cookie value
-         string decoded = Url::decode(cookie["value"]->getString());
-
-         // split cookie value on commas and then equals
-         StringTokenizer comma;
-         comma.tokenize(decoded.c_str(), ',');
-         while(comma.hasNextToken())
-         {
-            const char* token = comma.nextToken();
-            StringTokenizer equals;
-            equals.tokenize(token, '=');
-            while(equals.hasNextToken())
-            {
-               const char* tok = equals.nextToken();
-               if(equals.hasNextToken())
-               {
-                  if(strcmp(tok, "userId") == 0)
-                  {
-                     details["cookieUserId"] = equals.nextToken();
-                  }
-                  else if(strcmp(tok, "username") == 0)
-                  {
-                     details["cookieUsername"] = equals.nextToken();
-                  }
-               }
-            }
-         }
+         details["cookieUserId"] = userIdCookie["value"]->getString();
       }
-
-      if(!details->hasMember("cookieUserId"))
+      else
       {
          details["cookieUserId"] = "N/A";
       }
-      if(!details->hasMember("cookieUsername"))
+      if(!usernameCookie.isNull())
+      {
+         details["cookieUsername"] = usernameCookie["value"]->getString();
+      }
+      else
       {
          details["cookieUsername"] = "N/A";
       }
