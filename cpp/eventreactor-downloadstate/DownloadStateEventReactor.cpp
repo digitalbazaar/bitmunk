@@ -153,7 +153,7 @@ void DownloadStateEventReactor::removeUser(UserId userId)
 
 void DownloadStateEventReactor::directiveCreated(Event& e)
 {
-   UserId userId = e["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(e["details"]["userId"]);
    const char* directiveId = e["details"]["directiveId"]->getString();
 
    MO_CAT_DEBUG(BM_EVENTREACTOR_DS_CAT,
@@ -186,7 +186,7 @@ void DownloadStateEventReactor::directiveCreated(Event& e)
 void DownloadStateEventReactor::downloadStateCreated(Event& e)
 {
    // get user ID
-   UserId userId = e["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(e["details"]["userId"]);
    DownloadStateId dsId = e["details"]["downloadStateId"]->getUInt64();
 
    // log activity
@@ -201,7 +201,7 @@ void DownloadStateEventReactor::downloadStateCreated(Event& e)
 void DownloadStateEventReactor::downloadStateInitialized(Event& e)
 {
    // get user ID
-   UserId userId = e["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(e["details"]["userId"]);
    DownloadStateId dsId = e["details"]["downloadStateId"]->getUInt64();
 
    // log activity
@@ -218,9 +218,9 @@ void DownloadStateEventReactor::pieceStarted(Event& e)
    // schedule progress poll events with event daemon
    Event e2;
    e2["type"] = EVENT_DOWNLOAD_STATE ".progressPoll";
-   e2["details"]["userId"] = e["details"]["userId"]->getUInt64();
+   e2["details"]["userId"] = e["details"]["userId"].clone();
    e2["details"]["downloadStateId"] =
-      e["details"]["downloadStateId"]->getUInt64();
+      e["details"]["downloadStateId"].clone();
 
    // include unique event identifier
    e2["details"]["eventReactor"] = true;
@@ -232,9 +232,9 @@ void DownloadStateEventReactor::downloadStopped(Event& e)
    // remove progress poll events from event daemon
    Event e2;
    e2["type"] = EVENT_DOWNLOAD_STATE ".progressPoll";
-   e2["details"]["userId"] = e["details"]["userId"]->getUInt64();
+   e2["details"]["userId"] = e["details"]["userId"].clone();
    e2["details"]["downloadStateId"] =
-      e["details"]["downloadStateId"]->getUInt64();
+      e["details"]["downloadStateId"].clone();
 
    // include unique event identifier
    e2["details"]["eventReactor"] = true;
@@ -244,7 +244,7 @@ void DownloadStateEventReactor::downloadStopped(Event& e)
 void DownloadStateEventReactor::downloadCompleted(Event& e)
 {
    // get user ID, download state ID
-   UserId userId = e["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(e["details"]["userId"]);
    DownloadStateId dsId = e["details"]["downloadStateId"]->getUInt64();
 
    // log activity
@@ -260,7 +260,7 @@ void DownloadStateEventReactor::downloadCompleted(Event& e)
 void DownloadStateEventReactor::purchaseCompleted(Event& e)
 {
    // get user ID
-   UserId userId = e["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(e["details"]["userId"]);
    DownloadStateId dsId = e["details"]["downloadStateId"]->getUInt64();
 
    // log activity
@@ -276,7 +276,7 @@ void DownloadStateEventReactor::purchaseCompleted(Event& e)
 void DownloadStateEventReactor::reprocessRequired(Event& e)
 {
    // get user ID
-   UserId userId = e["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(e["details"]["userId"]);
 
    // ensure operation is done as the user to protect against logout
    Operation op = mNode->currentOperation();
@@ -370,7 +370,7 @@ void DownloadStateEventReactor::reprocessRequired(Event& e)
                   "bitmunk.purchase.Purchase"));
             DownloadState ds;
             ds["id"] = dsId;
-            ds["userId"] = userId;
+            BM_ID_SET(ds["userId"], userId);
             if(ipm->populateDownloadState(ds))
             {
                // append state to list
@@ -449,7 +449,7 @@ void DownloadStateEventReactor::postDownloadStateId(
       // schedule exception event
       Event e2;
       e2["type"] = "bitmunk.eventreactor.EventReactor.exception";
-      e2["details"]["userId"] = userId;
+      BM_ID_SET(e2["details"]["userId"], userId);
       e2["details"]["downloadStateId"] = dsId;
       e2["details"]["exception"] = Exception::getAsDynamicObject();
       mNode->getEventController()->schedule(e2);

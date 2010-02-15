@@ -580,8 +580,7 @@ bool CatalogDatabase::addPayeeScheme(
             rval =
                s->setUInt32(":psId", psId) &&
                s->setUInt32(":position", position++) &&
-               s->setUInt64(":accountId",
-                  p["id"]->getUInt64()) &&
+               s->setUInt64(":accountId", BM_ACCOUNT_ID(p["id"])) &&
                s->setText(":amountType",
                   p["amountType"]->getString()) &&
                s->setText(":description",
@@ -603,7 +602,7 @@ bool CatalogDatabase::addPayeeScheme(
                   "Failed to add a payee to the given payee scheme.",
                   "bitmunk.catalog.database.PayeeAdditionFailed");
                e->getDetails()["payee"] = p;
-               e->getDetails()["payeeSchemeId"] = psId;
+               BM_ID_SET(e->getDetails()["payeeSchemeId"], psId);
                Exception::push(e);
             }
          }
@@ -618,7 +617,7 @@ bool CatalogDatabase::updatePayeeScheme(PayeeScheme& ps, Connection* c)
    bool rval = false;
 
    // ensure payee scheme ID is valid
-   PayeeSchemeId psId = ps["id"]->getUInt32();
+   PayeeSchemeId psId = BM_PAYEE_SCHEME_ID(ps["id"]);
    if(isPayeeSchemeIdValid(psId, c))
    {
       // update payee scheme description
@@ -666,7 +665,7 @@ bool CatalogDatabase::updatePayeeScheme(PayeeScheme& ps, Connection* c)
                   s->setUInt32(":psId", psId) &&
                   s->setUInt32(":position", position++) &&
                   s->setUInt64(":accountId",
-                     p["id"]->getUInt64()) &&
+                     BM_ACCOUNT_ID(p["id"])) &&
                   s->setText(":amountType",
                      p["amountType"]->getString()) &&
                   s->setText(":description",
@@ -687,7 +686,7 @@ bool CatalogDatabase::updatePayeeScheme(PayeeScheme& ps, Connection* c)
                      "Failed to add a payee to the given payee scheme.",
                      "bitmunk.catalog.database.PayeeAdditionFailed");
                   e->getDetails()["payee"] = p;
-                  e->getDetails()["payeeSchemeId"] = psId;
+                  BM_ID_SET(e->getDetails()["payeeSchemeId"], psId);
                   Exception::push(e);
                }
             }
@@ -855,7 +854,7 @@ bool CatalogDatabase::populatePayeeSchemes(
                Payee p;
 
                row->getUInt64("account_id", accountId);
-               p["id"] = accountId;
+               BM_ID_SET(p["id"], accountId);
 
                row->getText("amount_type", str);
                p["amountType"] = str.c_str();
@@ -933,7 +932,7 @@ bool CatalogDatabase::populatePayeeScheme(
 {
    bool rval = false;
 
-   PayeeSchemeId psId = ps["id"]->getUInt32();
+   PayeeSchemeId psId = BM_PAYEE_SCHEME_ID(ps["id"]);
 
    // find all payees with the given payee scheme ID
    Statement* sp = c->prepare(
@@ -1032,7 +1031,7 @@ bool CatalogDatabase::populatePayeeScheme(
             Payee p = payees->append();
 
             row->getUInt64("account_id", accountId);
-            p["id"] = accountId;
+            BM_ID_SET(p["id"], accountId);
 
             row->getText("amount_type", str);
             p["amountType"] = str.c_str();
@@ -1064,7 +1063,7 @@ bool CatalogDatabase::populatePayeeScheme(
             ExceptionRef e = new Exception(
                "Could not populate payees. Invalid payee scheme ID.",
                "bitmunk.catalog.database.InvalidPayeeSchemeId");
-            e->getDetails()["payeeSchemeId"] = psId;
+            BM_ID_SET(e->getDetails()["payeeSchemeId"], psId);
             Exception::set(e);
             rval = false;
          }
@@ -1118,7 +1117,7 @@ bool CatalogDatabase::ensurePayeeSchemeNotInUse(
          ExceptionRef e = new Exception(
             "Payee scheme is in use by at least one ware.",
             "bitmunk.catalog.PayeeSchemeWareDependency");
-         e->getDetails()["payeeSchemeId"] = psId;
+         BM_ID_SET(e->getDetails()["payeeSchemeId"], psId);
          Exception::set(e);
          rval = false;
       }
@@ -1179,7 +1178,7 @@ bool CatalogDatabase::populateUpdatingPayeeSchemes(
 
          // populate the PayeeScheme
          PayeeScheme ps;
-         ps["id"] = psId;
+         BM_ID_SET(ps["id"], psId);
          ps["userId"] = userId;
          ps["serverId"] = serverId;
          DynamicObject filters;
@@ -1197,7 +1196,7 @@ bool CatalogDatabase::populateUpdatingPayeeSchemes(
                "Failed to populate payee scheme information for the given "
                "payee scheme ID.",
                "bitmunk.catalog.database.PayeeSchemeDoesNotExist");
-            e->getDetails()["payeeSchemeId"] = psId;
+            BM_ID_SET(e->getDetails()["payeeSchemeId"], psId);
             Exception::set(e);
          }
       }
@@ -1249,7 +1248,7 @@ bool CatalogDatabase::populateWare(
             ExceptionRef e = new Exception(
                "Ware not found.",
                "bitmunk.catalog.InvalidWareId");
-            e->getDetails()["wareId"] = ware["id"]->getString();
+            BM_ID_SET(e->getDetails()["wareId"], BM_WARE_ID(ware["id"]));
             Exception::set(e);
             rval = false;
          }
@@ -1260,7 +1259,7 @@ bool CatalogDatabase::populateWare(
             ExceptionRef e = new Exception(
                "Ware not found.",
                "bitmunk.catalog.InvalidWareId");
-            e->getDetails()["wareId"] = ware["id"]->getString();
+            BM_ID_SET(e->getDetails()["wareId"], BM_WARE_ID(ware["id"]));
             Exception::set(e);
             rval = false;
          }
@@ -1279,7 +1278,7 @@ bool CatalogDatabase::populateWare(
                row->getUInt32("payee_scheme_id", psId) &&
                row->getText("description", str);
             ware["mediaLibraryId"] = mlId;
-            ware["payeeSchemeId"] = psId;
+            BM_ID_SET(ware["payeeSchemeId"], psId);
             ware["description"] = str.c_str();
 
             // finish out result set
@@ -1288,7 +1287,7 @@ bool CatalogDatabase::populateWare(
             // populate file info and payees
             FileInfo& fi = ware["fileInfos"][0];
             PayeeScheme ps;
-            ps["id"] = psId;
+            BM_ID_SET(ps["id"], psId);
             DynamicObject filters;
             filters["default"] = true;
             rval = rval &&
@@ -1298,7 +1297,7 @@ bool CatalogDatabase::populateWare(
             {
                // replace the ware media ID and payees with the information
                // in the database
-               ware["mediaId"] = fi["mediaId"]->getUInt64();
+               BM_ID_SET(ware["mediaId"], fi["mediaId"]);
                ware["payees"] = ps["payees"];
             }
          }
@@ -1398,7 +1397,7 @@ bool CatalogDatabase::populateWareSet(
       {
          DynamicObject& next = i->next();
          Ware ware;
-         ware["id"] = next->getString();
+         BM_ID_SET(ware["id"], BM_WARE_ID(next));
          rval = populateWare(userId, ware, mediaLibrary, c);
          wareSet["resources"]->append(ware);
       }
@@ -1482,7 +1481,7 @@ bool CatalogDatabase::populateWareSet(
 
                   if(rval)
                   {
-                     ware["id"] = wareId.c_str();
+                     BM_ID_SET(ware["id"], wareId.c_str());
                      ware["mediaLibraryId"] = mlId;
                      ware["payeeSchemeId"] = psId;
                      ware["description"] = str.c_str();
@@ -1545,7 +1544,7 @@ bool CatalogDatabase::populateWareFileInfo(
    if(s != NULL)
    {
       rval =
-         s->setText(":id", ware["id"]->getString()) &&
+         s->setText(":id", BM_WARE_ID(ware["id"])) &&
          s->execute();
       if(rval)
       {
@@ -1555,7 +1554,7 @@ bool CatalogDatabase::populateWareFileInfo(
             ExceptionRef e = new Exception(
                "Ware not found.",
                "bitmunk.catalog.database.InvalidWareId");
-            e->getDetails()["wareId"] = ware["id"]->getString();
+            BM_ID_SET(e->getDetails()["wareId"], BM_WARE_ID(ware["id"]));
             Exception::set(e);
             rval = false;
          }
@@ -1588,7 +1587,7 @@ bool CatalogDatabase::removeWare(Ware& ware, Connection* c)
       " SET problem_id=0,dirty=1,deleted=1 WHERE ware_id=:id AND deleted=0");
    rval =
       (s != NULL) &&
-      s->setText(":id", ware["id"]->getString()) &&
+      s->setText(":id", BM_WARE_ID(ware["id"])) &&
       s->execute();
 
    if(rval)
@@ -1601,7 +1600,7 @@ bool CatalogDatabase::removeWare(Ware& ware, Connection* c)
          ExceptionRef e = new Exception(
             "Failed to remove a ware with an unknown WareId.",
             "bitmunk.catalog.database.WareNotFound");
-         e->getDetails()["wareId"] = ware["id"]->getString();
+         BM_ID_SET(e->getDetails()["wareId"], BM_WARE_ID(ware["id"]));
          Exception::set(e);
          rval = false;
       }
@@ -1615,7 +1614,7 @@ bool CatalogDatabase::removeWare(Ware& ware, Connection* c)
          {
             // perform the database query
             rval =
-               s->setText(":id", ware["id"]->getString()) &&
+               s->setText(":id", BM_WARE_ID(ware["id"])) &&
                s->execute();
             if(rval)
             {
@@ -1626,7 +1625,7 @@ bool CatalogDatabase::removeWare(Ware& ware, Connection* c)
 
                   // retrieve data
                   rval = rval && row->getUInt32("payee_scheme_id", psId);
-                  ware["payeeSchemeId"] = psId;
+                  BM_ID_SET(ware["payeeSchemeId"], psId);
 
                   // finish out result set
                   s->fetch();
@@ -1656,8 +1655,8 @@ bool CatalogDatabase::updateWare(
       rval =
          (s != NULL) &&
          s->setText(":fileId",
-            ware["fileInfos"][0]["id"]->getString()) &&
-         s->setText(":wareId", ware["id"]->getString()) &&
+            BM_FILE_ID(ware["fileInfos"][0]["id"])) &&
+         s->setText(":wareId", BM_WARE_ID(ware["id"])) &&
          s->setText(":description", ware["description"]->getString()) &&
          s->setUInt32(":psId", psId) &&
          s->execute();
@@ -1685,10 +1684,10 @@ bool CatalogDatabase::updateWare(
       rval =
          (s != NULL) &&
          s->setText(":fileId",
-            ware["fileInfos"][0]["id"]->getString()) &&
+            BM_FILE_ID(ware["fileInfos"][0]["id"])) &&
          s->setText(":description", ware["description"]->getString()) &&
          s->setUInt32(":psId", psId) &&
-         s->setText(":wareId", ware["id"]->getString()) &&
+         s->setText(":wareId", BM_WARE_ID(ware["id"])) &&
          s->execute();
    }
 
@@ -1799,9 +1798,8 @@ bool CatalogDatabase::populateUpdatingWares(
             DynamicObject ids = StringTools::split(
                tokens[1]->getString(), "-");
             SellerListing sl;
-            sl["fileInfo"]["id"] = ids[1];
-            sl["fileInfo"]["mediaId"] = ids[0];
-            sl["fileInfo"]["mediaId"]->setType(UInt64);
+            BM_ID_SET(sl["fileInfo"]["id"], ids[1]);
+            BM_ID_SET(sl["fileInfo"]["mediaId"], ids[0]);
             wares["removals"]->append(sl);
          }
       }

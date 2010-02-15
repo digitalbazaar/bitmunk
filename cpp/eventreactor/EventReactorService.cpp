@@ -181,15 +181,15 @@ bool EventReactorService::createReactor(
    // get the node user
    DynamicObject vars;
    action->getResourceQuery(vars);
-   UserId nodeuser = vars["nodeuser"]->getUInt64();
+   UserId nodeuser = BM_USER_ID(vars["nodeuser"]);
 
    // get the path params
    DynamicObject params;
    action->getResourceParams(params);
-   UserId userId = params[0]->getUInt64();
+   UserId userId = BM_USER_ID(params[0]);
 
    // ensure that the nodeuser matches the user path parameter
-   if(nodeuser != userId)
+   if(!BM_USER_ID_EQUALS(nodeuser, userId))
    {
       ExceptionRef e = new Exception(
          "User not authorized to create event reactors for given user.",
@@ -222,7 +222,7 @@ bool EventReactorService::createReactor(
          er->getObserverContainer()->registerUser(userId);
 
          // send back user ID and name with event reactor
-         out["userId"] = userId;
+         BM_ID_SET(out["userId"], userId);
          out["name"] = name;
       }
    }
@@ -240,12 +240,12 @@ bool EventReactorService::deleteReactors(
    // get the node user
    DynamicObject vars;
    action->getResourceQuery(vars);
-   UserId nodeuser = vars["nodeuser"]->getUInt64();
+   UserId nodeuser = BM_USER_ID(vars["nodeuser"]);
 
    // get the path params
    DynamicObject params;
    action->getResourceParams(params);
-   UserId userId = params[0]->getUInt64();
+   UserId userId = BM_USER_ID(params[0]);
 
    // ensure that the nodeuser matches the user path parameter
    if(nodeuser != userId)
@@ -254,14 +254,14 @@ bool EventReactorService::deleteReactors(
          "User not authorized to delete event reactors for given user.",
          "bitmunk.eventreactor.EventReactorService.Unauthorized");
       e->getDetails()["resource"] = action->getResource();
-      e->getDetails()["userId"] = userId;
-      e->getDetails()["nodeuser"] = nodeuser;
+      BM_ID_SET(e->getDetails()["userId"], userId);
+      BM_ID_SET(e->getDetails()["nodeuser"], nodeuser);
       rval = false;
    }
    else
    {
       // remove user from every event reactor
-      out["userId"] = userId;
+      BM_ID_SET(out["userId"], userId);
       out["names"]->setType(Array);
       for(ReactorMap::iterator i = mEventReactors.begin();
           i != mEventReactors.end(); i++)

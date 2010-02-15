@@ -315,7 +315,7 @@ bool Catalog::updateWare(UserId userId, Ware& ware)
    if(c != NULL)
    {
       MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,
-         "Updating ware, ID: %s", ware["id"]->getString());
+         "Updating ware, ID: %s", BM_WARE_ID(ware["id"]));
 
       // prepare statements:
 
@@ -326,7 +326,7 @@ bool Catalog::updateWare(UserId userId, Ware& ware)
          PayeeSchemeId psId = 0;
          if(ware->hasMember("payeeSchemeId"))
          {
-            psId = ware["payeeSchemeId"]->getUInt32();
+            psId = BM_PAYEE_SCHEME_ID(ware["payeeSchemeId"]);
             rval = mCatalogDb.isPayeeSchemeIdValid(psId, c);
          }
          else
@@ -336,7 +336,7 @@ bool Catalog::updateWare(UserId userId, Ware& ware)
                mNode, userId,
                psId, ware["description"]->getString(), ware["payees"], c) &&
                _schedulePayeeSchemeUpdatedEvent(mNode, psId, userId, true);
-            ware["payeeSchemeId"] = psId;
+            BM_ID_SET(ware["payeeSchemeId"], psId);
          }
 
          // update ware entry
@@ -355,8 +355,8 @@ bool Catalog::updateWare(UserId userId, Ware& ware)
       // schedule a ware update event
       Event e;
       e["type"] = EVENT_WARE ".updated";
-      e["details"]["wareId"] = ware["id"]->getString();
-      e["details"]["userId"] = userId;
+      BM_ID_SET(e["details"]["wareId"], BM_WARE_ID(ware["id"]));
+      BM_ID_SET(e["details"]["userId"], userId);
       e["details"]["isNew"] = wareAdded;
       mNode->getEventController()->schedule(e);
 
@@ -364,8 +364,10 @@ bool Catalog::updateWare(UserId userId, Ware& ware)
       // payee scheme because its ware count has changed
       Event ev;
       ev["type"] = EVENT_PAYEE_SCHEME ".updated";
-      ev["details"]["payeeSchemeId"] = ware["payeeSchemeId"]->getUInt32();
-      ev["details"]["userId"] = userId;
+      BM_ID_SET(
+         ev["details"]["payeeSchemeId"],
+         BM_PAYEE_SCHEME_ID(ware["payeeSchemeId"]));
+      BM_ID_SET(ev["details"]["userId"], userId);
       ev["details"]["isNew"] = false;
       mNode->getEventController()->schedule(ev);
    }
@@ -382,7 +384,7 @@ bool Catalog::removeWare(UserId userId, Ware& ware)
    if(c != NULL)
    {
       MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,
-         "Removing ware, ID: %s", ware["id"]->getString());
+         "Removing ware, ID: %s", BM_WARE_ID(ware["id"]));
 
       // remove the ware from the database
       rval = c->begin() && mCatalogDb.removeWare(ware, c);
@@ -397,16 +399,18 @@ bool Catalog::removeWare(UserId userId, Ware& ware)
       // schedule a ware removed event
       Event e;
       e["type"] = EVENT_WARE ".removed";
-      e["details"]["wareId"] = ware["id"]->getString();
-      e["details"]["userId"] = userId;
+      BM_ID_SET(e["details"]["wareId"], BM_WARE_ID(ware["id"]));
+      BM_ID_SET(e["details"]["userId"], userId);
       mNode->getEventController()->schedule(e);
 
       // fire an update event for its related payee scheme because its
       // ware count has changed
       Event ev;
       ev["type"] = EVENT_PAYEE_SCHEME ".updated";
-      ev["details"]["payeeSchemeId"] = ware["payeeSchemeId"]->getUInt32();
-      ev["details"]["userId"] = userId;
+      BM_ID_SET(
+         ev["details"]["payeeSchemeId"],
+         BM_PAYEE_SCHEME_ID(ware["payeeSchemeId"]));
+      BM_ID_SET(ev["details"]["userId"], userId);
       ev["details"]["isNew"] = false;
       mNode->getEventController()->schedule(ev);
    }
@@ -423,7 +427,7 @@ bool Catalog::populateWare(UserId userId, Ware& ware)
    if(c != NULL)
    {
       MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,
-         "Populating ware, ID: %s", ware["id"]->getString());
+         "Populating ware, ID: %s", BM_WARE_ID(ware["id"]));
 
       // FIXME: what do we do about "problem" wares? ... and should
       // we stat the related files in here so we can update their
@@ -496,7 +500,7 @@ bool Catalog::populateFileInfos(UserId userId, Ware& ware)
    if(c != NULL)
    {
       MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,
-         "Populating ware file infos, ware ID: %s", ware["id"]->getString());
+         "Populating ware file infos, ware ID: %s", BM_WARE_ID(ware["id"]));
 
       // clear the existing file info from the ware
       ware["fileInfos"]->clear();
@@ -582,7 +586,7 @@ bool Catalog::updatePayeeScheme(
          else
          {
             PayeeScheme ps;
-            ps["id"] = psId;
+            BM_ID_SET(ps["id"], psId);
             ps["description"] = description;
             ps["payees"] = payees;
             rval =
@@ -603,7 +607,7 @@ bool Catalog::updatePayeeScheme(
          "bitmunk.catalog.UpdatePayeeSchemeFailed");
       e->getDetails()["payees"] = payees;
       e->getDetails()["description"] = description;
-      e->getDetails()["payeeSchemeId"] = psId;
+      BM_ID_SET(e->getDetails()["payeeSchemeId"], psId);
       Exception::push(e);
    }
 
@@ -631,7 +635,7 @@ bool Catalog::populatePayeeSchemes(
          while(rsi->hasNext())
          {
             PayeeScheme& ps = rsi->next();
-            ps["userId"] = userId;
+            BM_ID_SET(ps["userId"], userId);
          }
       }
 
@@ -659,11 +663,12 @@ bool Catalog::populatePayeeScheme(
    if(c != NULL)
    {
       MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,
-         "Populating payee scheme, ID: %u", ps["id"]->getUInt32());
+         "Populating payee scheme, ID: %" PRIu32,
+         BM_PAYEE_SCHEME_ID(ps["id"]));
 
       // populate the payee scheme and list of payees
       rval = mCatalogDb.populatePayeeScheme(ps, filters, c);
-      ps["userId"] = userId;
+      BM_ID_SET(ps["userId"], userId);
       c->close();
    }
 
@@ -685,7 +690,7 @@ bool Catalog::removePayeeScheme(UserId userId, PayeeSchemeId psId)
       if(rval)
       {
          MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,
-            "Removing payee scheme, ID: %u", psId);
+            "Removing payee scheme, ID: %" PRIu32, psId);
 
          // try to remove the payee scheme
          rval = mCatalogDb.removePayeeScheme(psId, c);
@@ -703,8 +708,8 @@ bool Catalog::removePayeeScheme(UserId userId, PayeeSchemeId psId)
       // schedule a payee scheme removed event
       Event e;
       e["type"] = EVENT_PAYEE_SCHEME ".removed";
-      e["details"]["payeeSchemeId"] = psId;
-      e["details"]["userId"] = userId;
+      BM_ID_SET(e["details"]["payeeSchemeId"], psId);
+      BM_ID_SET(e["details"]["userId"], userId);
       mNode->getEventController()->schedule(e);
    }
 
@@ -771,7 +776,7 @@ bool Catalog::populateSeller(
          ExceptionRef e = new Exception(
             "Failed to populate seller information for the given user ID.",
             "bitmunk.catalog.PopulateSellerFailed");
-         e->getDetails()["userId"] = userId;
+         BM_ID_SET(e->getDetails()["userId"], userId);
          Exception::push(e);
       }
 
@@ -804,7 +809,7 @@ bool Catalog::getUpdateId(UserId userId, uint32_t& updateId)
       ExceptionRef e = new Exception(
          "Failed to get current update ID for the given userId.",
          "bitmunk.catalog.GetUpdateIdFailed");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -856,7 +861,7 @@ bool Catalog::populateHeartbeatListingUpdate(
       ExceptionRef e = new Exception(
          "Failed to retrieve a heartbeat listing update for the given userId.",
          "bitmunk.catalog.PopulateHeartbeatListingUpdateFailed");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -899,7 +904,7 @@ bool Catalog::populatePendingListingUpdate(
 
             // retrieve the list of currently updating seller listings
             rval = mCatalogDb.populateUpdatingSellerListings(
-               userId, seller["serverId"]->getUInt32(), mMediaLibrary,
+               userId, BM_SERVER_ID(seller["serverId"]), mMediaLibrary,
                update["listings"], update["payeeSchemes"], c);
          }
          else
@@ -923,7 +928,7 @@ bool Catalog::populatePendingListingUpdate(
       ExceptionRef e = new Exception(
          "Failed to retrieve the list of pending updates for the given userId.",
          "bitmunk.catalog.PopulatePendingListingUpdateFailed");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -968,7 +973,7 @@ bool Catalog::populateNextListingUpdate(
             rval =
                mCatalogDb.markNextListingUpdate(c) &&
                mCatalogDb.populateUpdatingSellerListings(
-                  userId, seller["serverId"]->getUInt32(), mMediaLibrary,
+                  userId, BM_SERVER_ID(seller["serverId"]), mMediaLibrary,
                   update["listings"], update["payeeSchemes"], c);
             if(rval)
             {
@@ -1008,7 +1013,7 @@ bool Catalog::populateNextListingUpdate(
       ExceptionRef e = new Exception(
          "Failed to generate the list of seller listing updates.",
          "bitmunk.catalog.PopulateNextListingUpdateFailed");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1040,8 +1045,8 @@ bool Catalog::processListingUpdateResponse(
          SellerListing& sl = i->next();
          string wareId = StringTools::format(
             "bitmunk:file:%" PRIu64 "-%s",
-            sl["fileInfo"]["mediaId"]->getUInt64(),
-            sl["fileInfo"]["id"]->getString());
+            BM_MEDIA_ID(sl["fileInfo"]["mediaId"]),
+            BM_FILE_ID(sl["fileInfo"]["id"]));
          goodWares[wareId.c_str()] = true;
       }
    }
@@ -1105,17 +1110,17 @@ bool Catalog::processListingUpdateResponse(
             DynamicObject& d = problemWares->append();
             string wareId = StringTools::format(
                "bitmunk:file:%" PRIu64 "-%s",
-               listing["fileInfo"]["mediaId"]->getUInt64(),
-               listing["fileInfo"]["id"]->getString());
-            d["wareId"] = wareId.c_str();
+               BM_MEDIA_ID(listing["fileInfo"]["mediaId"]),
+               BM_FILE_ID(listing["fileInfo"]["id"]));
+            BM_ID_SET(d["wareId"], wareId.c_str());
             d["exception"] = listing["exception"].clone();
 
             // update the ware problem ID
             rval =
                mCatalogDb.getProblemId(json.c_str(), problemId, c) &&
                mCatalogDb.updateWareProblemId(
-                  problemId, listing["fileInfo"]["id"]->getString(),
-                  listing["fileInfo"]["mediaId"]->getUInt64(), c);
+                  problemId, BM_FILE_ID(listing["fileInfo"]["id"]),
+                  BM_MEDIA_ID(listing["fileInfo"]["mediaId"]), c);
 
             // remove ware ID from good wares
             goodWares->removeMember(wareId.c_str());
@@ -1131,13 +1136,13 @@ bool Catalog::processListingUpdateResponse(
 
             // save problem scheme for sending event
             DynamicObject& d = problemSchemes->append();
-            d["psId"] = ps["id"]->getUInt32();
+            BM_ID_SET(d["psId"], BM_PAYEE_SCHEME_ID(ps["id"]));
             d["exception"] = ps["exception"].clone();
 
             rval =
                mCatalogDb.getProblemId(json.c_str(), problemId, c) &&
                mCatalogDb.updatePayeeSchemeProblemId(
-                  problemId, ps["id"]->getUInt32(), c);
+                  problemId, BM_PAYEE_SCHEME_ID(ps["id"]), c);
 
             // remove ps ID from good schemes
             string psId = ps["id"]->getString();
@@ -1192,8 +1197,8 @@ bool Catalog::processListingUpdateResponse(
             i->next();
             Event e;
             e["type"] = EVENT_WARE ".updated";
-            e["details"]["wareId"] = i->getName();
-            e["details"]["userId"] = userId;
+            BM_ID_SET(e["details"]["wareId"], i->getName());
+            BM_ID_SET(e["details"]["userId"], userId);
             e["details"]["isNew"] = false;
             mNode->getEventController()->schedule(e);
          }
@@ -1208,8 +1213,8 @@ bool Catalog::processListingUpdateResponse(
             DynamicObject& d = i->next();
             Event e;
             e["type"] = EVENT_WARE ".exception";
-            e["details"]["wareId"] = d["wareId"];
-            e["details"]["userId"] = userId;
+            BM_ID_SET(e["details"]["wareId"], BM_WARE_ID(d["wareId"]));
+            BM_ID_SET(e["details"]["userId"], userId);
             e["details"]["exception"] = d["exception"];
             mNode->getEventController()->schedule(e);
          }
@@ -1224,9 +1229,8 @@ bool Catalog::processListingUpdateResponse(
             i->next();
             Event e;
             e["type"] = EVENT_PAYEE_SCHEME ".updated";
-            e["details"]["payeeSchemeId"] = i->getName();
-            e["details"]["payeeSchemeId"]->setType(UInt32);
-            e["details"]["userId"] = userId;
+            BM_ID_SET(e["details"]["payeeSchemeId"], i->getName());
+            BM_ID_SET(e["details"]["userId"], userId);
             e["details"]["isNew"] = false;
             mNode->getEventController()->schedule(e);
          }
@@ -1241,8 +1245,10 @@ bool Catalog::processListingUpdateResponse(
             DynamicObject& d = i->next();
             Event e;
             e["type"] = EVENT_PAYEE_SCHEME ".exception";
-            e["details"]["payeeSchemeId"] = d["psId"];
-            e["details"]["userId"] = userId;
+            BM_ID_SET(
+               e["details"]["payeeSchemeId"],
+               BM_PAYEE_SCHEME_ID(d["psId"]));
+            BM_ID_SET(e["details"]["userId"], userId);
             e["details"]["exception"] = d["exception"];
             mNode->getEventController()->schedule(e);
          }
@@ -1339,7 +1345,7 @@ bool Catalog::getConfigValue(UserId userId, const char* name, string& value)
 void Catalog::userLoggedIn(Event& e)
 {
    // get user's config
-   UserId userId = e["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(e["details"]["userId"]);
    Config cfg = mNode->getConfigManager()->getModuleUserConfig(
       "bitmunk.catalog.CustomCatalog", userId);
 
@@ -1360,9 +1366,9 @@ void Catalog::userLoggedIn(Event& e)
    // if the user has no payee schemes, auto sell is enabled and
    // has a payee scheme ID set to zero, then create a default payee
    // scheme
-   if(pass && psId == 0 &&
+   if(pass && BM_ID_INVALID(psId) &&
       !cfg.isNull() && cfg["autoSell"]["enabled"]->getBoolean() &&
-      cfg["autoSell"]["payeeSchemeId"]->getUInt32() == 0)
+      BM_ID_INVALID(BM_PAYEE_SCHEME_ID(cfg["autoSell"]["payeeSchemeId"])))
    {
       // get the user's first account
       Messenger* m = mNode->getMessenger();
@@ -1384,7 +1390,7 @@ void Catalog::userLoggedIn(Event& e)
          {
             // FIXME: do we want the default amount to be configurable as well?
             Payee payee;
-            payee["id"] = in["resources"][0]["id"]->getUInt64();
+            payee["id"] = BM_ACCOUNT_ID(in["resources"][0]["id"]);
             payee["description"] = "Auto-generated payee";
             payee["amountType"] = "flatFee";
             payee["amount"] = "0.05";
@@ -1432,7 +1438,7 @@ void Catalog::userLoggedIn(Event& e)
                      [ConfigManager::MERGE]
                      ["bitmunk.catalog.CustomCatalog"]["autoSell"];
                   asCfg["enabled"] = true;
-                  asCfg["payeeSchemeId"] = psId;
+                  BM_ID_SET(asCfg["payeeSchemeId"], psId);
                   mNode->getConfigManager()->setConfig(cfg);
                   mNode->getConfigManager()->saveUserConfig(userId);
                }
@@ -1453,7 +1459,7 @@ void Catalog::userLoggedIn(Event& e)
 void Catalog::checkAutoSell(Event& e)
 {
    // check user's config
-   UserId userId = e["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(e["details"]["userId"]);
    Config cfg = mNode->getConfigManager()->getModuleUserConfig(
       "bitmunk.catalog.CustomCatalog", userId);
    if(!cfg.isNull() && cfg["autoSell"]["enabled"]->getBoolean())
@@ -1470,19 +1476,20 @@ void Catalog::checkAutoSell(Event& e)
       FileInfo fi = e["details"]["fileInfo"].clone();
       ware["fileInfos"]->append(fi);
       ware["id"] = StringTools::format("bitmunk:file:%" PRIu64 "-%s",
-         fi["mediaId"]->getUInt64(), fi["id"]->getString()).c_str();
-      ware["mediaId"] = fi["mediaId"]->getUInt64();
+         BM_MEDIA_ID(fi["mediaId"]), BM_FILE_ID(fi["id"])).c_str();
+      ware["mediaId"] = BM_MEDIA_ID(fi["mediaId"]);
       // FIXME: get description from config as a format string?
       ware["description"] = "";
 
       // use payee scheme ID from config
-      ware["payeeSchemeId"] = cfg["autoSell"]["payeeSchemeId"]->getUInt32();
+      ware["payeeSchemeId"] = BM_PAYEE_SCHEME_ID(
+         cfg["autoSell"]["payeeSchemeId"]);
 
       // try to add ware
       if(updateWare(userId, ware))
       {
          MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,
-            "Auto-selling ware: %s", ware["id"]->getString());
+            "Auto-selling ware: %s", BM_WARE_ID(ware["id"]));
       }
       else
       {
@@ -1496,7 +1503,7 @@ void Catalog::checkAutoSell(Event& e)
 void Catalog::syncSellerListings(monarch::event::Event& e)
 {
    // get ID of user with listings to sync
-   UserId userId = e["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(e["details"]["userId"]);
 
    // get associated fiber ID
    ListingUpdaterMap::iterator i = mListingUpdaterMap.find(userId);
@@ -1512,7 +1519,7 @@ void Catalog::syncSellerListings(monarch::event::Event& e)
 void Catalog::testNetAccess(monarch::event::Event& e)
 {
    // get ID of user
-   UserId userId = e["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(e["details"]["userId"]);
 
    // get associated fiber ID
    ListingUpdaterMap::iterator i = mListingUpdaterMap.find(userId);

@@ -14,10 +14,10 @@ using namespace monarch::rt;
 using namespace monarch::util;
 using namespace bitmunk::common;
 
-Profile::Profile()
+Profile::Profile() :
+   mUserId(0),
+   mId(0)
 {
-   mId = 0;
-   mUserId = 0;
 }
 
 Profile::~Profile()
@@ -55,8 +55,8 @@ bool Profile::save(const char* password, OutputStream* os)
 {
    // create dyno to store profile
    DynamicObject profile;
-   profile["id"] = mId;
-   profile["userId"] = mUserId;
+   BM_ID_SET(profile["id"], mId);
+   BM_ID_SET(profile["userId"], mUserId);
    
    // use factory to write private key to PEM string
    AsymmetricKeyFactory afk;
@@ -89,13 +89,13 @@ bool Profile::load(const char* password, InputStream* is)
    reader.start(profile);
    rval = reader.read(is) && reader.finish();
    
-   if(rval && profile["userId"]->getUInt64() != mUserId)
+   if(rval && !BM_USER_ID_EQUALS(BM_USER_ID(profile["userId"]), mUserId))
    {
       ExceptionRef e = new Exception(
          "Could not load Profile, invalid user ID.",
          "bitmunk.InvalidProfileUserId");
-      e->getDetails()["loadedUserId"] = profile["userId"]->getUInt64();
-      e->getDetails()["expectedUserId"] = mUserId;
+      BM_ID_SET(e->getDetails()["loadedUserId"], BM_USER_ID(profile["userId"]));
+      BM_ID_SET(e->getDetails()["expectedUserId"], mUserId);
       Exception::set(e);
       rval = false;
    }
@@ -105,7 +105,7 @@ bool Profile::load(const char* password, InputStream* is)
       if(profile->hasMember("id"))
       {
          // store ID
-         setId(profile["id"]->getUInt32());
+         setId(BM_PROFILE_ID(profile["id"]));
 
          // use factory to read private key from PEM string
          const char* pem = profile["privateKey"]->getString();

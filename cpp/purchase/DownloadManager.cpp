@@ -250,8 +250,9 @@ void DownloadManager::registerEventHandlers(monarch::event::ObserverList* list)
    filter1["details"]["fiberId"] = getId();
 
    // create event filter for the download state
+   UserId userId = BM_USER_ID(mDownloadState["userId"]);
    EventFilter filter2;
-   filter2["details"]["userId"] = mDownloadState["userId"]->getUInt64();
+   BM_ID_SET(filter2["details"]["userId"], userId);
    filter2["details"]["downloadStateId"] = mDownloadState["id"]->getUInt64();
 
    // register to receive events
@@ -268,7 +269,6 @@ void DownloadManager::registerEventHandlers(monarch::event::ObserverList* list)
    list->add(h3);
 
    // get seller pool timeout
-   UserId userId = mDownloadState["userId"]->getUInt64();
    Config cfg = getConfig(mNode, userId);
    if(!cfg.isNull())
    {
@@ -587,7 +587,7 @@ bool DownloadManager::isComplete()
 
       MO_CAT_DEBUG(BM_PURCHASE_CAT,
          "All pieces received, uid: %" PRIu64 ", dsid: %" PRIu64,
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64());
 
       logDownloadStateMessage("all pieces received");
@@ -673,7 +673,7 @@ bool DownloadManager::shouldAssignPiece(bool& must)
       // if we aren't at our cap for maximum concurrent pieces and there
       // is enough unused excess bandwidth to allow for another piece to
       // be assigned, then we should do so
-      UserId userId = mDownloadState["userId"]->getUInt64();
+      UserId userId = BM_USER_ID(mDownloadState["userId"]);
       Config cfg = getConfig(mNode, userId);
       if(!cfg.isNull())
       {
@@ -783,7 +783,7 @@ bool DownloadManager::pickSeller(SellerData& sd, bool must)
       MO_CAT_ERROR(BM_PURCHASE_CAT,
          "Picked seller %s, uid: %" PRIu64 ", dsid: %" PRIu64,
          Tools::createSellerServerKey(sd["seller"]).c_str(),
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64());
 
       rval = true;
@@ -808,7 +808,7 @@ bool DownloadManager::pickSeller(SellerData& sd, bool must)
 
          // schedule negotiator fiber
          Negotiator* n = new Negotiator(getNode(), getId());
-         n->setUserId(mDownloadState["userId"]->getUInt64());
+         n->setUserId(BM_USER_ID(mDownloadState["userId"]));
          n->setDownloadState(mDownloadState);
          n->setMustFindSeller(must);
          getNode()->getFiberScheduler()->addFiber(n);
@@ -819,7 +819,7 @@ bool DownloadManager::pickSeller(SellerData& sd, bool must)
          MO_CAT_ERROR(BM_PURCHASE_CAT,
             "Cannot assign a seller, no suitable seller available, "
             "uid: %" PRIu64 ", dsid: %" PRIu64,
-            mDownloadState["userId"]->getUInt64(),
+            BM_USER_ID(mDownloadState["userId"]),
             mDownloadState["id"]->getUInt64());
 
          ExceptionRef e = new Exception(
@@ -845,7 +845,7 @@ bool DownloadManager::assignPiece(SellerData& sd)
    bool rval = false;
 
    // get working directory and download state ID
-   UserId userId = mDownloadState["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(mDownloadState["userId"]);
    Config cfg = getConfig(mNode, userId);
    if(!cfg.isNull())
    {
@@ -853,7 +853,7 @@ bool DownloadManager::assignPiece(SellerData& sd)
 
       // get the file ID from the seller data's contract section
       ContractSection& cs = sd["section"];
-      FileId fileId = cs["ware"]["fileInfos"][0]["id"]->getString();
+      FileId fileId = BM_FILE_ID(cs["ware"]["fileInfos"][0]["id"]);
       DownloadStateId dsId = mDownloadState["id"]->getUInt64();
       string tmpPath = getConfig(mNode, userId)["temporaryPath"]->getString();
 
@@ -902,7 +902,7 @@ bool DownloadManager::assignPiece(SellerData& sd)
                MO_CAT_DEBUG(BM_PURCHASE_CAT,
                   "First piece assigned, setting start date: "
                   "UserId:%" PRIu64 " DownloadState:%" PRIu64 " date:%s",
-                  mDownloadState["userId"]->getUInt64(),
+                  BM_USER_ID(mDownloadState["userId"]),
                   mDownloadState["id"]->getUInt64(),
                   mDownloadState["startDate"]->getString());
             }
@@ -954,7 +954,7 @@ bool DownloadManager::assignPiece(SellerData& sd)
             MO_CAT_DEBUG(BM_PURCHASE_CAT,
                "UserId %" PRIu64 ", DownloadState %" PRIu64 ": "
                "creating piece downloader for file ID %s, piece %u",
-               mDownloadState["userId"]->getUInt64(),
+               BM_USER_ID(mDownloadState["userId"]),
                mDownloadState["id"]->getUInt64(),
                fileId, pieceIndex);
 
@@ -983,7 +983,7 @@ bool DownloadManager::assignPiece(SellerData& sd)
          // send piece assignment event
          Event e;
          e["type"] = EVENT_DOWNLOAD_STATE ".pieceAssigned";
-         e["details"]["fileId"] = fileId;
+         BM_ID_SET(e["details"]["fileId"], fileId);
          e["details"]["index"] = fp["index"]->getUInt32();
          sendDownloadStateEvent(e);
       }
@@ -997,7 +997,7 @@ bool DownloadManager::pieceUpdate(DynamicObject& msg)
    bool rval = true;
 
    // get message details
-   FileId fileId = msg["fileId"]->getString();
+   FileId fileId = BM_FILE_ID(msg["fileId"]);
    FilePiece fp = msg["piece"];
    FileProgress progress = mDownloadState["progress"][fileId];
    ContractSection cs = msg["section"];
@@ -1046,7 +1046,7 @@ bool DownloadManager::pieceUpdate(DynamicObject& msg)
    // create database entry
    DynamicObject entries;
    DynamicObject& dbe = entries->append();
-   dbe["fileId"] = fileId;
+   BM_ID_SET(dbe["fileId"], fileId);
    dbe["csHash"] = csHash;
    dbe["piece"] = fp;
 
@@ -1064,7 +1064,7 @@ bool DownloadManager::pieceUpdate(DynamicObject& msg)
          "uid: %" PRIu64 ", dsid: %" PRIu64,
          fp["index"]->getInt32(),
          fp["size"]->getString(),
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64());
 
       // update bytes downloaded
@@ -1097,7 +1097,7 @@ bool DownloadManager::pieceUpdate(DynamicObject& msg)
          "piece %i receive failed and will be re-assigned, "
          "uid: %" PRIu64 ", dsid: %" PRIu64,
          fp["index"]->getInt32(),
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64());
    }
 
@@ -1138,8 +1138,8 @@ bool DownloadManager::poolTimeout(DynamicObject& msg)
             // create a seller pool to populate, try to retrieve up
             // to 100 sellers
             SellerPool sp;
-            sp["fileInfo"]["id"] = fi["id"]->getString();
-            sp["fileInfo"]["mediaId"] = fi["mediaId"]->getUInt64();
+            BM_ID_SET(sp["fileInfo"]["id"], BM_FILE_ID(fi["id"]));
+            BM_ID_SET(sp["fileInfo"]["mediaId"], BM_MEDIA_ID(fi["mediaId"]));
             sp["sellerDataSet"]["start"] = 0;
             sp["sellerDataSet"]["num"] = 100;
 
@@ -1174,16 +1174,16 @@ bool DownloadManager::poolUpdate(DynamicObject& msg)
    while(i->hasNext())
    {
       SellerPool& sp = i->next();
-      FileId fileId = sp["fileInfo"]["id"]->getString();
+      FileId fileId = BM_FILE_ID(sp["fileInfo"]["id"]);
       fileIds->append() = fileId;
 
       // save old bfp ID to maintain consistency... all file pieces
       // must use the same bfp ID
       FileProgress& fp = mDownloadState["progress"][fileId];
-      BfpId id = fp["sellerPool"]["bfpId"]->getUInt32();
-      if(id > 0)
+      BfpId id = BM_BFP_ID(fp["sellerPool"]["bfpId"]);
+      if(BM_ID_VALID(id))
       {
-         sp["bfpId"] = id;
+         BM_ID_SET(sp["bfpId"], id);
       }
       // FIXME: saving a reference to the old seller pool "fixes" a
       // race condition that isn't fully understood yet ... and hopefully
@@ -1213,14 +1213,14 @@ bool DownloadManager::poolUpdate(DynamicObject& msg)
             "Seller (%s) blacklist entry has expired, "
             "uid: %" PRIu64 ", dsid: %" PRIu64,
             bli->getName(),
-            mDownloadState["userId"]->getUInt64(),
+            BM_USER_ID(mDownloadState["userId"]),
             mDownloadState["id"]->getUInt64());
       }
    }
    mDownloadState["blacklist"] = blacklist;
 
    // get seller pool timeout
-   UserId userId = mDownloadState["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(mDownloadState["userId"]);
    uint64_t timeout = DEFAULT_POOL_TIMEOUT;
    Config cfg = getConfig(mNode, userId)["DownloadManager"];
    if(cfg->hasMember("sellerPoolTimeout"))
@@ -1273,7 +1273,7 @@ bool DownloadManager::negotiationComplete(DynamicObject& msg)
       MO_CAT_ERROR(BM_PURCHASE_CAT,
          "Cannot assign a seller, no seller found, "
          "uid: %" PRIu64 ", dsid: %" PRIu64,
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64());
    }
 
@@ -1285,8 +1285,8 @@ bool DownloadManager::pauseDownload(DynamicObject& msg)
    // confirm that download state and user IDs match, ignore otherwise
    if(mDownloadState["id"]->getUInt64() ==
       msg["downloadStateId"]->getUInt64() &&
-      mDownloadState["userId"]->getUInt64() ==
-      msg["userId"]->getUInt64())
+      BM_USER_ID_EQUALS(
+         BM_USER_ID(mDownloadState["userId"]), BM_USER_ID(msg["userId"])))
    {
       // pause download by interrupting self, save deleting flag
       mDownloadState["deleting"] = msg["deleting"]->getBoolean();
@@ -1314,7 +1314,7 @@ bool DownloadManager::interrupt(DynamicObject& msg)
       DynamicObject msg2;
       msg2["interrupt"] = true;
       msg2["pause"] = true;
-      msg2["userId"] = mDownloadState["userId"]->getUInt64();
+      BM_ID_SET(msg2["userId"], BM_USER_ID(mDownloadState["userId"]));
       msg2["downloadStateId"] = mDownloadState["id"]->getUInt64();
       msg2["pieceDownloaderId"] = i->first;
       sendMessage(i->second.fiberId, msg2);
@@ -1345,7 +1345,7 @@ bool DownloadManager::progressPolled(DynamicObject& msg)
    while(fpi->hasNext())
    {
       FileProgress& fp = fpi->next();
-      FileId fileId = fp["fileInfo"]["id"]->getString();
+      FileId fileId = BM_FILE_ID(fp["fileInfo"]["id"]);
       DynamicObject& perFile = e["details"]["files"][fileId];
 
       // get bytes fully downloaded so far
@@ -1382,7 +1382,7 @@ bool DownloadManager::progressPolled(DynamicObject& msg)
       for(PieceDownloaderMap::iterator i = mPieceDownloaders.begin();
           i != mPieceDownloaders.end(); i++)
       {
-         if(strcmp(i->second.fileId.c_str(), fileId) == 0)
+         if(BM_FILE_ID_EQUALS(i->second.fileId.c_str(), fileId))
          {
             // get piece stats and increment total stats
             uint64_t pDownloaded = i->second.rateAverager->getTotalItemCount();

@@ -84,8 +84,8 @@ bool Messenger::exchange(
          ExceptionRef e = new Exception(
             "Could not do BTP exchange. Not logged in.",
             "bitmunk.node.Messenger.NotLoggedIn");
-         e->getDetails()["userId"] = userId;
-         e->getDetails()["agentId"] = agentId;
+         BM_ID_SET(e->getDetails()["userId"], userId);
+         BM_ID_SET(e->getDetails()["agentId"], agentId);
          Exception::set(e);
          rval = false;
       }
@@ -108,7 +108,7 @@ bool Messenger::exchange(
       url->getQueryVariables(vars);
       if(vars->hasMember("nodeuser"))
       {
-         peerId = vars["nodeuser"]->getUInt64();
+         peerId = BM_USER_ID(vars["nodeuser"]);
       }
 
       rval = mClient.exchange(peerId, url, out, in, timeout);
@@ -126,16 +126,17 @@ bool Messenger::exchange(
    bool rval = true;
 
    ProfileRef p;
-   if(userId != 0)
+   if(BM_ID_VALID(userId))
    {
       // get user profile
-      if(!mNode->getLoginData(agentId == 0 ? userId : agentId, NULL, &p))
+      if(!mNode->getLoginData(
+         BM_ID_INVALID(agentId) ? userId : agentId, NULL, &p))
       {
          ExceptionRef e = new Exception(
             "Could not do BTP exchange. Not logged in.",
             "bitmunk.node.Messenger.NotLoggedIn");
-         e->getDetails()["userId"] = userId;
-         e->getDetails()["agentId"] = agentId;
+         BM_ID_SET(e->getDetails()["userId"], userId);
+         BM_ID_SET(e->getDetails()["agentId"], agentId);
          Exception::set(e);
          rval = false;
       }
@@ -170,7 +171,7 @@ bool Messenger::exchange(
       if(!p.isNull())
       {
          // set user ID and profile for outgoing secure message
-         msgOut.setUserId(userId != 0 ? userId : p->getUserId());
+         msgOut.setUserId(BM_ID_VALID(userId) ? userId : p->getUserId());
          msgOut.setAgentProfile(p);
 
          // set public key source for incoming secure message
@@ -182,7 +183,7 @@ bool Messenger::exchange(
       url->getQueryVariables(vars);
       if(vars->hasMember("nodeuser"))
       {
-         peerId = vars["nodeuser"]->getUInt64();
+         peerId = BM_USER_ID(vars["nodeuser"]);
       }
 
       // do btp exchange

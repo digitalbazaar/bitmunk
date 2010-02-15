@@ -191,7 +191,7 @@ void MediaLibrary::scanFile(
 {
    // run scan file operation asynchronously
    DynamicObject d;
-   d["userId"] = userId;
+   BM_ID_SET(d["userId"], userId);
    d["fileInfo"] = fi.clone();
    d["update"] = update;
    if(userData != NULL)
@@ -258,17 +258,17 @@ static bool _getFormatDetails(FileInfo& fi)
          fi["contentType"] = fi["formatDetails"]["contentType"]->getString();
 
          // search format details for media ID if one hasn't been set
-         if(fi["mediaId"]->getUInt64() == 0)
+         if(BM_ID_INVALID(fi["mediaId"]))
          {
             bool mediaIdFound = false;
             DynamicObjectIterator i = details.getIterator();
             while(!mediaIdFound && i->hasNext())
             {
                DynamicObject& d = i->next();
-               if(d->hasMember("media") && d["media"]["id"]->getUInt64() != 0)
+               if(d->hasMember("media") && BM_ID_VALID(d["media"]["id"]))
                {
                   // media ID found
-                  fi["mediaId"] = d["media"]["id"]->getUInt64();
+                  BM_ID_SET(fi["mediaId"], BM_MEDIA_ID(d["media"]["id"]));
                   mediaIdFound = true;
                }
             }
@@ -288,7 +288,7 @@ static bool _getFormatDetails(FileInfo& fi)
 
       MO_CAT_DEBUG(BM_MEDIALIBRARY_CAT,
          "Failed to detect file format details for file ID %s: %s",
-         fi["id"]->getString(),
+         BM_FILE_ID(fi["id"]),
          JsonWriter::writeToString(Exception::getAsDynamicObject()).c_str());
    }
 
@@ -425,12 +425,12 @@ bool MediaLibrary::updateMedia(UserId userId, Media media)
 
    Messenger* m = mNode->getMessenger();
    monarch::net::Url url;
-   url.format("/api/3.0/media/%" PRIu64, media["id"]->getUInt64());
+   url.format("/api/3.0/media/%" PRIu64, BM_MEDIA_ID(media["id"]));
    if(m->getFromBitmunk(&url, media))
    {
       MO_CAT_DEBUG(BM_MEDIALIBRARY_CAT,
          "Retrieved media %" PRIu64 " from Bitmunk.",
-         media["id"]->getUInt64());
+         BM_MEDIA_ID(media["id"]));
 
       // update media in local media library database
       rval = mMediaLibraryDatabase->updateMedia(userId, media);
@@ -441,7 +441,7 @@ bool MediaLibrary::updateMedia(UserId userId, Media media)
       DynamicObject dyno = Exception::getAsDynamicObject();
       MO_CAT_DEBUG(BM_MEDIALIBRARY_CAT,
          "Failed to update media %" PRIu64 " from Bitmunk: %s",
-         media["id"]->getUInt64(),
+         BM_MEDIA_ID(media["id"]),
          JsonWriter::writeToString(dyno).c_str());
    }
    else
@@ -449,8 +449,8 @@ bool MediaLibrary::updateMedia(UserId userId, Media media)
       // schedule a media library file addition event
       Event e;
       e["type"] = MEDIALIBRARY ".Media.updated";
-      e["details"]["mediaId"] = media["id"];
-      e["details"]["userId"] = userId;
+      BM_ID_SET(e["details"]["mediaId"], BM_MEDIA_ID(media["id"]));
+      BM_ID_SET(e["details"]["userId"], userId);
       mNode->getEventController()->schedule(e);
    }
 
@@ -557,7 +557,7 @@ static bool _findMediaId(Node* node, UserId userId, FileInfo& fi)
          // just use first media ID -- there can be another interface where the
          // user can select from all of the possible media IDs if they don't like
          // the result
-         fi["mediaId"] = mediaIds.first()->getUInt64();
+         BM_ID_SET(fi["mediaId"], BM_MEDIA_ID(mediaIds.first()));
          rval = true;
       }
    }
@@ -566,7 +566,7 @@ static bool _findMediaId(Node* node, UserId userId, FileInfo& fi)
    {
       MO_CAT_DEBUG(BM_MEDIALIBRARY_CAT,
          "Failed to find media ID associated with file ID '%s': %s",
-         fi["id"]->getString(),
+         BM_FILE_ID(fi["id"]),
          JsonWriter::writeToString(Exception::getAsDynamicObject()).c_str());
    }
 
@@ -577,7 +577,7 @@ void MediaLibrary::scanFile(DynamicObject& d)
 {
    bool pass = false;
 
-   UserId userId = d["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(d["userId"]);
    FileInfo& fi = d["fileInfo"];
    bool update = d["update"]->getBoolean();
 
@@ -603,7 +603,7 @@ void MediaLibrary::scanFile(DynamicObject& d)
       // bitmunk first, we trust it to be more accurate than embedded
       // media data which will be added when we get the format details
       // if we still haven't found a media ID by then
-      if(pass && (!fi->hasMember("mediaId") || fi["mediaId"]->getUInt64() == 0))
+      if(pass && (!fi->hasMember("mediaId") || BM_ID_INVALID(fi["mediaId"])))
       {
          // try to find media information
          _findMediaId(mNode, userId, fi);
@@ -618,7 +618,7 @@ void MediaLibrary::scanFile(DynamicObject& d)
       // send event with no exception
       Event e;
       e["type"] = ML_EVENT_FILE_SCANNED;
-      e["details"]["userId"] = userId;
+      BM_ID_SET(e["details"]["userId"], userId);
       e["details"]["fileInfo"] = fi;
       if(d->hasMember("userData"))
       {
@@ -642,7 +642,7 @@ void MediaLibrary::scanFile(DynamicObject& d)
       // send event including last exception
       Event e;
       e["type"] = ML_EVENT_FILE_EXCEPTION;
-      e["details"]["userId"] = userId;
+      BM_ID_SET(e["details"]["userId"], userId);
       e["details"]["fileInfo"] = fi;
       e["details"]["exception"] = Exception::getAsDynamicObject();
       if(d->hasMember("userData"))
@@ -656,14 +656,14 @@ void MediaLibrary::scanFile(DynamicObject& d)
 void MediaLibrary::fileUpdated(Event& e)
 {
    // if the media ID is zero, try to find the associated media ID via bitmunk
-   UserId userId = e["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(e["details"]["userId"]);
    FileInfo fi = e["details"]["fileInfo"].clone();
-   MediaId mediaId = fi["mediaId"]->getUInt64();
+   MediaId mediaId = BM_MEDIA_ID(fi["mediaId"]);
    if(mediaId == 0)
    {
       if(_findMediaId(mNode, userId, fi))
       {
-         mediaId = fi["mediaId"]->getUInt64();
+         mediaId = BM_MEDIA_ID(fi["mediaId"]);
       }
    }
 
@@ -672,7 +672,7 @@ void MediaLibrary::fileUpdated(Event& e)
    if(mediaId != 0)
    {
       Media media;
-      media["id"] = mediaId;
+      BM_ID_SET(media["id"], mediaId);
       if(!mMediaLibraryDatabase->populateMedia(userId, media))
       {
          // if media not found, try to acquire it from bitmunk

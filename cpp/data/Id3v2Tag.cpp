@@ -54,7 +54,7 @@ void Id3v2Tag::addFrames(Contract* c, FileInfo* fi, Media* m)
       contract["sections"]->clear();
 
       // get media based on media ID in file info
-      MediaId mediaId = (*fi)["mediaId"]->getUInt64();
+      MediaId mediaId = BM_MEDIA_ID((*fi)["mediaId"]);
       media = contract["media"];
       if(strcmp(media["type"]->getString(), "collection") == 0)
       {
@@ -69,7 +69,7 @@ void Id3v2Tag::addFrames(Contract* c, FileInfo* fi, Media* m)
             {
                Media& next = mi->next();
                track++;
-               if(next["id"]->getUInt64() == mediaId)
+               if(BM_MEDIA_ID_EQUALS(BM_MEDIA_ID(next["id"]), mediaId))
                {
                   media = next;
                   found = true;

@@ -363,8 +363,8 @@ bool MediaLibraryDatabase::updateFile(
       ExceptionRef e = new Exception(
          "Could not update file in media library database.",
          MLDB_EXCEPTION ".UpdateFileException");
-      e->getDetails()["fileId"] = fi["id"]->getString();
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["fileId"], BM_FILE_ID(fi["id"]));
+      BM_ID_SET(e->getDetails()["userId"], userId);
       e->getDetails()["path"] = fi["path"];
       Exception::push(e);
    }
@@ -389,7 +389,7 @@ bool MediaLibraryDatabase::removeFile(
       {
          // ensure path is correct in the file info
          DynamicObject where;
-         where["id"] = fi["id"]->getString();
+         where["id"] = BM_FILE_ID(fi["id"]);
          SqlExecutableRef se = dbc->selectOne(MLDB_TABLE_FILES, &where);
          if(!se.isNull())
          {
@@ -406,7 +406,7 @@ bool MediaLibraryDatabase::removeFile(
                   ExceptionRef e = new Exception(
                      "The file does not exist in the database.",
                      MLDB_EXCEPTION ".FileNotFound");
-                  e->getDetails()["fileId"] = fi["id"]->getString();
+                  BM_ID_SET(e->getDetails()["fileId"], BM_FILE_ID(fi["id"]));
                   Exception::set(e);
                   rval = false;
                }
@@ -437,8 +437,8 @@ bool MediaLibraryDatabase::removeFile(
          "There was a database error when attempting to remove the "
          "file from the media library.",
          MLDB_EXCEPTION ".DeleteFileException");
-      e->getDetails()["userId"] = userId;
-      e->getDetails()["fileId"] = fi["id"];
+      BM_ID_SET(e->getDetails()["userId"], userId);
+      BM_ID_SET(e->getDetails()["fileId"], fi["id"]);
       Exception::push(e);
    }
 
@@ -523,10 +523,10 @@ bool MediaLibraryDatabase::populateFile(
       ExceptionRef e = new Exception(
          "Failed to populate the media library file.",
          MLDB_EXCEPTION ".FilePopulationFailure");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       if(mlId == 0)
       {
-         e->getDetails()["fileId"] = fi["id"]->getString();
+         BM_ID_SET(e->getDetails()["fileId"], fi["id"]->getString());
       }
       else
       {
@@ -558,7 +558,7 @@ static bool sPopulateMedia(
          " WHERE media_id=:mediaId LIMIT 1");
       rval =
          (s != NULL) &&
-         s->setUInt64(":mediaId", media["id"]->getUInt64()) &&
+         s->setUInt64(":mediaId", BM_MEDIA_ID(media["id"])) &&
          s->execute();
    }
    else
@@ -596,7 +596,7 @@ static bool sPopulateMedia(
          // into the media object
          if(rval && (rval = row->getUInt64("media_id", mediaId)))
          {
-            media["id"] = mediaId;
+            BM_ID_SET(media["id"], mediaId);
          }
 
          if(rval && (rval = row->getText("type", str)))
@@ -622,7 +622,7 @@ static bool sPopulateMedia(
          " WHERE media_id=:mediaId");
       rval =
          (s != NULL) &&
-         s->setUInt64(":mediaId", media["id"]->getUInt64()) &&
+         s->setUInt64(":mediaId", BM_MEDIA_ID(media["id"])) &&
          s->execute();
       if(rval)
       {
@@ -655,10 +655,10 @@ static bool sPopulateMedia(
       ExceptionRef e = new Exception(
          "Failed to populate the media library media.",
          MLDB_EXCEPTION ".MediaPopulationFailure");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       if(mlId == 0)
       {
-         e->getDetails()["mediaId"] = media["id"]->getString();
+         BM_ID_SET(e->getDetails()["mediaId"], BM_MEDIA_ID(media["id"]));
       }
       else
       {
@@ -685,12 +685,12 @@ static bool _rowToFileInfo(Row* row, FileInfo& fi)
    // into the file info object
    if((rval = row->getText("file_id", str)))
    {
-      fi["id"] = str.c_str();
+      BM_ID_SET(fi["id"], str.c_str());
    }
 
    if(rval && (rval = row->getUInt64("media_id", mediaId)))
    {
-      fi["mediaId"] = mediaId;
+      BM_ID_SET(fi["mediaId"], mediaId);
    }
 
    if(rval && (rval = row->getText("path", str)))
@@ -885,7 +885,7 @@ bool MediaLibraryDatabase::populateFileSet(
                {
                   Media& m = info["media"];
                   // populate media based on media id
-                  m["id"] = fi["mediaId"];
+                  BM_ID_SET(m["id"], BM_MEDIA_ID(fi["mediaId"]));
                   rval = sPopulateMedia(userId, m, 0, c);
                   // if media not found, ignore errors and set media to null
                   if(!rval)
@@ -919,7 +919,7 @@ bool MediaLibraryDatabase::populateFileSet(
                ExceptionRef e = new Exception(
                   "Failed to retrieve the row count for the given query.",
                   MLDB_EXCEPTION ".FileSetRetrievalFailure");
-               e->getDetails()["userId"] = userId;
+               BM_ID_SET(e->getDetails()["userId"], userId);
                e->getDetails()["start"] = start;
                e->getDetails()["num"] = num;
                if(extensionSpecified)
@@ -948,7 +948,7 @@ bool MediaLibraryDatabase::populateFileSet(
          "Failed to retrieve the set of media associated with the given "
          "userId.",
          MLDB_EXCEPTION ".FileSetRetrievalFailure");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       e->getDetails()["start"] = start;
       e->getDetails()["num"] = num;
       if(extensionSpecified)
@@ -1040,8 +1040,8 @@ bool MediaLibraryDatabase::updateMedia(
       ExceptionRef e = new Exception(
          "Could not update media in media library database.",
          MLDB_EXCEPTION ".UpdateMediaException");
-      e->getDetails()["userId"] = userId;
-      e->getDetails()["mediaId"] = media["id"]->getString();
+      BM_ID_SET(e->getDetails()["userId"], userId);
+      BM_ID_SET(e->getDetails()["mediaId"], BM_MEDIA_ID(media["id"]));
       Exception::push(e);
    }
 
@@ -1070,7 +1070,7 @@ bool MediaLibraryDatabase::removeMedia(
             ExceptionRef e = new Exception(
                "The media does not exist in the database.",
                MLDB_EXCEPTION ".MediaNotFound");
-            e->getDetails()["mediaId"] = mediaId;
+            BM_ID_SET(e->getDetails()["mediaId"], mediaId);
             Exception::set(e);
             rval = false;
          }
@@ -1083,8 +1083,8 @@ bool MediaLibraryDatabase::removeMedia(
          "There was a database error when attempting to remove the "
          "media from the media library.",
          MLDB_EXCEPTION ".DeleteMediaException");
-      e->getDetails()["userId"] = userId;
-      e->getDetails()["mediaId"] = mediaId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
+      BM_ID_SET(e->getDetails()["mediaId"], mediaId);
       Exception::push(e);
    }
 

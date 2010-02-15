@@ -19,6 +19,17 @@ static const char* EMAIL_REGEX =
 
 static const char* BITMUNK_EMAIL_REGEX = "@bitmunk\\.com$";
 
+v::Validator* BitmunkValidator::userId()
+{
+   return new v::All(
+      new v::Type(String),
+      new v::Regex(WHITESPACE_REGEX,
+         "The user ID must not start or end with whitespace."),
+      new v::Min(1, "The user ID is too short."),
+      new v::Max(20, "The user ID is too long."),
+      NULL);
+}
+
 v::Validator* BitmunkValidator::username()
 {
    return new v::All(

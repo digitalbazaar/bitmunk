@@ -129,7 +129,7 @@ int AviDetector::foundRiffChunkHeader(
             // determine if this junk chunk contains a media
             Media m;
             rval = parseJunkChunk(m, rch, b, length);
-            if(!m.isNull() && m["id"]->getUInt64() != 0)
+            if(!m.isNull() && BM_ID_VALID(m["id"]))
             {
                mMedia = m;
                MO_CAT_DEBUG(BM_DATA_CAT, "AviDetector: "

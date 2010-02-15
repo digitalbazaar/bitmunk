@@ -308,8 +308,8 @@ void ListingUpdater::handleUpdateRequest(DynamicObject& msg)
          userId,
          JsonWriter::writeToString(Exception::getAsDynamicObject()).c_str());
    }
-   // see if server ID is 0
-   else if(seller["serverId"]->getUInt32() == 0)
+   // see if server ID is invalid (0)
+   else if(BM_ID_INVALID(seller["serverId"]))
    {
       // change state
       mState = Busy;
@@ -528,7 +528,7 @@ void ListingUpdater::handleRegisterResponse(DynamicObject& msg)
          MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,
             "ListingUpdater registered for server ID %u, server token '%s' "
             "for user %" PRIu64,
-            msg["serverId"]->getUInt32(), serverToken, getUserId());
+            BM_SERVER_ID(msg["serverId"]), serverToken, getUserId());
       }
       else
       {
@@ -917,8 +917,8 @@ void ListingUpdater::updateServerUrl(Seller& seller)
 
          // post to bitmunk to update server URL
          Url url;
-         url.format("/api/3.0/catalog/sellers/%" PRIu64 "/%u",
-            userId, seller["serverId"]->getUInt32());
+         url.format("/api/3.0/catalog/sellers/%" PRIu64 "/%" PRIu32,
+            userId, BM_SERVER_ID(seller["serverId"]));
          Messenger* m = mNode->getMessenger();
          if(m->postSecureToBitmunk(&url, &out, &in, userId))
          {

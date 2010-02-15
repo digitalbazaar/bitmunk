@@ -197,7 +197,7 @@ DatabaseClientRef DatabaseHub::getDatabaseClient(
 
 void DatabaseHub::userLoggedOut(Event& e)
 {
-   UserId userId = e["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(e["details"]["userId"]);
    mMapLock.lockExclusive();
    {
       for(ConnectionMap::iterator ci = mConnectionMap.begin();

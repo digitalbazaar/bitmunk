@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
+#define __STDC_FORMAT_MACROS
+
 #include "bitmunk/bfp/IBfpModuleImpl.h"
 
 #include "monarch/crypto/MessageDigest.h"
@@ -233,7 +235,7 @@ BfpFactory* IBfpModuleImpl::getBfpFactory(bitmunk::common::BfpId id)
 {
    // create module ID for bfp factory module
    char version[24];
-   snprintf(version, 24, "1.%u", id);
+   snprintf(version, 24, "1.%" PRIu32, id);
    ModuleId mid("bitmunk.bfp.BfpFactory", version);
 
    // check node for the bfp factory module

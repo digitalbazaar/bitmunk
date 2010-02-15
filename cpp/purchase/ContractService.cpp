@@ -408,7 +408,7 @@ bool ContractService::createDownloadState(
          // send download state created event
          Event e;
          e["type"] = EVENT_DOWNLOAD_STATE ".created";
-         e["details"]["userId"] = userId;
+         BM_ID_SET(e["details"]["userId"], userId);
          e["details"]["downloadState"] = ds;
          e["details"]["downloadStateId"] = ds["id"]->getString();
          mNode->getEventController()->schedule(e);
@@ -550,7 +550,7 @@ bool ContractService::deleteDownloadState(
    // prepare the download state
    DownloadState ds;
    ds["id"] = dsId;
-   ds["userId"] = userId;
+   BM_ID_SET(ds["userId"], userId);
 
    // start listening for download interrupted event
    EventFilter filter;
@@ -572,7 +572,7 @@ bool ContractService::deleteDownloadState(
             "The download state is currently active and must be "
             "finish before it can be deleted.",
             "bitmunk.purchase.ContractService.DownloadStateActive");
-         e->getDetails()["userId"] = userId;
+         BM_ID_SET(e->getDetails()["userId"], userId);
          e->getDetails()["downloadStateId"] = dsId;
          Exception::set(e);
          rval = false;
@@ -587,7 +587,7 @@ bool ContractService::deleteDownloadState(
          DynamicObject msg;
          msg["pause"] = true;
          msg["deleting"] = true;
-         msg["userId"] = userId;
+         BM_ID_SET(msg["userId"], userId);
          msg["downloadStateId"] = ds["id"]->getUInt64();
          FiberId fiberId = ds["processorId"]->getUInt32();
          mNode->getFiberMessageCenter()->sendMessage(fiberId, msg);
@@ -613,7 +613,7 @@ bool ContractService::deleteDownloadState(
                // send download state deleted event
                Event e;
                e["type"] = EVENT_DOWNLOAD_STATE ".deleted";
-               e["details"]["userId"] = userId;
+               BM_ID_SET(e["details"]["userId"], userId);
                e["details"]["downloadState"] = ds;
                e["details"]["downloadStateId"] = ds["id"]->getString();
                mNode->getEventController()->schedule(e);
@@ -626,7 +626,7 @@ bool ContractService::deleteDownloadState(
                // send error event
                Event e;
                e["type"] = EVENT_DOWNLOAD_STATE ".exception";
-               e["details"]["userId"] = userId;
+               BM_ID_SET(e["details"]["userId"], userId);
                e["details"]["downloadState"] = ds;
                e["details"]["downloadStateId"] = ds["id"]->getString();
                e["details"]["exception"] = Exception::getAsDynamicObject();
@@ -725,7 +725,7 @@ bool ContractService::initializeDownloadState(
 
    DownloadState ds;
    ds["id"] = in["downloadStateId"];
-   ds["userId"] = userId;
+   BM_ID_SET(ds["userId"], userId);
 
    // try to start processing the download state
    PurchaseDatabase* pd = PurchaseDatabase::getInstance(mNode);
@@ -768,7 +768,7 @@ bool ContractService::acquireLicense(
 
    DownloadState ds;
    ds["id"] = in["downloadStateId"];
-   ds["userId"] = userId;
+   BM_ID_SET(ds["userId"], userId);
 
    // try to start processing the download state
    PurchaseDatabase* pd = PurchaseDatabase::getInstance(mNode);
@@ -811,7 +811,7 @@ bool ContractService::downloadContractData(
 
    DownloadState ds;
    ds["id"] = in["downloadStateId"];
-   ds["userId"] = userId;
+   BM_ID_SET(ds["userId"], userId);
 
    // try to start processing the download state
    PurchaseDatabase* pd = PurchaseDatabase::getInstance(mNode);
@@ -893,7 +893,7 @@ bool ContractService::pauseDownload(
    UserId userId = action->getInMessage()->getUserId();
    DownloadStateId dsId = in["downloadStateId"]->getUInt64();
    DownloadState ds;
-   ds["userId"] = userId;
+   BM_ID_SET(ds["userId"], userId);
    ds["id"] = dsId;
 
    // populate the download state processing info
@@ -909,7 +909,7 @@ bool ContractService::pauseDownload(
          // send message to pause download
          DynamicObject msg;
          msg["pause"] = true;
-         msg["userId"] = userId;
+         BM_ID_SET(msg["userId"], userId);
          msg["downloadStateId"] = dsId;
 
          // only successful if message was delivered
@@ -929,7 +929,7 @@ bool ContractService::pauseDownload(
          "Could not pause download. "
          "Download not in progress or has already completed.",
          "bitmunk.purchase.ContractService.DownloadNotInProgress");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       e->getDetails()["downloadStateId"] = dsId;
       Exception::set(e);
    }
@@ -947,7 +947,7 @@ bool ContractService::purchaseContractData(
 
    DownloadState ds;
    ds["id"] = in["downloadStateId"];
-   ds["userId"] = userId;
+   BM_ID_SET(ds["userId"], userId);
 
    // try to start processing the download state
    PurchaseDatabase* pd = PurchaseDatabase::getInstance(mNode);
@@ -987,7 +987,7 @@ bool ContractService::assembleContractData(
 
    DownloadState ds;
    ds["id"] = in["downloadStateId"];
-   ds["userId"] = userId;
+   BM_ID_SET(ds["userId"], userId);
 
    // try to start processing the download state
    PurchaseDatabase* pd = PurchaseDatabase::getInstance(mNode);
@@ -1074,7 +1074,7 @@ bool ContractService::cleanupFilePieces(DownloadState& ds)
          MO_CAT_DEBUG(BM_PURCHASE_CAT,
             "UserId %" PRIu64 ", DownloadState %" PRIu64 ": "
             "removing piece '%s'",
-            ds["userId"]->getUInt64(),
+            BM_USER_ID(ds["userId"]),
             ds["id"]->getUInt64(),
             fp["path"]->getString());
 
@@ -1088,11 +1088,11 @@ bool ContractService::cleanupFilePieces(DownloadState& ds)
       {
          MO_CAT_INFO(BM_PURCHASE_CAT,
             "UserId %" PRIu64 ", DownloadState %" PRIu64 ": "
-            "cleaned up %u pieces for file ID '%s'",
-            ds["userId"]->getUInt64(),
+            "cleaned up %" PRIu32 " pieces for file ID '%s'",
+            BM_USER_ID(ds["userId"]),
             ds["id"]->getUInt64(),
             pieceCount,
-            progress["fileInfo"]["id"]->getString());
+            BM_FILE_ID(progress["fileInfo"]["id"]));
       }
    }
 

@@ -33,6 +33,88 @@ typedef uint64_t TransactionId;
 typedef uint64_t UserId;
 typedef const char* WareId;
 
+// macros for bitmunk IDs:
+/*
+#define BM_ID_SET(obj, id) \
+   obj = id; \
+   obj->setType(String);
+*/
+// FIXME: use above BM_ID_SET to convert IDs to strings, remove BM_ID_SET
+// below once testing with macros is finished
+#define BM_ID_SET(obj, id) \
+   obj = id;
+// FIXME: make ID invalid compare against NULL and "0" and ""
+#define BM_ID_INVALID(id) (id == 0)
+#define BM_ID_VALID(id) (id != 0)
+
+// IDs that are optimized to 64-bit integers in bitmunk
+#define BM_ID_UINT64(obj) obj->getUInt64()
+#define BM_ID_UINT64_EQUALS(id1, id2) (id1 == id2)
+
+// IDs that are optimized to 32-bit integers in bitmunk
+#define BM_ID_UINT32(obj) obj->getUInt32()
+#define BM_ID_UINT32_EQUALS(id1, id2) (id1 == id2)
+
+// IDs that remain as strings in bitmunk
+#define BM_ID_STRING(obj) obj->getString()
+#define BM_ID_STRING_EQUALS(id1, id2) (strcmp(id1, id2) == 0)
+
+// account ID
+#define BM_ACCOUNT_ID(obj) BM_ID_UINT64(obj)
+#define BM_ACCOUNT_ID_EQUALS(id1, id2) BM_ID_UINT64_EQUALS(id1, id2)
+
+// bfp ID
+#define BM_BFP_ID(obj) BM_ID_UINT32(obj)
+#define BM_BFP_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+
+// contributor ID
+#define BM_CONTRIBUTOR_ID(obj) BM_ID_UINT64(obj)
+#define BM_CONTRIBUTOR_ID_EQUALS(id1, id2) BM_ID_UINT64_EQUALS(id1, id2)
+
+// file ID
+#define BM_FILE_ID(obj) BM_ID_STRING(obj)
+#define BM_FILE_ID_EQUALS(id1, id2) BM_ID_STRING_EQUALS(id1, id2)
+
+// media ID
+#define BM_MEDIA_ID(obj) BM_ID_UINT64(obj)
+#define BM_MEDIA_ID_EQUALS(id1, id2) BM_ID_UINT64_EQUALS(id1, id2)
+
+// payee scheme ID
+#define BM_PAYEE_SCHEME_ID(obj) BM_ID_UINT32(obj)
+#define BM_PAYEE_SCHEME_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+
+// permission group ID
+#define BM_PERMISSION_GROUP_ID(obj) BM_ID_UINT32(obj)
+#define BM_PERMISSION_GROUP_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+
+// profile ID
+#define BM_PROFILE_ID(obj) BM_ID_UINT32(obj)
+#define BM_PROFILE_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+
+// role ID
+#define BM_ROLE_ID(obj) BM_ID_UINT32(obj)
+#define BM_ROLE_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+
+// server ID
+#define BM_SERVER_ID(obj) BM_ID_UINT32(obj)
+#define BM_SERVER_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+
+// ticket ID
+#define BM_TICKET_ID(obj) BM_ID_UINT32(obj)
+#define BM_TICKET_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+
+// transaction ID
+#define BM_TRANSACTION_ID(obj) BM_ID_UINT64(obj)
+#define BM_TRANSACTION_ID_EQUALS(id1, id2) BM_ID_UINT64_EQUALS(id1, id2)
+
+// user ID
+#define BM_USER_ID(obj) BM_ID_UINT64(obj)
+#define BM_USER_ID_EQUALS(id1, id2) BM_ID_UINT64_EQUALS(id1, id2)
+
+// ware ID
+#define BM_WARE_ID(obj) BM_ID_STRING(obj)
+#define BM_WARE_ID_EQUALS(id1, id2) BM_ID_STRING_EQUALS(id1, id2)
+
 /**
  * An Address contains a street, locality (city), region (state), and postal
  * code (zip code).

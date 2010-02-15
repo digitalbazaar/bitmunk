@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/purchase/DownloadStateInitializer.h"
 
@@ -88,8 +88,8 @@ void DownloadStateInitializer::runSellerPoolUpdater()
       // create a seller pool to populate, try to retrieve up
       // to 100 sellers
       SellerPool sp;
-      sp["fileInfo"]["id"] = fi["id"]->getString();
-      sp["fileInfo"]["mediaId"] = fi["mediaId"]->getUInt64();
+      BM_ID_SET(sp["fileInfo"]["id"], BM_FILE_ID(fi["id"]));
+      BM_ID_SET(sp["fileInfo"]["mediaId"], BM_MEDIA_ID(fi["mediaId"]));
       sp["sellerDataSet"]["start"] = 0;
       sp["sellerDataSet"]["num"] = 100;
 

@@ -83,7 +83,7 @@ bool LoginManager::loginUser(
             // make sure dirs exist in case profile is created
             if((rval = file->mkdirs()))
             {
-               id = in["userId"]->getUInt64();
+               id = BM_USER_ID(in["userId"]);
 
                // try to load profile from disk
                profile = new Profile();
@@ -189,7 +189,7 @@ bool LoginManager::loginUser(
       Event e;
       e["type"] = "bitmunk.common.User.loggedIn";
       e["details"]["username"] = username;
-      e["details"]["userId"] = id;
+      BM_ID_SET(e["details"]["userId"], id);
       mNode->getEventController()->schedule(e);
    }
 
@@ -442,7 +442,7 @@ bool LoginManager::generateProfile(
       if((rval = mNode->getMessenger()->postSecureToBitmunk(&url, &out, &in)))
       {
          // set profile id
-         p->setId(in["profileId"]->getUInt32());
+         p->setId(BM_PROFILE_ID(in["profileId"]));
 
          // save profile to a stream
          rval = p->save(password, os);

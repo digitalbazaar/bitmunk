@@ -116,7 +116,7 @@ string Tools::createSellerServerKey(UserId sellerId, ServerId serverId)
 {
    string rval;
 
-   if(sellerId != 0 && serverId != 0)
+   if(BM_ID_VALID(sellerId) && BM_ID_VALID(serverId))
    {
       char tmp[45];
       snprintf(tmp, 45, "%" PRIu64 ":%u", sellerId, serverId);
@@ -129,7 +129,7 @@ string Tools::createSellerServerKey(UserId sellerId, ServerId serverId)
 string Tools::createSellerServerKey(Seller& seller)
 {
    return createSellerServerKey(
-      seller["userId"]->getUInt64(), seller["serverId"]->getUInt32());
+      BM_USER_ID(seller["userId"]), BM_SERVER_ID(seller["serverId"]));
 }
 
 // a helper function for resolving a percentage payee of any type
@@ -414,7 +414,7 @@ string Tools::createMediaFilename(
    // if the collectionId and the mediaId are not identical, that means
    // we're dealing with a collection and should generate positional
    // information in the file name and an additional directory
-   if(media["id"]->getUInt64() != mediaId)
+   if(!BM_MEDIA_ID_EQUALS(BM_MEDIA_ID(media["id"]), mediaId))
    {
       // add a directory named after the collection title if it exists
       if(media->hasMember("title"))
@@ -441,7 +441,7 @@ string Tools::createMediaFilename(
             Media& m = mi->next();
 
             // Check to see if the media IDs match
-            if(m["id"]->getUInt64() == mediaId)
+            if(BM_MEDIA_ID_EQUALS(BM_MEDIA_ID(m["id"]), mediaId))
             {
                fileMedia = m;
                position = maxPosition;

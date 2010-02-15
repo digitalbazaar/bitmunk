@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_node_BtpActionDelegate_H
 #define bitmunk_node_BtpActionDelegate_H
@@ -223,7 +223,7 @@ bool BtpActionDelegate<Handler>::canPerformAction(
    {
       if(vars->hasMember("nodeuser"))
       {
-         id = vars["nodeuser"]->getUInt64();
+         id = BM_USER_ID(vars["nodeuser"]);
          hasUser = true;
       }
    }

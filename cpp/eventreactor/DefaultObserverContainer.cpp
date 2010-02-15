@@ -87,7 +87,7 @@ bool DefaultObserverContainer::unregisterUser(UserId userId)
 void DefaultObserverContainer::userLoggedOut(Event& e)
 {
    // unregister user
-   unregisterUser(e["details"]["userId"]->getUInt64());
+   unregisterUser(BM_USER_ID(e["details"]["userId"]));
 }
 
 void DefaultObserverContainer::addObserver(UserId userId, ObserverRef& ob)

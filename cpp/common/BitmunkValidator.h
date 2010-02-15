@@ -23,6 +23,13 @@ class BitmunkValidator
 {
 public:
    /**
+    * Creates a user ID validator.
+    *
+    * @return a pointer to the validator.
+    */
+   static monarch::validation::Validator* userId();
+
+   /**
     * Creates a username validator.
     *
     * @return a pointer to the validator.

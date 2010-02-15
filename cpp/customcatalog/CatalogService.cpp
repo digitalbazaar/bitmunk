@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/customcatalog/CatalogService.h"
 
@@ -446,7 +446,7 @@ bool CatalogService::netaccessTest(
    // get nodeuser
    DynamicObject vars;
    action->getResourceQuery(vars);
-   UserId userId = vars["nodeuser"]->getUInt64();
+   UserId userId = BM_USER_ID(vars["nodeuser"]);
 
    // get netaccess token
    string token;
@@ -486,7 +486,7 @@ bool CatalogService::getServerInfo(
    // get nodeuser
    DynamicObject vars;
    action->getResourceQuery(vars);
-   UserId userId = vars["nodeuser"]->getUInt64();
+   UserId userId = BM_USER_ID(vars["nodeuser"]);
 
    // get seller information
    Seller seller;
@@ -574,7 +574,7 @@ bool CatalogService::getWare(
    // get user ID for nodeuser
    DynamicObject vars;
    action->getResourceQuery(vars);
-   UserId userId = vars["nodeuser"]->getUInt64();
+   UserId userId = BM_USER_ID(vars["nodeuser"]);
 
    // populate ware (use "out" as Ware)
    out["id"] = params[0]->getString();
@@ -660,7 +660,7 @@ bool CatalogService::getPayeeSchemes(
    // get query filters
    DynamicObject filters;
    action->getResourceQuery(filters);
-   UserId userId = filters["nodeuser"]->getUInt64();
+   UserId userId = BM_USER_ID(filters["nodeuser"]);
 
    // get the query parameters from the set of filters that were passed in
    DynamicObject query;
@@ -691,7 +691,7 @@ bool CatalogService::getPayeeScheme(
    // get user ID for nodeuser
    DynamicObject filters;
    action->getResourceQuery(filters);
-   UserId userId = filters["nodeuser"]->getUInt64();
+   UserId userId = BM_USER_ID(filters["nodeuser"]);
 
    DynamicObject query;
    if(filters->hasMember("default"))
@@ -704,7 +704,7 @@ bool CatalogService::getPayeeScheme(
    }
 
    // get payee scheme
-   PayeeSchemeId psId = params[0]->getUInt32();
+   PayeeSchemeId psId = BM_PAYEE_SCHEME_ID(params[0]);
    out["id"] = psId;
    rval = mCatalog->populatePayeeScheme(userId, query, out);
 
@@ -744,7 +744,7 @@ bool CatalogService::updatePayeeScheme(
    UserId userId = action->getInMessage()->getUserId();
 
    // update payee scheme
-   PayeeSchemeId psId = params[0]->getUInt32();
+   PayeeSchemeId psId = BM_PAYEE_SCHEME_ID(params[0]);
    rval = mCatalog->updatePayeeScheme(
       userId, psId, in["description"]->getString(), in["payees"]);
    if(rval)
@@ -768,7 +768,7 @@ bool CatalogService::deletePayeeScheme(
    UserId userId = action->getInMessage()->getUserId();
 
    // remove payee scheme
-   PayeeSchemeId psId = params[0]->getUInt32();
+   PayeeSchemeId psId = BM_PAYEE_SCHEME_ID(params[0]);
    rval = mCatalog->removePayeeScheme(userId, psId);
    out.setNull();
 

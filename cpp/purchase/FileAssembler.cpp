@@ -166,7 +166,7 @@ void FileAssembler::processMessages()
       }
 
       // get download path for files
-      UserId userId = mDownloadState["userId"]->getUInt64();
+      UserId userId = BM_USER_ID(mDownloadState["userId"]);
       string downloadPath = mNode->getConfigManager()->getModuleUserConfig(
          "bitmunk.purchase.Purchase", userId)["downloadPath"]->getString();
       if(!mNode->getConfigManager()->expandUserDataPath(
@@ -190,7 +190,7 @@ void FileAssembler::processMessages()
             FileInfo& fi = fii->next();
             FileId fileId = fi["id"]->getString();
             SellerPool& sp = mDownloadState["progress"][fileId]["sellerPool"];
-            mBfpId = sp["bfpId"]->getUInt32();
+            mBfpId = BM_BFP_ID(sp["bfpId"]);
 
             // ensure bfp for file is loaded
             error = !loadBfp();
@@ -226,7 +226,7 @@ void FileAssembler::processMessages()
                   userData["source"] = "purchase";
                   userData["ware"] = mDownloadState["ware"];
                   iml->scanFile(
-                     mDownloadState["userId"]->getUInt64(), fi, true,
+                     BM_USER_ID(mDownloadState["userId"]), fi, true,
                      &userData);
                }
             }
@@ -357,7 +357,7 @@ bool FileAssembler::assembleFile(FileInfo& fi, const char* downloadPath)
          "Could not assemble file. The media title information isn't "
          "available for the file.",
          EXCEPTION_FILE_ASM ".MediaTitleMissing");
-      e->getDetails()["mediaId"] = fi["mediaId"]->getUInt64();
+      BM_ID_SET(e->getDetails()["mediaId"], BM_MEDIA_ID(fi["mediaId"]));
       Exception::set(e);
    }
    else
@@ -367,7 +367,7 @@ bool FileAssembler::assembleFile(FileInfo& fi, const char* downloadPath)
       string filename = downloadPath;
       filename.push_back('/');
       filename.append(Tools::createMediaFilename(
-         collection, fi["mediaId"]->getUInt64(), extension));
+         collection, BM_MEDIA_ID(fi["mediaId"]), extension));
       fi["path"] = filename.c_str();
 
       // assemble pieces
@@ -451,7 +451,7 @@ bool FileAssembler::assemblePieces(FileInfo& fi)
          "%s: UserId %" PRIu64 ", DownloadState %" PRIu64 ": "
          "preparing file '%s'",
          mName,
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64(),
          fi["id"]->getString());
 
@@ -469,7 +469,7 @@ bool FileAssembler::assemblePieces(FileInfo& fi)
             "%s: UserId %" PRIu64 ", DownloadState %" PRIu64 ": "
             "preparing piece '%s'",
             mName,
-            mDownloadState["userId"]->getUInt64(),
+            BM_USER_ID(mDownloadState["userId"]),
             mDownloadState["id"]->getUInt64(),
             fp["path"]->getString());
 
@@ -584,7 +584,7 @@ bool FileAssembler::cleanupFilePieces(FileInfo& fi)
          "%s: UserId %" PRIu64 ", DownloadState %" PRIu64 ": "
          "removing piece '%s'",
          mName,
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64(),
          fp["path"]->getString());
 
@@ -599,7 +599,7 @@ bool FileAssembler::cleanupFilePieces(FileInfo& fi)
       "%s: UserId %" PRIu64 ", DownloadState %" PRIu64 ": "
       "cleaned up %u pieces for file ID '%s'",
       mName,
-      mDownloadState["userId"]->getUInt64(),
+      BM_USER_ID(mDownloadState["userId"]),
       mDownloadState["id"]->getUInt64(),
       pieceCount,
       fi["id"]->getString());
@@ -611,7 +611,7 @@ bool FileAssembler::populateMediaAndCollectionDetails(
    FileInfo& fi, Media& media, Media& collection)
 {
    bool rval = false;
-   MediaId mediaId = fi["mediaId"]->getUInt64();
+   MediaId mediaId = BM_MEDIA_ID(fi["mediaId"]);
 
    // check to see if the included media is a collection or a single item
    if(strcmp(mDownloadState["contract"]["media"]["type"]->getString(),
@@ -631,7 +631,7 @@ bool FileAssembler::populateMediaAndCollectionDetails(
          while(!rval && mi->hasNext())
          {
             Media& m = mi->next();
-            if(mediaId == m["id"]->getUInt64())
+            if(BM_MEDIA_ID_EQUALS(mediaId, BM_MEDIA_ID(m["id"])))
             {
                media = m;
                rval = true;
@@ -639,7 +639,8 @@ bool FileAssembler::populateMediaAndCollectionDetails(
          }
       }
    }
-   else if(mediaId == mDownloadState["contract"]["media"]["id"]->getUInt64())
+   else if(BM_MEDIA_ID_EQUALS(
+      mediaId, BM_MEDIA_ID(mDownloadState["contract"]["media"]["id"])))
    {
       media = mDownloadState["contract"]["media"];
       collection = media;

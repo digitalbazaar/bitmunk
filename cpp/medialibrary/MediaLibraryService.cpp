@@ -296,10 +296,10 @@ bool MediaLibraryService::getFile(
    DynamicObject params;
    action->getResourceParams(params);
    // get the file ID given in the URL
-   FileId fileId = params[0]->getString();
+   FileId fileId = BM_FILE_ID(params[0]);
 
    FileInfo fi;
-   fi["id"] = fileId;
+   BM_ID_SET(fi["id"], fileId);
 
    // populate the file object using the medialibrary
    if((rval = mLibrary->populateFile(userId, fi)))
@@ -311,7 +311,7 @@ bool MediaLibraryService::getFile(
       {
          // populate media
          Media media;
-         media["id"] = fi["mediaId"]->getUInt64();
+         BM_ID_SET(media["id"], BM_MEDIA_ID(fi["mediaId"]));
          rval = mLibrary->populateMedia(userId, media);
          if(!rval)
          {
@@ -348,8 +348,8 @@ bool MediaLibraryService::getFile(
       ExceptionRef e = new Exception(
          "Failed to retrieve file from the media library database.",
          MEDIALIBRARY_SERVICE ".FileRetrievalFailure");
-      e->getDetails()["userId"] = userId;
-      e->getDetails()["fileId"] = fileId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
+      BM_ID_SET(e->getDetails()["fileId"], fileId);
       Exception::push(e);
    }
 
@@ -421,11 +421,11 @@ bool MediaLibraryService::updateMedia(
    DynamicObject params;
    action->getResourceParams(params);
    // get the media ID given in the URL
-   MediaId mediaId = params[0]->getUInt64();
+   MediaId mediaId = BM_MEDIA_ID(params[0]);
 
    // do the media update
    Media media;
-   media["id"] = mediaId;
+   BM_ID_SET(media["id"], mediaId);
    if((rval = mLibrary->updateMedia(userId, media)))
    {
       out = media;
@@ -437,8 +437,8 @@ bool MediaLibraryService::updateMedia(
       ExceptionRef e = new Exception(
          "Failed to update media in the media library database.",
          MEDIALIBRARY_SERVICE ".MediaUpdateFailure");
-      e->getDetails()["userId"] = userId;
-      e->getDetails()["mediaId"] = mediaId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
+      BM_ID_SET(e->getDetails()["mediaId"], mediaId);
       Exception::push(e);
    }
 
@@ -456,11 +456,11 @@ bool MediaLibraryService::populateMedia(
    DynamicObject params;
    action->getResourceParams(params);
    // get the media ID given in the URL
-   MediaId mediaId = params[0]->getUInt64();
+   MediaId mediaId = BM_MEDIA_ID(params[0]);
 
    // get the media
    Media media;
-   media["id"] = mediaId;
+   BM_ID_SET(media["id"], mediaId);
    if((rval = mLibrary->populateMedia(userId, media)))
    {
       out = media;
@@ -472,8 +472,8 @@ bool MediaLibraryService::populateMedia(
       ExceptionRef e = new Exception(
          "Failed to popoulate media in the media library database.",
          MEDIALIBRARY_SERVICE ".MediaPopulationFailure");
-      e->getDetails()["userId"] = userId;
-      e->getDetails()["mediaId"] = mediaId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
+      BM_ID_SET(e->getDetails()["mediaId"], mediaId);
       Exception::push(e);
    }
 

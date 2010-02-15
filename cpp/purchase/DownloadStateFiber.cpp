@@ -42,11 +42,12 @@ void DownloadStateFiber::setDownloadState(DownloadState& ds)
    mDownloadState = ds;
 
    // set fiber exit data if appropriate
+   UserId userId = BM_USER_ID(ds["userId"]);
    if(mExitData != NULL)
    {
       *mExitData = DynamicObject();
       (*mExitData)["downloadStateId"] = ds["id"]->getUInt64();
-      (*mExitData)["userId"] = ds["userId"]->getUInt64();
+      BM_ID_SET((*mExitData)["userId"], userId);
       (*mExitData)["name"] = mName;
    }
 
@@ -54,7 +55,7 @@ void DownloadStateFiber::setDownloadState(DownloadState& ds)
    IPurchaseModule* ipm = dynamic_cast<IPurchaseModule*>(
       mBitmunkNode->getModuleApi("bitmunk.purchase.Purchase"));
    mTotalDownloadRate = ipm->getTotalDownloadRate();
-   mDownloadThrottler = ipm->getDownloadThrottler(ds["userId"]->getUInt64());
+   mDownloadThrottler = ipm->getDownloadThrottler(userId);
 }
 
 DownloadState& DownloadStateFiber::getDownloadState()
@@ -67,7 +68,7 @@ void DownloadStateFiber::logDownloadStateMessage(const char* msg)
    MO_CAT_INFO(BM_PURCHASE_CAT,
       "%s: UserId %" PRIu64 ", DownloadState %" PRIu64 ": %s",
       mName,
-      mDownloadState["userId"]->getUInt64(),
+      BM_USER_ID(mDownloadState["userId"]),
       mDownloadState["id"]->getUInt64(),
       msg);
 }
@@ -80,7 +81,7 @@ void DownloadStateFiber::logException(ExceptionRef ex)
       "%s: UserId %" PRIu64 ", DownloadState %" PRIu64 ": "
       "exception occurred, %s",
       mName,
-      mDownloadState["userId"]->getUInt64(),
+      BM_USER_ID(mDownloadState["userId"]),
       mDownloadState["id"]->getUInt64(),
       JsonWriter::writeToString(d, false, false).c_str());
 }
@@ -91,13 +92,13 @@ void DownloadStateFiber::sendDownloadStateEvent(Event& e)
       "%s: UserId %" PRIu64 ", DownloadState %" PRIu64 ": "
       "scheduling event '%s'",
       mName,
-      mDownloadState["userId"]->getUInt64(),
+      BM_USER_ID(mDownloadState["userId"]),
       mDownloadState["id"]->getUInt64(),
       e["type"]->getString());
 
    DownloadStateId dsId = mDownloadState["id"]->getUInt64();
    e["details"]["downloadStateId"] = dsId;
-   e["details"]["userId"] = mDownloadState["userId"];
+   BM_ID_SET(e["details"]["userId"], BM_USER_ID(mDownloadState["userId"]));
    mBitmunkNode->getEventController()->schedule(e);
 }
 
