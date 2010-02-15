@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_FORMAT_MACROS
 
 #include "bitmunk/sell/ContractService.h"
 
 #include "bitmunk/bfp/IBfpModule.h"
+#include "bitmunk/common/BitmunkValidator.h"
 #include "bitmunk/common/CatalogInterface.h"
 #include "bitmunk/common/NegotiateInterface.h"
 #include "bitmunk/common/Signer.h"
@@ -53,30 +54,34 @@ bool ContractService::initialize()
    mUploadThrottlerMap = new UploadThrottlerMap();
    rval = mUploadThrottlerMap->initialize(mNode);
 
-   // top level resource handlers
-   RestResourceHandlerRef negotiate = new RestResourceHandler();
-   addResource("/negotiate", negotiate);
-
-   // resource method handlers
-
-   // POST .../negotiate?nodeuser=<sellerId>
-   /**
-    * Performs a negotiation step on a given contract.
-    *
-    * @tags public-api payswarm-api
-    * @return The return value is currently not documented.
-    */
+   // negotiate
+   if(rval)
    {
-      ResourceHandler h = new Handler(
-         mNode, this, &ContractService::negotiateContract,
-         BtpAction::AuthRequired);
+      // top level resource handlers
+      RestResourceHandlerRef negotiate = new RestResourceHandler();
+      addResource("/negotiate", negotiate);
 
-      v::ValidatorRef qValidator = new v::Map(
-         "nodeuser", new v::Int(v::Int::Positive),
-         NULL);
+      // POST .../negotiate?nodeuser=<sellerId>
+      /**
+       * Negotiates a contract section with a seller. The buyer provides a
+       * contract section with their desired terms, the seller responds with
+       * a signed contract section containing their acceptable terms.
+       *
+       * @tags public-api payswarm-api
+       *
+       * @return the seller's signed contract section, which the buyer may
+       *         elect to accept.
+       */
+      {
+         ResourceHandler h = new Handler(
+            mNode, this, &ContractService::negotiateContract,
+            BtpAction::AuthRequired);
 
-      v::ValidatorRef validator = new v::All(
-         new v::Map(
+         v::ValidatorRef qValidator = new v::Map(
+            "nodeuser", new v::Int(v::Int::Positive),
+            NULL);
+
+         v::ValidatorRef validator = new v::Map(
             "version", new v::Equals(
                "3.0", "Wrong contract version. Must be '3.0'"),
             "id", new v::Int(v::Int::NonNegative),
@@ -93,23 +98,7 @@ bool ContractService::initialize()
                "publicDomain", new v::Type(Boolean),
                "ccLicenses", new v::Type(String),
                "distribution", new v::Type(String),
-               "payees", new v::All(
-                  new v::Type(Array),
-                  new v::Each(new v::Map(
-                     "id", new v::Int(v::Int::Positive),
-                     // FIXME: need to check a list of amountType strings
-                     "amountType", new v::Type(String),
-                     "amount", new v::Regex("^[0-9]+\\.[0-9]{2,7}$",
-                        "Monetary amount must be of the format 'x.xx'. "
-                        "Example: 10.00"),
-                     "amountResolved", new v::Equals(true),
-                     "percentage", new v::Optional(new v::Type(String)),
-                     "min", new v::Optional(new v::Type(String)),
-                     "mediaId", new v::Int(v::Int::NonNegative),
-                     "description", new v::Optional(new v::Type(String)),
-                     "nontaxable", new v::Optional(new v::Type(Boolean)),
-                     NULL)),
-                  NULL),
+               "payees", BitmunkValidator::licensePayees(),
                "payeeRules", new v::All(
                   new v::Type(Array),
                   new v::Each(new v::Map(
@@ -118,23 +107,8 @@ bool ContractService::initialize()
                      "value", new v::Type(String),
                      NULL)),
                   NULL),
-               "licenseAmount", new v::Regex("^[0-9]+\\.?[0-9]{2,7}$",
-                  "Monetary amount must be of the format 'x.xx'. "
-                  "Example: 10.00"),
-               "piecePayees", new v::All(
-                  new v::Type(Array),
-                  new v::Each(new v::Map(
-                     "id", new v::Int(v::Int::Positive),
-                     "amountType", new v::Equals(PAYEE_AMOUNT_TYPE_FLATFEE,
-                        "amountType must be '" PAYEE_AMOUNT_TYPE_FLATFEE "'."),
-                     "amount", new v::Regex("^[0-9]+\\.[0-9]{2,7}$",
-                        "Monetary amount must be of the format 'x.xx'. "
-                        "Example: 10.00"),
-                     "mediaId", new v::Int(v::Int::NonNegative),
-                     "description", new v::Optional(new v::Type(String)),
-                     "nontaxable", new v::Optional(new v::Type(Boolean)),
-                     NULL)),
-                  NULL),
+               "licenseAmount", BitmunkValidator::preciseMoney(),
+               "piecePayees", BitmunkValidator::piecePayees(),
                "buyerId", new v::Int(v::Int::Positive),
                // FIXME: add expiration when we add it to media signing
                "signature", new v::Type(String),
@@ -180,57 +154,61 @@ bool ContractService::initialize()
                      "negotiationTerms", new v::Optional(new v::Type(Map)),
                      NULL))),
                NULL),
-            NULL),
-         NULL);
+            NULL);
 
-      negotiate->addHandler(h, BtpMessage::Post, 0, &qValidator, &validator);
+         negotiate->addHandler(h, BtpMessage::Post, 0, &qValidator, &validator);
+      }
    }
 
-   RestResourceHandlerRef filePiece = new RestResourceHandler();
-   addResource("/filepiece", filePiece);
-
-   // POST .../filepiece?nodeuser=<sellerId>
-   /**
-    * Retrieves a filepiece from the seller.
-    *
-    * @tags public-api payswarm-api
-    * @return The return value is currently not documented.
-    */
+   // file piece
+   if(rval)
    {
-      ResourceHandler h = new Handler(
-         mNode, this, &ContractService::getFilePiece,
-         BtpAction::AuthRequired);
+      RestResourceHandlerRef filePiece = new RestResourceHandler();
+      addResource("/filepiece", filePiece);
 
-      v::ValidatorRef qValidator = new v::Map(
-         "nodeuser", new v::Int(v::Int::Positive),
-         NULL);
+      // POST .../filepiece?nodeuser=<sellerId>
+      /**
+       * Retrieves a filepiece from the seller.
+       *
+       * @tags public-api payswarm-api
+       * @return The return value is currently not documented.
+       */
+      {
+         ResourceHandler h = new Handler(
+            mNode, this, &ContractService::getFilePiece,
+            BtpAction::AuthRequired);
 
-      v::ValidatorRef validator = new v::Map(
-         "csHash", new v::All(
-            new v::Type(String),
-            new v::Min(
-               1, "Contract section hash too short. 1 character minimum."),
-            NULL),
-         "fileId", new v::All(
-            new v::Type(String),
-            new v::Min(
-               1, "File ID too short. 1 character minimum."),
-            NULL),
-         "mediaId", new v::Int(v::Int::Positive),
-         "index", new v::Int(v::Int::NonNegative),
-         // Note: This must be the standard piece size, the seller may
-         // truncate if this is the last piece.
-         "size", new v::Int(v::Int::NonNegative),
-         "peerbuyKey", new v::All(
-            new v::Type(String),
-            new v::Min(
-               1, "PeerBuy key too short. 1 character minimum."),
-            NULL),
-         "sellerProfileId", new v::Int(v::Int::Positive),
-         "bfpId", new v::Int(v::Int::Positive),
-         NULL);
+         v::ValidatorRef qValidator = new v::Map(
+            "nodeuser", new v::Int(v::Int::Positive),
+            NULL);
 
-      filePiece->addHandler(h, BtpMessage::Post, 0, &qValidator, &validator);
+         v::ValidatorRef validator = new v::Map(
+            "csHash", new v::All(
+               new v::Type(String),
+               new v::Min(
+                  1, "Contract section hash too short. 1 character minimum."),
+               NULL),
+            "fileId", new v::All(
+               new v::Type(String),
+               new v::Min(
+                  1, "File ID too short. 1 character minimum."),
+               NULL),
+            "mediaId", new v::Int(v::Int::Positive),
+            "index", new v::Int(v::Int::NonNegative),
+            // Note: This must be the standard piece size, the seller may
+            // truncate if this is the last piece.
+            "size", new v::Int(v::Int::NonNegative),
+            "peerbuyKey", new v::All(
+               new v::Type(String),
+               new v::Min(
+                  1, "PeerBuy key too short. 1 character minimum."),
+               NULL),
+            "sellerProfileId", new v::Int(v::Int::Positive),
+            "bfpId", new v::Int(v::Int::Positive),
+            NULL);
+
+         filePiece->addHandler(h, BtpMessage::Post, 0, &qValidator, &validator);
+      }
    }
 
    return rval;

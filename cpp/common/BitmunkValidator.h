@@ -197,11 +197,20 @@ public:
    /**
     * Creates a validator for validating dates with the format:
     *
-    * 'YYYY-MM-DD HH:MM:SS'
+    * 'YYYY-MM-DD'
     *
     * @return a pointer to the validator.
     */
    static monarch::validation::Validator* date();
+
+   /**
+    * Creates a validator for validating date-times with the format:
+    *
+    * 'YYYY-MM-DD HH:MM:SS'
+    *
+    * @return a pointer to the validator.
+    */
+   static monarch::validation::Validator* dateTime();
 };
 
 } // end namespace common

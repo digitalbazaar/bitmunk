@@ -393,9 +393,18 @@ v::Validator* BitmunkValidator::date()
    return new v::Regex(
       "^[2-9][0-9]{3}-"
       "(0[1-9]|1[0-2])-"
+      "([0-2][0-9]|3[0-1])$",
+      "Date must be of the format 'YYYY-MM-DD'.");
+}
+
+v::Validator* BitmunkValidator::dateTime()
+{
+   return new v::Regex(
+      "^[2-9][0-9]{3}-"
+      "(0[1-9]|1[0-2])-"
       "([0-2][0-9]|3[0-1]) "
       "([0-1][0-9]|2[0-3]):"
       "([0-5][0-9]):"
       "([0-5][0-9])$",
-      "Date must be of the format 'YYYY-MM-DD HH:MM:SS'.");
+      "Date-time must be of the format 'YYYY-MM-DD HH:MM:SS'.");
 }
