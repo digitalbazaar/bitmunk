@@ -55,15 +55,17 @@ bool ContractService::initialize()
 
    // top level resource handlers
    RestResourceHandlerRef negotiate = new RestResourceHandler();
-   RestResourceHandlerRef filePiece = new RestResourceHandler();
-
    addResource("/negotiate", negotiate);
-   addResource("/filepiece", filePiece);
 
    // resource method handlers
 
    // POST .../negotiate?nodeuser=<sellerId>
-   if(rval)
+   /**
+    * Performs a negotiation step on a given contract.
+    *
+    * @tags public-api payswarm-api
+    * @return The return value is currently not documented.
+    */
    {
       ResourceHandler h = new Handler(
          mNode, this, &ContractService::negotiateContract,
@@ -184,8 +186,16 @@ bool ContractService::initialize()
       negotiate->addHandler(h, BtpMessage::Post, 0, &qValidator, &validator);
    }
 
+   RestResourceHandlerRef filePiece = new RestResourceHandler();
+   addResource("/filepiece", filePiece);
+
    // POST .../filepiece?nodeuser=<sellerId>
-   if(rval)
+   /**
+    * Retrieves a filepiece from the seller.
+    *
+    * @tags public-api payswarm-api
+    * @return The return value is currently not documented.
+    */
    {
       ResourceHandler h = new Handler(
          mNode, this, &ContractService::getFilePiece,
