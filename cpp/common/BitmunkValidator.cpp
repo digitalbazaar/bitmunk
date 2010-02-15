@@ -155,9 +155,8 @@ v::Validator* BitmunkValidator::licensePayees()
       // must have a non-zero media ID
       "mediaId", new v::Int(v::Int::Positive),
       "description", new v::Optional(new v::Type(String)),
-      // FIXME: side note: we should really change "nontaxable" to "taxExempt"
       // tax-exempt value is optional
-      "nontaxable", new v::Optional(new v::Type(Boolean)),
+      "taxExempt", new v::Optional(new v::Type(Boolean)),
       NULL));
 }
 
@@ -181,7 +180,7 @@ v::Validator* BitmunkValidator::dynamicLicensePayees()
       "mediaId", new v::Optional(new v::Int(v::Int::Positive)),
       "description", new v::Optional(new v::Type(String)),
       // if provided, cannot be tax-exempt
-      "nontaxable", new v::Optional(new v::Equals(false)),
+      "taxExempt", new v::Optional(new v::Equals(false)),
       NULL));
 }
 
@@ -200,7 +199,7 @@ v::Validator* BitmunkValidator::piecePayees()
       "mediaId", new v::Int(v::Int::Positive),
       "description", new v::Optional(new v::Type(String)),
       // optionally tax-exempt
-      "nontaxable", new v::Optional(new v::Type(Boolean)),
+      "taxExempt", new v::Optional(new v::Type(Boolean)),
       NULL));
 }
 
@@ -229,7 +228,7 @@ v::Validator* BitmunkValidator::dataPayees()
          "description", new v::Optional(new v::Type(String)),
          // if provided, cannot be tax-exempt
          // FIXME: what about bitmunk data payees? these are tax-exempt correct?
-         "nontaxable", new v::Optional(new v::Equals(false)),
+         "taxExempt", new v::Optional(new v::Equals(false)),
          NULL),
       new v::Any(
          new v::Map(
@@ -264,7 +263,7 @@ v::Validator* BitmunkValidator::warePayees()
       "mediaId", new v::Optional(new v::Int(v::Int::NonNegative)),
       "description", new v::Optional(new v::Type(String)),
       // if provided, cannot be tax-exempt
-      "nontaxable", new v::Optional(new v::Equals(false)),
+      "taxExempt", new v::Optional(new v::Equals(false)),
       NULL));
 }
 

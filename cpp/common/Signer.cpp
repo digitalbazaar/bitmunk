@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/common/Signer.h"
 
@@ -156,14 +156,14 @@ void Signer::appendPayeeContent(Payee& p, string& str)
    // depends on amountType and amountResolved:
    //
    // FlatFee:
-   // ID + amountType + amount + nontaxable (1/0)
+   // ID + amountType + amount + taxExempt (1/0)
    //
    // Other with amountResolved == true:
-   // ID + amountType + amountResolved (0) + percentage + nontaxable (1/0)
+   // ID + amountType + amountResolved (0) + percentage + taxExempt (1/0)
    // + optional description
    //
    // Other with amountResolved == false:
-   // ID + amountType + amountResolved (1) + percentage + nontaxable (1/0)
+   // ID + amountType + amountResolved (1) + percentage + taxExempt (1/0)
    // + optional description
    str.append(p["id"]->getString());
 
@@ -192,7 +192,12 @@ void Signer::appendPayeeContent(Payee& p, string& str)
       str.append(p["percentage"]->getString());
    }
 
-   str.push_back(p["nontaxable"]->getBoolean() ? '1' : '0');
+   // FIXME: here for backwards compatibility
+   if(p->hasMember("nontaxable"))
+   {
+      p["taxExempt"] = p["nontaxable"];
+   }
+   str.push_back(p["taxExempt"]->getBoolean() ? '1' : '0');
 
    if(p->hasMember("description"))
    {

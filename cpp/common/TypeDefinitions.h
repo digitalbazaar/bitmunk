@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_common_TypeDefinitions_H
 #define bitmunk_common_TypeDefinitions_H
@@ -358,7 +358,7 @@ typedef monarch::rt::DynamicObject FilePieceList;
  * that the amount can be calculated:
  *
  * 1. As a license percentage, that is, a percentage of the total of all
- * royalties associated with a purchase -- excluding nontaxable amounts.
+ * royalties associated with a purchase -- excluding tax-exempt amounts.
  *
  * 2. As a cumulative percentage on the total calculated amount of payees
  * that occur before it in a list of payees. This total does not include
@@ -369,8 +369,8 @@ typedef monarch::rt::DynamicObject FilePieceList;
  * totaled and used as the base for all PercentOfTotal payees.
  *
  * 4. As a tax on the current total of other Payees. To calculate this, all
- * other payees not marked as nontaxable are totaled then each Tax payee is
- * applied in order to the new total.  Payees that are nontaxable include
+ * other payees not marked as tax-exempt are totaled then each Tax payee is
+ * applied in order to the new total.  Payees that are tax-exempt include
  * Bitmunk fees, as these are paid directly to Bitmunk for using the Bitmunk
  * service and are not taxed.
  *
@@ -384,7 +384,7 @@ typedef monarch::rt::DynamicObject FilePieceList;
  *    "min" : string,
  *    "mediaId" : MediaId (uint64)
  *    "description" : string,
- *    "nontaxable" : boolean,
+ *    "taxExempt" : boolean,
  * }
  *
  * @member id the AccountId.
@@ -397,7 +397,7 @@ typedef monarch::rt::DynamicObject FilePieceList;
  * @member min a minimum amount -- useful for percentage-based payees.
  * @member mediaId the ID of the media this payee is a royalty for.
  * @member description a description for the payment.
- * @member nontaxable true if this Payee is exempt from Tax payee totals, false
+ * @member taxExempt true if this Payee is exempt from Tax payee totals, false
  *         if it is not.
  */
 typedef monarch::rt::DynamicObject Payee;
@@ -413,7 +413,7 @@ typedef const char* PayeeAmountType;
 const bool PayeeResolved = true;
 const bool PayeeUnresolved = false;
 const bool PayeeRegular = false;
-const bool PayeeNontaxable = true;
+const bool PayeeTaxExempt = true;
 typedef monarch::rt::DynamicObject PayeeList;
 
 /**

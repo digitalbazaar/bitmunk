@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_test_Test_H
 #define bitmunk_test_Test_H
@@ -26,7 +26,7 @@ namespace test
  * @param percentage the percentage associated with the payee.
  * @param min the minimum amount for the payee.
  * @param description the description associated with the payee.
- * @param nontaxable true if the payee is non-taxable, false otherwise.
+ * @param taxExempt true if the payee is tax-exempt, false otherwise.
  * 
  * @return a fully constructed payee object.
  */
@@ -38,7 +38,7 @@ bitmunk::common::Payee createPayee(
    const char* percentage,
    const char* min,
    const char* description,
-   bool nontaxable);
+   bool taxExempt);
 
 /**
  * Compares two payees.

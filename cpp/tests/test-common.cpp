@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 
 #include "bitmunk/common/BitmunkValidator.h"
@@ -418,7 +418,7 @@ static void runPayeeResolveTest(TestRunner& tr)
          "0.65", "", "", "Distributor Royalties", PayeeRegular);
       licenseList->append() = createPayee(
          BITMUNK, PAYEE_AMOUNT_TYPE_PTOTAL, PayeeUnresolved,
-         "", "0.15", "0.15", "Bitmunk Fee", PayeeNontaxable);
+         "", "0.15", "0.15", "Bitmunk Fee", PayeeTaxExempt);
       licenseList->append() = createPayee(
          TAX, PAYEE_AMOUNT_TYPE_TAX, PayeeUnresolved,
          "", "0.065", "", "Sales Tax", PayeeRegular);
@@ -434,7 +434,7 @@ static void runPayeeResolveTest(TestRunner& tr)
          "0.65", "", "", "CD Baby Royalties", PayeeRegular);
       licenseListCheck->append() = createPayee(
          BITMUNK, PAYEE_AMOUNT_TYPE_PTOTAL, PayeeResolved,
-         "0.15", "0.15", "0.15", "Bitmunk Fee", PayeeNontaxable);
+         "0.15", "0.15", "0.15", "Bitmunk Fee", PayeeTaxExempt);
       licenseListCheck->append() = createPayee(
          TAX, PAYEE_AMOUNT_TYPE_TAX, PayeeResolved,
          "0.04225", "0.065", "", "Sales Tax", PayeeRegular);
@@ -453,7 +453,7 @@ static void runPayeeResolveTest(TestRunner& tr)
          "", "0.065", "", "Sales Tax", PayeeRegular);
       dataList->append() = createPayee(
          BITMUNK, PAYEE_AMOUNT_TYPE_FLATFEE, PayeeUnresolved,
-         "0.01", "", "", "Bitmunk Fee", PayeeNontaxable);
+         "0.01", "", "", "Bitmunk Fee", PayeeTaxExempt);
       
       BigDecimal data;
       Tools::resolvePayeeAmounts(dataList, &data, &license);
@@ -468,7 +468,7 @@ static void runPayeeResolveTest(TestRunner& tr)
          "0.0013", "0.065", "", "Sales Tax", PayeeRegular);
       dataListCheck->append() = createPayee(
          BITMUNK, PAYEE_AMOUNT_TYPE_FLATFEE, PayeeResolved,
-         "0.01", "", "", "Bitmunk Fee", PayeeNontaxable);
+         "0.01", "", "", "Bitmunk Fee", PayeeTaxExempt);
 
       BigDecimal total = license + data;
       //dumpDynamicObject(dataList);
@@ -496,7 +496,7 @@ static void runPayeeResolveTest(TestRunner& tr)
          "2.00", "", "", "Distributor Fee", PayeeRegular);
       licenseList->append() = createPayee(
          BITMUNK, PAYEE_AMOUNT_TYPE_PTOTAL, PayeeUnresolved,
-         "", "0.15", "0.15", "Bitmunk Fee", PayeeNontaxable);
+         "", "0.15", "0.15", "Bitmunk Fee", PayeeTaxExempt);
       licenseList->append() = createPayee(
          TAX, PAYEE_AMOUNT_TYPE_TAX, PayeeUnresolved,
          "", "0.065", "", "Sales Tax", PayeeRegular);
@@ -515,7 +515,7 @@ static void runPayeeResolveTest(TestRunner& tr)
          "2.00", "", "", "Distributer Fee", PayeeRegular);
       licenseListCheck->append() = createPayee(
          BITMUNK, PAYEE_AMOUNT_TYPE_PTOTAL, PayeeResolved,
-         "1.50", "0.15", "0.15", "Bitmunk Fee", PayeeNontaxable);
+         "1.50", "0.15", "0.15", "Bitmunk Fee", PayeeTaxExempt);
       licenseListCheck->append() = createPayee(
          TAX, PAYEE_AMOUNT_TYPE_TAX, PayeeResolved,
          "0.65", "0.065", "", "Sales Tax", PayeeRegular);
@@ -546,7 +546,7 @@ static void runPayeeResolveTest(TestRunner& tr)
          "", "0.065", "", "Sales Tax", PayeeRegular);
       dataList->append() = createPayee(
          BITMUNK, PAYEE_AMOUNT_TYPE_FLATFEE, PayeeUnresolved,
-         "0.01", "", "", "Bitmunk Key Fee", PayeeNontaxable);
+         "0.01", "", "", "Bitmunk Key Fee", PayeeTaxExempt);
       
       BigDecimal data;
       Tools::resolvePayeeAmounts(dataList, &data, &license);
@@ -567,7 +567,7 @@ static void runPayeeResolveTest(TestRunner& tr)
          "0.057525", "0.065", "", "Sales Tax", PayeeRegular);
       dataListCheck->append() = createPayee(
          BITMUNK, PAYEE_AMOUNT_TYPE_FLATFEE, PayeeResolved,
-         "0.01", "", "", "Bitmunk Key Fee", PayeeNontaxable);
+         "0.01", "", "", "Bitmunk Key Fee", PayeeTaxExempt);
 
       BigDecimal total = license + data;
       //dumpDynamicObject(dataList);
@@ -590,14 +590,14 @@ static void runPayeeResolveTest(TestRunner& tr)
       licenseList->append() = createPayee(
          BITMUNK, PAYEE_AMOUNT_TYPE_PTOTAL, PayeeUnresolved,
          "", "0.1500000", "0.1500000", "Bitmunk Marketplace Service", 
-         PayeeNontaxable);
+         PayeeTaxExempt);
       licenseList->append() = createPayee(
          DISTRIBUTOR, PAYEE_AMOUNT_TYPE_FLATFEE, PayeeUnresolved,
-         "0.5965000", "", "", "CD Baby Artist Royalty", PayeeNontaxable);
+         "0.5965000", "", "", "CD Baby Artist Royalty", PayeeTaxExempt);
       licenseList->append() = createPayee(
          DISTRIBUTOR, PAYEE_AMOUNT_TYPE_FLATFEE, PayeeUnresolved,
          "0.0535000", "", "", "CD Baby 9% Digital Distribution Cost", 
-         PayeeNontaxable);
+         PayeeTaxExempt);
       
       // zero royalty on the license
       BigDecimal license;
@@ -608,14 +608,14 @@ static void runPayeeResolveTest(TestRunner& tr)
       licenseListCheck->append() = createPayee(
          BITMUNK, PAYEE_AMOUNT_TYPE_PTOTAL, PayeeResolved,
          "0.1500000", "0.1500000", "0.1500000", "Bitmunk Marketplace Service", 
-         PayeeNontaxable);
+         PayeeTaxExempt);
       licenseListCheck->append() = createPayee(
          DISTRIBUTOR, PAYEE_AMOUNT_TYPE_FLATFEE, PayeeResolved,
-         "0.5965000", "", "", "CD Baby Artist Royalty", PayeeNontaxable);
+         "0.5965000", "", "", "CD Baby Artist Royalty", PayeeTaxExempt);
       licenseListCheck->append() = createPayee(
          DISTRIBUTOR, PAYEE_AMOUNT_TYPE_FLATFEE, PayeeResolved,
          "0.0535000", "", "", "CD Baby 9% Digital Distribution Cost", 
-         PayeeNontaxable);
+         PayeeTaxExempt);
       
       assert(license == "0.8000000");
       assertComparePayeeLists(licenseList, licenseListCheck);
@@ -626,7 +626,7 @@ static void runPayeeResolveTest(TestRunner& tr)
       dataList->append() = createPayee(
          BITMUNK, PAYEE_AMOUNT_TYPE_PLICENSE, PayeeUnresolved,
          "", "0.0800000", "0.0500000", "Bitmunk Download Service", 
-         PayeeNontaxable);
+         PayeeTaxExempt);
 
       BigDecimal data;
       Tools::resolvePayeeAmounts(dataList, &data, &license);
@@ -636,7 +636,7 @@ static void runPayeeResolveTest(TestRunner& tr)
       dataListCheck->append() = createPayee(
          BITMUNK, PAYEE_AMOUNT_TYPE_PLICENSE, PayeeResolved,
          "0.0640000", "0.0800000", "0.0500000", "Bitmunk Download Service", 
-         PayeeNontaxable);
+         PayeeTaxExempt);
 
       BigDecimal total = license + data;
       //dumpDynamicObject(dataList);

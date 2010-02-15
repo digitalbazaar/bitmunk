@@ -174,7 +174,7 @@ static void resolvePercentagePayee(
    total += tmp;
 
    // if payee is taxable, update taxable total if available
-   if(taxableTotal != NULL && !p["nontaxable"]->getBoolean())
+   if(taxableTotal != NULL && !p["taxExempt"]->getBoolean())
    {
       *taxableTotal += tmp;
    }
@@ -183,8 +183,8 @@ static void resolvePercentagePayee(
 void Tools::resolvePayeeAmounts(
    PayeeList& payees, BigDecimal* totalOut, BigDecimal* licenseIn)
 {
-   // Note: "nontaxable" was chosen over "taxable" so that payees will
-   // default to nontaxable = false -- we prefer to accidentally tax
+   // Note: "taxExempt" was chosen over "taxable" so that payees will
+   // default to taxExempt = false -- we prefer to accidentally tax
    // over not collecting tax as this is easier to correct, further more
    // the vast majority of payees are considered "taxable"
 
@@ -221,7 +221,7 @@ void Tools::resolvePayeeAmounts(
    {
       Payee& p = i->next();
       p["amountResolved"]->setType(Boolean);
-      p["nontaxable"]->setType(Boolean);
+      p["taxExempt"]->setType(Boolean);
 
       // determine payee amount type
       PayeeAmountType amountType = p["amountType"]->getString();
@@ -231,7 +231,7 @@ void Tools::resolvePayeeAmounts(
          total += p["amount"]->getString();
 
          // if payee is taxable, update taxable total
-         if(!p["nontaxable"]->getBoolean())
+         if(!p["taxExempt"]->getBoolean())
          {
             taxableTotal += p["amount"]->getString();
          }
