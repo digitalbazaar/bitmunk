@@ -171,7 +171,9 @@ bool ContractService::initialize()
        * Retrieves a filepiece from the seller.
        *
        * @tags public-api payswarm-api
-       * @return The return value is currently not documented.
+       *
+       * @return the encrypted data for the filepiece followed by trailers with
+       *         signatures and encrypted key(s).
        */
       {
          ResourceHandler h = new Handler(
