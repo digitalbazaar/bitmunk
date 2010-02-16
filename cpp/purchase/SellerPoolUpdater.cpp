@@ -65,13 +65,13 @@ void SellerPoolUpdater::fetchSellerPool()
    Messenger* messenger = mNode->getMessenger();
    Url url;
    url.format("/api/3.0/catalog/sellerpools/%" PRIu64 "/%s?start=%s&num=%s",
-      mCurrent["fileInfo"]["mediaId"]->getUInt64(),
-      mCurrent["fileInfo"]["id"]->getString(),
+      BM_MEDIA_ID(mCurrent["fileInfo"]["mediaId"]),
+      BM_FILE_ID(mCurrent["fileInfo"]["id"]),
       mCurrent["sellerDataSet"]["start"]->getString(),
       mCurrent["sellerDataSet"]["num"]->getString());
    SellerPool pool;
    error = !messenger->getSecureFromBitmunk(
-      &url, pool, mDownloadState["userId"]->getUInt64());
+      &url, pool, BM_USER_ID(mDownloadState["userId"]));
 
    // create message regarding operation completion
    DynamicObject msg;
@@ -227,7 +227,7 @@ bool SellerPoolUpdater::initFileProgress()
          FilePiece& piece = fp["unassigned"]->append();
          piece["size"] = size;
          piece["index"] = n;
-         piece["bfpId"] = sp["bfpId"]->getUInt32();
+         BM_ID_SET(piece["bfpId"], BM_BFP_ID(sp["bfpId"]));
       }
    }
 
@@ -246,7 +246,7 @@ bool SellerPoolUpdater::initFileProgress()
       "uid: %" PRIu64 ", dsid: %" PRIu64 "",
       mDownloadState["totalMedPrice"]->getString(),
       mDownloadState["remainingPieces"]->getUInt32(),
-      mDownloadState["userId"]->getUInt64(),
+      BM_USER_ID(mDownloadState["userId"]),
       mDownloadState["id"]->getUInt64());
 
    // write update state flags and file progress

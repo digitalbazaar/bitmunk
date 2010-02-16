@@ -348,7 +348,7 @@ bool SessionManager::checkAccessControl(
       if(mNode->getMessenger()->getFromBitmunk(&url, user))
       {
          rval = mSessionDatabase.checkAccessControl(
-            user["id"]->getUInt64(), ip->getAddress());
+            BM_USER_ID(user["id"]), ip->getAddress());
       }
    }
 

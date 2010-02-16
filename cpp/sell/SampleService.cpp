@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_FORMAT_MACROS
 
@@ -54,39 +54,46 @@ bool SampleService::initialize()
    mSampleRangeCache["capacity"] = 100;
    mSampleRangeCache["cache"]->setType(Map);
    
-   // top level resource handlers
-   RestResourceHandlerRef file = new RestResourceHandler();
-   RestResourceHandlerRef media = new RestResourceHandler();
-   RestResourceHandlerRef playlist = new RestResourceHandler();
-   
-   addResource("/file", file);
-   addResource("/media", media);
-   addResource("/playlist", playlist);
-   
-   // resource method handlers
-   
-   // GET .../file/<mediaId>/<fileId>
+   // file
    {
-      ResourceHandler h = new Handler(
-         mNode, this, &SampleService::getSampleFile,
-         BtpAction::AuthOptional);
-      file->addHandler(h, BtpMessage::Get, 2);
+      RestResourceHandlerRef file = new RestResourceHandler();
+      addResource("/file", file);
+
+      // GET .../file/<mediaId>/<fileId>
+      {
+         ResourceHandler h = new Handler(
+            mNode, this, &SampleService::getSampleFile,
+            BtpAction::AuthOptional);
+         file->addHandler(h, BtpMessage::Get, 2);
+      }
    }
    
-   // GET .../media/<mediaId>?contentType=audio/mpeg
+   // media
    {
-      ResourceHandler h = new Handler(
-         mNode, this, &SampleService::getSampleMedia,
-         BtpAction::AuthOptional);
-      media->addHandler(h, BtpMessage::Get, 1);
+      RestResourceHandlerRef media = new RestResourceHandler();
+      addResource("/media", media);
+
+      // GET .../media/<mediaId>?contentType=audio/mpeg
+      {
+         ResourceHandler h = new Handler(
+            mNode, this, &SampleService::getSampleMedia,
+            BtpAction::AuthOptional);
+         media->addHandler(h, BtpMessage::Get, 1);
+      }
    }
    
-   // GET .../playlist/<mediaId>?contentType=audio/mpeg
+   // playlist
    {
-      ResourceHandler h = new Handler(
-         mNode, this, &SampleService::getSamplePlayList,
-         BtpAction::AuthOptional);
-      playlist->addHandler(h, BtpMessage::Get, 1);
+      RestResourceHandlerRef playlist = new RestResourceHandler();
+      addResource("/playlist", playlist);
+
+      // GET .../playlist/<mediaId>?contentType=audio/mpeg
+      {
+         ResourceHandler h = new Handler(
+            mNode, this, &SampleService::getSamplePlayList,
+            BtpAction::AuthOptional);
+         playlist->addHandler(h, BtpMessage::Get, 1);
+      }
    }
    
    return true;
@@ -96,6 +103,7 @@ void SampleService::cleanup()
 {
    // remove resources
    removeResource("/file");
+   removeResource("/media");
    removeResource("/playlist");
 }
 
@@ -125,8 +133,7 @@ bool SampleService::getSampleFileByIds(
    if(!permit)
    {
       // too many samples streaming
-      action->getResponse()->getHeader()->setStatus(
-         503, "Service Unavailable");
+      action->getResponse()->getHeader()->setStatus(503, "Service Unavailable");
       action->sendResult();
       rval = true;
    }
@@ -141,7 +148,7 @@ bool SampleService::getSampleFileByIds(
       action->getResourceQuery(vars);
       if(!vars->hasMember("nodeuser"))
       {
-         vars["nodeuser"] = mNode->getDefaultUserId();
+         BM_ID_SET(vars["nodeuser"], mNode->getDefaultUserId());
       }
       
       // get resource parameters
@@ -149,9 +156,9 @@ bool SampleService::getSampleFileByIds(
       action->getResourceParams(params);
       
       FileInfo fi;
-      fi["mediaId"] = mediaId;
-      fi["id"] = fileId;
-      if((rval = ci->populateFileInfo(vars["nodeuser"]->getUInt64(), fi)))
+      BM_ID_SET(fi["mediaId"], mediaId);
+      BM_ID_SET(fi["id"], fileId);
+      if((rval = ci->populateFileInfo(BM_USER_ID(vars["nodeuser"]), fi)))
       {
          // send the sample
          rval = sendFile(action, fi);
@@ -195,7 +202,7 @@ bool SampleService::getFileInfos(
    action->getResourceQuery(vars);
    if(!vars->hasMember("nodeuser"))
    {
-      vars["nodeuser"] = mNode->getDefaultUserId();
+      BM_ID_SET(vars["nodeuser"], mNode->getDefaultUserId());
    }
    
    // get resource parameters
@@ -204,15 +211,14 @@ bool SampleService::getFileInfos(
    
    // populate ware bundle
    Ware ware;
-   ware["mediaId"] = params[0]->getUInt64();
+   BM_ID_SET(ware["mediaId"], BM_MEDIA_ID(params[0]));
    MediaPreferenceList mpl;
    mpl[0]["preferences"][0]["contentType"] = vars["contentType"];
    mpl[0]["preferences"][0]["minBitrate"] = 1;
    // FIXME: Make sure the node user is checked against logged in user?
    if((rval = ci->populateWareBundle(
-      vars["nodeuser"]->getUInt64(), ware, mpl)))
+      BM_USER_ID(vars["nodeuser"]), ware, mpl)))
    {
-      // FIXME: only support for audio at this time
       FileInfoIterator i = ware["fileInfos"].getIterator();
       while(i->hasNext())
       {
@@ -220,11 +226,12 @@ bool SampleService::getFileInfos(
          
          // FIXME: get content type for file info instead of "extension"
          const char* extension = fi["extension"]->getString();
+         // FIXME: only support for mp3 audio at this time
          if(strcmp(extension, "mp3") == 0)
          {
             // get sample range for file info
             Media media;
-            media["id"] = fi["mediaId"]->getUInt64();
+            BM_ID_SET(media["id"], BM_MEDIA_ID(fi["mediaId"]));
             if(getSampleRange(media))
             {
                fi["media"] = media;
@@ -245,7 +252,7 @@ bool SampleService::getSampleFile(
    action->getResourceParams(params);
    
    return getSampleFileByIds(
-      action, in, out, params[0]->getUInt64(), params[1]->getString());
+      action, in, out, BM_MEDIA_ID(params[0]), BM_FILE_ID(params[1]));
 }
 
 bool SampleService::getSampleMedia(
@@ -265,7 +272,7 @@ bool SampleService::getSampleMedia(
       {
          FileInfo& fi = fileInfos[0];
          rval = getSampleFileByIds(action, in, out,
-            fi["mediaId"]->getUInt64(), fi["id"]->getString());
+            BM_MEDIA_ID(fi["mediaId"]), BM_FILE_ID(fi["id"]));
       }
    }
    
@@ -321,7 +328,7 @@ bool SampleService::getSampleRange(Media& media)
    {
       // get sample range for media from bitmunk
       Url url;
-      url.format("/api/3.0/media/%" PRIu64, media["id"]->getUInt64());
+      url.format("/api/3.0/media/%" PRIu64, BM_MEDIA_ID(media["id"]));
       
       StringTokenizer st;
       if((rval = mNode->getMessenger()->getFromBitmunk(&url, media)))
@@ -420,11 +427,11 @@ bool SampleService::sendm3u(BtpAction* action, DynamicObject& fileInfos)
       action->getResourceQuery(vars);
       if(!vars->hasMember("nodeuser"))
       {
-         vars["nodeuser"] = mNode->getDefaultUserId();
+         BM_ID_SET(vars["nodeuser"], mNode->getDefaultUserId());
       }
       
       Config cfg = mNode->getConfigManager()->getModuleUserConfig(
-         "bitmunk.sell.Sell", vars["nodeuser"]->getUInt64());
+         "bitmunk.sell.Sell", BM_USER_ID(vars["nodeuser"]));
       if(!cfg.isNull())
       {
          content.append(cfg["sampleUrl"]->getString());
@@ -471,7 +478,7 @@ bool SampleService::sendFile(BtpAction* action, FileInfo& fi)
       // ensure file exists, get sample range for media
       File file(fi["path"]->getString());
       Media media;
-      media["id"] = fi["mediaId"]->getUInt64();
+      BM_ID_SET(media["id"], BM_MEDIA_ID(fi["mediaId"]));
       if((rval = (file->exists() && getSampleRange(media))))
       {
          // set up response header

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/purchase/Purchaser.h"
 
@@ -41,8 +41,9 @@ void Purchaser::runPurchaseLicenseOp()
    Contract& c = mDownloadState["contract"];
    Contract cIn;
    Url url("/api/3.0/sva/contracts/purchase/license");
-   if((success = getNode()->getMessenger()->postSecureToBitmunk(
-      &url, &c, &cIn, mDownloadState["userId"]->getUInt64())))
+   success = getNode()->getMessenger()->postSecureToBitmunk(
+      &url, &c, &cIn, BM_USER_ID(mDownloadState["userId"]));
+   if(success)
    {
       // replace contract
       c = cIn;
@@ -108,9 +109,12 @@ void Purchaser::runPurchaseDataOp()
 
             // set the contract ID for the contract section and the account
             // to purchase with
-            cs["contractId"] = mDownloadState["contract"]["id"]->getUInt64();
-            cs["buyer"]["accountId"] =
-               mDownloadState["preferences"]["accountId"]->getUInt64();
+            BM_ID_SET(
+               cs["contractId"],
+               BM_TRANSACTION_ID(mDownloadState["contract"]["id"]));
+            BM_ID_SET(
+               cs["buyer"]["accountId"],
+               BM_ACCOUNT_ID(mDownloadState["preferences"]["accountId"]));
 
             // setup CS wrapper with added current local date
             // date is used as offset for startDate in case local time is
@@ -140,14 +144,14 @@ void Purchaser::runPurchaseDataOp()
             // pay for the data via the SVA
             Url url("/api/3.0/sva/contracts/purchase/data");
             success = getNode()->getMessenger()->postSecureToBitmunk(
-               &url, &out, &cs, mDownloadState["userId"]->getUInt64());
+               &url, &out, &cs, BM_USER_ID(mDownloadState["userId"]));
 
             if(success)
             {
                // update file progress with file infos' unlocked keys and
                // create database entries
                fi = cs["ware"]["fileInfos"][0];
-               FileId fileId = fi["id"]->getString();
+               FileId fileId = BM_FILE_ID(fi["id"]);
                FileInfo& toUpdate = progress["fileInfo"];
 
                // set unlocked file pieces in progress file info
@@ -173,7 +177,7 @@ void Purchaser::runPurchaseDataOp()
 
                         // create database entry
                         DynamicObject& entry = mDbEntries->append();
-                        entry["fileId"] = fileId;
+                        BM_ID_SET(entry["fileId"], fileId);
                         entry["csHash"] = cs["hash"]->getString();
                         entry["status"] = "paid";
                         entry["piece"] = fp;
@@ -299,7 +303,7 @@ bool Purchaser::purchaseLicense()
    // first sign license if necessary
    // get user's profile to use as signing delegate
    ProfileRef profile;
-   UserId userId = mDownloadState["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(mDownloadState["userId"]);
    Contract& c = mDownloadState["contract"];
 
    if(mNode->getLoginData(userId, NULL, &profile))
@@ -311,8 +315,9 @@ bool Purchaser::purchaseLicense()
    if(rval)
    {
       // include buyer's account ID
-      mDownloadState["contract"]["buyer"]["accountId"] =
-         mDownloadState["preferences"]["accountId"]->getUInt64();
+      BM_ID_SET(
+         mDownloadState["contract"]["buyer"]["accountId"],
+         BM_ACCOUNT_ID(mDownloadState["preferences"]["accountId"]));
 
       // run a new purchase license operation
       RunnableRef r = new RunnableDelegate<Purchaser>(

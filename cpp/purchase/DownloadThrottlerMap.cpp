@@ -119,7 +119,7 @@ void DownloadThrottlerMap::configChanged(Event& event)
       // get user ID
       UserId userId = event["details"]->hasMember("userId") ?
          BM_USER_ID(event["details"]["userId"]) : 0;
-      if(BM_ID_INVALID(userId))
+      if(!BM_USER_ID_VALID(userId))
       {
          // apply globally
          mGlobalThrottler.setRateLimit(rate);

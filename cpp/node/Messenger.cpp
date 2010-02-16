@@ -126,11 +126,11 @@ bool Messenger::exchange(
    bool rval = true;
 
    ProfileRef p;
-   if(BM_ID_VALID(userId))
+   if(BM_USER_ID_VALID(userId))
    {
       // get user profile
       if(!mNode->getLoginData(
-         BM_ID_INVALID(agentId) ? userId : agentId, NULL, &p))
+         BM_USER_ID_VALID(agentId) ? agentId : userId, NULL, &p))
       {
          ExceptionRef e = new Exception(
             "Could not do BTP exchange. Not logged in.",
@@ -171,7 +171,7 @@ bool Messenger::exchange(
       if(!p.isNull())
       {
          // set user ID and profile for outgoing secure message
-         msgOut.setUserId(BM_ID_VALID(userId) ? userId : p->getUserId());
+         msgOut.setUserId(BM_USER_ID_VALID(userId) ? userId : p->getUserId());
          msgOut.setAgentProfile(p);
 
          // set public key source for incoming secure message

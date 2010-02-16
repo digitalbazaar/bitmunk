@@ -1181,7 +1181,7 @@ bool DownloadManager::poolUpdate(DynamicObject& msg)
       // must use the same bfp ID
       FileProgress& fp = mDownloadState["progress"][fileId];
       BfpId id = BM_BFP_ID(fp["sellerPool"]["bfpId"]);
-      if(BM_ID_VALID(id))
+      if(BM_BFP_ID_VALID(id))
       {
          BM_ID_SET(sp["bfpId"], id);
       }

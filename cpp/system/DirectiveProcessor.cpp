@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_FORMAT_MACROS
 
@@ -42,10 +42,10 @@ void DirectiveProcessor::createDownloadState()
    url.format(
       "%s/api/3.0/purchase/contracts/downloadstates?nodeuser=%" PRIu64,
       messenger->getSelfUrl(true).c_str(),
-      mDirective["userId"]->getUInt64());
+      BM_USER_ID(mDirective["userId"]));
    mResult = DynamicObject();
    bool success = messenger->post(
-      &url, &mDirective["data"], &mResult, mDirective["userId"]->getUInt64());
+      &url, &mDirective["data"], &mResult, BM_USER_ID(mDirective["userId"]));
    
    // send event based on success
    sendEvent(!success);
@@ -77,7 +77,7 @@ void DirectiveProcessor::processMessages()
       ExceptionRef e = new Exception(
          "Could not process directive. Directive type is invalid.",
          "bitmunk.system.DirectiveProcessor.InvalidDirectiveType");
-      e->getDetails()["userId"] = mDirective["userId"];
+      BM_ID_SET(e->getDetails()["userId"], BM_USER_ID(mDirective["userId"]));
       e->getDetails()["directiveId"] = mDirective["id"];
       Exception::set(e);
       sendEvent(true);
@@ -87,7 +87,7 @@ void DirectiveProcessor::processMessages()
 void DirectiveProcessor::sendEvent(bool error)
 {
    Event e;
-   e["details"]["userId"] = mDirective["userId"];
+   BM_ID_SET(e["details"]["userId"], BM_USER_ID(mDirective["userId"]));
    e["details"]["directive"] = mDirective;
    
    if(error)

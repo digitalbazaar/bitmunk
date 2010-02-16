@@ -95,7 +95,7 @@ void FileCostCalculator::calculateMicroPaymentCost()
          "total piece count: %" PRIu64 ", "
          "uid: %" PRIu64 ", dsid: %" PRIu64,
          pieceCount,
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64());
    }
 
@@ -103,7 +103,7 @@ void FileCostCalculator::calculateMicroPaymentCost()
       "total micropayment cost: %s, "
       "uid: %" PRIu64 ", dsid: %" PRIu64,
       mMicroPaymentCost.toString(true).c_str(),
-      mDownloadState["userId"]->getUInt64(),
+      BM_USER_ID(mDownloadState["userId"]),
       mDownloadState["id"]->getUInt64());
 }
 
@@ -150,7 +150,7 @@ void FileCostCalculator::calculateTotalRemainingMedianPrice()
                "piece %i is size %" PRIu64 ", "
                "uid: %" PRIu64 ", dsid: %" PRIu64,
                piece["index"]->getInt32(), size,
-               mDownloadState["userId"]->getUInt64(),
+               BM_USER_ID(mDownloadState["userId"]),
                mDownloadState["id"]->getUInt64());
 
             // a piece size of 0 means use the full file size
@@ -165,7 +165,7 @@ void FileCostCalculator::calculateTotalRemainingMedianPrice()
             "total bytes in already funded pieces: %" PRIu64 ", "
             "uid: %" PRIu64 ", dsid: %" PRIu64,
             totalSize,
-            mDownloadState["userId"]->getUInt64(),
+            BM_USER_ID(mDownloadState["userId"]),
             mDownloadState["id"]->getUInt64());
 
          // decrement total bytes remaining
@@ -246,14 +246,14 @@ void FileCostCalculator::calculateBank()
       "total amount already spent on data: %s, "
       "uid: %" PRIu64 ", dsid: %" PRIu64,
       mTotalSpent.toString(true).c_str(),
-      mDownloadState["userId"]->getUInt64(),
+      BM_USER_ID(mDownloadState["userId"]),
       mDownloadState["id"]->getUInt64());
 
    MO_CAT_DEBUG(BM_PURCHASE_CAT,
       "total median price for unassigned pieces: %s, "
       "uid: %" PRIu64 ", dsid: %" PRIu64,
       mTotalRemainingMedPrice.toString(true).c_str(),
-      mDownloadState["userId"]->getUInt64(),
+      BM_USER_ID(mDownloadState["userId"]),
       mDownloadState["id"]->getUInt64());
 
    // initialize amount of money left to spend (bank) based on the user's
@@ -286,21 +286,21 @@ void FileCostCalculator::calculateBank()
       "license amount: %s, "
       "uid: %" PRIu64 ", dsid: %" PRIu64,
       media["licenseAmount"]->getString(),
-      mDownloadState["userId"]->getUInt64(),
+      BM_USER_ID(mDownloadState["userId"]),
       mDownloadState["id"]->getUInt64());
 
    MO_CAT_DEBUG(BM_PURCHASE_CAT,
       "buyer's maximum allowed price: %s, "
       "uid: %" PRIu64 ", dsid: %" PRIu64,
       mDownloadState["preferences"]["price"]["max"]->getString(),
-      mDownloadState["userId"]->getUInt64(),
+      BM_USER_ID(mDownloadState["userId"]),
       mDownloadState["id"]->getUInt64());
 
    MO_CAT_DEBUG(BM_PURCHASE_CAT,
       "amount left to spend on all remaining files: %s, "
       "uid: %" PRIu64 ", dsid: %" PRIu64,
       mBank.toString(true).c_str(),
-      mDownloadState["userId"]->getUInt64(),
+      BM_USER_ID(mDownloadState["userId"]),
       mDownloadState["id"]->getUInt64());
 }
 

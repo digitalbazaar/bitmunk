@@ -43,77 +43,108 @@ typedef const char* WareId;
 // below once testing with macros is finished
 #define BM_ID_SET(obj, id) \
    obj = id;
-// FIXME: make ID invalid compare against NULL and "0" and ""
-#define BM_ID_INVALID(id) (id == 0)
-#define BM_ID_VALID(id) (id != 0)
 
 // IDs that are optimized to 64-bit integers in bitmunk
 #define BM_ID_UINT64(obj) obj->getUInt64()
 #define BM_ID_UINT64_EQUALS(id1, id2) (id1 == id2)
+#define BM_ID_UINT64_VALID(id) (id != (uint64_t)0)
 
 // IDs that are optimized to 32-bit integers in bitmunk
 #define BM_ID_UINT32(obj) obj->getUInt32()
 #define BM_ID_UINT32_EQUALS(id1, id2) (id1 == id2)
+#define BM_ID_UINT32_VALID(id) (id != (uint32_t)0)
 
 // IDs that remain as strings in bitmunk
 #define BM_ID_STRING(obj) obj->getString()
 #define BM_ID_STRING_EQUALS(id1, id2) (strcmp(id1, id2) == 0)
+#define BM_ID_STRING_VALID(id) \
+   (id != NULL && \
+    !BM_ID_STRING_EQUALS(id, "") && \
+    !BM_ID_STRING_EQUALS(id, "0"))
 
 // account ID
 #define BM_ACCOUNT_ID(obj) BM_ID_UINT64(obj)
 #define BM_ACCOUNT_ID_EQUALS(id1, id2) BM_ID_UINT64_EQUALS(id1, id2)
+#define BM_ACCOUNT_ID_INVALID (uint64_t)0
+#define BM_ACCOUNT_ID_VALID BM_ID_UINT64_VALID
 
 // bfp ID
 #define BM_BFP_ID(obj) BM_ID_UINT32(obj)
 #define BM_BFP_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+#define BM_BFP_ID_INVALID (uint32_t)0
+#define BM_BFP_ID_VALID BM_ID_UINT32_VALID
 
 // contributor ID
 #define BM_CONTRIBUTOR_ID(obj) BM_ID_UINT64(obj)
 #define BM_CONTRIBUTOR_ID_EQUALS(id1, id2) BM_ID_UINT64_EQUALS(id1, id2)
+#define BM_CONTRIBUTOR_ID_INVALID (uint64_t)0
+#define BM_CONTRIBUTOR_ID_VALID BM_ID_UINT64_VALID
 
 // file ID
 #define BM_FILE_ID(obj) BM_ID_STRING(obj)
 #define BM_FILE_ID_EQUALS(id1, id2) BM_ID_STRING_EQUALS(id1, id2)
+#define BM_FILE_ID_INVALID ""
+#define BM_FILE_ID_VALID BM_ID_STRING_VALID
 
 // media ID
 #define BM_MEDIA_ID(obj) BM_ID_UINT64(obj)
 #define BM_MEDIA_ID_EQUALS(id1, id2) BM_ID_UINT64_EQUALS(id1, id2)
+#define BM_MEDIA_ID_INVALID (uint64_t)0
+#define BM_MEDIA_ID_VALID BM_ID_UINT64_VALID
 
 // payee scheme ID
 #define BM_PAYEE_SCHEME_ID(obj) BM_ID_UINT32(obj)
 #define BM_PAYEE_SCHEME_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+#define BM_PAYEE_SCHEME_ID_INVALID (uint32_t)0
+#define BM_PAYEE_SCHEME_ID_VALID BM_ID_UINT32_VALID
 
 // permission group ID
 #define BM_PERMISSION_GROUP_ID(obj) BM_ID_UINT32(obj)
 #define BM_PERMISSION_GROUP_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+#define BM_PERMISSION_GROUP_ID_INVALID (uint32_t)0
+#define BM_PERMISSION_GROUP_ID_VALID BM_ID_UINT32_VALID
 
 // profile ID
 #define BM_PROFILE_ID(obj) BM_ID_UINT32(obj)
 #define BM_PROFILE_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+#define BM_PROFILE_ID_INVALID (uint32_t)0
+#define BM_PROFILE_ID_VALID BM_ID_UINT32_VALID
 
 // role ID
 #define BM_ROLE_ID(obj) BM_ID_UINT32(obj)
 #define BM_ROLE_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+#define BM_ROLE_ID_INVALID (uint32_t)0
+#define BM_ROLE_ID_VALID BM_ID_UINT32_VALID
 
 // server ID
 #define BM_SERVER_ID(obj) BM_ID_UINT32(obj)
 #define BM_SERVER_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+#define BM_SERVER_ID_INVALID (uint32_t)0
+#define BM_SERVER_ID_VALID BM_ID_UINT32_VALID
 
 // ticket ID
 #define BM_TICKET_ID(obj) BM_ID_UINT32(obj)
 #define BM_TICKET_ID_EQUALS(id1, id2) BM_ID_UINT32_EQUALS(id1, id2)
+#define BM_TICKET_ID_INVALID (uint32_t)0
+#define BM_TICKET_ID_VALID BM_ID_UINT32_VALID
 
 // transaction ID
 #define BM_TRANSACTION_ID(obj) BM_ID_UINT64(obj)
 #define BM_TRANSACTION_ID_EQUALS(id1, id2) BM_ID_UINT64_EQUALS(id1, id2)
+#define BM_TRANSACTION_ID_INVALID (uint64_t)0
+#define BM_TRANSACTION_ID_VALID BM_ID_UINT64_VALID
 
 // user ID
 #define BM_USER_ID(obj) BM_ID_UINT64(obj)
 #define BM_USER_ID_EQUALS(id1, id2) BM_ID_UINT64_EQUALS(id1, id2)
+#define BM_USER_ID_INVALID (uint64_t)0
+#define BM_USER_ID_VALID BM_ID_UINT64_VALID
 
 // ware ID
 #define BM_WARE_ID(obj) BM_ID_STRING(obj)
 #define BM_WARE_ID_EQUALS(id1, id2) BM_ID_STRING_EQUALS(id1, id2)
+#define BM_WARE_ID_INVALID ""
+#define BM_WARE_ID_VALID BM_ID_STRING_VALID
 
 /**
  * An Address contains a street, locality (city), region (state), and postal

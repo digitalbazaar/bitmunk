@@ -240,7 +240,7 @@ bool ContractService::negotiateContract(
 
    // confirm SVA signature for media
    PublicKeyRef pkey = mNode->getPublicKeyCache()->getPublicKey(
-      1, c["media"]["signer"]["profileId"]->getUInt32(), NULL);
+      1, BM_PROFILE_ID(c["media"]["signer"]["profileId"]), NULL);
    if((rval = !pkey.isNull()))
    {
       // FIXME: this doesn't check to make sure the media matches the
@@ -275,7 +275,7 @@ bool ContractService::negotiateContract(
          action->getResourceQuery(vars);
 
          // get seller's profile
-         UserId sellerId = vars["nodeuser"]->getUInt64();
+         UserId sellerId = BM_USER_ID(vars["nodeuser"]);
          ProfileRef profile(NULL);
          if((rval = mNode->getLoginData(sellerId, NULL, &profile)))
          {
@@ -285,7 +285,7 @@ bool ContractService::negotiateContract(
             if((rval = ni->negotiateContractSection(sellerId, c, cs, true)))
             {
                // ensure seller's profile ID is included in section
-               cs["seller"]["profileId"] = profile->getId();
+               BM_ID_SET(cs["seller"]["profileId"], profile->getId());
 
                // sign contract section
                if((rval = Signer::signContractSection(cs, profile, true)))
@@ -324,7 +324,7 @@ bool ContractService::getFilePiece(
    // get the node user
    DynamicObject vars;
    action->getResourceQuery(vars);
-   UserId nodeuser = vars["nodeuser"]->getUInt64();
+   UserId nodeuser = BM_USER_ID(vars["nodeuser"]);
 
    // "in" includes:
    // csHash          - hash of the contract section the piece is a part of
@@ -337,13 +337,13 @@ bool ContractService::getFilePiece(
    // bfpId           - ID of the bfp to use
 
    const char* hash = in["csHash"]->getString();
-   FileId fileId = in["fileId"]->getString();
-   MediaId mediaId = in["mediaId"]->getUInt64();
+   FileId fileId = BM_FILE_ID(in["fileId"]);
+   MediaId mediaId = BM_MEDIA_ID(in["mediaId"]);
    uint32_t index = in["index"]->getUInt32();
    uint32_t size = in["size"]->getUInt32();
    const char* key = in["peerbuyKey"]->getString();
-   ProfileId profileId = in["sellerProfileId"]->getUInt32();
-   BfpId bfpId = in["bfpId"]->getUInt32();
+   ProfileId profileId = BM_PROFILE_ID(in["sellerProfileId"]);
+   BfpId bfpId = BM_BFP_ID(in["bfpId"]);
 
    // verify that the key is valid
    if((rval = verifyPeerBuyKey(key, hash, nodeuser, profileId)))
@@ -354,8 +354,8 @@ bool ContractService::getFilePiece(
 
       // populate FileInfo
       FileInfo fi;
-      fi["id"] = fileId;
-      fi["mediaId"] = mediaId;
+      BM_ID_SET(fi["id"], fileId);
+      BM_ID_SET(fi["mediaId"], mediaId);
       if((rval = ci->populateFileInfo(nodeuser, fi)))
       {
          // ensure file exists
@@ -364,7 +364,7 @@ bool ContractService::getFilePiece(
          {
             ExceptionRef e = new Exception(
                "File not found.", "bitmunk.sell.FileNotFound", 404);
-            e->getDetails()["fileId"] = fi["id"]->getString();
+            BM_ID_SET(e->getDetails()["fileId"], BM_FILE_ID(fi["id"]));
             Exception::set(e);
             rval = false;
          }

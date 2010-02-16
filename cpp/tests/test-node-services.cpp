@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include <iostream>
 #include <sstream>
@@ -306,7 +306,7 @@ void userUpdateTest(Node& node, TestRunner& tr)
       
       // change password
       messenger->postSecureToBitmunk(
-         &url, &user, NULL, user["id"]->getUInt64());
+         &url, &user, NULL, BM_USER_ID(user["id"]));
       assertNoException();
       
       cout << endl << "User password updated 1st time." << endl;
@@ -317,7 +317,7 @@ void userUpdateTest(Node& node, TestRunner& tr)
       
       // change password back
       messenger->postSecureToBitmunk(
-         &url, &user, NULL, user["id"]->getUInt64());
+         &url, &user, NULL, BM_USER_ID(user["id"]));
       assertNoException();
       
       cout << "User password updated 2nd time." << endl;

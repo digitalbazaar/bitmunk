@@ -1366,9 +1366,10 @@ void Catalog::userLoggedIn(Event& e)
    // if the user has no payee schemes, auto sell is enabled and
    // has a payee scheme ID set to zero, then create a default payee
    // scheme
-   if(pass && BM_ID_INVALID(psId) &&
+   if(pass && !BM_PAYEE_SCHEME_ID_VALID(psId) &&
       !cfg.isNull() && cfg["autoSell"]["enabled"]->getBoolean() &&
-      BM_ID_INVALID(BM_PAYEE_SCHEME_ID(cfg["autoSell"]["payeeSchemeId"])))
+      !BM_PAYEE_SCHEME_ID_VALID(
+         BM_PAYEE_SCHEME_ID(cfg["autoSell"]["payeeSchemeId"])))
    {
       // get the user's first account
       Messenger* m = mNode->getMessenger();
@@ -1390,7 +1391,7 @@ void Catalog::userLoggedIn(Event& e)
          {
             // FIXME: do we want the default amount to be configurable as well?
             Payee payee;
-            payee["id"] = BM_ACCOUNT_ID(in["resources"][0]["id"]);
+            BM_ID_SET(payee["id"], BM_ACCOUNT_ID(in["resources"][0]["id"]));
             payee["description"] = "Auto-generated payee";
             payee["amountType"] = "flatFee";
             payee["amount"] = "0.05";
@@ -1475,9 +1476,9 @@ void Catalog::checkAutoSell(Event& e)
       Ware ware;
       FileInfo fi = e["details"]["fileInfo"].clone();
       ware["fileInfos"]->append(fi);
-      ware["id"] = StringTools::format("bitmunk:file:%" PRIu64 "-%s",
-         BM_MEDIA_ID(fi["mediaId"]), BM_FILE_ID(fi["id"])).c_str();
-      ware["mediaId"] = BM_MEDIA_ID(fi["mediaId"]);
+      BM_ID_SET(ware["id"], StringTools::format("bitmunk:file:%" PRIu64 "-%s",
+         BM_MEDIA_ID(fi["mediaId"]), BM_FILE_ID(fi["id"])).c_str());
+      BM_ID_SET(ware["mediaId"], BM_MEDIA_ID(fi["mediaId"]));
       // FIXME: get description from config as a format string?
       ware["description"] = "";
 

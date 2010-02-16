@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_FORMAT_MACROS
 
@@ -56,17 +56,16 @@ void runPieceUploadTest(
 
    // create contract section
    ContractSection cs = c["sections"]["1"]->append();
-   cs["contractId"] = 0;
-   cs["buyer"]["userId"] = c["buyer"]["userId"]->getUInt64();
-   cs["buyer"]["profileId"] = c["buyer"]["profileId"]->getUInt32();
+   BM_ID_SET(cs["contractId"], 0);
+   BM_ID_SET(cs["buyer"]["userId"], BM_USER_ID(c["buyer"]["userId"]));
+   BM_ID_SET(cs["buyer"]["profileId"], BM_PROFILE_ID(c["buyer"]["profileId"]));
    cs["webbuy"] = false;
-   cs["ware"]["id"] = TEST_MEDIA_ID;
-   cs["ware"]["id"]->setType(String);
+   BM_ID_SET(cs["ware"]["id"], TEST_MEDIA_ID);
 
    Seller& seller = cs["seller"];
-   seller["userId"] = 1;
-   seller["profileId"] = 1;
-   seller["serverId"] = 1;
+   BM_ID_SET(seller["userId"], 1);
+   BM_ID_SET(seller["profileId"], 1);
+   BM_ID_SET(seller["serverId"], 1);
    seller["url"] =
       node.getMessenger()->getSecureBitmunkUrl()->toString().c_str();
 
@@ -95,12 +94,16 @@ void runPieceUploadTest(
       // create piece request
       DynamicObject pieceRequest;
       pieceRequest["csHash"] = cs["hash"]->getString();
-      pieceRequest["fileId"] = cs["ware"]["fileInfos"][0]["id"]->getString();
+      BM_ID_SET(
+         pieceRequest["fileId"],
+         BM_FILE_ID(cs["ware"]["fileInfos"][0]["id"]));
       pieceRequest["index"] = 0;
       pieceRequest["size"] = 250000;
       pieceRequest["peerbuyKey"] = cs["peerbuyKey"]->getString();
-      pieceRequest["sellerProfileId"] = cs["seller"]["profileId"]->getUInt32();
-      pieceRequest["bfpId"] = 1;
+      BM_ID_SET(
+         pieceRequest["sellerProfileId"],
+         BM_PROFILE_ID(cs["seller"]["profileId"]));
+      BM_ID_SET(pieceRequest["bfpId"], 1);
 
       // create stream for writing piece
       File file("/tmp/bmtestpiece.piece");

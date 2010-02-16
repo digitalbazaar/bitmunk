@@ -192,7 +192,7 @@ static HttpConnectionRef _connect(
 {
    HttpConnectionRef pConn(NULL);
 
-   UserId userId = params["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(params["userId"]);
 
    // keep trying to get a connection with up to 1 retry
    int retries = 0;
@@ -563,9 +563,9 @@ void BtpProxyService::proxy(BtpAction* action)
       // do proxy:
       DynamicObject vars;
       url.getQueryVariables(vars);
-      UserId userId = vars["nodeuser"]->getUInt64();
-      params["userId"] = userId;
-      if(userId == 0)
+      UserId userId = BM_USER_ID(vars["nodeuser"]);
+      BM_ID_SET(params["userId"], userId);
+      if(!BM_USER_ID_VALID(userId))
       {
          MO_CAT_INFO(BM_PROTOCOL_CAT,
             "BtpProxyService proxying to: %s", url.toString().c_str());

@@ -92,7 +92,7 @@ bool UploadThrottlerMap::initialize(Node* node)
 
 void UploadThrottlerMap::userLoggedOut(Event& event)
 {
-   UserId userId = event["details"]["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(event["details"]["userId"]);
    mThrottlerMapLock.lockExclusive();
    {
       ThrottlerMap::iterator i = mThrottlerMap.find(userId);
@@ -116,8 +116,8 @@ void UploadThrottlerMap::configChanged(Event& event)
 
       // get user ID
       UserId userId = event["details"]->hasMember("userId") ?
-         event["details"]["userId"]->getUInt64() : 0;
-      if(userId == 0)
+         BM_USER_ID(event["details"]["userId"]) : 0;
+      if(!BM_USER_ID_VALID(userId))
       {
          // apply globally
          mGlobalThrottler.setRateLimit(rate);

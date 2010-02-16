@@ -723,7 +723,7 @@ bool PurchaseDatabase::insertDownloadState(DownloadState& ds, Connection* conn)
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
 
    // get database connection
    Connection* c = (conn == NULL ? getConnection(userId) : conn);
@@ -796,7 +796,7 @@ bool PurchaseDatabase::insertDownloadState(DownloadState& ds, Connection* conn)
       ExceptionRef e = new Exception(
          "Could not insert DownloadState.",
          PURCHASEDB_EXCEPTION ".Exception");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -807,7 +807,7 @@ bool PurchaseDatabase::deleteDownloadState(DownloadState& ds, Connection* conn)
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -878,7 +878,7 @@ bool PurchaseDatabase::deleteDownloadState(DownloadState& ds, Connection* conn)
       ExceptionRef e = new Exception(
          "Could not delete DownloadState.",
          PURCHASEDB_EXCEPTION ".Exception");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       e->getDetails()["downloadStateId"] = dsId;
       Exception::push(e);
    }
@@ -891,7 +891,7 @@ bool PurchaseDatabase::startProcessingDownloadState(
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -976,7 +976,7 @@ bool PurchaseDatabase::startProcessingDownloadState(
          "Could not start processing DownloadState.",
          PURCHASEDB_EXCEPTION ".Exception");
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -988,7 +988,7 @@ bool PurchaseDatabase::setDownloadStateProcessorId(
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -1074,7 +1074,7 @@ bool PurchaseDatabase::setDownloadStateProcessorId(
          "Could not set DownloadState processor ID.",
          PURCHASEDB_EXCEPTION ".Exception");
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1086,7 +1086,7 @@ bool PurchaseDatabase::stopProcessingDownloadState(
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -1118,7 +1118,7 @@ bool PurchaseDatabase::stopProcessingDownloadState(
          "Could not stop processing DownloadState.",
          PURCHASEDB_EXCEPTION ".Exception");
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1130,7 +1130,7 @@ bool PurchaseDatabase::populateProcessingInfo(
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -1181,7 +1181,7 @@ bool PurchaseDatabase::populateProcessingInfo(
          "Could not populate DownloadState processing information.",
          PURCHASEDB_EXCEPTION);
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1218,7 +1218,7 @@ bool PurchaseDatabase::clearProcessingDownloadStates(
       ExceptionRef e = new Exception(
          "Could not clear processing DownloadStates.",
          PURCHASEDB_EXCEPTION ".Exception");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1229,7 +1229,7 @@ bool PurchaseDatabase::updatePreferences(DownloadState& ds, Connection* conn)
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -1280,7 +1280,7 @@ bool PurchaseDatabase::updatePreferences(DownloadState& ds, Connection* conn)
          "Could not update DownloadState preferences.",
          PURCHASEDB_EXCEPTION ".Exception");
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1291,7 +1291,7 @@ bool PurchaseDatabase::insertSellerPools(DownloadState& ds, Connection* conn)
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -1352,7 +1352,7 @@ bool PurchaseDatabase::insertSellerPools(DownloadState& ds, Connection* conn)
          "Could not insert DownloadState seller pools.",
          PURCHASEDB_EXCEPTION);
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1364,7 +1364,7 @@ bool PurchaseDatabase::updateSellerPool(
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -1424,8 +1424,8 @@ bool PurchaseDatabase::updateSellerPool(
          "Could not update DownloadState seller pool.",
          PURCHASEDB_EXCEPTION);
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
-      e->getDetails()["fileId"] = sp["fileInfo"]["id"]->getString();
+      BM_ID_SET(e->getDetails()["userId"], userId);
+      BM_ID_SET(e->getDetails()["fileId"], BM_FILE_ID(sp["fileInfo"]["id"]));
       Exception::push(e);
    }
 
@@ -1436,7 +1436,7 @@ bool PurchaseDatabase::populateSellerPools(DownloadState& ds, Connection* conn)
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -1511,7 +1511,7 @@ bool PurchaseDatabase::populateSellerPools(DownloadState& ds, Connection* conn)
          "Could not populate DownloadState seller pools.",
          PURCHASEDB_EXCEPTION ".Exception");
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1523,7 +1523,7 @@ bool PurchaseDatabase::updateDownloadStateFlags(
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -1626,7 +1626,7 @@ bool PurchaseDatabase::updateDownloadStateFlags(
          "Could not update DownloadState flags.",
          PURCHASEDB_EXCEPTION ".Exception");
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1637,7 +1637,7 @@ bool PurchaseDatabase::insertContract(DownloadState& ds, Connection* conn)
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -1657,7 +1657,7 @@ bool PurchaseDatabase::insertContract(DownloadState& ds, Connection* conn)
             s->setUInt64(":userId", userId) &&
             s->setUInt64(":dsId", dsId) &&
             s->setUInt64(
-               ":mediaId", ds["contract"]["media"]["id"]->getUInt64()) &&
+               ":mediaId", BM_MEDIA_ID(ds["contract"]["media"]["id"])) &&
             s->setText(":contract", json.c_str()) &&
             s->execute();
       }
@@ -1675,7 +1675,7 @@ bool PurchaseDatabase::insertContract(DownloadState& ds, Connection* conn)
          "Could not insert DownloadState contract.",
          PURCHASEDB_EXCEPTION ".Exception");
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1686,7 +1686,7 @@ bool PurchaseDatabase::updateContract(DownloadState& ds, Connection* conn)
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -1736,7 +1736,7 @@ bool PurchaseDatabase::updateContract(DownloadState& ds, Connection* conn)
          "Could not update DownloadState contract.",
          PURCHASEDB_EXCEPTION ".Exception");
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1747,7 +1747,7 @@ bool PurchaseDatabase::populateContract(DownloadState& ds, Connection* conn)
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -1804,7 +1804,7 @@ bool PurchaseDatabase::populateContract(DownloadState& ds, Connection* conn)
          "Could not populate DownloadState contract.",
          PURCHASEDB_EXCEPTION);
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1816,7 +1816,7 @@ bool PurchaseDatabase::updateFileProgress(
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -1916,7 +1916,7 @@ bool PurchaseDatabase::updateFileProgress(
          "Could not update DownloadState file progress.",
          PURCHASEDB_EXCEPTION);
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -1927,7 +1927,7 @@ bool PurchaseDatabase::populateFileProgress(DownloadState& ds, Connection* conn)
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // clear existing file progress
@@ -2089,7 +2089,7 @@ bool PurchaseDatabase::populateFileProgress(DownloadState& ds, Connection* conn)
                      newPiece["size"] = fileSize % sp["pieceSize"]->getUInt32();
                   }
                   newPiece["index"] = pi->getIndex();
-                  newPiece["bfpId"] = sp["bfpId"]->getUInt32();
+                  BM_ID_SET(newPiece["bfpId"], BM_BFP_ID(sp["bfpId"]));
 
                   // persist old path so that, if necessary, temporary files
                   // that were created can be deleted
@@ -2114,8 +2114,8 @@ bool PurchaseDatabase::populateFileProgress(DownloadState& ds, Connection* conn)
       ExceptionRef e = new Exception(
          "Could not populate DownloadState file progress.",
          PURCHASEDB_EXCEPTION ".Exception");
-      e->getDetails()["userId"] = userId;
       e->getDetails()["downloadStateId"] = dsId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -2127,7 +2127,7 @@ bool PurchaseDatabase::populateFilePaths(
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -2196,8 +2196,8 @@ bool PurchaseDatabase::populateFilePaths(
       ExceptionRef e = new Exception(
          "Could not populate DownloadState file paths.",
          PURCHASEDB_EXCEPTION ".Exception");
-      e->getDetails()["userId"] = userId;
       e->getDetails()["downloadStateId"] = dsId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -2209,7 +2209,7 @@ bool PurchaseDatabase::insertSellerData(
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -2249,7 +2249,7 @@ bool PurchaseDatabase::insertSellerData(
          "Could not insert DownloadState seller data.",
          PURCHASEDB_EXCEPTION ".Exception");
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -2260,7 +2260,7 @@ bool PurchaseDatabase::populateSellerData(DownloadState& ds, Connection* conn)
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -2335,7 +2335,7 @@ bool PurchaseDatabase::populateSellerData(DownloadState& ds, Connection* conn)
          "Could not populate DownloadState seller data.",
          PURCHASEDB_EXCEPTION);
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -2347,7 +2347,7 @@ bool PurchaseDatabase::populateDownloadState(
 {
    bool rval = false;
 
-   UserId userId = ds["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
 
    // get database connection
@@ -2388,7 +2388,7 @@ bool PurchaseDatabase::populateDownloadState(
                         "Could not populate DownloadState ware.",
                         PURCHASEDB_EXCEPTION);
                      e->getDetails()["downloadStateId"] = dsId;
-                     e->getDetails()["userId"] = userId;
+                     BM_ID_SET(e->getDetails()["userId"], userId);
                      Exception::push(e);
                   }
                }
@@ -2408,7 +2408,7 @@ bool PurchaseDatabase::populateDownloadState(
                         "Could not populate DownloadState preferences.",
                         PURCHASEDB_EXCEPTION);
                      e->getDetails()["downloadStateId"] = dsId;
-                     e->getDetails()["userId"] = userId;
+                     BM_ID_SET(e->getDetails()["userId"], userId);
                      Exception::push(e);
                   }
                }
@@ -2518,7 +2518,7 @@ bool PurchaseDatabase::populateDownloadState(
          "Could not populate DownloadState.",
          PURCHASEDB_EXCEPTION);
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -2555,7 +2555,7 @@ bool PurchaseDatabase::populateDownloadStates(
       ExceptionRef e = new Exception(
          "Could not populate DownloadStates.",
          PURCHASEDB_EXCEPTION);
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -2595,7 +2595,7 @@ bool PurchaseDatabase::getIncompleteDownloadStates(
                row->getUInt64("download_state_id", dsId);
                DownloadState& ds = dsList->append();
                ds["id"] = dsId;
-               ds["userId"] = userId;
+               BM_ID_SET(ds["userId"], userId);
             }
 
             // populate all download states in list
@@ -2618,7 +2618,7 @@ bool PurchaseDatabase::getIncompleteDownloadStates(
       ExceptionRef e = new Exception(
          "Could not populate incomplete DownloadStates.",
          PURCHASEDB_EXCEPTION ".Exception");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -2658,7 +2658,7 @@ bool PurchaseDatabase::getUnpurchasedDownloadStates(
                row->getUInt64("download_state_id", dsId);
                DownloadState& ds = dsList->append();
                ds["id"] = dsId;
-               ds["userId"] = userId;
+               BM_ID_SET(ds["userId"], userId);
             }
 
             // populate all download states in list
@@ -2681,7 +2681,7 @@ bool PurchaseDatabase::getUnpurchasedDownloadStates(
       ExceptionRef e = new Exception(
          "Could not populate unpurchased DownloadStates.",
          PURCHASEDB_EXCEPTION ".Exception");
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       Exception::push(e);
    }
 
@@ -2694,8 +2694,8 @@ bool PurchaseDatabase::insertAssembledFile(
 {
    bool rval = false;
 
+   UserId userId = BM_USER_ID(ds["userId"]);
    DownloadStateId dsId = ds["id"]->getUInt64();
-   UserId userId = ds["userId"]->getUInt64();
 
    // get database connection
    Connection* c = (conn == NULL ? getConnection(userId) : conn);
@@ -2732,7 +2732,7 @@ bool PurchaseDatabase::insertAssembledFile(
          "Could not insert assembled file into database.",
          PURCHASEDB_EXCEPTION);
       e->getDetails()["downloadStateId"] = dsId;
-      e->getDetails()["userId"] = userId;
+      BM_ID_SET(e->getDetails()["userId"], userId);
       e->getDetails()["fileId"] = fileId;
       e->getDetails()["path"] = path;
       Exception::push(e);

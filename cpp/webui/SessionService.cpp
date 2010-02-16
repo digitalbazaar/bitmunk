@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/webui/SessionService.h"
 
@@ -367,7 +367,7 @@ bool SessionService::grantAccess(
          UserId userId;
          if(entry->hasMember("userId"))
          {
-            userId = entry["userId"]->getUInt64();
+            userId = BM_USER_ID(entry["userId"]);
          }
          else
          {
@@ -378,12 +378,12 @@ bool SessionService::grantAccess(
             if(mSessionManager->getNode()->getMessenger()->getFromBitmunk(
                &url, user))
             {
-               userId = user["id"]->getUInt64();
+               userId = BM_USER_ID(user["id"]);
             }
             else
             {
                // invalid user
-               userId = 0;
+               userId = BM_USER_ID_INVALID;
                rval = false;
             }
          }
@@ -419,7 +419,7 @@ bool SessionService::revokeAccess(
          UserId userId;
          if(entry->hasMember("userId"))
          {
-            userId = entry["userId"]->getUInt64();
+            userId = BM_USER_ID(entry["userId"]);
          }
          else
          {
@@ -430,12 +430,12 @@ bool SessionService::revokeAccess(
             if(mSessionManager->getNode()->getMessenger()->getFromBitmunk(
                &url, user))
             {
-               userId = user["id"]->getUInt64();
+               userId = BM_USER_ID(user["id"]);
             }
             else
             {
                // invalid user
-               userId = 0;
+               userId = BM_USER_ID_INVALID;
                rval = false;
             }
          }
@@ -477,7 +477,7 @@ bool SessionService::getAccessControlList(
    {
       DynamicObject params;
       action->getResourceParams(params);
-      UserId userId = params[0]->getUInt64();
+      UserId userId = BM_USER_ID(params[0]);
       rval = mSessionManager->getAccessControlList(out, &userId);
    }
 

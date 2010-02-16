@@ -116,7 +116,7 @@ string Tools::createSellerServerKey(UserId sellerId, ServerId serverId)
 {
    string rval;
 
-   if(BM_ID_VALID(sellerId) && BM_ID_VALID(serverId))
+   if(BM_USER_ID_VALID(sellerId) && BM_SERVER_ID_VALID(serverId))
    {
       char tmp[45];
       snprintf(tmp, 45, "%" PRIu64 ":%u", sellerId, serverId);

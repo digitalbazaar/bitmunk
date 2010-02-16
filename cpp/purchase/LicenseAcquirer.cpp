@@ -38,12 +38,12 @@ void LicenseAcquirer::acquireLicense()
    // contact sva's POST media service to create a signed media
    Url url;
    url.format("/api/3.0/sva/contracts/media/%" PRIu64,
-      mDownloadState["contract"]["media"]["id"]->getUInt64());
+      BM_MEDIA_ID(mDownloadState["contract"]["media"]["id"]));
 
    // post to media signing service
    Media& media = mDownloadState["contract"]["media"];
    bool success = getNode()->getMessenger()->postSecureToBitmunk(
-      &url, NULL, &media, mDownloadState["userId"]->getUInt64());
+      &url, NULL, &media, BM_USER_ID(mDownloadState["userId"]));
 
    // create message regarding operation completion
    DynamicObject msg;
@@ -92,7 +92,7 @@ void LicenseAcquirer::processMessages()
          mDownloadState["totalPieceCount"]->getUInt32(),
          mDownloadState["contract"]["media"]["licenseAmount"]->getString(),
          mDownloadState["totalMicroPaymentCost"]->getString(),
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64());
 #endif
    }
@@ -134,7 +134,7 @@ void LicenseAcquirer::processMessages()
             mDownloadState["totalPieceCount"]->getUInt32(),
             mDownloadState["contract"]["media"]["licenseAmount"]->getString(),
             mDownloadState["totalMicroPaymentCost"]->getString(),
-            mDownloadState["userId"]->getUInt64(),
+            BM_USER_ID(mDownloadState["userId"]),
             mDownloadState["id"]->getUInt64());
 
          // update contract in database and update flags

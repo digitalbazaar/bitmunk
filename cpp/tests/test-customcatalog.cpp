@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_FORMAT_MACROS
 
@@ -355,21 +355,21 @@ void runCustomCatalogTest(
          Ware ware;
          ware["id"] = StringTools::format(
             "bitmunk:file:%" PRIu64 "-%s",
-            fi["mediaId"]->getUInt64(),
-            fi["id"]->getString()).c_str();
-         ware["mediaId"] = fi["mediaId"]->getUInt64();
+            BM_MEDIA_ID(fi["mediaId"]),
+            BM_FILE_ID(fi["id"])).c_str();
+         BM_ID_SET(ware["mediaId"], BM_MEDIA_ID(fi["mediaId"]));
          ware["description"] = "This ware was added by test-customcatalog";
          ware["fileInfos"]->append(fi);
          ware["payees"]->setType(Array);
          Payee p1 = ware["payees"]->append();
          Payee p2 = ware["payees"]->append();
 
-         p1["id"] = TEST_ACCOUNT_ID;
+         BM_ID_SET(p1["id"], TEST_ACCOUNT_ID);
          p1["amountType"] = PAYEE_AMOUNT_TYPE_FLATFEE;
          p1["amount"] = "0.10";
          p1["description"] = "This is a test-customcatalog payee 1.";
 
-         p2["id"] = TEST_ACCOUNT_ID;
+         BM_ID_SET(p2["id"], TEST_ACCOUNT_ID);
          p2["amountType"] = PAYEE_AMOUNT_TYPE_PTOTAL;
          p2["percentage"] = "0.10";
          p1["description"] = "This is a test-customcatalog payee 2.";
@@ -898,14 +898,15 @@ void initializeCatalog(Node& node, Catalog* cat)
    else
    {
       // ensure media ID was detected
-      assert(e["details"]["fileInfo"]["mediaId"]->getUInt64() != 0);
+      assert(BM_MEDIA_ID_VALID(
+         BM_MEDIA_ID(e["details"]["fileInfo"]["mediaId"])));
    }
    assertNoException();
 
    // create the default seller configuration
    Seller seller;
-   seller["userId"] = node.getDefaultUserId();
-   seller["serverId"] = TEST_SERVER_ID;
+   BM_ID_SET(seller["userId"], node.getDefaultUserId());
+   BM_ID_SET(seller["serverId"], TEST_SERVER_ID);
    seller["url"] = "http://localhost:19200/";
    const char* serverToken = TEST_SERVER_TOKEN;
    cat->updateSeller(TEST_USER_ID, seller, serverToken);

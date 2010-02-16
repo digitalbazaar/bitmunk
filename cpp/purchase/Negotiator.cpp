@@ -62,14 +62,14 @@ void Negotiator::negotiateSection()
    {
       // get buyer's login data
       User user;
-      UserId userId = mDownloadState["userId"]->getUInt64();
+      UserId userId = BM_USER_ID(mDownloadState["userId"]);
       ProfileRef profile(NULL);
       error = !mNode->getLoginData(userId, &user, &profile);
       if(!error)
       {
          // set buyer information in contract section
          ContractSection cs = mSellerData["section"];
-         cs["buyer"]["userId"] = userId;
+         BM_ID_SET(cs["buyer"]["userId"], userId);
          cs["buyer"]["username"] = user["username"];
          cs["buyer"]["profileId"] = profile->getId();
 
@@ -257,7 +257,7 @@ bool Negotiator::pickSeller(SellerPool& sp)
    bool rval = false;
 
    // get the file progress
-   FileId fileId = sp["fileInfo"]["id"]->getString();
+   FileId fileId = BM_FILE_ID(sp["fileInfo"]["id"]);
    FileProgress& progress = mDownloadState["progress"][fileId];
 
    // get the maximum price allowed for a chosen seller
@@ -313,8 +313,8 @@ bool Negotiator::pickSeller(SellerPool& sp)
       wareId.append(fi["mediaId"]->getString());
       wareId.push_back('-');
       wareId.append(fi["id"]->getString());
-      ware["id"] = wareId.c_str();
-      ware["mediaId"] = fi["mediaId"];
+      BM_ID_SET(ware["id"], wareId.c_str());
+      BM_ID_SET(ware["mediaId"], BM_MEDIA_ID(fi["mediaId"]));
       ware["fileInfos"]->append(fi);
 
       // seller picked
@@ -338,7 +338,7 @@ int Negotiator::negotiate()
       "Negotiator: attempting to negotiate with seller (%s), "
       "uid: %" PRIu64 ", dsid: %" PRIu64 "",
       key.c_str(),
-      mDownloadState["userId"]->getUInt64(),
+      BM_USER_ID(mDownloadState["userId"]),
       mDownloadState["id"]->getUInt64());
 
    // run a new negotiate section operation
@@ -364,7 +364,7 @@ int Negotiator::negotiate()
          "Negotiator: seller (%s) temporarily blacklisted, "
          "uid: %" PRIu64 ", dsid: %" PRIu64 "",
          key.c_str(),
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64());
 
       // pick another seller
@@ -400,7 +400,7 @@ bool Negotiator::negotiateWithSeller(
    monarch::net::Url url;
    url.format("%s/api/3.0/sales/contract/negotiate?nodeuser=%" PRIu64,
       cs["seller"]["url"]->getString(),
-      cs["seller"]["userId"]->getUInt64());
+      BM_USER_ID(cs["seller"]["userId"]));
    Contract c = mDownloadState["contract"].clone();
    c["sections"][cs["seller"]["userId"]->getString()]->append(cs);
    if(!getNode()->getMessenger()->post(&url, &c, &c, userId))
@@ -417,10 +417,10 @@ bool Negotiator::negotiateWithSeller(
       // compare file IDs (always only 1 file per ware)
       FileInfo& fi1 = cs["ware"]["fileInfos"][0];
       FileInfo& fi2 = cs2["ware"]["fileInfos"][0];
-      FileId fileId1 = fi1["id"]->getString();
-      FileId fileId2 = fi2["id"]->getString();
+      FileId fileId1 = BM_FILE_ID(fi1["id"]);
+      FileId fileId2 = BM_FILE_ID(fi2["id"]);
 
-      if(strcmp(fileId1, fileId2) != 0)
+      if(!BM_FILE_ID_EQUALS(fileId1, fileId2))
       {
          // file ID does not match
          ExceptionRef e = new Exception(
@@ -452,7 +452,7 @@ bool Negotiator::negotiateWithSeller(
             "bitmunk.purchase.Negotiator.FileInfoOutOfSync");
          Exception::set(e);
       }
-      else if(fi2["size"]->getUInt64() < fi1["contentSize"]->getUInt64())
+      else if(fi2["size"] < fi1["contentSize"])
       {
          // file size too small
          ExceptionRef e = new Exception(
@@ -518,7 +518,7 @@ bool Negotiator::checkSectionPrice(Contract& c, ContractSection& cs)
    mSellerData["price"] = total.toString(true).c_str();
 
    // make sure total is under or at budget (always only 1 file per ware)
-   FileId fileId = cs["ware"]["fileInfos"][0]["id"]->getString();
+   FileId fileId = BM_FILE_ID(cs["ware"]["fileInfos"][0]["id"]);
    BigDecimal budget =
       mDownloadState["progress"][fileId]["budget"]->getString();
    if(total > budget)
@@ -533,11 +533,11 @@ bool Negotiator::checkSectionPrice(Contract& c, ContractSection& cs)
       MO_CAT_DEBUG(BM_PURCHASE_CAT,
          "Negotiator: seller's (%" PRIu64 ":%u) price too high: %s > %s, "
          "uid: %" PRIu64 ", dsid: %" PRIu64,
-         mSellerData["seller"]["userId"]->getUInt64(),
-         mSellerData["seller"]["serverId"]->getUInt32(),
+         BM_USER_ID(mSellerData["seller"]["userId"]),
+         BM_SERVER_ID(mSellerData["seller"]["serverId"]),
          total.toString(true).c_str(),
          budget.toString(true).c_str(),
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64());
    }
    else
@@ -545,10 +545,10 @@ bool Negotiator::checkSectionPrice(Contract& c, ContractSection& cs)
       MO_CAT_DEBUG(BM_PURCHASE_CAT,
          "Negotiator: seller's (%" PRIu64 ":%u) negotiated price: %s, "
          "uid: %" PRIu64 ", dsid: %" PRIu64,
-         mSellerData["seller"]["userId"]->getUInt64(),
-         mSellerData["seller"]["serverId"]->getUInt32(),
+         BM_USER_ID(mSellerData["seller"]["userId"]),
+         BM_SERVER_ID(mSellerData["seller"]["serverId"]),
          total.toString(true).c_str(),
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64());
    }
 
@@ -567,7 +567,7 @@ bool Negotiator::insertSection()
    const char* csHash = cs["hash"]->getString();
    string key = Tools::createSellerServerKey(mSellerData["seller"]);
    FileInfo& fi = cs["ware"]["fileInfos"][0];
-   FileId fileId = fi["id"]->getString();
+   FileId fileId = BM_FILE_ID(fi["id"]);
    FileProgress& progress = mDownloadState["progress"][fileId];
    progress["sellerData"][csHash] = mSellerData;
    progress["sellers"][key.c_str()] = mSellerData["seller"];

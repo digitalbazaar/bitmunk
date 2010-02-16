@@ -180,7 +180,7 @@ void PieceDownloader::download()
          MO_CAT_INFO(BM_PURCHASE_CAT,
             "UserId %" PRIu64 ", DownloadState %" PRIu64 ": "
             "piece download finished, rate: %g bytes/s",
-            mDownloadState["userId"]->getUInt64(),
+            BM_USER_ID(mDownloadState["userId"]),
             mDownloadState["id"]->getUInt64(),
             mPieceDownloadRate->getTotalItemsPerSecond());
 
@@ -202,10 +202,7 @@ void PieceDownloader::download()
          mTrailer->getField("Bitmunk-Seller-Signature", value);
          mFilePiece["sellerSignature"] = value.c_str();
          mTrailer->getField("Bitmunk-Seller-Profile-Id", value);
-         mFilePiece["sellerProfileId"] = value.c_str();
-         // convert
-         mFilePiece["sellerProfileId"]->setType(UInt32); /* ProfileId */
-         // FIXME: check errno
+         BM_ID_SET(mFilePiece["sellerProfileId"], value.c_str());
 
          // open key information (to be sent to SVA to unlock piece key)
          mTrailer->getField("Bitmunk-Open-Key-Algorithm", value);
@@ -278,11 +275,11 @@ void PieceDownloader::processMessages()
    DynamicObject msg;
    msg["pieceDownloaderId"] = mUniqueId;
    msg["downloadStateId"] = mDownloadState["id"]->getUInt64();
-   msg["userId"] = mDownloadState["userId"]->getUInt64();
+   BM_ID_SET(msg["userId"], BM_USER_ID(mDownloadState["userId"]));
    msg["pieceStarted"] = true;
    msg["piece"] = mFilePiece.clone();
    msg["section"] = mSection.clone();
-   msg["fileId"] = mFileId;
+   BM_ID_SET(msg["fileId"], mFileId);
    messageParent(msg);
 
    // run a new download operation
@@ -358,11 +355,11 @@ void PieceDownloader::processMessages()
       DynamicObject msg;
       msg["pieceDownloaderId"] = mUniqueId;
       msg["downloadStateId"] = mDownloadState["id"]->getUInt64();
-      msg["userId"] = mDownloadState["userId"]->getUInt64();
+      BM_ID_SET(msg["userId"], BM_USER_ID(mDownloadState["userId"]));
       msg["pieceReceived"] = true;
       msg["piece"] = mFilePiece;
       msg["section"] = mSection;
-      msg["fileId"] = mFileId;
+      BM_ID_SET(msg["fileId"], mFileId);
       msg["pieceRate"] = mPieceDownloadRate->getTotalItemsPerSecond();
       messageParent(msg);
    }
@@ -374,11 +371,11 @@ void PieceDownloader::processMessages()
       DynamicObject msg;
       msg["pieceDownloaderId"] = mUniqueId;
       msg["downloadStateId"] = mDownloadState["id"]->getUInt64();
-      msg["userId"] = mDownloadState["userId"]->getUInt64();
+      BM_ID_SET(msg["userId"], BM_USER_ID(mDownloadState["userId"]));
       msg["pieceFailed"] = true;
       msg["piece"] = mFilePiece;
       msg["section"] = mSection;
-      msg["fileId"] = mFileId;
+      BM_ID_SET(msg["fileId"], mFileId);
       msg["pieceRate"] = mPieceDownloadRate->getTotalItemsPerSecond();
       messageParent(msg);
    }
@@ -390,7 +387,7 @@ bool PieceDownloader::connect()
 
    // get buyer's profile
    ProfileRef profile;
-   UserId userId = mDownloadState["userId"]->getUInt64();
+   UserId userId = BM_USER_ID(mDownloadState["userId"]);
    if((rval = getNode()->getLoginData(userId, NULL, &profile)))
    {
       // find media ID for file ID
@@ -399,24 +396,25 @@ bool PieceDownloader::connect()
       while(mediaId == 0 && fii->hasNext())
       {
          FileInfo& fi = fii->next();
-         if(strcmp(fi["id"]->getString(), mFileId) == 0)
+         if(BM_FILE_ID_EQUALS(BM_FILE_ID(fi["id"]), mFileId))
          {
-            mediaId = fi["mediaId"]->getUInt64();
+            mediaId = BM_MEDIA_ID(fi["mediaId"]);
          }
       }
 
       // create piece request
       DynamicObject pieceRequest;
       pieceRequest["csHash"] = mSection["hash"]->getString();
-      pieceRequest["fileId"] = mFileId;
-      pieceRequest["mediaId"] = mediaId;
+      BM_ID_SET(pieceRequest["fileId"], mFileId);
+      BM_ID_SET(pieceRequest["mediaId"], mediaId);
       pieceRequest["index"] = mFilePiece["index"]->getUInt32();
       // use full standard piece size, seller may truncate if last piece
       pieceRequest["size"] = mPieceSize;
       pieceRequest["peerbuyKey"] = mSection["peerbuyKey"]->getString();
-      pieceRequest["sellerProfileId"] =
-         mSection["seller"]["profileId"]->getUInt32();
-      pieceRequest["bfpId"] = mFilePiece["bfpId"]->getUInt32();
+      BM_ID_SET(
+         pieceRequest["sellerProfileId"],
+         BM_PROFILE_ID(mSection["seller"]["profileId"]));
+      BM_ID_SET(pieceRequest["bfpId"], BM_BFP_ID(mFilePiece["bfpId"]));
 
       // setup btp messages
       mOutMessage.setDynamicObject(pieceRequest);
@@ -428,15 +426,15 @@ bool PieceDownloader::connect()
       // create url to get file piece
       mUrl.format("%s/api/3.0/sales/contract/filepiece?nodeuser=%" PRIu64,
          mSection["seller"]["url"]->getString(),
-         mSection["seller"]["userId"]->getUInt64());
+         BM_USER_ID(mSection["seller"]["userId"]));
 
       MO_CAT_INFO(BM_PURCHASE_CAT,
          "UserId %" PRIu64 ", DownloadState %" PRIu64 ": "
          "connecting to seller (%" PRIu64 ":%u) @ %s",
-         mDownloadState["userId"]->getUInt64(),
+         BM_USER_ID(mDownloadState["userId"]),
          mDownloadState["id"]->getUInt64(),
-         mSection["seller"]["userId"]->getUInt64(),
-         mSection["seller"]["serverId"]->getUInt32(),
+         BM_USER_ID(mSection["seller"]["userId"]),
+         BM_SERVER_ID(mSection["seller"]["serverId"]),
          mUrl.toString().c_str());
 
       // connect to seller
@@ -447,7 +445,7 @@ bool PieceDownloader::connect()
       // on the connection
       BtpClient* btpc = getNode()->getMessenger()->getBtpClient();
       mConnection = btpc->createConnection(
-         mSection["seller"]["userId"]->getUInt64(), &mUrl, 120);
+         BM_USER_ID(mSection["seller"]["userId"]), &mUrl, 120);
       if((rval = (mConnection != NULL)))
       {
          logDownloadStateMessage("connected to seller...");
@@ -517,7 +515,7 @@ void PieceDownloader::sendEvent(bool error, const char* type)
    }
 
    // send event
-   e["details"]["fileId"] = mFileId;
+   BM_ID_SET(e["details"]["fileId"], mFileId);
    e["details"]["piece"] = mFilePiece;
    e["details"]["downloaded"] = mPieceDownloadRate->getTotalItemCount();
    sendDownloadStateEvent(e);
