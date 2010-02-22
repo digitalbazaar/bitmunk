@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_node_BitmunkModule_H
 #define bitmunk_node_BitmunkModule_H
@@ -43,18 +43,6 @@ public:
     * @return the dependency information.
     */
    virtual monarch::rt::DynamicObject getDependencyInfo();
-
-   /**
-    * Performs whatever configuration (or other) validation is necessary
-    * before initialize(MicroKernel*) is called on this Module. This will be
-    * called before initialize(MicroKernel*) is called on any of this Module's
-    * dependencies.
-    *
-    * @param k the MicroKernel.
-    *
-    * @return true if validated, false if an Exception occurred.
-    */
-   virtual bool validate(monarch::kernel::MicroKernel* k);
 
    /**
     * Initializes this Module with the passed MicroKernel.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "monarch/app/App.h"
 #include "monarch/config/ConfigManager.h"
@@ -560,6 +560,15 @@ bool BitmunkApp::run()
       MO_CAT_INFO(BM_APP_CAT,
          (mState == Restarting) ? "Restarting node..." : "Starting node...");
       rval = mKernel->start(cfg);
+      if(rval)
+      {
+         // load modules
+         rval = mKernel->loadModules(cfg["modulePath"]->getString());
+         if(!rval)
+         {
+            mKernel->stop();
+         }
+      }
       mState = Running;
 
       if(rval)

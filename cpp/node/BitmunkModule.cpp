@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/node/BitmunkModule.h"
 
@@ -29,16 +29,6 @@ DynamicObject BitmunkModule::getDependencyInfo()
 
    // no dependencies
    rval["dependencies"]->setType(Array);
-
-   return rval;
-}
-
-bool BitmunkModule::validate(MicroKernel* k)
-{
-   bool rval = true;
-
-   // FIXME: get config manager can ensure command line options for
-   // bitmunk node are valid
 
    return rval;
 }

@@ -57,12 +57,6 @@ DynamicObject NodeModule::getDependencyInfo()
    return rval;
 }
 
-bool NodeModule::validate(MicroKernel* k)
-{
-   // no special validation
-   return true;
-}
-
 bool NodeModule::initialize(MicroKernel* k)
 {
    bool rval = false;
