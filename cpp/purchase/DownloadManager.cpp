@@ -873,9 +873,7 @@ bool DownloadManager::assignPiece(SellerData& sd)
          if(!mDownloadState->hasMember("startDate") ||
             strcmp(mDownloadState["startDate"]->getString(), "") == 0)
          {
-            const char* dateFmt = "%Y-%m-%d %H:%M:%S";
-            TimeZone gmt = TimeZone::getTimeZone("GMT");
-            Date fpDate;
+            Date startDate;
             /*
             // Debug tool to adjust start date
             const char* toffset = getenv("BITMUNK_STARTDATE_TIME_OFFSET");
@@ -883,16 +881,13 @@ bool DownloadManager::assignPiece(SellerData& sd)
             {
                DynamicObject tmp;
                tmp = toffset;
-               fpDate.addSeconds(tmp->getInt32());
+               startDate.addSeconds(tmp->getInt32());
                //MO_CAT_DEBUG(BM_PURCHASE_CAT,
-               printf(
-                  "Startdate time offset: %s", toffset);
+               printf("Start date time offset: %s", toffset);
                fflush(stdout);
             }
             */
-            string startDate;
-            fpDate.format(startDate, dateFmt, &gmt);
-            mDownloadState["startDate"] = startDate.c_str();
+            mDownloadState["startDate"] = startDate.getUtcDateTime().c_str();
 
             // update file progress
             rval = mPurchaseDatabase->updateDownloadStateFlags(mDownloadState);

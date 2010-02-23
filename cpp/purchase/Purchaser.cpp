@@ -121,8 +121,6 @@ void Purchaser::runPurchaseDataOp()
             // out of sync with remote time
             DynamicObject out;
             out["section"] = cs;
-            const char* dateFmt = "%Y-%m-%d %H:%M:%S";
-            TimeZone gmt = TimeZone::getTimeZone("GMT");
             Date date;
             /*
             // Debug tool to adjust purchase time
@@ -138,8 +136,7 @@ void Purchaser::runPurchaseDataOp()
                fflush(stdout);
             }
             */
-            string dstr = date.toString(dateFmt, &gmt);
-            out["date"] = dstr.c_str();
+            out["date"] = date.getUtcDateTime().c_str();
 
             // pay for the data via the SVA
             Url url("/api/3.0/sva/contracts/purchase/data");
