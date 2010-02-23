@@ -558,6 +558,10 @@ bool BitmunkApp::run()
       // FIXME: figure out the correct config to use here
       Config cfg = mNodeConfigManager.getNodeConfig();
 
+      // set thread and connection limits
+      mKernel->setMaxAuxiliaryThreads(cfg["maxThreadCount"]->getUInt32());
+      mKernel->setMaxServerConnections(cfg["maxConnectionCount"]->getUInt32());
+
       // FIXME: show this somewhere
       MO_CAT_INFO(BM_APP_CAT,
          "Modules path: %s", cfg["modulePath"]->getString());
@@ -566,7 +570,7 @@ bool BitmunkApp::run()
       // [re]start the node
       MO_CAT_INFO(BM_APP_CAT,
          (mState == Restarting) ? "Restarting node..." : "Starting node...");
-      rval = mKernel->start(cfg);
+      rval = mKernel->start();
       if(rval)
       {
          // load modules
