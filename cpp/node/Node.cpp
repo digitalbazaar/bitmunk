@@ -128,7 +128,14 @@ bool Node::start(MicroKernel* k)
             mBtpServer->initialize(cfg) &&
             btpc->getSslContext()->setVerifyCAs(&caFile, NULL) &&
             mEventHandler.initialize();
-         if(!rval)
+         if(rval)
+         {
+            // send event that node has started
+            Event e;
+            e["type"] = "bitmunk.node.Node.started";
+            getEventController()->schedule(e);
+         }
+         else
          {
             // start failed, so stop node
             stop();
@@ -347,7 +354,7 @@ bool Node::getDefaultProfile(ProfileRef& profile)
       if(profile.isNull())
       {
          ExceptionRef e = new Exception(
-            "Could not get default user's profile! User has no profile.",
+            "Could not get default user's profile. User has no profile.",
             "bitmunk.node.NoProfile");
          Exception::set(e);
          rval = false;

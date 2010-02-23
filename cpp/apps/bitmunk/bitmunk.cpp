@@ -510,6 +510,13 @@ bool BitmunkApp::waitForNode()
 
    MO_CAT_INFO(BM_APP_CAT, "Ready.");
 
+   // send ready event
+   {
+      Event e;
+      e["type"] = "bitmunk.app.Bitmunk.ready";
+      mKernel->getEventController()->schedule(e);
+   }
+
    EventWaiter waiter(mKernel->getEventController());
    waiter.start("bitmunk.node.Node.shutdown");
    waiter.start("bitmunk.node.Node.restart");
