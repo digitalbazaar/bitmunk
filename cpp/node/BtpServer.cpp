@@ -125,7 +125,7 @@ bool BtpServer::initialize(Config& cfg)
       }
    }
 
-   // add proxy service if configured
+   // add proxy service(s) if configured
    if(rval && cfg->hasMember("proxy"))
    {
       /* Proxy config example:
