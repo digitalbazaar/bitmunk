@@ -60,7 +60,8 @@ public:
     * an HTTP request, that request will be proxied to the given URL and
     * the proceeding response will be proxied back to the client.
     *
-    * @param path the incoming path to map to another URL.
+    * @param path the incoming path to map to another URL, relative to the
+    *           path of the proxy service.
     * @param url the URL to map the path to.
     */
    virtual void addMapping(const char* path, const char* url);

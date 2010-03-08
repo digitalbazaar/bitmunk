@@ -10,6 +10,7 @@
 #include "bitmunk/node/BtpActionDelegate.h"
 #include "bitmunk/node/NodeModule.h"
 #include "bitmunk/node/RestResourceHandler.h"
+#include "monarch/io/ByteArrayInputStream.h"
 #include "monarch/net/SocketTools.h"
 
 using namespace std;
@@ -74,22 +75,52 @@ void ProxyService::cleanup()
 
 void ProxyService::addMapping(const char* path, const char* url)
 {
-   UrlRef u(NULL);
-
    // convert simple path into full local url if needed
+   string fullUrl;
    if(url[0] == '/')
    {
       // build full url
-      string tmp = mNode->getMessenger()->getSelfUrl(false);
-      tmp.append(url);
-      u = new Url(tmp.c_str());
+      fullUrl = mNode->getMessenger()->getSelfUrl(false);
+   }
+   else if(strncmp(url, "http://", 7) != 0)
+   {
+      fullUrl = "http://";
+   }
+   fullUrl.append(url);
+
+   // prepend proxy service path to given path
+   bool root = (strcmp(mPath, "/") == 0);
+   bool wildcard = (strcmp(path, PATH_WILDCARD) == 0);
+   string fullPath;
+   if(!root && !wildcard)
+   {
+      fullPath = mPath;
+      fullPath.append(path);
    }
    else
    {
-      u = new Url(url);
+      fullPath = path;
    }
 
-   mProxyMap[strdup(path)] = u;
+   // remove duplicate entry
+   ProxyMap::iterator i = mProxyMap.find(fullPath.c_str());
+   if(i != mProxyMap.end())
+   {
+      MO_CAT_INFO(BM_NODE_CAT,
+         "ProxyService removed rule %s => %s",
+         i->first, i->second->toString().c_str());
+
+      free((char*)i->first);
+      mProxyMap.erase(i);
+   }
+
+   // add new entry
+   mProxyMap[strdup(fullPath.c_str())] = new Url(fullUrl);
+
+   MO_CAT_INFO(BM_NODE_CAT,
+      "ProxyService added rule %s%s%s => %s%s",
+      root ? "" : mPath, wildcard ? "/" : "",
+      path, fullUrl.c_str(), wildcard ? "/" PATH_WILDCARD : "");
 }
 
 /**
@@ -128,10 +159,12 @@ void ProxyService::proxy(BtpAction* action)
    bool pass = false;
 
    // get the URL to connect to, based on the resource
+   bool wildcard = false;
    ProxyMap::iterator i = mProxyMap.find(action->getResource());
    if(i == mProxyMap.end())
    {
       // specific path not found, use wildcard path
+      wildcard = true;
       i = mProxyMap.find(PATH_WILDCARD);
    }
 
@@ -140,7 +173,18 @@ void ProxyService::proxy(BtpAction* action)
       // send 404
       HttpResponseHeader* header = action->getResponse()->getHeader();
       header->setStatus(404, "Not Found");
-      action->sendResult();
+      string content =
+         "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
+         "<html><head>\n"
+         "<title>404 Not Found</title>\n"
+         "</head><body>\n"
+         "<h1>Not Found</h1>\n"
+         "<p>The document was not found.</p>\n"
+         "</body></html>";
+      ByteBuffer b(content.length());
+      b.put(content.c_str(), content.length(), false);
+      ByteArrayInputStream bais(&b);
+      action->sendResult(&bais);
    }
    else
    {
@@ -148,7 +192,7 @@ void ProxyService::proxy(BtpAction* action)
 
       // do proxy:
       MO_CAT_INFO(BM_NODE_CAT,
-         "ProxyService proxying %s to: %s",
+         "ProxyService proxying %s => %s",
          action->getResource(), url->toString().c_str());
 
       // get a connection
@@ -159,7 +203,18 @@ void ProxyService::proxy(BtpAction* action)
          // send service unavailable
          HttpResponseHeader* header = action->getResponse()->getHeader();
          header->setStatus(503, "Service Unavailable");
-         action->sendResult();
+         string content =
+            "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
+            "<html><head>\n"
+            "<title>503 Service Unavailable</title>\n"
+            "</head><body>\n"
+            "<h1>Service Unavailable</h1>\n"
+            "<p>The service was not available.</p>\n"
+            "</body></html>";
+         ByteBuffer b(content.length());
+         b.put(content.c_str(), content.length(), false);
+         ByteArrayInputStream bais(&b);
+         action->sendResult(&bais);
       }
       else
       {
@@ -180,8 +235,8 @@ void ProxyService::proxy(BtpAction* action)
 
          // rewrite path if it does not match the URL path and is not
          // the wildcard path
-         if(strcmp(action->getResource(), url->getPath().c_str()) != 0 &&
-            strcmp(i->first, PATH_WILDCARD) != 0)
+         if(!wildcard &&
+            strcmp(action->getResource(), url->getPath().c_str()) != 0)
          {
             DynamicObject query;
             action->getResourceQuery(query, true);
@@ -190,9 +245,10 @@ void ProxyService::proxy(BtpAction* action)
             req->getHeader()->setPath(path.c_str());
          }
 
-         // proxy the client's request and server's response
+         // proxy the client's request and the server's response
          pass =
             _proxyHttp(req->getHeader(), req->getConnection(), conn) &&
+            conn->receiveHeader(res->getHeader()) &&
             _proxyHttp(res->getHeader(), conn, req->getConnection());
 
          // close connection

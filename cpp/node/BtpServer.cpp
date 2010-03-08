@@ -10,6 +10,7 @@
 #include "bitmunk/common/Tools.h"
 #include "bitmunk/node/CertificateCreator.h"
 #include "bitmunk/node/NodeModule.h"
+#include "bitmunk/node/ProxyService.h"
 #include "monarch/crypto/AsymmetricKeyFactory.h"
 #include "monarch/net/NullSocketDataPresenter.h"
 #include "monarch/net/SslSocketDataPresenter.h"
@@ -119,7 +120,94 @@ bool BtpServer::initialize(Config& cfg)
       }
       else
       {
-         MO_CAT_INFO(BM_NODE_CAT, "Serving on %s:%d", host, port);
+         MO_CAT_INFO(BM_NODE_CAT, "Serving on %s",
+            mHostAddress->toString(false).c_str());
+      }
+   }
+
+   // add proxy service if configured
+   if(rval && cfg->hasMember("proxy"))
+   {
+      /* Proxy config example:
+       *
+       * {
+       *    "/path/to/handler":
+       *    {
+       *       "*":
+       *       {
+       *          "host": "localhost:8080"
+       *       }
+       *    },
+       *    "/hosted/by/another/server":
+       *    {
+       *       "/foo/bar":
+       *       {
+       *          "path": "/some/other/path"
+       *       },
+       *       "/foo/bar/2":
+       *       {
+       *          "host": "localhost:8080"
+       *       }
+       *    },
+       *    "/hosted/by/another/server/foo/bar3":
+       *    {
+       *       "*":
+       *       {
+       *          "host": "localhost:8080",
+       *          "path": "/new/path"
+       *       }
+       *    }
+       * }
+       *
+       * Will proxy the following:
+       *
+       * http://myserver.com/path/to/handler/anything =>
+       * http://localhost:8080/path/to/handler/anything
+       *
+       * http://myserver.com/hosted/by/another/server/foo/bar =>
+       * http://myserver.com/some/other/path
+       *
+       * http://myserver.com/hosted/by/another/server/foo/bar2 =>
+       * http://localhost:8080/hosted/by/another/server/foo/bar2
+       *
+       * http://myserver.com/hosted/by/another/server/foo/bar3/anything =>
+       * http://localhost:8080/new/path/anything
+       */
+      BtpServiceRef bs(NULL);
+      Config& proxy = cfg["proxy"];
+      if(proxy->length() > 0)
+      {
+         ConfigIterator pi = proxy.getIterator();
+         while(rval && pi->hasNext())
+         {
+            Config& path = pi->next();
+            ProxyService* ps = new ProxyService(mNode, pi->getName());
+            ConfigIterator ri = path.getIterator();
+            while(ri->hasNext())
+            {
+               Config& rule = ri->next();
+               string url;
+               if(rule->hasMember("host"))
+               {
+                  url = rule["host"]->getString();
+               }
+               if(rule->hasMember("path"))
+               {
+                  url.append(rule["path"]->getString());
+               }
+               else
+               {
+                  url.append(pi->getName());
+                  if(strcmp(ri->getName(), "*") != 0)
+                  {
+                     url.append(ri->getName());
+                  }
+               }
+               ps->addMapping(ri->getName(), url.c_str());
+            }
+            bs = ps;
+            rval = addService(bs, Node::SslOff, true);
+         }
       }
    }
 
@@ -128,6 +216,18 @@ bool BtpServer::initialize(Config& cfg)
 
 void BtpServer::cleanup()
 {
+   // remove any lingering services
+   for(BtpServiceMap::iterator i = mSecureServices.begin();
+       i != mSecureServices.end(); i++)
+   {
+      removeService(i->first);
+   }
+   for(BtpServiceMap::iterator i = mNonSecureServices.begin();
+       i != mNonSecureServices.end(); i++)
+   {
+      removeService(i->first);
+   }
+
    // remove http connection service
    if(mServiceId != Server::sInvalidServiceId)
    {
