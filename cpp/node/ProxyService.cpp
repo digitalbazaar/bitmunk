@@ -31,6 +31,9 @@ typedef BtpActionDelegate<ProxyService> Handler;
 // Note: Current implementation doesn't lock on proxy map. It is assumed it
 // will be set up before use and not changed thereafter.
 
+// Note: ProxyService could be alternatively implemented as an extension to
+// the HttpConnectionServicer class in the future.
+
 ProxyService::ProxyService(Node* node, const char* path) :
    NodeService(node, path)
 {
