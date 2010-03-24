@@ -217,15 +217,13 @@ bool BtpServer::initialize(Config& cfg)
 void BtpServer::cleanup()
 {
    // remove any lingering services
-   for(BtpServiceMap::iterator i = mSecureServices.begin();
-       i != mSecureServices.end(); i++)
+   while(!mSecureServices.empty())
    {
-      removeService(i->first);
+      removeService(mSecureServices.begin()->first);
    }
-   for(BtpServiceMap::iterator i = mNonSecureServices.begin();
-       i != mNonSecureServices.end(); i++)
+   while(!mNonSecureServices.empty())
    {
-      removeService(i->first);
+      removeService(mNonSecureServices.begin()->first);
    }
 
    // remove http connection service
