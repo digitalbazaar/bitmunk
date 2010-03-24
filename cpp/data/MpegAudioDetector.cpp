@@ -206,7 +206,7 @@ unsigned int MpegAudioDetector::getFrameCrcErrors()
    return mFrameCrcErrors;
 }
 
-unsigned long long MpegAudioDetector::getTotalMpegAudioSize()
+uint64_t MpegAudioDetector::getTotalMpegAudioSize()
 {
    return mTotalMpegAudioSize;
 }

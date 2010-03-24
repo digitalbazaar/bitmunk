@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/protocol/BtpTrailer.h"
 
@@ -11,21 +11,20 @@ using namespace monarch::http;
 using namespace monarch::util;
 using namespace bitmunk::protocol;
 
-BtpTrailer::BtpTrailer(DigitalSignature* ds)
+BtpTrailer::BtpTrailer(DigitalSignature* ds) :
+   mSignature(ds)
 {
-   mSignature = ds;
-   mContentLength = 0;
 }
 
 BtpTrailer::~BtpTrailer()
 {
 }
 
-void BtpTrailer::update(unsigned long long contentLength)
+void BtpTrailer::update(int64_t contentLength)
 {
    // call parent implementation
    HttpTrailer::update(contentLength);
-   
+
    // add content-signature if applicable
    if(mSignature != NULL && contentLength > 0 && mSignature->getSignMode())
    {
@@ -33,10 +32,10 @@ void BtpTrailer::update(unsigned long long contentLength)
       char s[mSignature->getValueLength()];
       unsigned int length;
       mSignature->getValue(s, length);
-      
+
       // hex-encode signature
       string data = Convert::bytesToHex(s, length);
-      
+
       // add Btp-Content-Signature field
       setField("Btp-Content-Signature", data.c_str());
    }

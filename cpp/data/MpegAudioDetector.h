@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2008 Digital Bazaar, Inc.  All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_data_MpegAudioDetector_H
 #define bitmunk_data_MpegAudioDetector_H
@@ -41,7 +41,7 @@ protected:
    /**
     * The total size, in bytes, of all of the detected MPEG Audio data so far.
     */
-   unsigned long long mTotalMpegAudioSize;
+   uint64_t mTotalMpegAudioSize;
 
    /**
     * A table that stores the total number of frames detected according
@@ -72,7 +72,7 @@ protected:
    /**
     * The sum total of all the bitrates detected so far.
     */
-   unsigned long long mSummedBitrates;
+   uint64_t mSummedBitrates;
 
    /**
     * The amount of audio time that has passed so far.
@@ -167,7 +167,7 @@ public:
     * @return the total length, in bytes, of all of the mpeg audio frames
     *         detected.
     */
-   virtual unsigned long long getTotalMpegAudioSize();
+   virtual uint64_t getTotalMpegAudioSize();
 
    /**
     * Gets the average bitrate detected.
