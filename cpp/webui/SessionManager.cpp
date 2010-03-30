@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_FORMAT_MACROS
 
@@ -374,14 +374,14 @@ void SessionManager::setCookies(
 
    CookieJar jar;
    jar.setCookie(
-      "bitmunk-session",
-      session, SESSION_TIMEOUT_MIN, COOKIES_SECURE, COOKIES_HTTPONLY);
+      "bitmunk-session", session,
+      SESSION_TIMEOUT_MIN, COOKIES_SECURE, COOKIES_HTTPONLY);
    jar.setCookie(
-      "bitmunk-user-id",
-      tmp, SESSION_TIMEOUT_MIN, COOKIES_SECURE, false);
+      "bitmunk-user-id", tmp,
+      SESSION_TIMEOUT_MIN, COOKIES_SECURE, false);
    jar.setCookie(
-      "bitmunk-username",
-      username, SESSION_TIMEOUT_MIN, COOKIES_SECURE, false);
+      "bitmunk-username", Url::encode(username).c_str(),
+      SESSION_TIMEOUT_MIN, COOKIES_SECURE, false);
    jar.writeCookies(header, CookieJar::Server, true);
 }
 

@@ -155,7 +155,7 @@
        */
       getUsername: function()
       {
-         return bitmunk.xhr.getCookie('bitmunk-username');
+         return unescape(bitmunk.xhr.getCookie('bitmunk-username'));
       },
       
       /**
