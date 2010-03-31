@@ -309,7 +309,7 @@ void ListingUpdater::handleUpdateRequest(DynamicObject& msg)
          JsonWriter::writeToString(Exception::getAsDynamicObject()).c_str());
    }
    // see if server ID is invalid (0)
-   else if(!BM_SERVER_ID_VALID(seller["serverId"]))
+   else if(!BM_SERVER_ID_VALID(BM_SERVER_ID(seller["serverId"])))
    {
       // change state
       mState = Busy;

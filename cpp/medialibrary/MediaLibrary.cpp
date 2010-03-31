@@ -258,14 +258,15 @@ static bool _getFormatDetails(FileInfo& fi)
          fi["contentType"] = fi["formatDetails"]["contentType"]->getString();
 
          // search format details for media ID if one hasn't been set
-         if(!BM_MEDIA_ID_VALID(fi["mediaId"]))
+         if(!BM_MEDIA_ID_VALID(BM_MEDIA_ID(fi["mediaId"])))
          {
             bool mediaIdFound = false;
             DynamicObjectIterator i = details.getIterator();
             while(!mediaIdFound && i->hasNext())
             {
                DynamicObject& d = i->next();
-               if(d->hasMember("media") && BM_MEDIA_ID_VALID(d["media"]["id"]))
+               if(d->hasMember("media") &&
+                  BM_MEDIA_ID_VALID(BM_MEDIA_ID(d["media"]["id"])))
                {
                   // media ID found
                   BM_ID_SET(fi["mediaId"], BM_MEDIA_ID(d["media"]["id"]));
@@ -604,7 +605,8 @@ void MediaLibrary::scanFile(DynamicObject& d)
       // media data which will be added when we get the format details
       // if we still haven't found a media ID by then
       if(pass &&
-         (!fi->hasMember("mediaId") || !BM_MEDIA_ID_VALID(fi["mediaId"])))
+         (!fi->hasMember("mediaId") ||
+          !BM_MEDIA_ID_VALID(BM_MEDIA_ID(fi["mediaId"]))))
       {
          // try to find media information
          _findMediaId(mNode, userId, fi);
