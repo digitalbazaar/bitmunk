@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/medialibrary/MediaLibraryService.h"
 
@@ -317,8 +317,7 @@ bool MediaLibraryService::getFile(
          {
             // if media not found, include a blank media
             ExceptionRef e = Exception::get();
-            ExceptionRef& cause = e->getCause();
-            if(!cause.isNull() && cause->isType(MLDB_EXCEPTION ".NotFound"))
+            if(e->hasType(MLDB_EXCEPTION ".NotFound"))
             {
                Exception::clear();
                media["type"] = "";

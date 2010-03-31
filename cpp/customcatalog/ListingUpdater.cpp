@@ -1019,9 +1019,8 @@ void ListingUpdater::sendUpdate(SellerListingUpdate& update)
          // see if we need to register for a new server ID because our catalog
          // expired and we no longer exist as a seller
          // FIXME: we want a different exception name for this
-         if(!ex->getCauseOfType("bitmunk.database.NotFound").isNull() ||
-            !ex->getCauseOfType(
-               "bitmunk.database.Catalog.InvalidServerToken").isNull())
+         if(ex->hasType("bitmunk.database.NotFound") ||
+            ex->hasType("bitmunk.database.Catalog.InvalidServerToken"))
          {
             // log message ... do new server registration
             MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,

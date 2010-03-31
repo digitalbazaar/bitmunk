@@ -678,8 +678,7 @@ void MediaLibrary::fileUpdated(Event& e)
       {
          // if media not found, try to acquire it from bitmunk
          ExceptionRef e = Exception::get();
-         ExceptionRef& cause = e->getCause();
-         if(!cause.isNull() && cause->isType(MLDB_EXCEPTION ".NotFound"))
+         if(e->hasType(MLDB_EXCEPTION ".NotFound"))
          {
             Exception::clear();
             MO_CAT_DEBUG(BM_MEDIALIBRARY_CAT,
