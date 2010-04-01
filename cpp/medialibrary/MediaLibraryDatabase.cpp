@@ -891,8 +891,7 @@ bool MediaLibraryDatabase::populateFileSet(
                   if(!rval)
                   {
                      ExceptionRef e = Exception::get();
-                     ExceptionRef c = e->getCause();
-                     if(!c.isNull() && c->isType(MLDB_EXCEPTION_NOT_FOUND))
+                     if(e->hasType(MLDB_EXCEPTION_NOT_FOUND))
                      {
                         info["media"].setNull();
                         Exception::clear();
