@@ -226,11 +226,11 @@ void ProxyService::proxy(BtpAction* action)
 
          // add X-Forwarded headers
          HttpRequestHeader* reqHeader = req->getHeader();
-         reqHeader->addField("X-Forwarded-For",
+         reqHeader->appendFieldValue("X-Forwarded-For",
             req->getConnection()->getRemoteAddress()->toString(true).c_str());
-         reqHeader->addField("X-Forwarded-Host",
+         reqHeader->appendFieldValue("X-Forwarded-Host",
             req->getHeader()->getFieldValue("Host").c_str());
-         reqHeader->addField("X-Forwarded-Server",
+         reqHeader->appendFieldValue("X-Forwarded-Server",
             SocketTools::getHostname().c_str());
 
          // rewrite host

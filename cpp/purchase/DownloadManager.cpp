@@ -41,7 +41,7 @@ using namespace std;
 
 #define CHECK_COMPLETION_INTERVAL   1000 * 5      // 5 seconds
 #define DEFAULT_POOL_TIMEOUT        1000 * 60 * 2 // 2 minutes
-#define WINDOW_LENGTH               1000 * 3      // 3 seconds
+#define WINDOW_LENGTH               1000 * 1      // 1 second
 
 // define internal message types
 enum

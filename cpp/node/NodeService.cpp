@@ -130,7 +130,8 @@ bool NodeService::sendScrubbedEvent(Event& e, BtpAction* action)
       }
       if(!usernameCookie.isNull())
       {
-         details["cookieUsername"] = usernameCookie["value"]->getString();
+         details["cookieUsername"] = Url::decode(
+            usernameCookie["value"]->getString()).c_str();
       }
       else
       {

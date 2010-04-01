@@ -103,8 +103,8 @@ void PieceDownloader::download()
       // send an event that the download has started
       sendEvent(false, EVENT_DOWNLOAD_STATE ".pieceStarted");
 
-      // FIXME: when switching to IOMonitor, possibly just do this in
-      // the fiber, and do one tiny read at a time
+      // FIXME: when switching to IOMonitor this will be done in the fiber
+      // with IO scheduling handled at the appropriate layer
 
       // keep receiving and writing data while success
       bool success = true;

@@ -252,14 +252,13 @@ void BtpMessage::setupRequestHeader(Url* url, HttpRequestHeader* header)
    if(mType != Undefined)
    {
       // set request method
-      const char* type = typeToString(mType);
-      header->setMethod(type);
+      header->setMethod(typeToString(mType));
    }
    else
    {
       // set type
       const char* method = header->getMethod();
-      mType = stringToType(method);
+      setType(stringToType(method));
    }
 
    // set base request header
@@ -394,10 +393,20 @@ bool BtpMessage::receiveContent(HttpRequest* request)
    bool rval = true;
 
    // update message type
-   setType(stringToType(request->getHeader()->getMethod()));
+   BtpMessage::Type type = BtpMessage::Undefined;
+   HttpRequestHeader* header = request->getHeader();
+   if(header->hasField("X-Method-Override"))
+   {
+      type = stringToType(header->getFieldValue("X-Method-Override").c_str());
+   }
+   if(type == BtpMessage::Undefined)
+   {
+      type = stringToType(header->getMethod());
+   }
+   setType(type);
 
    // check to see if there is content to receive
-   long long length = 0;
+   int64_t length = 0;
    request->getHeader()->getField("Content-Length", length);
    if(length != 0 || request->getHeader()->hasField("Transfer-Encoding"))
    {
@@ -427,7 +436,7 @@ bool BtpMessage::receiveContent(HttpResponse* response)
    bool rval = true;
 
    // check to see if there is content to receive
-   long long length = 0;
+   int64_t length = 0;
    response->getHeader()->getField("Content-Length", length);
    if(length != 0 || response->getHeader()->hasField("Transfer-Encoding"))
    {
