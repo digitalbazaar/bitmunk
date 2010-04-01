@@ -5,8 +5,7 @@
    "_include_" : [
       {
          "path": "@BITMUNK_WEBUI_PLUGINS_DIR@",
-         "includeSubdirectories": true,
-         "substituteKeywords": true
+         "includeSubdirectories": true
       }
    ],
    "_merge_" : {
