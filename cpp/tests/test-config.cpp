@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_FORMAT_MACROS
 
@@ -7,9 +7,11 @@
 #include "bitmunk/node/Node.h"
 #include "bitmunk/test/Tester.h"
 #include "monarch/test/Test.h"
-#include "monarch/test/TestRunner.h"
+#include "monarch/test/TestModule.h"
 #include "monarch/rt/DynamicObject.h"
 #include "monarch/data/json/JsonWriter.h"
+
+#include "bitmunk-unit-tests.h"
 
 #include <inttypes.h>
 
@@ -20,10 +22,12 @@ using namespace monarch::config;
 using namespace monarch::data;
 using namespace monarch::data::json;
 using namespace monarch::io;
+using namespace monarch::kernel;
+using namespace monarch::modest;
 using namespace monarch::rt;
 using namespace monarch::test;
 
-void runConfigTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
+void runConfigTest(Node& node, TestRunner& tr)
 {
    tr.group("config");
    
@@ -59,56 +63,65 @@ void runConfigTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
    tr.ungroup();
 }
 
-class BmConfigTester : public bitmunk::test::Tester
+static bool run(TestRunner& tr)
 {
-public:
-   BmConfigTester()
+   if(tr.isDefaultEnabled())
    {
-      setName("Config Tester");
-   }
+      bool success;
 
-   /**
-    * Run automatic unit tests.
-    */
-   virtual int runAutomaticTests(TestRunner& tr)
-   {
-      // FIXME:
-#if 0
+      success = bitmunk::test::Tester::setup(tr);
+      assertNoException();
+      assert(success);
+      success = bitmunk::test::Tester::setupPeerNode(tr);
+      assertNoException();
+      assert(success);
+
+      MicroKernel* k = tr.getMicroKernel();
+      Module* mod;
+      // load node module
+      success = k->loadModules(MODULES_DIRECTORY "/libbmnode.so");
+      assertNoException();
+      assert(success);
+      assert(mod != NULL);
+      Node* node = dynamic_cast<Node*>(k->getModuleApi("bitmunk.node.Node"));
+      assert(node != NULL);
+
+
+         runConfigTest(*node, tr);
+
+         // teardown
+
+      // unload node module
+//      k->unloadModule(nodeInfo);
+      //k->getModuleLibrary()->unloadModule(&mod->getId());
+
+
       // create a node
-      Node node;
+//      Node node;
+      /*
       {
          bool success;
-         success = setupNode(&node);
+         success = bitmunk::test::Tester::setupNode(&node);
          assertNoException();
          assert(success);
-         success = setupPeerNode(&node);
+         success = bitmunk::test::Tester::setupPeerNode(&node);
          assertNoException();
          assert(success);
       }
-      if(!node.start())
-      {
-         dumpException();
-         exit(1);
-      }
+      */
+//      if(!node.start())
+//      {
+//         dumpException();
+//         exit(1);
+//      }
       
       // run test
-      runConfigTest(node, tr, *this);
+      //runConfigTest(node, tr, *this);
       
       // stop node
-      node.stop();
-#endif
-      return 0;
+//      node.stop();
    }
+   return true;
+}
 
-   /**
-    * Runs interactive unit tests.
-    */
-   virtual int runInteractiveTests(TestRunner& tr)
-   {
-      return 0;
-   }
-};
-
-#ifndef MO_TEST_NO_MAIN
-BM_TEST_MAIN(BmConfigTester)
-#endif
+MO_TEST_MODULE_FN("bitmunk.tests.config.test", "1.0", run)

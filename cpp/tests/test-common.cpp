@@ -15,7 +15,7 @@
 #include "monarch/io/ByteArrayOutputStream.h"
 #include "monarch/rt/Exception.h"
 #include "monarch/test/Test.h"
-#include "monarch/test/TestRunner.h"
+#include "monarch/test/TestModule.h"
 
 using namespace std;
 using namespace bitmunk::common;
@@ -704,35 +704,15 @@ static void runValidatorTest(TestRunner& tr)
    tr.ungroup();
 }
 
-class BmCommonTester : public bitmunk::test::Tester
+static bool run(TestRunner& tr)
 {
-public:
-   BmCommonTester()
-   {
-      setName("Common");
-   }
-
-   /**
-    * Run automatic unit tests.
-    */
-   virtual int runAutomaticTests(TestRunner& tr)
+   if(tr.isDefaultEnabled())
    {
       runProfileTest(tr);
       runPayeeResolveTest(tr);
       runValidatorTest(tr);
-      
-      return 0;
    }
+   return true;
+}
 
-   /**
-    * Runs interactive unit tests.
-    */
-   virtual int runInteractiveTests(TestRunner& tr)
-   {
-      return 0;
-   }
-};
-
-#ifndef MO_TEST_NO_MAIN
-BM_TEST_MAIN(BmCommonTester)
-#endif
+MO_TEST_MODULE_FN("bitmunk.tests.common.test", "1.0", run)

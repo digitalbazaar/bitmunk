@@ -22,27 +22,33 @@ using namespace bitmunk::test;
 using namespace monarch::app;
 using namespace monarch::config;
 using namespace monarch::io;
+using namespace monarch::kernel;
 using namespace monarch::logging;
 using namespace monarch::rt;
 
-Tester::Tester()
+#define PLUGIN_NAME "bitmunk.apps.tester.Tester"
+#define PLUGIN_CL_CFG_ID PLUGIN_NAME ".commandLine"
+
+Tester::Tester(/*MicroKernel* k) :
+   mKernel(k*/)
 {
-   mInfo["id"] = "monarch.test.Tester";
-   mInfo["dependencies"]->append() = "monarch.app.plugins.Common";
 }
 
 Tester::~Tester()
 {
 }
 
-void Tester::setup(monarch::test::TestRunner& tr)
+bool Tester::setup(monarch::test::TestRunner& tr)
 {
-   monarch::test::Tester::setup(tr);
+   bool rval;
+
+   //monarch::test::Tester::setup(tr);
    Config config;
    {
-      Config meta = getApp()->getMetaConfig();
-      const char* gid = meta["groups"]["main"]->getString();
-      config[ConfigManager::ID] = "bitmunk.test.Tester config";
+      Config meta = tr.getApp()->getMetaConfig();
+      const char* gid = meta["groups"]["boot"]->getString();
+      config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+      config[ConfigManager::ID] = "bitmunk.test.Tester.config.base";
       config[ConfigManager::GROUP] = gid;
       config[ConfigManager::PARENT] = meta["parents"][gid]->getString();
    }
@@ -104,15 +110,34 @@ void Tester::setup(monarch::test::TestRunner& tr)
    cfg["bitmunk.sell.Sell"]["maxUploadRate"] = 0;
 
    // only load this config once
-   ConfigManager* cm = getApp()->getConfigManager();
+   ConfigManager* cm = tr.getApp()->getConfigManager();
    if(!cm->hasConfig(config[ConfigManager::ID]->getString()))
    {
-      cm->addConfig(config);
+      rval = cm->addConfig(config);
       assertNoException();
    }
+
+   return rval;
 }
 
-bool Tester::setupNode(Node* node)
+bool Tester::tearDown(monarch::test::TestRunner& tr)
+{
+   bool rval;
+
+   ConfigManager::ConfigId id = "bitmunk.test.Tester.config.base";
+   // only load this config once
+   ConfigManager* cm = tr.getApp()->getConfigManager();
+   if(cm->hasConfig(id))
+   {
+      rval = cm->removeConfig(id);
+      assertNoException();
+   }
+
+   return rval;
+}
+
+/*
+bool Tester::setupNode(monarch::test::TestRunner& tr, Node* node)
 {
    bool rval = true;
    ConfigManager* cm = getApp()->getConfigManager();
@@ -148,15 +173,17 @@ bool Tester::setupNode(Node* node)
 
    return rval;
 }
+*/
 
-bool Tester::setupPeerNode(Node* node, Config* extraMerge)
+bool Tester::setupPeerNode(monarch::test::TestRunner& tr, Config* extraMerge)
 {
    bool rval;
 
    DynamicObject config;
-   config[ConfigManager::ID] = "test peer node config";
+   config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+   config[ConfigManager::ID] = "bitmunk.test.Tester.config.peer";
    config[ConfigManager::GROUP] =
-      getApp()->getMetaConfig()["groups"]["main"]->getString();
+      tr.getApp()->getMetaConfig()["groups"]["main"]->getString();
    Config merge = config[ConfigManager::MERGE];
    merge["node"]["port"] = 19200;
    merge["node"]["bitmunkUrl"] = "http://localhost:19100";
@@ -165,7 +192,45 @@ bool Tester::setupPeerNode(Node* node, Config* extraMerge)
    {
       merge.merge(*extraMerge, false);
    }
-   rval = node->getConfigManager()->addConfig(config);
+   rval = tr.getMicroKernel()->getConfigManager()->addConfig(config);
 
    return rval;
 }
+
+bool Tester::tearDownPeerNode(monarch::test::TestRunner& tr)
+{
+   return tr.getMicroKernel()->getConfigManager()->removeConfig(
+      "bitmunk.test.Tester.config.peer");
+}
+
+/*
+class TesterFactory :
+   public AppPluginFactory
+{
+public:
+   TesterFactory() :
+      AppPluginFactory(PLUGIN_NAME, "1.0")
+   {
+      addDependency("monarch.app.Config", "1.0");
+      addDependency("monarch.app.Logging", "1.0");
+      addDependency("monarch.apps.tester.Tester", "1.0");
+   }
+
+   virtual ~TesterFactory() {}
+
+   virtual AppPluginRef createAppPlugin()
+   {
+      return new Tester(mMicroKernel);
+   }
+};
+
+Module* createModestModule()
+{
+   return new TesterFactory();
+}
+
+void freeModestModule(Module* m)
+{
+   delete m;
+}
+*/

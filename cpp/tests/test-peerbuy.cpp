@@ -486,14 +486,6 @@ public:
 #endif
       return 0;
    }
-   
-   /**
-    * Runs interactive unit tests.
-    */
-   virtual int runInteractiveTests(TestRunner& tr)
-   {
-      return 0;
-   }
 };
 
 #ifndef MO_TEST_NO_MAIN

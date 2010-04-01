@@ -5,10 +5,9 @@
 #define bitmunk_test_Tester_H
 
 #include "monarch/logging/Logger.h"
-#include "monarch/test/Tester.h"
+#include "monarch/apps/tester/Tester.h"
 #include "monarch/rt/DynamicObject.h"
 #include "monarch/rt/DynamicObjectIterator.h"
-#include "bitmunk/node/App.h"
 #include "bitmunk/node/Node.h"
 #include "bitmunk/test/Test.h"
 
@@ -22,8 +21,14 @@ namespace test
  * 
  * Author: David I. Lehn
  */
-class Tester : public monarch::test::Tester
+class Tester /*: public monarch::apps::tester::Tester*/
 {
+protected:
+   /**
+    * Kernel for this app.
+    */
+   monarch::kernel::MicroKernel* mKernel;
+
 public:
    /**
     * Create a Tester.
@@ -36,36 +41,55 @@ public:
    virtual ~Tester();
    
    /**
-    * Setup before running tests.
+    * Setup the TestRunner for running node tests.
     * 
     * @param tr the test's TestRunner.
+    *
+    * @return true if succesful, false if an exception occurred.
     */
-   virtual void setup(monarch::test::TestRunner& tr);
+   static bool setup(monarch::test::TestRunner& tr);
+
+   /**
+    * Tear down the TestRunner's setup after running node tests.
+    *
+    * @param tr the test's TestRunner.
+    *
+    * @return true if succesful, false if an exception occurred.
+    */
+   static bool tearDown(monarch::test::TestRunner& tr);
    
    /**
     * Setup a node from this app.  Will read out the current config and use it
     * to set the Nodes config.
     *
     * @param node a Node to setup.
+    *
+    * @return true if succesful, false if an exception occurred.
     */
-   virtual bool setupNode(bitmunk::node::Node* node);
+   //static bool setupNode(bitmunk::node::Node* node);
 
    /**
-    * Setup a node from this app as a peer.  Will read out the current config
-    * and use it to set the Nodes config. The merge config is only merge data.
+    * Setup the TestRunner for a peer node test. The merge config is only
+    * merge data.
     *
-    * @param node a Node to setup.
+    * @param tr the test's TestRunner.
     * @param merge optional config data to add to the merge section.
+    *
+    * @return true if succesful, false if an exception occurred.
     */
-   virtual bool setupPeerNode(
-      bitmunk::node::Node* node, monarch::config::Config* extraMerge = NULL);
-};
+   static bool setupPeerNode(
+      monarch::test::TestRunner& tr,
+      monarch::config::Config* extraMerge = NULL);
 
-/**
- * Macro to ease defining and starting a Bitmunk Tester.
- * NOTE: Surround this macro with #ifndef DB_TEST_NO_MAIN ... #endif.
- */
-#define BM_TEST_MAIN(testClassName) BM_APP_PLUGIN_MAIN(testClassName)
+   /**
+    * Tear down the TestRunner's peer node setup.
+    *
+    * @param tr the test's TestRunner.
+    *
+    * @return true if succesful, false if an exception occurred.
+    */
+   static bool tearDownPeerNode(monarch::test::TestRunner& tr);
+};
 
 } // end namespace test
 } // end namespace bitmunk
