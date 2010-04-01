@@ -1,0 +1,10 @@
+# Makefile to compile the module in this directory
+
+LIBRARIES = bmapp
+bmapp_HEADERS = $(wildcard *.h)
+bmapp_SOURCES = $(wildcard *.cpp)
+
+DYNAMIC_LINK_LIBRARIES = mort moconfig moapp bmcommon
+
+# ----------- Standard Makefile
+include @BITMUNK_DIR@/setup/Makefile.base
