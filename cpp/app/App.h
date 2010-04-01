@@ -1,14 +1,15 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
-#ifndef bitmunk_node_App_H
-#define bitmunk_node_App_H
+#ifndef bitmunk_app_App_H
+#define bitmunk_app_App_H
 
 #include "monarch/app/AppPlugin.h"
+#include "monarch/app/AppPluginFactory.h"
 
 namespace bitmunk
 {
-namespace node
+namespace app
 {
 
 /**
@@ -33,6 +34,11 @@ protected:
       monarch::config::Config& meta,
       const char* id = NULL,
       const char* groupId = NULL);
+
+   /**
+    * {@inheritDoc}
+    */
+   virtual bool initConfigManager();
 
    /**
     * Prepare to initialize Bitmunk meta config.
@@ -78,25 +84,7 @@ public:
    virtual bool cleanupLogging();
 };
 
-/**
- * Macro to create a simple main() that creates an app, adds a plugin to it,
- * and calls App::main().
- *
- * @param appPluginClassName class name of an AppPlugin subclass.
- */
-#define BM_APP_PLUGIN_MAIN(appPluginClassName)                     \
-int main(int argc, const char* argv[])                             \
-{                                                                  \
-   monarch::app::App app;                                          \
-   std::vector<monarch::app::AppPluginRef> plugins;                \
-   monarch::app::AppPluginRef bitmunk = new bitmunk::node::App;    \
-   plugins.push_back(bitmunk);                                     \
-   monarch::app::AppPluginRef plugin = new appPluginClassName;     \
-   plugins.push_back(plugin);                                      \
-   return app.main(argc, argv, &plugins);                          \
-}
-
-} // end namespace node
+} // end namespace app
 } // end namespace bitmunk
 
 #endif

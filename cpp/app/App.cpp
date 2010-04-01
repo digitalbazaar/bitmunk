@@ -1,49 +1,43 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
-#include "bitmunk/node/App.h"
+#include "bitmunk/app/App.h"
 
 #include "monarch/app/App.h"
+#include "monarch/app/AppPluginFactory.h"
+#include "monarch/modest/Module.h"
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/node/NodeConfigManager.h"
 
+#include <cstdio>
+
 using namespace monarch::config;
+using namespace monarch::modest;
 using namespace monarch::rt;
+using namespace bitmunk::app;
 using namespace bitmunk::common;
 using namespace bitmunk::node;
 
 App::App()
 {
-   mInfo["id"] = "bitmunk.app.App";
-   mInfo["dependencies"]->append() = "monarch.app.plugins.Common";
 }
 
 App::~App()
 {
 }
 
-bool App::initializeLogging()
+bool App::initConfigManager()
 {
-   bool rval = AppPlugin::initializeLogging();
-   // setup logging system
-   // no need to call superclass method here since logging will do the same
-   bitmunk::common::Logging::initialize();
-   return rval;
-}
+   // add acceptable bitmunk version
+   getApp()->getConfigManager()->addVersion(BITMUNK_CONFIG_VERSION);
 
-bool App::cleanupLogging()
-{
-   bool rval = AppPlugin::cleanupLogging();
-   // cleanup logging system
-   // no need to call superclass method here since logging will do the same
-   bitmunk::common::Logging::cleanup();
-   return rval;
+   return true;
 }
 
 Config App::makeMetaConfig(Config& meta, const char* id, const char* groupId)
 {
    Config rval = monarch::app::App::makeMetaConfig(meta, id, groupId);
-   rval[ConfigManager::VERSION] = NodeConfigManager::CONFIG_VERSION;
+   rval[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
    return rval;
 }
 
@@ -115,4 +109,51 @@ bool App::initMetaConfig(Config& meta)
    }
 
    return rval;
+}
+
+bool App::initializeLogging()
+{
+   bool rval = AppPlugin::initializeLogging();
+   // setup logging system
+   // no need to call superclass method here since logging will do the same
+   bitmunk::common::Logging::initialize();
+   return rval;
+}
+
+bool App::cleanupLogging()
+{
+   bool rval = AppPlugin::cleanupLogging();
+   // cleanup logging system
+   // no need to call superclass method here since logging will do the same
+   bitmunk::common::Logging::cleanup();
+   return rval;
+}
+
+class BitmunkAppFactory :
+   public monarch::app::AppPluginFactory
+{
+public:
+   BitmunkAppFactory() :
+      AppPluginFactory("bitmunk.app.App", "1.0")
+   {
+      addDependency("monarch.app.Monarch", "1.0");
+      addDependency("monarch.app.Logging", "1.0");
+   }
+
+   virtual ~BitmunkAppFactory() {}
+
+   virtual monarch::app::AppPluginRef createAppPlugin()
+   {
+      return new App();
+   }
+};
+
+Module* createModestModule()
+{
+   return new BitmunkAppFactory();
+}
+
+void freeModestModule(Module* m)
+{
+   delete m;
 }
