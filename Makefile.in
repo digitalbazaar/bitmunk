@@ -9,32 +9,36 @@ datarootdir = @datarootdir@
 ifeq (@BUILD_GTK_UI@,yes)
 GTKUI_SUBDIR = cpp/gtkui
 GTKUI_MODULE = bmgtkui
+GTKUI_TEST_MODULES = bmtest-gtkbuilder
 endif
 
 FLASH_SUBDIRS := cpp/apps/bitmunk
-EXECUTABLE_SUBDIRS := cpp/apps/bitmunk \
-                      cpp/tests
+EXECUTABLE_SUBDIRS := \
+	cpp/tests
 
-SUBDIRS := cpp/common \
-           cpp/protocol \
-           cpp/node \
-           cpp/data \
-           cpp/bfp \
-           cpp/peruserdb \
-           cpp/portmapper \
-           cpp/purchase \
-           cpp/sell \
-           cpp/system \
-           cpp/negotiate \
-           cpp/filebrowser \
-           cpp/customcatalog \
-           cpp/medialibrary \
-           cpp/webui \
-           cpp/eventreactor \
-           cpp/eventreactor-downloadstate \
-           $(GTKUI_SUBDIR) \
-           cpp/test \
-           $(EXECUTABLE_SUBDIRS)
+SUBDIRS := \
+	cpp/common \
+	cpp/app \
+	cpp/protocol \
+	cpp/node \
+	cpp/data \
+	cpp/bfp \
+	cpp/peruserdb \
+	cpp/portmapper \
+	cpp/purchase \
+	cpp/sell \
+	cpp/system \
+	cpp/negotiate \
+	cpp/filebrowser \
+	cpp/customcatalog \
+	cpp/medialibrary \
+	cpp/webui \
+	cpp/eventreactor \
+	cpp/eventreactor-downloadstate \
+	$(GTKUI_SUBDIR) \
+	cpp/test \
+	cpp/apps/bitmunk \
+	$(EXECUTABLE_SUBDIRS)
 
 INSTALL_APPLICATIONS := \
 	dist/bin/bitmunk
@@ -79,30 +83,48 @@ COMMON_MODULES = bmnode bmsystem bmbfp bmnegotiate bmsell
 
 BPE_MODULES = $(COMMON_MODULES) bmperuserdb bmpurchase bmfilebrowser bmcustomcatalog bmmedialibrary bmeventreactor bmeventreactor-downloadstate bmwebui bmportmapper $(GTKUI_MODULE) $(ADMIN_MODULE)
 
+APP_MODULES = \
+	bfp-file-id \
+	bitmunk \
+	format-detect \
+	profile-creator
+
+TEST_MODULES = \
+	bmtest-common \
+	bmtest-config \
+	bmtest-customcatalog \
+	bmtest-download-states \
+	bmtest-eventreactor \
+	bmtest-node-services \
+	bmtest-peerbuy \
+	bmtest-piece-upload \
+	bmtest-secure-ping \
+	bmtest-services-filesystem \
+	bmtest-services-customcatalog \
+	bmtest-services-medialibrary \
+	bmtest-statemonitor \
+	bitmunk-unit-tests \
+	$(GTKUI_TEST_MODULES)
+
+LIBS_DIR = @BITMUNK_DIR@/dist/lib
+MODULES_DIR = @BITMUNK_DIR@/dist/modules
+
 ifeq ($(BUILD_FOR_LINUX),yes)
-LINUX_LIBS_DIR = @BITMUNK_DIR@/dist/lib
-LINUX_BPE_MODULES_DIR = @BITMUNK_DIR@/dist/modules/bpe
-LINUX_BPE_MODULES = $(patsubst %,lib%.so, $(BPE_MODULES))
-LINUX_BPE_MODULE_FILES = $(patsubst %,$(LINUX_BPE_MODULES_DIR)/lib%.so, $(BPE_MODULES))
-LINUX_MODULE_FILES = $(LINUX_BPE_MODULE_FILES)
+MODULE_FILES += $(patsubst %,$(MODULES_DIR)/bpe/lib%.so, $(BPE_MODULES))
+MODULE_FILES += $(patsubst %,$(MODULES_DIR)/apps/lib%.so, $(APP_MODULES))
+MODULE_FILES += $(patsubst %,$(MODULES_DIR)/tests/lib%.so, $(TEST_MODULES))
 endif
 
 ifeq ($(BUILD_FOR_WINDOWS),yes)
-WINDOWS_LIBS_DIR = @BITMUNK_DIR@/dist/lib
-WINDOWS_BPE_MODULES_DIR = @BITMUNK_DIR@/dist/modules/bpe
-WINDOWS_BPE_MODULES = $(patsubst %,%.dll, $(BPE_MODULES))
-WINDOWS_BPE_MODULE_FILES = $(patsubst %,$(WINDOWS_BPE_MODULES_DIR)/%.dll, $(BPE_MODULES))
-WINDOWS_MODULE_FILES = $(WINDOWS_BPE_MODULE_FILES)
-WINDOWS_BFP_FILES = $(patsubst %,$(BFPS_DIR)/%.dll, $(BFPS))
+MODULE_FILES += $(patsubst %,$(MODULES_DIR)/bpe/%.dll, $(BPE_MODULES))
+MODULE_FILES += $(patsubst %,$(MODULES_DIR)/apps/%.dll, $(APP_MODULES))
+MODULE_FILES += $(patsubst %,$(MODULES_DIR)/tests/%.dll, $(TEST_MODULES))
 endif
 
 ifeq ($(BUILD_FOR_MACOS),yes)
-MACOS_LIBS_DIR = @BITMUNK_DIR@/dist/lib
-MACOS_BPE_MODULES_DIR = @BITMUNK_DIR@/dist/modules/bpe
-MACOS_BPE_MODULES = $(patsubst %,lib%.dylib, $(BPE_MODULES))
-MACOS_BPE_MODULE_FILES = $(patsubst %,$(MACOS_BPE_MODULES_DIR)/lib%.dylib, $(BPE_MODULES))
-MACOS_MODULE_FILES = $(MACOS_BPE_MODULE_FILES)
-MACOS_BFP_FILES = $(patsubst %,$(BFPS_DIR)/lib%.dylib, $(BFPS))
+MODULE_FILES += $(patsubst %,$(MODULES_DIR)/bpe/lib%.dylib, $(BPE_MODULES))
+MODULE_FILES += $(patsubst %,$(MODULES_DIR)/apps/lib%.dylib, $(APP_MODULES))
+MODULE_FILES += $(patsubst %,$(MODULES_DIR)/tests/lib%.dylib, $(TEST_MODULES))
 endif
 
 .PHONY: all verbose clean test internal-docs clean-docs link-monarch-libs
@@ -120,35 +142,14 @@ clean:
 	@echo "Removed all objects, libraries and modules."
 
 link-monarch-libs:
-ifeq ($(BUILD_FOR_LINUX),yes)
-	@mkdir -p $(LINUX_LIBS_DIR)
-	@ln -sf @MONARCH_DIR@/dist/lib/* $(LINUX_LIBS_DIR)
-endif
-ifeq ($(BUILD_FOR_WINDOWS),yes)
-	@mkdir -p $(WINDOWS_LIBS_DIR)
-	@ln -sf @MONARCH_DIR@/dist/lib/* $(WINDOWS_LIBS_DIR)
-endif
-ifeq ($(BUILD_FOR_MACOS),yes)
-	@mkdir -p $(MACOS_LIBS_DIR)
-	@ln -sf @MONARCH_DIR@/dist/lib/* $(MACOS_LIBS_DIR)
-endif
+	@mkdir -p $(LIBS_DIR)
+	@ln -sf @MONARCH_DIR@/dist/lib/* $(LIBS_DIR)
 
-link-modules: $(LINUX_MODULE_FILES) $(WINDOWS_MODULE_FILES) $(MACOS_MODULE_FILES)
-ifeq ($(BUILD_FOR_LINUX),yes)
-$(LINUX_BPE_MODULE_FILES):
-	@mkdir -p $(LINUX_BPE_MODULES_DIR)
-	@ln -sf $(LINUX_LIBS_DIR)/$(@F) $(LINUX_BPE_MODULES_DIR)/$(@F)
-endif
-ifeq ($(BUILD_FOR_WINDOWS),yes)
-$(WINDOWS_BPE_MODULE_FILES): 
-	@mkdir -p $(WINDOWS_BPE_MODULES_DIR)
-	@ln -sf $(WINDOWS_LIBS_DIR)/$(@F) $(WINDOWS_BPE_MODULES_DIR)/$(@F)
-endif
-ifeq ($(BUILD_FOR_MACOS),yes)
-$(MACOS_BPE_MODULE_FILES): 
-	@mkdir -p $(MACOS_BPE_MODULES_DIR)
-	@ln -sf $(MACOS_LIBS_DIR)/$(@F) $(MACOS_BPE_MODULES_DIR)/$(@F)
-endif
+link-modules: $(MODULE_FILES)
+
+$(MODULE_FILES):
+	@mkdir -p $(@D)
+	@ln -sf $(LIBS_DIR)/$(@F) $@
 
 # Note: When building for multiple archs this will see all the tests and
 #       will likely fail for non-current archs.  This method is used since

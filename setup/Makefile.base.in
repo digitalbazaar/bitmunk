@@ -1,21 +1,29 @@
-# This file contains basic Makefile includes that contain all building
-# instructions for all binaries and packages.
+# This file contains basic Makefile includes that contain all 
+# common building instructions for all binaries and packages.
 
-.PHONY: all build-setup build-clean build-directories build-headers build-objects build-xpts build-flash build-min-js build-libraries build-executables clean clean-objects clean-libraries clean-executables clean-flash clean-min-js clean-xpts
+.PHONY: all build-setup build-clean build-directories build-headers build-objects build-libraries build-executables build-xpts build-flash build-min-js clean clean-objects clean-libraries clean-executables clean-flash clean-min-js clean-xpts
 
 all: build-headers build-objects build-libraries build-executables build-flash build-min-js build-xpts
 
+PLATFORM=@BITMUNK_PLATFORM@
 BUILD_FOR_LINUX=@BUILD_FOR_LINUX@
 BUILD_FOR_WINDOWS=@BUILD_FOR_WINDOWS@
 BUILD_FOR_MACOS=@BUILD_FOR_MACOS@
 
 AR_FLAGS = cr
+
 MONARCH = $(realpath @MONARCH_DIR@)
+TOP_MONARCH_SRC_DIR = $(MONARCH)
+TOP_MONARCH_BUILD_DIR = $(MONARCH)
+
 BITMUNK = $(realpath @BITMUNK_DIR@)
-INCLUDES = \
-	-I$(MONARCH)/dist/include \
-	-I$(BITMUNK)/dist/include \
-	-I$(BITMUNK)/dist/internal/include
+TOP_SRC_DIR = $(BITMUNK)
+TOP_BUILD_DIR = $(BITMUNK)
+
+INCLUDES += \
+	-I$(TOP_MONARCH_BUILD_DIR)/dist/include \
+	-I$(TOP_BUILD_DIR)/dist/include \
+	-I$(TOP_BUILD_DIR)/dist/internal/include
 
 CWD = $(shell pwd)
 ifndef HEADER_DIST_DIR
@@ -34,17 +42,80 @@ endif
 
 .SECONDEXPANSION:
 
-# Build rules specific to each platform
+# Variables for all platforms
+
+CXX ?= @CXX@
+MO_CXX_FLAGS += @CXXFLAGS@ @DEFS@ -Wall
+MO_LD_FLAGS += @LDFLAGS@
+MO_INCLUDES += $(INCLUDES)
+MO_LIBS += -L$(TOP_MONARCH_BUILD_DIR)/dist/lib -L$(MO_LIB_DIR)
+AR ?= @AR@
+AS ?= @AS@
+
+# Platform-specific variables
 
 ifeq ($(BUILD_FOR_LINUX),yes)
-include @BITMUNK_DIR@/setup/Makefile.linux
+PLATFORM_NAME=LINUX
+LIB_PREFIX=lib
+DYNAMIC_LIB_EXT=so
+STATIC_LIB_EXT=a
+EXECUTABLE_EXT=
+MO_CXX_FLAGS += -march=i686 -fPIC -DLINUX $(MODULE_CXX_FLAGS) $(MODULE_LINUX_CXX_FLAGS)
+MO_LD_FLAGS += -Wl,-rpath=@BITMUNK_MODULES_DIR@
+# FIXME: break out vars and include in per-dir Makefiles as needed
+MO_INCLUDES += \
+	-I$(TOP_BUILD_DIR)/build/apps/firefox/components \
+	-I$(TOP_BUILD_DIR)/dist/internal/include \
+	@GTK_INCLUDES@
+MO_LIBS += -L/usr/lib/mysql @GTK_LIBS@
+DYNAMIC_LINK_LIBRARIES += $(DYNAMIC_LINUX_LINK_LIBRARIES)
+DYNAMIC_EXECUTABLE_LIBRARIES += $(DYNAMIC_LINUX_EXECUTABLE_LIBRARIES)
 endif
+
 ifeq ($(BUILD_FOR_MACOS),yes)
-include @BITMUNK_DIR@/setup/Makefile.macos
+PLATFORM_NAME=MACOS
+LIB_PREFIX=lib
+DYNAMIC_LIB_EXT=dylib
+STATIC_LIB_EXT=a
+EXECUTABLE_EXT=
+# TODO: support build target config and use -march=i686/powerpc/etc
+MO_CXX_FLAGS += -fPIC -DMACOS $(MODULE_CXX_FLAGS) $(MODULE_MACOS_CXX_FLAGS)
+MO_LD_FLAGS += -Wl,-flat_namespace
+MO_LIB_LD_FLAGS += \
+	-Wl,-dylib_compatibility_version,@FULL_DOTTED_VERSION@ \
+	-Wl,-dylib_current_version,@FULL_DOTTED_VERSION@
+# Add default location for Fink
+MO_INCLUDES += -I/sw/include 
+MO_LIBS += -L/sw/lib
+DYNAMIC_LINK_LIBRARIES += $(DYNAMIC_MACOS_LINK_LIBRARIES)
+DYNAMIC_EXECUTABLE_LIBRARIES += $(DYNAMIC_MACOS_EXECUTABLE_LIBRARIES)
 endif
+
 ifeq ($(BUILD_FOR_WINDOWS),yes)
-include @BITMUNK_DIR@/setup/Makefile.mingw32
+PLATFORM_NAME=WINDOWS
+LIB_PREFIX=
+DYNAMIC_LIB_EXT=dll
+STATIC_LIB_EXT=lib
+EXECUTABLE_EXT=.exe
+MO_CXX_FLAGS += -march=i686 -D_WIN32_WINNT=0x0501 $(MODULE_CXX_FLAGS)
+MO_LD_FLAGS += -Wl,--enable-auto-import
+MO_INCLUDES += \
+	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/pthread/include \
+	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/openssl/include \
+	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/expat/include \
+	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/mysql/include \
+	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/regex/include \
+	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/sqlite3/include \
+	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/zlib/include \
+	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/iconv/include
+DYNAMIC_LINK_LIBRARIES += $(DYNAMIC_WINDOWS_LINK_LIBRARIES)
+DYNAMIC_EXECUTABLE_LIBRARIES += $(DYNAMIC_WINDOWS_EXECUTABLE_LIBRARIES)
 endif
+
+# Platform-agnostic build rules 
+
+#include $(TOP_MONARCH_SRC_DIR)/setup/monarch.mk
+include $(TOP_SRC_DIR)/setup/bitmunk.mk
 
 build-setup:
 

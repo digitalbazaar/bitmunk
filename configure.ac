@@ -2,13 +2,13 @@
 # Usage: Run ./configure once 
 # Author: Manu Sporny
 
-AC_INIT([bitmunk],[3.2],[support@digitalbazaar.com])
+AC_INIT([bitmunk],[3.2.1],[support@digitalbazaar.com])
 AC_CONFIG_AUX_DIR(setup)
 
 # Versioning
 BITMUNK_VERSION_MAJOR=3
 BITMUNK_VERSION_MINOR=2
-BITMUNK_VERSION_MICRO=0
+BITMUNK_VERSION_MICRO=1
 BITMUNK_MAJORMINOR=$BITMUNK_VERSION_MAJOR.$BITMUNK_VERSION_MINOR
 AC_SUBST(BITMUNK_VERSION_MAJOR)
 AC_SUBST(BITMUNK_VERSION_MINOR)
@@ -23,8 +23,9 @@ AC_SUBST(MONARCH_DIR)
 AC_SUBST(BITMUNK_DIR)
 # Note: 'date -R' not portable to MacOS
 DATE_RFC_2822=`date +"%a, %d %b %Y %H:%M:%S %z"`
-FULL_VERSION=${PACKAGE_VERSION}-`date +%Y%m%d`
+DATE_YMD=`date +%Y%m%d`
 FULL_DOTTED_VERSION=${PACKAGE_VERSION}
+FULL_VERSION=${PACKAGE_VERSION}-${DATE_YMD}
 AC_SUBST(DATE_RFC_2822)
 AC_SUBST(FULL_VERSION)
 AC_SUBST(FULL_DOTTED_VERSION)
@@ -55,8 +56,9 @@ AC_ARG_ENABLE([windows],
    [
       case "${enableval}" in
          yes) BUILD_FOR_WINDOWS=yes 
+              BUILD_FOR_LINUX=no
               BUILD_FOR_MACOS=no
-              BUILD_FOR_LINUX=no;;
+              ;;
          no) BUILD_FOR_WINDOWS=no ;;
          *) AC_MSG_ERROR(bad value ${enableval} for --enable-windows) ;;
       esac
@@ -71,7 +73,8 @@ AC_ARG_ENABLE([macos],
       case "${enableval}" in
          yes) BUILD_FOR_MACOS=yes 
               BUILD_FOR_LINUX=no
-              BUILD_FOR_WINDOWS=no;;
+              BUILD_FOR_WINDOWS=no
+              ;;
          no) BUILD_FOR_MACOS=no ;;
          *) AC_MSG_ERROR(bad value ${enableval} for --enable-macos) ;;
       esac
@@ -437,19 +440,19 @@ AC_ARG_ENABLE([log-line-numbers],
       [disable log line numbers [[no]]]),
    [
    case "${enableval}" in
-      yes) DB_DISABLE_LOG_LINE_NUMBERS=no ;;
-      no)  DB_DISABLE_LOG_LINE_NUMBERS=yes ;;
+      yes) MO_DISABLE_LOG_LINE_NUMBERS=no ;;
+      no)  MO_DISABLE_LOG_LINE_NUMBERS=yes ;;
       *)   AC_MSG_ERROR(bad value ${enableval} for --enable-log-line-numbers) ;;
    esac
    ],
-   [DB_DISABLE_LOG_LINE_NUMBERS=no]) dnl Default value
+   [MO_DISABLE_LOG_LINE_NUMBERS=no]) dnl Default value
 if test "x$BUILD_FIREFOX_PLUGIN" = "xyes"; then
    if test "x$BITMUNK_RELEASE_MODE" = "xyes"; then
-      DB_DISABLE_LOG_LINE_NUMBERS=yes
+      MO_DISABLE_LOG_LINE_NUMBERS=yes
    fi
 fi
-if test "x$DB_DISABLE_LOG_LINE_NUMBERS" = "xyes"; then
-   AC_DEFINE(DB_DISABLE_LOG_LINE_NUMBERS, 1,
+if test "x$MO_DISABLE_LOG_LINE_NUMBERS" = "xyes"; then
+   AC_DEFINE(MO_DISABLE_LOG_LINE_NUMBERS, 1,
       [Enable log line numbers.])
 fi
 
@@ -664,10 +667,10 @@ fi
 # Conditional setup for Linux build
 if test "$BUILD_FOR_LINUX" = "yes" ; then
    AC_PROG_CXX()
-   AC_CHECK_PROG(LINUX_AR, ar, ar, not found)
+   AC_CHECK_PROG(AR, ar, ar, not found)
+   AC_CHECK_PROG(AS, as, as, not found)
    AC_CHECK_PROG(STRIP, strip, strip, not found)
    STRIP_FLAGS=
-   LINUX_CXX="$CXX"
 
    if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
       if test "x$XPIDL" = "x" ; then
@@ -689,19 +692,15 @@ if test "$BUILD_FOR_LINUX" = "yes" ; then
       AC_CHECK_PROGS(MXMLC, mxmlc /usr/lib/flex3/bin/mxmlc, not found, $PATH /)
    fi
 fi
-AC_SUBST(LINUX_CXX)
-AC_SUBST(LINUX_AR)
 
 # Conditional setup for Windows build
 if test "$BUILD_FOR_WINDOWS" = "yes" ; then
 
-   AC_CHECK_PROG(WINDOWS_CXX, i586-mingw32msvc-g++, 
+   AC_CHECK_PROG(CXX, i586-mingw32msvc-g++, 
                  i586-mingw32msvc-g++, not found)
-   AC_CHECK_PROG(WINDOWS_AR, i586-mingw32msvc-ar, 
+   AC_CHECK_PROG(AR, i586-mingw32msvc-ar, 
                  i586-mingw32msvc-ar, not found)
-   AC_CHECK_PROG(WINDOWS_DLLWRAP, i586-mingw32msvc-dllwrap,
-                 i586-mingw32msvc-dllwrap, not found)
-   AC_CHECK_PROG(WINDOWS_AS, i586-mingw32msvc-as,
+   AC_CHECK_PROG(AS, i586-mingw32msvc-as,
                  i586-mingw32msvc-as, not found)
    AC_CHECK_PROG(STRIP, i586-mingw32msvc-strip,
                  i586-mingw32msvc-strip, not found)
@@ -709,7 +708,6 @@ if test "$BUILD_FOR_WINDOWS" = "yes" ; then
    # If the mingw32 compiler wasn't found, use the system default
    if test "$WINDOWS_CXX" = "not found" ; then
       AC_PROG_CXX()
-      WINDOWS_CXX="$CXX"
    fi
 
    if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
@@ -734,15 +732,12 @@ if test "$BUILD_FOR_WINDOWS" = "yes" ; then
       AC_CHECK_PROGS(MXMLC, mxmlc /usr/lib/flex3/bin/mxmlc, not found, $PATH /)
    fi
 fi
-AC_SUBST(WINDOWS_CXX)
-AC_SUBST(WINDOWS_AS)
-AC_SUBST(WINDOWS_AR)
-AC_SUBST(WINDOWS_DLLWRAP)
 
 # Conditional setup for MacOS build
 if test "$BUILD_FOR_MACOS" = "yes" ; then
    AC_PROG_CXX(g++-4 g++)
-   AC_CHECK_PROG(MACOS_AR, ar, ar, not found)
+   AC_CHECK_PROG(AR, ar, ar, not found)
+   AC_CHECK_PROG(AS, as, as, not found)
    AC_CHECK_PROG(STRIP, strip, strip, not found)
    STRIP_FLAGS=-S
    MACOS_CXX="$CXX"
@@ -768,9 +763,6 @@ if test "$BUILD_FOR_MACOS" = "yes" ; then
       AC_CHECK_PROGS(MXMLC, mxmlc /usr/lib/flex3/bin/mxmlc, not found, $PATH /)
    fi
 fi
-AC_SUBST(MACOS_CXX)
-AC_SUBST(MACOS_AR)
-AC_SUBST(MACOS_AS)
 
 # Xulrunner is used to build the Firefox plugin
 AC_SUBST(XPIDL)
@@ -821,40 +813,41 @@ dnl ----------------------------------
 
 # Generating files
 AC_CONFIG_FILES([
-	Makefile
-	setup/Makefile.base
-	setup/docs.doxygen
-	cpp/node/Makefile
-	cpp/common/Makefile
-	cpp/data/Makefile
-	cpp/protocol/Makefile
-	cpp/bfp/Makefile
-	cpp/bfp/BfpApiVersion.h
-	cpp/gtkui/Makefile
-	cpp/peruserdb/Makefile
-	cpp/portmapper/Makefile
-	cpp/purchase/Makefile
-	cpp/medialibrary/Makefile
-	cpp/negotiate/Makefile
-	cpp/sell/Makefile
-	cpp/filebrowser/Makefile
-	cpp/customcatalog/Makefile
-	cpp/system/Makefile
-	cpp/system/config.h
-	cpp/webui/Makefile
-	cpp/eventreactor/Makefile
-	cpp/eventreactor-downloadstate/Makefile
-	cpp/apps/bitmunk/Makefile
-	cpp/apps/bitmunk/config.h
-	cpp/apps/firefox/Makefile
-	cpp/apps/firefox/Makefile.common
-	cpp/apps/firefox/components/Makefile
-	cpp/apps/firefox/extension/chrome/bitmunk/content/bitmunk-urls.js
-	cpp/apps/firefox/extension/install.rdf
-	cpp/apps/firefox/plugins/Makefile
-	cpp/test/Makefile
-	cpp/tests/Makefile
-	cpp/tests/bitmunk-unit-tests.h
+   Makefile
+   setup/Makefile.base
+   setup/docs.doxygen
+   cpp/app/Makefile
+   cpp/apps/bitmunk/Makefile
+   cpp/apps/bitmunk/config.h
+   cpp/apps/firefox/Makefile
+   cpp/apps/firefox/Makefile.common
+   cpp/apps/firefox/components/Makefile
+   cpp/apps/firefox/extension/chrome/bitmunk/content/bitmunk-urls.js
+   cpp/apps/firefox/extension/install.rdf
+   cpp/apps/firefox/plugins/Makefile
+   cpp/bfp/BfpApiVersion.h
+   cpp/bfp/Makefile
+   cpp/common/Makefile
+   cpp/customcatalog/Makefile
+   cpp/data/Makefile
+   cpp/eventreactor-downloadstate/Makefile
+   cpp/eventreactor/Makefile
+   cpp/filebrowser/Makefile
+   cpp/gtkui/Makefile
+   cpp/medialibrary/Makefile
+   cpp/negotiate/Makefile
+   cpp/node/Makefile
+   cpp/peruserdb/Makefile
+   cpp/portmapper/Makefile
+   cpp/protocol/Makefile
+   cpp/purchase/Makefile
+   cpp/sell/Makefile
+   cpp/system/Makefile
+   cpp/system/config.h
+   cpp/test/Makefile
+   cpp/tests/Makefile
+   cpp/tests/bitmunk-unit-tests.h
+   cpp/webui/Makefile
 ])
 
 if test "x$BITMUNK_RELEASE_MODE" = "xyes"; then
@@ -893,9 +886,9 @@ if test "$BUILD_FOR_WINDOWS" = "yes" ; then
 AC_CONFIG_FILES([ setup/Makefile.mingw32 ])
 fi
 
-# Generated scripts
+# Generate scripts and configuration files for release
 AC_CONFIG_FILES([
-	installers/debian/changelog
+   installers/debian/changelog
 ])
 AC_CONFIG_FILES([bitmunk-bpe], [chmod +x bitmunk-bpe])
 AC_CONFIG_FILES([bitmunk-bpe-gdb], [chmod +x bitmunk-bpe-gdb])
@@ -943,33 +936,25 @@ echo "Build platform    : $BITMUNK_PLATFORM"
 
 if test "x$BUILD_FOR_LINUX" = "xyes"; then
    echo "Linux             : enabled"
-   echo "Linux target CPU  : $TARGET_CPU"
-   echo "Linux C++ compiler: $LINUX_CXX"
-   echo "Optimization flags: $CXXFLAGS"
-   echo "Linux obj archiver: $LINUX_AR"
 else
    echo "Linux             : disabled (use --enable-linux to enable)"
 fi
 if test "x$BUILD_FOR_WINDOWS" = "xyes"; then
    echo "Win32             : enabled"
-   echo "Win32 target CPU  : $TARGET_CPU"
-   echo "Win32 C++ compiler: $WINDOWS_CXX"
-   echo "Optimization flags: $CXXFLAGS"
-   echo "Win32 obj archiver: $WINDOWS_AR"
-   echo "Win32 assembler   : $WINDOWS_AS"
-   echo "Win32 DLL wrapper : $WINDOWS_DLLWRAP"
 else
    echo "Win32             : disabled (use --enable-windows to enable)"
 fi
 if test "x$BUILD_FOR_MACOS" = "xyes"; then
    echo "MacOS             : enabled"
-   echo "MacOS target CPU  : $TARGET_CPU"
-   echo "MacOS C++ compiler: $MACOS_CXX"
-   echo "Optimization flags: $CXXFLAGS"
-   echo "MacOS obj archiver: $MACOS_AR"
 else
    echo "MacOS             : disabled (use --enable-macos to enable)"
 fi
+echo "C++ compiler      : $CXX"
+echo "C++ archiver      : $AR"
+echo "Assembler         : $AS"
+echo "Target CPU        : $TARGET_CPU"
+
+echo "Optimization Flags: $BITMUNK_CXX_OPT_FLAGS"
 
 echo "Firefox Platform  : $FIREFOX_PLATFORM"
 
@@ -991,7 +976,7 @@ else
    echo "Tests             : disabled (use --enable-tests to enable)"
 fi
 
-if test "x$DB_DISABLE_LOG_LINE_NUMBERS" = "xyes"; then
+if test "x$MO_DISABLE_LOG_LINE_NUMBERS" = "xyes"; then
    echo "Log line numbers  : disabled (use --enable-log-line-numbers to enable)"
 else
    echo "Log line numbers  : enabled"

@@ -1,9 +1,13 @@
 # Makefile to compile the module in this directory
 
-EXECUTABLES = bitmunk
+LIBRARIES = bitmunk
+bitmunk_HEADERS = $(wildcard *.h)
+bitmunk_SOURCES = $(wildcard *.cpp)
 
-DYNAMIC_LINK_LIBRARIES = mort momodest moutil moio mologging mocrypto monet mohttp modata moevent mofiber moconfig mocompress movalidation moapp mokernel bmcommon bmprotocol bmnode mosql $(MYSQL_DYNAMIC_LINK_LIBRARIES) mosqlite3 $(SPHINX_DYNAMIC_LINK_LIBRARIES)
-DYNAMIC_LINUX_LIBRARIES = pthread crypto ssl expat sqlite3 $(MYSQL_DYNAMIC_LINUX_LIBRARIES)
+HEADER_DIST_DIR = dist/include/bitmunk/apps/bitmunk
+
+DYNAMIC_LINK_LIBRARIES = mort momodest moutil moio mologging mocrypto monet mohttp modata moevent mofiber moconfig mocompress movalidation moapp mokernel bmcommon bmprotocol mosql $(MYSQL_DYNAMIC_LINK_LIBRARIES) mosqlite3 $(SPHINX_DYNAMIC_LINK_LIBRARIES)
+DYNAMIC_LINUX_LINK_LIBRARIES = pthread crypto ssl expat sqlite3 $(MYSQL_DYNAMIC_LINUX_LIBRARIES)
 DYNAMIC_WINDOWS_LIBRARIES = sqlite3 $(MYSQL_DYNAMIC_WINDOWS_LIBRARIES)
 
 EXTRA_WINDOWS_LIBRARIES = $(WINDOWS_LIB_DIR)/pthreadGCE2.dll $(WINDOWS_LIB_DIR)/libeay32.dll $(WINDOWS_LIB_DIR)/ssleay32.dll $(WINDOWS_LIB_DIR)/libexpat.dll $(WINDOWS_LIB_DIR)/sqlite3.dll -lws2_32

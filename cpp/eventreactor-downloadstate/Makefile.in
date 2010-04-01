@@ -1,11 +1,13 @@
 # Makefile to compile the module in this directory
 
-HEADERS = $(wildcard *.h)
-SOURCES = $(wildcard *.cpp)
 LIBRARIES = bmeventreactor-downloadstate
-DYNAMIC_LINK_LIBRARIES = mort moutil momodest mofiber moio mocrypto monet mohttp modata mologging movalidation mokernel bmnode bmprotocol bmcommon
-DYNAMIC_WINDOWS_LIBRARIES = moevent
-DYNAMIC_MACOS_LIBRARIES = moevent moconfig moapp mocompress
+bmeventreactor_downloadstate_HEADERS = $(wildcard *.h)
+bmeventreactor_downloadstate_SOURCES = $(wildcard *.cpp)
+
+DYNAMIC_LINK_LIBRARIES = mort moutil momodest mofiber moio mocrypto monet mohttp modata mologging movalidation mokernel bmnode bmcommon bmprotocol
+
+DYNAMIC_MACOS_LINK_LIBRARIES = moevent moconfig moapp mocompress
+DYNAMIC_WINDOWS_LINK_LIBRARIES = moevent
 
 HEADER_DIST_DIR = dist/include/bitmunk/eventreactor
 

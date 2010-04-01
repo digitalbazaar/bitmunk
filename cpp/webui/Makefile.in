@@ -1,11 +1,13 @@
 # Makefile to compile the module in this directory
 
-HEADERS = $(wildcard *.h)
-SOURCES = $(wildcard *.cpp)
 LIBRARIES = bmwebui
+bmwebui_HEADERS = $(wildcard *.h)
+bmwebui_SOURCES = $(wildcard *.cpp)
+
 DYNAMIC_LINK_LIBRARIES = mort moutil momodest moio mocrypto modata moconfig mocompress monet mohttp mologging movalidation mosql mosqlite3 mokernel bmnode bmcommon bmprotocol
-DYNAMIC_WINDOWS_LIBRARIES = sqlite3
-DYNAMIC_MACOS_LIBRARIES = sqlite3 mofiber moevent moapp
+
+DYNAMIC_MACOS_LINK_LIBRARIES = sqlite3 mofiber moevent moapp
+DYNAMIC_WINDOWS_LINK_LIBRARIES = sqlite3
 
 # ----------- Standard Makefile
 include @BITMUNK_DIR@/setup/Makefile.base
