@@ -4,12 +4,10 @@
 #ifndef bitmunk_node_NodeModule_H
 #define bitmunk_node_NodeModule_H
 
+#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/node/Node.h"
 #include "monarch/kernel/MicroKernelModule.h"
 #include "monarch/logging/Logging.h"
-
-// module logging category
-extern monarch::logging::Category* BM_NODE_CAT;
 
 namespace bitmunk
 {

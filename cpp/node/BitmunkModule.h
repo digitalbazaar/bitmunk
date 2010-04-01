@@ -6,7 +6,11 @@
 
 #include "bitmunk/node/Node.h"
 #include "monarch/kernel/MicroKernelModule.h"
+#include "monarch/logging/Logging.h"
 #include "monarch/modest/Module.h"
+
+// module logging category
+extern monarch::logging::Category* BM_NODE_CAT;
 
 namespace bitmunk
 {

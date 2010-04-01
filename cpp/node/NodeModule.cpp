@@ -4,12 +4,8 @@
 #include "bitmunk/node/NodeModule.h"
 
 using namespace monarch::kernel;
-using namespace monarch::logging;
 using namespace monarch::rt;
 using namespace bitmunk::node;
-
-// Logging category initialized during module initialization.
-Category* BM_NODE_CAT;
 
 NodeModule::NodeModule(const char* name, const char* version) :
    MicroKernelModule(name, version),
@@ -61,13 +57,6 @@ bool NodeModule::initialize(MicroKernel* k)
 {
    bool rval = false;
 
-   BM_NODE_CAT = new Category(
-      "BM_NODE",
-      "Bitmunk Node",
-      NULL);
-   BM_NODE_CAT->setAnsiEscapeCodes(
-      MO_ANSI_CSI MO_ANSI_BOLD MO_ANSI_SEP MO_ANSI_FG_HI_RED MO_ANSI_SGR);
-
    // get bitmunk node and initialize with it
    mNode = dynamic_cast<Node*>(k->getModuleApi("bitmunk.node.Node"));
    rval = initialize(mNode);
@@ -90,9 +79,6 @@ void NodeModule::cleanup(MicroKernel* k)
       cleanup(node);
    }
    mNode = NULL;
-
-   delete BM_NODE_CAT;
-   BM_NODE_CAT = NULL;
 }
 
 MicroKernelModuleApi* NodeModule::getApi(MicroKernel* k)
