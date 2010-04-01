@@ -6,13 +6,14 @@
 #include "monarch/data/json/JsonReader.h"
 #include "monarch/data/json/JsonWriter.h"
 #include "monarch/io/FileOutputStream.h"
-#include "monarch/util/Macros.h"
-#include "monarch/event/EventWaiter.h"
+#include "monarch/modest/Module.h"
 #include "monarch/logging/OutputStreamLogger.h"
-#include "monarch/rt/Thread.h"
+#include "monarch/util/Macros.h"
+//#include "monarch/event/EventWaiter.h"
+//#include "monarch/rt/Thread.h"
 #include "monarch/rt/DynamicObject.h"
 #include "bitmunk/common/Logging.h"
-#include "bitmunk/node/App.h"
+#include "bitmunk/app/App.h"
 #include "bitmunk/node/Node.h"
 
 #include "bitmunk.h"
@@ -24,29 +25,32 @@ using namespace monarch::config;
 using namespace monarch::data::json;
 using namespace monarch::event;
 using namespace monarch::fiber;
+using namespace monarch::io;
 using namespace monarch::kernel;
 using namespace monarch::logging;
-using namespace monarch::io;
+using namespace monarch::modest;
 using namespace monarch::net;
 using namespace monarch::rt;
-using namespace bitmunk;
+using namespace bitmunk::apps::bitmunk;
 using namespace bitmunk::common;
 using namespace bitmunk::node;
 
+#define PLUGIN_NAME "bitmunk.apps.bitmunk.Bitmunk"
+#define PLUGIN_CL_CFG_ID PLUGIN_NAME ".commandLine"
+
 const char* BITMUNK_NAME = "Bitmunk";
 
-BitmunkApp::BitmunkApp() :
-   mState(Stopped)
-{
-   mInfo["id"] = "bitmunk.app.Bitmunk";
-   mInfo["dependencies"]->append() = "bitmunk.app.App";
-}
-
-BitmunkApp::~BitmunkApp()
+Bitmunk::Bitmunk(MicroKernel* k) :
+   mState(Stopped),
+   mMicroKernel(k)
 {
 }
 
-bool BitmunkApp::didAddToApp(monarch::app::App* app)
+Bitmunk::~Bitmunk()
+{
+}
+
+bool Bitmunk::didAddToApp(monarch::app::App* app)
 {
    bool rval = AppPlugin::didAddToApp(app);
    if(rval)
@@ -57,30 +61,43 @@ bool BitmunkApp::didAddToApp(monarch::app::App* app)
    return rval;
 }
 
-ConfigManager* BitmunkApp::getConfigManager()
+DynamicObject Bitmunk::getWaitEvents()
 {
-   return &mNodeConfigManager;
+   DynamicObject rval = AppPlugin::getWaitEvents();
+   DynamicObject event;
+   event["id"] = PLUGIN_NAME;
+   event["type"] = PLUGIN_NAME ".wait";
+   rval->append(event);
+
+   return rval;
 }
 
-bool BitmunkApp::initMetaConfig(Config& meta)
+bool Bitmunk::initMetaConfig(Config& meta)
 {
    bool rval = monarch::app::AppPlugin::initMetaConfig(meta);
 
-   // setup default home path early so it can be used in command line configs
-   // command line option config
+   // defaults
+   /*
    if(rval)
    {
-      const char* id = "bitmunk.app command line";
-      Config& config = meta["options"][id];
+      Config config =
+         App::makeMetaConfig(meta, PLUGIN_NAME ".defaults", "defaults");
+      config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+      Config& c = config[ConfigManager::MERGE];
+   }
+   */
 
-      config[ConfigManager::GROUP] =
-         meta["groups"]["command line"]->getString();
-      config[ConfigManager::ID] = id;
-      config[ConfigManager::VERSION] = NodeConfigManager::CONFIG_VERSION;
+   // command line options
+   if(rval)
+   {
+      Config config =
+         App::makeMetaConfig(
+            meta, PLUGIN_CL_CFG_ID, "command line", "options");
+      config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+      Config& c = config[ConfigManager::MERGE];
 
-      Config& merge = config[ConfigManager::MERGE];
-
-      // setup default home so it can be used as a keyword
+      // setup default home path early so it can be used as a keyword in
+      // command line configs
       // FIXME: Setting this here will make it always override any value in the
       // FIXME: config files. The default here is the same as the default in
       // FIXME: the system config but users will not be able to override it in
@@ -92,13 +109,13 @@ bool BitmunkApp::initMetaConfig(Config& meta)
       {
          home = BITMUNK_HOME;
       }
-      merge["node"]["bitmunkHomePath"] = home;
+      c["node"]["bitmunkHomePath"] = home;
    }
 
    return rval;
 }
 
-DynamicObject BitmunkApp::getCommandLineSpecs()
+DynamicObject Bitmunk::getCommandLineSpecs()
 {
    DynamicObject spec;
    spec["help"] =
@@ -126,10 +143,6 @@ DynamicObject BitmunkApp::getCommandLineSpecs()
 "  -m, --module-path PATH\n"
 "                      A colon separated directory list where extension modules\n"
 "                      are stored.\n"
-"  -r, --resource-path PATH\n"
-"                      The directory where the Bitmunk application resource\n"
-"                      files were installed.\n"
-"                      Available in configs as {RESOURCE_PATH}.\n"
 "      --profile-path PATH\n"
 "                      The directory where profiles are stored.\n"
 "  -i, --interactive   Run in interactive mode.\n"
@@ -142,7 +155,8 @@ DynamicObject BitmunkApp::getCommandLineSpecs()
 
    DynamicObject opt;
    Config options = getApp()->getMetaConfig()
-      ["options"]["bitmunk.app command line"][ConfigManager::MERGE];
+      ["options"][PLUGIN_CL_CFG_ID][ConfigManager::MERGE];
+      //["options"][PLUGIN_CL_CFG_ID][ConfigManager::MERGE][PLUGIN_NAME];
 
    opt = spec["options"]->append();
    opt["long"] = "--home";
@@ -209,19 +223,14 @@ DynamicObject BitmunkApp::getCommandLineSpecs()
    opt["arg"]["type"] = (uint64_t)0;;
    opt["argError"] = "No port specified.";
 
+   /*
    opt = spec["options"]->append();
    opt["short"] = "-m";
    opt["long"] = "--module-path";
    opt["arg"]["root"] = options;
    opt["arg"]["path"] = "node.modulePath";
    opt["argError"] = "No path specified.";
-
-   opt = spec["options"]->append();
-   opt["short"] = "-r";
-   opt["long"] = "--resource-path";
-   opt["arg"]["root"] = options;
-   opt["arg"]["path"] = "node.resourcePath";
-   opt["argError"] = "No resource path specified.";
+   */
 
    opt = spec["options"]->append();
    opt["long"] = "--profile-dir";
@@ -248,15 +257,14 @@ DynamicObject BitmunkApp::getCommandLineSpecs()
    return specs;
 }
 
-bool BitmunkApp::willParseCommandLine(std::vector<const char*>* args)
+bool Bitmunk::willParseCommandLine(std::vector<const char*>* args)
 {
    bool rval = AppPlugin::willParseCommandLine(args);
 
    // setup package config loading
    if(rval)
    {
-      mPackageConfig[ConfigManager::VERSION] =
-         NodeConfigManager::CONFIG_VERSION;
+      mPackageConfig[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
       if(getenv("BITMUNK_PACKAGE_CONFIG") != NULL)
       {
          // use environment var and require
@@ -275,8 +283,7 @@ bool BitmunkApp::willParseCommandLine(std::vector<const char*>* args)
    // setup system config loading
    if(rval)
    {
-      mSystemConfig[ConfigManager::VERSION] =
-         NodeConfigManager::CONFIG_VERSION;
+      mSystemConfig[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
       if(getenv("BITMUNK_SYSTEM_CONFIG") != NULL)
       {
          // use environment var and require
@@ -295,8 +302,7 @@ bool BitmunkApp::willParseCommandLine(std::vector<const char*>* args)
    // setup system user config loading
    if(rval)
    {
-      mSystemUserConfig[ConfigManager::VERSION] =
-         NodeConfigManager::CONFIG_VERSION;
+      mSystemUserConfig[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
       if(getenv("BITMUNK_SYSTEM_USER_CONFIG") != NULL)
       {
          // use environment var and require
@@ -320,7 +326,7 @@ bool BitmunkApp::willParseCommandLine(std::vector<const char*>* args)
    return rval;
 }
 
-bool BitmunkApp::willLoadConfigs()
+bool Bitmunk::willLoadConfigs()
 {
    bool rval = AppPlugin::willLoadConfigs();
 
@@ -330,7 +336,7 @@ bool BitmunkApp::willLoadConfigs()
       // get config, but do not cache merged config to prevent config changes
       // from being tracked until absolutely necessary
       Config options = getApp()->getMetaConfig()
-         ["options"]["bitmunk.app command line"][ConfigManager::MERGE];
+         ["options"][PLUGIN_CL_CFG_ID][ConfigManager::MERGE];
       // replace some vars while building standard config
       if(options->hasMember("node") &&
          options["node"]->hasMember("bitmunkHomePath"))
@@ -349,7 +355,7 @@ bool BitmunkApp::willLoadConfigs()
    return rval;
 }
 
-bool BitmunkApp::didLoadConfigs()
+bool Bitmunk::didLoadConfigs()
 {
    bool rval = AppPlugin::didLoadConfigs();
 
@@ -406,26 +412,26 @@ bool BitmunkApp::didLoadConfigs()
        *    cfg["app"]["config"][type]["path"] = ...
        */
       Config config;
-      config[ConfigManager::ID] = "bitmunk.app meta";
+      config[ConfigManager::ID] = PLUGIN_NAME ".meta";
       config[ConfigManager::GROUP] = meta["groups"]["main"]->getString();
-      config[ConfigManager::VERSION] = NodeConfigManager::CONFIG_VERSION;
+      config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
       Config merge = config[ConfigManager::MERGE];
       merge["app"]["config"]["package"] = mPackageConfig;
       merge["app"]["config"]["system"] = mSystemConfig;
       merge["app"]["config"]["system user"] = mSystemUserConfig;
-      rval = getConfigManager()->addConfig(config);
+      rval = getApp()->getConfigManager()->addConfig(config);
    }
 
    Config defaults;
    if(rval)
    {
-      defaults[ConfigManager::ID] = "bitmunk.app defaults";
+      defaults[ConfigManager::ID] = PLUGIN_NAME ".defaults";
       defaults[ConfigManager::GROUP] = meta["groups"]["main"]->getString();
-      defaults[ConfigManager::VERSION] = NodeConfigManager::CONFIG_VERSION;
+      defaults[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
       // set defaults for optional items
       defaults[ConfigManager::MERGE]["app"]["handlers"]->setType(Map);
       defaults[ConfigManager::MERGE]["app"]["events"]->setType(Map);
-      rval = getConfigManager()->addConfig(defaults);
+      rval = getApp()->getConfigManager()->addConfig(defaults);
    }
 
    // load system, node, and extra configs
@@ -435,9 +441,9 @@ bool BitmunkApp::didLoadConfigs()
       Config cfg;
       int i = 0;
 
-      cfg[ConfigManager::ID] = "bitmunk.app includes";
+      cfg[ConfigManager::ID] = PLUGIN_NAME ".includes";
       cfg[ConfigManager::GROUP] = meta["groups"]["main"]->getString();
-      cfg[ConfigManager::VERSION] = NodeConfigManager::CONFIG_VERSION;
+      cfg[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
       cfg[ConfigManager::INCLUDE][i++] = mPackageConfig;
       cfg[ConfigManager::INCLUDE][i++] = mSystemConfig;
       cfg[ConfigManager::INCLUDE][i++] = mSystemUserConfig;
@@ -450,9 +456,10 @@ bool BitmunkApp::didLoadConfigs()
          ecfg["load"] = true;
          ecfg["optional"] = false;
       }
-      rval = getConfigManager()->addConfig(cfg);
+      rval = getApp()->getConfigManager()->addConfig(cfg);
    }
 
+#if 0
    if(rval)
    {
       Config cfg = getApp()->getConfig();
@@ -483,28 +490,15 @@ bool BitmunkApp::didLoadConfigs()
          JsonWriter::writeToStdOut(cm->getDebugInfo());
       }
    }
+#endif
 
    Logger::removeLogger(&logger);
 
    return rval;
 }
 
-bool BitmunkApp::initConfigManager()
-{
-   getApp()->setConfigManager(&mNodeConfigManager, false);
-   // set the config manager required version
-   getApp()->getConfigManager()->addVersion(MO_DEFAULT_CONFIG_VERSION);
-   getApp()->getConfigManager()->addVersion(NodeConfigManager::CONFIG_VERSION);
-
-   return true;
-}
-
-void BitmunkApp::cleanupConfigManager()
-{
-   // no-op
-}
-
-bool BitmunkApp::waitForNode()
+/*
+bool Bitmunk::waitForNode()
 {
    bool rval = true;
 
@@ -534,8 +528,9 @@ bool BitmunkApp::waitForNode()
 
    return rval;
 }
+*/
 
-bool BitmunkApp::run()
+bool Bitmunk::run()
 {
    bool rval = AppPlugin::run();
 
@@ -543,77 +538,47 @@ bool BitmunkApp::run()
    MO_CAT_INFO(BM_APP_CAT, "Bitmunk");
    MO_CAT_INFO(BM_APP_CAT, "Version: %s", BITMUNK_VERSION);
 
-   // create kernel
-   mKernel = new MicroKernel();
-   mKernel->setConfigManager(&mNodeConfigManager, false);
-   mKernel->setFiberScheduler(new FiberScheduler(), true);
-   mKernel->setFiberMessageCenter(new FiberMessageCenter(), true);
-   mKernel->setEventController(new EventController(), true);
-   mKernel->setEventDaemon(new EventDaemon(), true);
-   mKernel->setServer(new Server(), true);
+   Config cfg = getApp()->getConfigManager()->getConfig("main")["node"];
 
-   mState = Starting;
-   while(mState == Starting || mState == Restarting)
-   {
-      // FIXME: figure out the correct config to use here
-      Config cfg = mNodeConfigManager.getNodeConfig();
+   MO_CAT_INFO(BM_APP_CAT, "Modules path: %s",
+      JsonWriter::writeToString(cfg["modulePath"]).c_str());
 
-      // set thread and connection limits
-      mKernel->setMaxAuxiliaryThreads(cfg["maxThreadCount"]->getUInt32());
-      mKernel->setMaxServerConnections(cfg["maxConnectionCount"]->getUInt32());
-
-      // FIXME: show this somewhere
-      MO_CAT_INFO(BM_APP_CAT,
-         "Modules path: %s", cfg["modulePath"]->getString());
-
-      // FIXME: actually restarting microkernel, not just node
-      // [re]start the node
-      MO_CAT_INFO(BM_APP_CAT,
-         (mState == Restarting) ? "Restarting node..." : "Starting node...");
-      rval = mKernel->start();
-      if(rval)
-      {
-         // load modules
-         rval = mKernel->loadModules(cfg["modulePath"]->getString());
-         if(!rval)
-         {
-            mKernel->stop();
-         }
-      }
-      mState = Running;
-
-      if(rval)
-      {
-         MO_CAT_INFO(BM_APP_CAT, "Node started.");
-         waitForNode();
-
-         // FIXME: actually stopping microkernel, not just node
-         // stop node
-         MO_CAT_INFO(BM_APP_CAT,
-            (mState == Restarting) ?
-               "Stopping node for restart..." :
-               "Stopping node...");
-         mKernel->stop();
-         MO_CAT_INFO(BM_APP_CAT, "Node stopped.");
-         // set to stopped unless restarting
-         mState = (mState == Stopping) ? Stopped : mState;
-      }
-      else
-      {
-         MO_CAT_ERROR(BM_APP_CAT, "Node start failed: %s",
-            JsonWriter::writeToString(Exception::getAsDynamicObject()).c_str());
-      }
-   }
-
-   MO_CAT_INFO(BM_APP_CAT, "Shutdown.");
-
-   // clean up kernel
-   delete mKernel;
+   // load modules
+   // this will load the node and other modules
+   // The bitmunk plugin will finish but has setup the kernel to wait for a
+   // bitmunk wait event. The node can also signal shutdown and restart events
+   // as needed.
+   rval = mMicroKernel->loadModules(cfg["modulePath"]->getString());
 
    return rval;
 }
 
-/**
- * Top-level main()
- */
-BM_APP_PLUGIN_MAIN(BitmunkApp)
+class BitmunkFactory :
+   public AppPluginFactory
+{
+public:
+   BitmunkFactory() :
+      AppPluginFactory(PLUGIN_NAME, "1.0")
+   {
+      addDependency("monarch.app.Config", "1.0");
+      addDependency("monarch.app.Logging", "1.0");
+      addDependency("bitmunk.app.App", "1.0");
+   }
+
+   virtual ~BitmunkFactory() {}
+
+   virtual AppPluginRef createAppPlugin()
+   {
+      return new Bitmunk(mMicroKernel);
+   }
+};
+
+Module* createModestModule()
+{
+   return new BitmunkFactory();
+}
+
+void freeModestModule(Module* m)
+{
+   delete m;
+}

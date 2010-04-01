@@ -12,13 +12,17 @@
 
 namespace bitmunk
 {
+namespace apps
+{
+namespace bitmunk
+{
 
 /**
  * Bitmunk client.
  *
  * Author: David I. Lehn
  */
-class BitmunkApp : public monarch::app::AppPlugin
+class Bitmunk : public monarch::app::AppPlugin
 {
 protected:
    /**
@@ -46,12 +50,7 @@ protected:
    /**
     * Main application MicroKernel.
     */
-   monarch::kernel::MicroKernel* mKernel;
-
-   /**
-    * The NodeConfigManager.
-    */
-   bitmunk::node::NodeConfigManager mNodeConfigManager;
+   monarch::kernel::MicroKernel* mMicroKernel;
 
    /**
     * Package config control.
@@ -73,35 +72,18 @@ protected:
     */
    monarch::rt::DynamicObject mExtraConfigs;
 
-   /**
-    * Init ConfigManager from mNode.
-    *
-    * @return true on succes, false and exception set on error
-    */
-   virtual bool initConfigManager();
-
-   /**
-    * No-op. NodeConfigManager is cleaned up in the destructor.
-    */
-   virtual void cleanupConfigManager();
-
-   /**
-    * Wait for a node completion event.
-    *
-    * @return true on success, false and exception on failure.
-    */
-   virtual bool waitForNode();
-
 public:
    /**
-    * Create a BitmunkApp instance.
+    * Create a Bitmunk instance.
+    *
+    * @param k MicroKernel that started this AppPlugin.
     */
-   BitmunkApp();
+   Bitmunk(monarch::kernel::MicroKernel* k);
 
    /**
-    * Deconstruct this BitmunkApp instance.
+    * Deconstruct this Bitmunk instance.
     */
-   virtual ~BitmunkApp();
+   virtual ~Bitmunk();
 
    /**
     * {@inheritDoc}
@@ -109,11 +91,9 @@ public:
    virtual bool didAddToApp(monarch::app::App* app);
 
    /**
-    * Gets this app's ConfigManager.
-    *
-    * @return the ConfigManager for the node for this app.
+    * {@inheritDoc}
     */
-   virtual monarch::config::ConfigManager* getConfigManager();
+   virtual monarch::rt::DynamicObject getWaitEvents();
 
    /**
     * Setup command line option config.
@@ -158,6 +138,8 @@ public:
    virtual bool run();
 };
 
+} // end namespace bitmunk
+} // end namespace apps
 } // end namespace bitmunk
 
 #endif
