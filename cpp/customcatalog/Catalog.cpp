@@ -1440,7 +1440,7 @@ void Catalog::userLoggedIn(Event& e)
                      ["bitmunk.catalog.CustomCatalog"]["autoSell"];
                   asCfg["enabled"] = true;
                   BM_ID_SET(asCfg["payeeSchemeId"], psId);
-                  mNode->getConfigManager()->setConfig(cfg);
+                  mNode->getConfigManager()->getConfigManager()->setConfig(cfg);
                   mNode->getConfigManager()->saveUserConfig(userId);
                }
             }

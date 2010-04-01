@@ -71,8 +71,8 @@ bool ConfigService::initialize()
 
    // write out node port file if one is specified in the config
    {
-      NodeConfigManager* cm = mNode->getConfigManager();
-      rval = _writeNodePortFile(cm);
+      NodeConfigManager* ncm = mNode->getConfigManager();
+      rval = _writeNodePortFile(ncm);
       if(!rval)
       {
          ExceptionRef e = new Exception(
@@ -160,7 +160,7 @@ bool ConfigService::getConfig(
    if(vars->hasMember("id"))
    {
       // user config ID from url query
-      config = mNode->getConfigManager()->getConfig(
+      config = mNode->getConfigManager()->getConfigManager()->getConfig(
          vars["id"]->getString(), raw);
    }
    else
@@ -233,7 +233,8 @@ bool ConfigService::postConfig(
    action->getResourceQuery(vars);
    bool restart = vars["restart"]->getBoolean();
 
-   NodeConfigManager* cm = mNode->getConfigManager();
+   NodeConfigManager* ncm = mNode->getConfigManager();
+   ConfigManager* cm = ncm->getConfigManager();
 
    // set or add config
    if(!in.isNull() && in->hasMember(ConfigManager::ID) &&
@@ -252,14 +253,14 @@ bool ConfigService::postConfig(
       // save user and system user configs
       if(NodeConfigManager::isUserConfig(in, userId))
       {
-         rval = cm->saveUserConfig(userId);
+         rval = ncm->saveUserConfig(userId);
       }
       else if(NodeConfigManager::isSystemUserConfig(in))
       {
-         rval = cm->saveSystemUserConfig();
+         rval = ncm->saveSystemUserConfig();
          if(rval)
          {
-            rval = _writeNodePortFile(cm);
+            rval = _writeNodePortFile(ncm);
             if(!rval)
             {
                ExceptionRef e = new Exception(

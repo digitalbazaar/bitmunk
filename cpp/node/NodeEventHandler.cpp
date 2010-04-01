@@ -83,7 +83,7 @@ bool NodeEventHandler::initialize()
    bool rval = false;
 
    // start listening for config changes
-   mNode->getConfigManager()->setConfigChangeListener(this);
+   mNode->getConfigManager()->getConfigManager()->setConfigChangeListener(this);
 
    // initialize event handlers
    MO_CAT_INFO(BM_NODE_CAT, "Initializing event handlers.");
@@ -101,7 +101,7 @@ void NodeEventHandler::cleanup()
    MO_CAT_INFO(BM_NODE_CAT, "Event handlers cleaned up.");
 
    // stop listening for config changes
-   mNode->getConfigManager()->setConfigChangeListener(NULL);
+   mNode->getConfigManager()->getConfigManager()->setConfigChangeListener(NULL);
 }
 
 void NodeEventHandler::handleEvent(

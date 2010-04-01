@@ -89,57 +89,46 @@ bool Node::start(MicroKernel* k)
 
    mKernel = k;
 
-   // FIXME: we assume the config manager is a NodeConfigManager here ...
-   // what we should probably really do is make NodeConfigManager some
-   // helper class?
-   NodeConfigManager* ncm = dynamic_cast<NodeConfigManager*>(
-      k->getConfigManager());
-   if(ncm == NULL)
+   // NodeConfigManager needs to be able to get the ConfigManager from the
+   // kernel.
+   mNodeConfigManager.setMicroKernel(k);
+
+   Config cfg = getConfigManager()->getNodeConfig();
+   rval = _validateConfig(cfg);
+   if(rval)
    {
-      ExceptionRef e = new Exception(
-         "MicroKernel ConfigManager must be type NodeConfigManager.",
-         "bitmunk.node.InvalidConfigManagerType");
-      Exception::set(e);
-   }
-   else
-   {
-      Config cfg = getConfigManager()->getNodeConfig();
-      rval = _validateConfig(cfg);
+      // dump some configuration information to the logs
+      MO_CAT_INFO(BM_NODE_CAT,
+         "Home: %s", cfg["bitmunkHomePath"]->getString());
+      MO_CAT_INFO(BM_NODE_CAT,
+         "Bitmunk HTTP URL: %s", cfg["bitmunkUrl"]->getString());
+      MO_CAT_INFO(BM_NODE_CAT,
+         "Bitmunk HTTPS URL: %s", cfg["secureBitmunkUrl"]->getString());
+
+      // setup messenger
+      mMessenger = new Messenger(this, cfg);
+      mPublicKeySource.setMessenger(&(*mMessenger));
+      BtpClient* btpc = mMessenger->getBtpClient();
+
+      // setup verify certificate authority (CA) file
+      File caFile(cfg["sslCAFile"]->getString());
+
+      // init btp server, set up client SSL context, init event handling
+      rval =
+         mBtpServer->initialize(cfg) &&
+         btpc->getSslContext()->setVerifyCAs(&caFile, NULL) &&
+         mEventHandler.initialize();
       if(rval)
       {
-         // dump some configuration information to the logs
-         MO_CAT_INFO(BM_NODE_CAT,
-            "Home: %s", cfg["bitmunkHomePath"]->getString());
-         MO_CAT_INFO(BM_NODE_CAT,
-            "Bitmunk HTTP URL: %s", cfg["bitmunkUrl"]->getString());
-         MO_CAT_INFO(BM_NODE_CAT,
-            "Bitmunk HTTPS URL: %s", cfg["secureBitmunkUrl"]->getString());
-
-         // setup messenger
-         mMessenger = new Messenger(this, cfg);
-         mPublicKeySource.setMessenger(&(*mMessenger));
-         BtpClient* btpc = mMessenger->getBtpClient();
-
-         // setup verify certificate authority (CA) file
-         File caFile(cfg["sslCAFile"]->getString());
-
-         // init btp server, set up client SSL context, init event handling
-         rval =
-            mBtpServer->initialize(cfg) &&
-            btpc->getSslContext()->setVerifyCAs(&caFile, NULL) &&
-            mEventHandler.initialize();
-         if(rval)
-         {
-            // send event that node has started
-            Event e;
-            e["type"] = "bitmunk.node.Node.started";
-            getEventController()->schedule(e);
-         }
-         else
-         {
-            // start failed, so stop node
-            stop();
-         }
+         // send event that node has started
+         Event e;
+         e["type"] = "bitmunk.node.Node.started";
+         getEventController()->schedule(e);
+      }
+      else
+      {
+         // start failed, so stop node
+         stop();
       }
    }
 
@@ -387,8 +376,7 @@ MicroKernel* Node::getKernel()
 
 NodeConfigManager* Node::getConfigManager()
 {
-   // FIXME: see other fixmes regarding node config manager changes
-   return static_cast<NodeConfigManager*>(mKernel->getConfigManager());
+   return &mNodeConfigManager;
 }
 
 FiberScheduler* Node::getFiberScheduler()

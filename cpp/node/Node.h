@@ -52,6 +52,11 @@ protected:
    monarch::kernel::MicroKernel* mKernel;
 
    /**
+    * The node config manager.
+    */
+   NodeConfigManager mNodeConfigManager;
+
+   /**
     * The main event handler.
     */
    NodeEventHandler mEventHandler;

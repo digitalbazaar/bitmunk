@@ -27,6 +27,7 @@ using namespace monarch::data;
 using namespace monarch::data::json;
 using namespace monarch::event;
 using namespace monarch::io;
+using namespace monarch::kernel;
 using namespace monarch::net;
 using namespace monarch::rt;
 using namespace monarch::util;
@@ -46,9 +47,8 @@ using namespace monarch::util;
 
 #define BITMUNK_CM_EXCEPTION "bitmunk.node.NodeConfigManager"
 
-const char* NodeConfigManager::CONFIG_VERSION = "Bitmunk 3.0";
-
-NodeConfigManager::NodeConfigManager()
+NodeConfigManager::NodeConfigManager() :
+   mMicroKernel(NULL)
 {
 }
 
@@ -56,16 +56,31 @@ NodeConfigManager::~NodeConfigManager()
 {
 }
 
+void NodeConfigManager::setMicroKernel(MicroKernel* k)
+{
+   mMicroKernel = k;
+}
+
+MicroKernel* NodeConfigManager::getMicroKernel()
+{
+   return mMicroKernel;
+}
+
+ConfigManager* NodeConfigManager::getConfigManager()
+{
+   return (mMicroKernel != NULL) ? mMicroKernel->getConfigManager() : NULL;
+}
+
 Config NodeConfigManager::getNodeConfig(bool raw)
 {
    Config rval(NULL);
    if(raw)
    {
-      rval = getConfig(NODE_ID, raw);
+      rval = getConfigManager()->getConfig(NODE_ID, raw);
    }
    else
    {
-      Config tmp = getConfig(MAIN_ID, raw);
+      Config tmp = getConfigManager()->getConfig(MAIN_ID, raw);
       if(!tmp.isNull() && tmp->hasMember(NODE_ID))
       {
          rval = tmp[NODE_ID];
@@ -93,7 +108,7 @@ bool NodeConfigManager::saveSystemUserConfig()
 {
 
    bool rval;
-   Config meta = getConfig("bitmunk.app meta");
+   Config meta = getConfigManager()->getConfig("bitmunk.app meta");
    // get initial value
    const char* suPath =
       meta["app"]["config"]["system user"]["path"]->getString();
@@ -119,15 +134,17 @@ bool NodeConfigManager::saveSystemUserConfig()
       }
       else
       {
-         c[ConfigManager::VERSION] = NodeConfigManager::CONFIG_VERSION;
+         c[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
          c[ConfigManager::ID] = "custom system user";
          c[ConfigManager::GROUP] = "system user";
       }
       // update
-      if(rval && hasConfig(c[ConfigManager::ID]->getString()))
+      if(rval &&
+         getConfigManager()->hasConfig(c[ConfigManager::ID]->getString()))
       {
          // get old raw config
-         Config active = getConfig(c[ConfigManager::ID]->getString(), true);
+         Config active = getConfigManager()->getConfig(
+            c[ConfigManager::ID]->getString(), true);
          c.merge(active, false);
       }
       // backup old file
@@ -169,11 +186,11 @@ Config NodeConfigManager::getModuleConfig(const char* moduleName, bool raw)
    Config rval(NULL);
    if(raw)
    {
-      rval = getConfig(moduleName, raw);
+      rval = getConfigManager()->getConfig(moduleName, raw);
    }
    else
    {
-      Config tmp = getConfig(MAIN_ID, raw);
+      Config tmp = getConfigManager()->getConfig(MAIN_ID, raw);
       if(!tmp.isNull() && tmp->hasMember(moduleName))
       {
          rval = tmp[moduleName];
@@ -233,7 +250,7 @@ bool NodeConfigManager::loadUserConfig(UserId userId)
       snprintf(loaderId, loaderIdMax, "%s (loader)", cfgId);
       Config loader;
       loader[ConfigManager::ID] = loaderId;
-      loader[ConfigManager::VERSION] = CONFIG_VERSION;
+      loader[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
       // optionally load
       Config inc = loader[ConfigManager::INCLUDE][0];
 
@@ -248,19 +265,20 @@ bool NodeConfigManager::loadUserConfig(UserId userId)
       inc["path"] = path.c_str();
       inc["load"] = true;
       inc["optional"] = true;
-      rval = addConfig(loader, true, File::dirname(path.c_str()).c_str());
+      rval = getConfigManager()->addConfig(
+         loader, true, File::dirname(path.c_str()).c_str());
       // remove temporary loader config
-      rval = rval && removeConfig(loaderId);
+      rval = rval && getConfigManager()->removeConfig(loaderId);
       if(rval)
       {
          // check if anything was loaded, if not, create empty config
-         if(!hasConfig(cfgId))
+         if(!getConfigManager()->hasConfig(cfgId))
          {
             Config config;
             config[ConfigManager::ID] = cfgId;
             config[ConfigManager::PARENT] = USER_PARENT_ID;
-            config[ConfigManager::VERSION] = CONFIG_VERSION;
-            rval = addConfig(config);
+            config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+            rval = getConfigManager()->addConfig(config);
          }
       }
    }
@@ -298,7 +316,7 @@ Config NodeConfigManager::getUserConfig(UserId userId, bool raw)
 {
    char cfgId[ID_CFG_MAX];
    snprintf(cfgId, ID_CFG_MAX, ID_CFG_FMT, userId);
-   return getConfig(cfgId, raw);
+   return getConfigManager()->getConfig(cfgId, raw);
 }
 
 bool NodeConfigManager::removeUserConfig(UserId userId)
@@ -307,7 +325,7 @@ bool NodeConfigManager::removeUserConfig(UserId userId)
    snprintf(cfgId, ID_CFG_MAX, ID_CFG_FMT, userId);
    MO_CAT_DEBUG(BM_NODE_CAT,
       "NodeConfigManager: remove user config: id=%" PRIu64 "", userId);
-   return removeConfig(cfgId);
+   return getConfigManager()->removeConfig(cfgId);
 }
 
 bool NodeConfigManager::isUserConfig(Config& config, UserId userId)
@@ -344,7 +362,7 @@ bool NodeConfigManager::getBitmunkHomePath(string& path)
 {
    bool rval;
 
-   Config c = getConfig(MAIN_ID);
+   Config c = getConfigManager()->getConfig(MAIN_ID);
    // get initial value
    const char* bitmunkHomePath = c["node"]["bitmunkHomePath"]->getString();
    // make sure bitmunkHomePath is user-expanded
@@ -408,7 +426,7 @@ bool NodeConfigManager::expandBitmunkHomePath(
 bool NodeConfigManager::getUserDataPath(UserId userId, string& path)
 {
    bool rval;
-   Config c = getConfig(MAIN_ID);
+   Config c = getConfigManager()->getConfig(MAIN_ID);
    // get initial value
    const char* usersPath = c["node"]["usersPath"]->getString();
    rval = expandBitmunkHomePath(usersPath, path);

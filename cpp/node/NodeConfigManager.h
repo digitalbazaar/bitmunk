@@ -6,8 +6,15 @@
 
 #include "bitmunk/common/TypeDefinitions.h"
 #include "monarch/config/ConfigManager.h"
+#include "monarch/kernel/MicroKernel.h"
 
 #include <string>
+
+/**
+ * Current Bitmunk config version.
+ */
+#define BITMUNK_CONFIG_VERSION_3_0 "Bitmunk 3.0"
+#define BITMUNK_CONFIG_VERSION BITMUNK_CONFIG_VERSION_3_0
 
 namespace bitmunk
 {
@@ -15,7 +22,7 @@ namespace node
 {
 
 /**
- * The Bitmunk NodeConfigManager extends the Monarch ConfigManager with support
+ * The Bitmunk NodeConfigManager wraps a Monarch ConfigManager with support
  * for a hierarchy of configs that can be used for packaging, system, system
  * user, command line, and bitmunk user customization.
  *
@@ -73,13 +80,13 @@ namespace node
  *
  * @author David I. Lehn
  */
-class NodeConfigManager : public monarch::config::ConfigManager
+class NodeConfigManager
 {
-public:
+protected:
    /**
-    * Current Bitmunk config version.
+    * MicroKernel to use to get the ConfigManager;
     */
-   static const char* CONFIG_VERSION;
+   monarch::kernel::MicroKernel* mMicroKernel;
 
 public:
    /**
@@ -91,6 +98,27 @@ public:
     * Destructs this NodeConfigManager.
     */
    virtual ~NodeConfigManager();
+
+   /**
+    * Set the MicroKernel used to get the ConfigManager.
+    *
+    * @param k the MicroKernel.
+    */
+   virtual void setMicroKernel(monarch::kernel::MicroKernel* k);
+
+   /**
+    * Get the MicroKernel.
+    *
+    * @return the MicroKernel.
+    */
+   virtual monarch::kernel::MicroKernel* getMicroKernel();
+
+   /**
+    * Get the ConfigManager from the MicroKernel.
+    *
+    * @return the ConfigManager.
+    */
+   virtual monarch::config::ConfigManager* getConfigManager();
 
    /**
     * Gets the "node" configuration.
