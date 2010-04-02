@@ -30,7 +30,7 @@ using namespace monarch::test;
 void runConfigTest(Node& node, TestRunner& tr)
 {
    tr.group("config");
-   
+
    tr.test("user configs");
    {
       /*{
@@ -59,7 +59,7 @@ void runConfigTest(Node& node, TestRunner& tr)
       assertNoException();
    }
    tr.passIfNoException();
-   
+
    tr.ungroup();
 }
 
@@ -67,59 +67,23 @@ static bool run(TestRunner& tr)
 {
    if(tr.isDefaultEnabled())
    {
-      bool success;
-
-      success = bitmunk::test::Tester::setup(tr);
+      // setup config and load node
+      bool success = bitmunk::test::Tester::addNodeConfig(tr);
       assertNoException();
       assert(success);
-      success = bitmunk::test::Tester::setupPeerNode(tr);
-      assertNoException();
-      assert(success);
-
-      MicroKernel* k = tr.getMicroKernel();
-      Module* mod;
-      // load node module
-      success = k->loadModules(MODULES_DIRECTORY "/libbmnode.so");
-      assertNoException();
-      assert(success);
-      assert(mod != NULL);
-      Node* node = dynamic_cast<Node*>(k->getModuleApi("bitmunk.node.Node"));
+      Node* node = bitmunk::test::Tester::loadNode(tr);
       assert(node != NULL);
 
+      // run config test
+      runConfigTest(*node, tr);
 
-         runConfigTest(*node, tr);
-
-         // teardown
-
-      // unload node module
-//      k->unloadModule(nodeInfo);
-      //k->getModuleLibrary()->unloadModule(&mod->getId());
-
-
-      // create a node
-//      Node node;
-      /*
-      {
-         bool success;
-         success = bitmunk::test::Tester::setupNode(&node);
-         assertNoException();
-         assert(success);
-         success = bitmunk::test::Tester::setupPeerNode(&node);
-         assertNoException();
-         assert(success);
-      }
-      */
-//      if(!node.start())
-//      {
-//         dumpException();
-//         exit(1);
-//      }
-      
-      // run test
-      //runConfigTest(node, tr, *this);
-      
-      // stop node
-//      node.stop();
+      // unload node and remove config
+      success = bitmunk::test::Tester::unloadNode(tr);
+      assertNoException();
+      assert(success);
+      success = bitmunk::test::Tester::removeNodeConfig(tr);
+      assertNoException();
+      assert(success);
    }
    return true;
 }
