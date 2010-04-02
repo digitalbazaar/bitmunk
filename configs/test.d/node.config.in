@@ -9,8 +9,6 @@
          "secureBitmunkUrl" : "https://@BITMUNK_API_HOST@:@BITMUNK_API_PORT@",
          "host" : "0.0.0.0",
          "port" : 19101,
-         "maxConnectionCount" : 100,
-         "maxThreadCount" : 100,
          "modulePath" : "@BITMUNK_MODULES_DIR@",
          "profilePath" : "@BITMUNK_PROFILES_DIR@",
          "usersPath" : "@BITMUNK_USERS_DIR@",
