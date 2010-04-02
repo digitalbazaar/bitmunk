@@ -33,7 +33,7 @@ public:
    virtual ~Tester();
 
    /**
-    * Adds the configuration for a Node. Optional config merge data may be
+    * Adds the Bitmunk test configuration. Optional config merge data may be
     * provided.
     *
     * @param tr the test's TestRunner.
@@ -41,18 +41,18 @@ public:
     *
     * @return true if succesful, false if an exception occurred.
     */
-   static bool addNodeConfig(
+   static bool loadConfig(
       monarch::test::TestRunner& tr,
       monarch::config::Config* extraMerge = NULL);
 
    /**
-    * Tear down the TestRunner's setup after running node tests.
+    * Removes the Bitmunk test configuration.
     *
     * @param tr the test's TestRunner.
     *
     * @return true if succesful, false if an exception occurred.
     */
-   static bool removeNodeConfig(monarch::test::TestRunner& tr);
+   static bool unloadConfig(monarch::test::TestRunner& tr);
 
    /**
     * Loads a Node.

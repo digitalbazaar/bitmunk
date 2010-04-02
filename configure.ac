@@ -869,6 +869,7 @@ AC_CONFIG_FILES([
 	configs/dev.d/bitmunk.system.System.config
 	configs/dev.d/bitmunk.webui.WebUi.config
 	configs/dev.d/node.config
+	configs/test.d/node.config
 	configs/dev-bpe.config
 ])
 fi

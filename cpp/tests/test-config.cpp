@@ -8,12 +8,7 @@
 #include "bitmunk/test/Tester.h"
 #include "monarch/test/Test.h"
 #include "monarch/test/TestModule.h"
-#include "monarch/rt/DynamicObject.h"
 #include "monarch/data/json/JsonWriter.h"
-
-#include "bitmunk-unit-tests.h"
-
-#include <inttypes.h>
 
 using namespace std;
 using namespace bitmunk::common;
@@ -22,8 +17,6 @@ using namespace monarch::config;
 using namespace monarch::data;
 using namespace monarch::data::json;
 using namespace monarch::io;
-using namespace monarch::kernel;
-using namespace monarch::modest;
 using namespace monarch::rt;
 using namespace monarch::test;
 
@@ -67,21 +60,25 @@ static bool run(TestRunner& tr)
 {
    if(tr.isDefaultEnabled())
    {
-      // setup config and load node
-      bool success = bitmunk::test::Tester::addNodeConfig(tr);
+      // load bitmunk test config
+      bool success = bitmunk::test::Tester::loadConfig(tr);
       assertNoException();
       assert(success);
+
+      // load bitmunk node
       Node* node = bitmunk::test::Tester::loadNode(tr);
       assert(node != NULL);
 
       // run config test
       runConfigTest(*node, tr);
 
-      // unload node and remove config
+      // unload bitmunk node
       success = bitmunk::test::Tester::unloadNode(tr);
       assertNoException();
       assert(success);
-      success = bitmunk::test::Tester::removeNodeConfig(tr);
+
+      // unload bitmunk test config
+      success = bitmunk::test::Tester::unloadConfig(tr);
       assertNoException();
       assert(success);
    }
