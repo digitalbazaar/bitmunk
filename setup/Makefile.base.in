@@ -45,10 +45,9 @@ endif
 # Variables for all platforms
 
 CXX ?= @CXX@
-MO_CXX_FLAGS += @CXXFLAGS@ @DEFS@ -Wall
-MO_LD_FLAGS += @LDFLAGS@
-MO_INCLUDES += $(INCLUDES)
-MO_LIBS += -L$(TOP_MONARCH_BUILD_DIR)/dist/lib -L$(MO_LIB_DIR)
+CXX_FLAGS += @CXXFLAGS@ @DEFS@ -Wall
+LD_FLAGS += @LDFLAGS@
+LIBS += -L$(TOP_MONARCH_BUILD_DIR)/dist/lib -L$(LIB_DIR)
 AR ?= @AR@
 AS ?= @AS@
 
@@ -60,14 +59,14 @@ LIB_PREFIX=lib
 DYNAMIC_LIB_EXT=so
 STATIC_LIB_EXT=a
 EXECUTABLE_EXT=
-MO_CXX_FLAGS += -march=i686 -fPIC -DLINUX $(MODULE_CXX_FLAGS) $(MODULE_LINUX_CXX_FLAGS)
-MO_LD_FLAGS += -Wl,-rpath=@BITMUNK_MODULES_DIR@
+CXX_FLAGS += -march=i686 -fPIC -DLINUX $(MODULE_CXX_FLAGS) $(MODULE_LINUX_CXX_FLAGS)
+LD_FLAGS += -Wl,-rpath=@BITMUNK_MODULES_DIR@
 # FIXME: break out vars and include in per-dir Makefiles as needed
-MO_INCLUDES += \
+INCLUDES += \
 	-I$(TOP_BUILD_DIR)/build/apps/firefox/components \
 	-I$(TOP_BUILD_DIR)/dist/internal/include \
 	@GTK_INCLUDES@
-MO_LIBS += -L/usr/lib/mysql @GTK_LIBS@
+LIBS += -L/usr/lib/mysql @GTK_LIBS@
 DYNAMIC_LINK_LIBRARIES += $(DYNAMIC_LINUX_LINK_LIBRARIES)
 DYNAMIC_EXECUTABLE_LIBRARIES += $(DYNAMIC_LINUX_EXECUTABLE_LIBRARIES)
 endif
@@ -79,14 +78,14 @@ DYNAMIC_LIB_EXT=dylib
 STATIC_LIB_EXT=a
 EXECUTABLE_EXT=
 # TODO: support build target config and use -march=i686/powerpc/etc
-MO_CXX_FLAGS += -fPIC -DMACOS $(MODULE_CXX_FLAGS) $(MODULE_MACOS_CXX_FLAGS)
-MO_LD_FLAGS += -Wl,-flat_namespace
-MO_LIB_LD_FLAGS += \
+CXX_FLAGS += -fPIC -DMACOS $(MODULE_CXX_FLAGS) $(MODULE_MACOS_CXX_FLAGS)
+LD_FLAGS += -Wl,-flat_namespace
+LIB_LD_FLAGS += \
 	-Wl,-dylib_compatibility_version,@FULL_DOTTED_VERSION@ \
 	-Wl,-dylib_current_version,@FULL_DOTTED_VERSION@
 # Add default location for Fink
-MO_INCLUDES += -I/sw/include 
-MO_LIBS += -L/sw/lib
+INCLUDES += -I/sw/include 
+LIBS += -L/sw/lib
 DYNAMIC_LINK_LIBRARIES += $(DYNAMIC_MACOS_LINK_LIBRARIES)
 DYNAMIC_EXECUTABLE_LIBRARIES += $(DYNAMIC_MACOS_EXECUTABLE_LIBRARIES)
 endif
@@ -97,9 +96,9 @@ LIB_PREFIX=
 DYNAMIC_LIB_EXT=dll
 STATIC_LIB_EXT=lib
 EXECUTABLE_EXT=.exe
-MO_CXX_FLAGS += -march=i686 -D_WIN32_WINNT=0x0501 $(MODULE_CXX_FLAGS)
-MO_LD_FLAGS += -Wl,--enable-auto-import
-MO_INCLUDES += \
+CXX_FLAGS += -march=i686 -D_WIN32_WINNT=0x0501 $(MODULE_CXX_FLAGS)
+LD_FLAGS += -Wl,--enable-auto-import
+INCLUDES += \
 	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/pthread/include \
 	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/openssl/include \
 	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/expat/include \
@@ -114,7 +113,7 @@ endif
 
 # Platform-agnostic build rules 
 
-#include $(TOP_MONARCH_SRC_DIR)/setup/monarch.mk
+include $(TOP_MONARCH_SRC_DIR)/setup/baserules.mk
 include $(TOP_SRC_DIR)/setup/bitmunk.mk
 
 build-setup:
@@ -139,12 +138,6 @@ build-flash: $(ALL_DIRECTORIES) $(ALL_FLASH)
 build-min-js: $(ALL_DIRECTORIES) $(ALL_MIN_JS)
 
 build-xpts: $(ALL_DIRECTORIES) $(ALL_GENERATED_HEADERS) $(ALL_XPTS)
-
-clean-objects:
-	$(PCMD) rm -rf $(LIBRARY_OBJECTS) $(EXECUTABLE_OBJECTS)
-
-clean-libraries:
-	$(PCMD) rm -rf $(LIBRARIES)
 
 clean-executables:
 	$(PCMD) rm -rf $(ALL_EXECUTABLES)

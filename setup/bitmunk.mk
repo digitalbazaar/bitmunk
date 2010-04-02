@@ -8,8 +8,7 @@ LIBRARIES += $(patsubst %, $(LIB_DIR)/$(LIB_PREFIX)%.$(DYNAMIC_LIB_EXT), $(COMPO
 # Add generated headers and XPT files to the list of known files
 ALL_GENERATED_HEADERS := $(patsubst %.idl, $(BUILD_DIR)/%.h, $(IDL_SOURCES))
 ALL_XPTS := $(patsubst %.idl, $(XPT_DIR)/%.xpt, $(IDL_SOURCES))
-
-ALL_DIRECTORIES += $(BUILD_DIR) $(DIST_DIR) $(LIB_DIR) $(BIN_DIR) $(MODULES_DIR) $(XPT_DIR) $(XPI_DIR)
+ALL_DIRECTORIES += $(XPT_DIR) $(XPI_DIR)
 
 # Build rules to build header and xpt files from IDL files
 $(BUILD_DIR)/%.h: %.idl
