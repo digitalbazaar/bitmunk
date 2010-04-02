@@ -130,7 +130,7 @@ bool Tester::addNodeConfig(monarch::test::TestRunner& tr, Config* extraMerge)
 
 bool Tester::removeNodeConfig(monarch::test::TestRunner& tr)
 {
-   bool rval;
+   bool rval = true;
 
    /* CODE TO REMOVE OLD PEER NODE CONFIG
    return tr.getMicroKernel()->getConfigManager()->removeConfig(
