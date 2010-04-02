@@ -47,8 +47,8 @@ bool Tester::addNodeConfig(monarch::test::TestRunner& tr, Config* extraMerge)
 
    cfg["node"]["host"] = "localhost";
    cfg["node"]["port"] = 19101;
-   cfg["node"]["bitmunkUrl"] = "http://localhost:19101";
-   cfg["node"]["secureBitmunkUrl"] = "https://localhost:19101";
+   cfg["node"]["bitmunkUrl"] = "http://localhost:19100";
+   cfg["node"]["secureBitmunkUrl"] = "https://localhost:19100";
    cfg["node"]["modulePath"] = MODULES_DIRECTORY;
    cfg["node"]["bitmunkHomePath"] = "/tmp/test";
    cfg["node"]["profilePath"] = PROFILES_DIRECTORY;
