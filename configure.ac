@@ -2,17 +2,15 @@
 # Usage: Run ./configure once 
 # Author: Manu Sporny
 
-AC_INIT([bitmunk],[3.2.1],[support@digitalbazaar.com])
+AC_INIT([bitmunk],[3.2.2],[support@digitalbazaar.com])
 AC_CONFIG_AUX_DIR(setup)
 
 # Versioning
 BITMUNK_VERSION_MAJOR=3
 BITMUNK_VERSION_MINOR=2
-BITMUNK_VERSION_MICRO=1
 BITMUNK_MAJORMINOR=$BITMUNK_VERSION_MAJOR.$BITMUNK_VERSION_MINOR
 AC_SUBST(BITMUNK_VERSION_MAJOR)
 AC_SUBST(BITMUNK_VERSION_MINOR)
-AC_SUBST(BITMUNK_VERSION_MICRO)
 AC_SUBST(BITMUNK_MAJORMINOR)
 
 # Setup standard build environment variables
@@ -873,17 +871,6 @@ AC_CONFIG_FILES([
 	configs/dev.d/node.config
 	configs/dev-bpe.config
 ])
-fi
-
-# Generate the platform-specific build file
-if test "$BUILD_FOR_LINUX" = "yes" ; then
-AC_CONFIG_FILES([ setup/Makefile.linux ])
-fi
-if test "$BUILD_FOR_MACOS" = "yes" ; then
-AC_CONFIG_FILES([ setup/Makefile.macos ])
-fi
-if test "$BUILD_FOR_WINDOWS" = "yes" ; then
-AC_CONFIG_FILES([ setup/Makefile.mingw32 ])
 fi
 
 # Generate scripts and configuration files for release
