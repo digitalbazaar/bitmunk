@@ -1,18 +1,14 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/test/Tester.h"
-
-#include <iostream>
 
 // FIXME: bitmunk-unit-tests.h should be split between the bmtest library
 //        and the tests.
 #include "bitmunk/tests/bitmunk-unit-tests.h"
 #include "bitmunk/common/Logging.h"
 #include "monarch/config/ConfigManager.h"
-#include "monarch/io/OStreamOutputStream.h"
-#include "monarch/logging/Logging.h"
-#include "monarch/logging/OutputStreamLogger.h"
+#include "monarch/io/File.h"
 #include "monarch/test/Test.h"
 
 using namespace std;
@@ -23,14 +19,9 @@ using namespace monarch::app;
 using namespace monarch::config;
 using namespace monarch::io;
 using namespace monarch::kernel;
-using namespace monarch::logging;
 using namespace monarch::rt;
 
-#define PLUGIN_NAME "bitmunk.apps.tester.Tester"
-#define PLUGIN_CL_CFG_ID PLUGIN_NAME ".commandLine"
-
-Tester::Tester(/*MicroKernel* k) :
-   mKernel(k*/)
+Tester::Tester()
 {
 }
 
@@ -38,7 +29,7 @@ Tester::~Tester()
 {
 }
 
-bool Tester::setup(monarch::test::TestRunner& tr)
+bool Tester::addNodeConfig(monarch::test::TestRunner& tr, Config* extraMerge)
 {
    bool rval;
 
@@ -109,6 +100,23 @@ bool Tester::setup(monarch::test::TestRunner& tr)
    // sell config
    cfg["bitmunk.sell.Sell"]["maxUploadRate"] = 0;
 
+   /* OLD PEER NODE CONFIG
+   DynamicObject config;
+   config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+   config[ConfigManager::ID] = "bitmunk.test.Tester.config.peer";
+   config[ConfigManager::GROUP] =
+      tr.getApp()->getMetaConfig()["groups"]["main"]->getString();
+   Config merge = config[ConfigManager::MERGE];
+   merge["node"]["port"] = 19200;
+   merge["node"]["bitmunkUrl"] = "http://localhost:19100";
+   merge["node"]["secureBitmunkUrl"] = "https://localhost:19100";
+    */
+
+   if(extraMerge)
+   {
+      cfg.merge(*extraMerge, false);
+   }
+
    // only load this config once
    ConfigManager* cm = tr.getApp()->getConfigManager();
    if(!cm->hasConfig(config[ConfigManager::ID]->getString()))
@@ -120,9 +128,15 @@ bool Tester::setup(monarch::test::TestRunner& tr)
    return rval;
 }
 
-bool Tester::tearDown(monarch::test::TestRunner& tr)
+bool Tester::removeNodeConfig(monarch::test::TestRunner& tr)
 {
    bool rval;
+
+   /* CODE TO REMOVE OLD PEER NODE CONFIG
+   return tr.getMicroKernel()->getConfigManager()->removeConfig(
+      "bitmunk.test.Tester.config.peer");
+   */
+
 
    ConfigManager::ConfigId id = "bitmunk.test.Tester.config.base";
    // only load this config once
@@ -134,6 +148,38 @@ bool Tester::tearDown(monarch::test::TestRunner& tr)
    }
 
    return rval;
+}
+
+Node* Tester::loadNode(monarch::test::TestRunner& tr)
+{
+   Node* rval = NULL;
+
+   // load node module
+   File file(File::join(MODULES_DIRECTORY, "libbmnode.so").c_str());
+   MicroKernel* k = tr.getMicroKernel();
+   MicroKernelModule* mod = k->loadMicroKernelModule(file->getAbsolutePath());
+   if(mod != NULL)
+   {
+      rval = dynamic_cast<Node*>(mod->getApi(k));
+      if(rval == NULL)
+      {
+         // unload bad module
+         k->unloadModule(&mod->getId());
+         ExceptionRef e = new Exception(
+            "Invalid node module.",
+            "bitmunk.test.Tester.InvalidNodeModule");
+         e->getDetails()["filename"] = file->getAbsolutePath();
+         Exception::set(e);
+      }
+   }
+
+   return rval;
+}
+
+bool Tester::unloadNode(monarch::test::TestRunner& tr)
+{
+   MicroKernel* k = tr.getMicroKernel();
+   return k->unloadModule("bitmunk.node.Node");
 }
 
 /*
@@ -172,65 +218,5 @@ bool Tester::setupNode(monarch::test::TestRunner& tr, Node* node)
    }
 
    return rval;
-}
-*/
-
-bool Tester::setupPeerNode(monarch::test::TestRunner& tr, Config* extraMerge)
-{
-   bool rval;
-
-   DynamicObject config;
-   config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
-   config[ConfigManager::ID] = "bitmunk.test.Tester.config.peer";
-   config[ConfigManager::GROUP] =
-      tr.getApp()->getMetaConfig()["groups"]["main"]->getString();
-   Config merge = config[ConfigManager::MERGE];
-   merge["node"]["port"] = 19200;
-   merge["node"]["bitmunkUrl"] = "http://localhost:19100";
-   merge["node"]["secureBitmunkUrl"] = "https://localhost:19100";
-   if(extraMerge)
-   {
-      merge.merge(*extraMerge, false);
-   }
-   rval = tr.getMicroKernel()->getConfigManager()->addConfig(config);
-
-   return rval;
-}
-
-bool Tester::tearDownPeerNode(monarch::test::TestRunner& tr)
-{
-   return tr.getMicroKernel()->getConfigManager()->removeConfig(
-      "bitmunk.test.Tester.config.peer");
-}
-
-/*
-class TesterFactory :
-   public AppPluginFactory
-{
-public:
-   TesterFactory() :
-      AppPluginFactory(PLUGIN_NAME, "1.0")
-   {
-      addDependency("monarch.app.Config", "1.0");
-      addDependency("monarch.app.Logging", "1.0");
-      addDependency("monarch.apps.tester.Tester", "1.0");
-   }
-
-   virtual ~TesterFactory() {}
-
-   virtual AppPluginRef createAppPlugin()
-   {
-      return new Tester(mMicroKernel);
-   }
-};
-
-Module* createModestModule()
-{
-   return new TesterFactory();
-}
-
-void freeModestModule(Module* m)
-{
-   delete m;
 }
 */
