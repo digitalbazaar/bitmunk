@@ -31,7 +31,7 @@ Tester::~Tester()
 
 bool Tester::addNodeConfig(monarch::test::TestRunner& tr, Config* extraMerge)
 {
-   bool rval;
+   bool rval = true;
 
    //monarch::test::Tester::setup(tr);
    Config config;
@@ -117,6 +117,7 @@ bool Tester::addNodeConfig(monarch::test::TestRunner& tr, Config* extraMerge)
       cfg.merge(*extraMerge, false);
    }
 
+   // FIXME: fail on double load instead?
    // only load this config once
    ConfigManager* cm = tr.getApp()->getConfigManager();
    if(!cm->hasConfig(config[ConfigManager::ID]->getString()))
