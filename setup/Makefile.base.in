@@ -13,17 +13,13 @@ BUILD_FOR_MACOS=@BUILD_FOR_MACOS@
 AR_FLAGS = cr
 
 MONARCH = $(realpath @MONARCH_DIR@)
-TOP_MONARCH_SRC_DIR = $(MONARCH)
-TOP_MONARCH_BUILD_DIR = $(MONARCH)
-
 BITMUNK = $(realpath @BITMUNK_DIR@)
 TOP_SRC_DIR = $(BITMUNK)
-TOP_BUILD_DIR = $(BITMUNK)
 
 INCLUDES += \
-	-I$(TOP_MONARCH_BUILD_DIR)/dist/include \
-	-I$(TOP_BUILD_DIR)/dist/include \
-	-I$(TOP_BUILD_DIR)/dist/internal/include
+	-I$(MONARCH)/dist/include \
+	-I$(BITMUNK)/dist/include \
+	-I$(BITMUNK)/dist/internal/include
 
 CWD = $(shell pwd)
 ifndef HEADER_DIST_DIR
@@ -33,13 +29,6 @@ endif
 # Platform agnostic variables
 XPIDL = @XPIDL@
 
-# Build rules common to each platform
-ifdef PRINT_COMMANDS
-PCMD=
-else
-PCMD=@
-endif
-
 .SECONDEXPANSION:
 
 # Variables for all platforms
@@ -47,14 +36,13 @@ endif
 CXX ?= @CXX@
 CXX_FLAGS += @CXXFLAGS@ @DEFS@ -Wall
 LD_FLAGS += @LDFLAGS@
-LIBS += -L$(TOP_MONARCH_BUILD_DIR)/dist/lib -L$(LIB_DIR)
+LIBS += -L$(MONARCH)/dist/lib -L$(LIB_DIR)
 AR ?= @AR@
 AS ?= @AS@
 
 # Platform-specific variables
 
 ifeq ($(BUILD_FOR_LINUX),yes)
-PLATFORM_NAME=LINUX
 LIB_PREFIX=lib
 DYNAMIC_LIB_EXT=so
 STATIC_LIB_EXT=a
@@ -63,8 +51,8 @@ CXX_FLAGS += -march=i686 -fPIC -DLINUX $(MODULE_CXX_FLAGS) $(MODULE_LINUX_CXX_FL
 LD_FLAGS += -Wl,-rpath=@BITMUNK_MODULES_DIR@
 # FIXME: break out vars and include in per-dir Makefiles as needed
 INCLUDES += \
-	-I$(TOP_BUILD_DIR)/build/apps/firefox/components \
-	-I$(TOP_BUILD_DIR)/dist/internal/include \
+	-I$(BITMUNK)/build/apps/firefox/components \
+	-I$(BITMUNK)/dist/internal/include \
 	@GTK_INCLUDES@
 LIBS += -L/usr/lib/mysql @GTK_LIBS@
 DYNAMIC_LINK_LIBRARIES += $(DYNAMIC_LINUX_LINK_LIBRARIES)
@@ -72,7 +60,6 @@ DYNAMIC_EXECUTABLE_LIBRARIES += $(DYNAMIC_LINUX_EXECUTABLE_LIBRARIES)
 endif
 
 ifeq ($(BUILD_FOR_MACOS),yes)
-PLATFORM_NAME=MACOS
 LIB_PREFIX=lib
 DYNAMIC_LIB_EXT=dylib
 STATIC_LIB_EXT=a
@@ -91,7 +78,6 @@ DYNAMIC_EXECUTABLE_LIBRARIES += $(DYNAMIC_MACOS_EXECUTABLE_LIBRARIES)
 endif
 
 ifeq ($(BUILD_FOR_WINDOWS),yes)
-PLATFORM_NAME=WINDOWS
 LIB_PREFIX=
 DYNAMIC_LIB_EXT=dll
 STATIC_LIB_EXT=lib
@@ -99,22 +85,21 @@ EXECUTABLE_EXT=.exe
 CXX_FLAGS += -march=i686 -D_WIN32_WINNT=0x0501 $(MODULE_CXX_FLAGS)
 LD_FLAGS += -Wl,--enable-auto-import
 INCLUDES += \
-	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/pthread/include \
-	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/openssl/include \
-	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/expat/include \
-	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/mysql/include \
-	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/regex/include \
-	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/sqlite3/include \
-	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/zlib/include \
-	-I$(TOP_MONARCH_SRC_DIR)/cpp/3rdparty/iconv/include
+	-I$(MONARCH)/cpp/3rdparty/pthread/include \
+	-I$(MONARCH)/cpp/3rdparty/openssl/include \
+	-I$(MONARCH)/cpp/3rdparty/expat/include \
+	-I$(MONARCH)/cpp/3rdparty/mysql/include \
+	-I$(MONARCH)/cpp/3rdparty/regex/include \
+	-I$(MONARCH)/cpp/3rdparty/sqlite3/include \
+	-I$(MONARCH)/cpp/3rdparty/zlib/include \
+	-I$(MONARCH)/cpp/3rdparty/iconv/include
 DYNAMIC_LINK_LIBRARIES += $(DYNAMIC_WINDOWS_LINK_LIBRARIES)
 DYNAMIC_EXECUTABLE_LIBRARIES += $(DYNAMIC_WINDOWS_EXECUTABLE_LIBRARIES)
 endif
 
 # Platform-agnostic build rules 
-
-include $(TOP_MONARCH_SRC_DIR)/setup/baserules.mk
-include $(TOP_SRC_DIR)/setup/bitmunk.mk
+include $(MONARCH)/setup/baserules.mk
+include $(BITMUNK)/setup/bitmunk.mk
 
 build-setup:
 
