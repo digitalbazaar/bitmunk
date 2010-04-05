@@ -10,45 +10,45 @@ BITMUNK_XPT_DIR = $(BITMUNK_DIST_DIR)/xpt
 BITMUNK_XPI_DIR = $(BITMUNK_DIST_DIR)/xpi
 BITMUNK_MODULES_DIR = $(BITMUNK_DIST_DIR)/modules
 
-BITMUNK_COMPONENT = @LIB_PREFIX@bitmunk-components.@SHARED_LIB_EXTENSION@ 
-BITMUNK_MIME_HANDLER = @LIB_PREFIX@npbmd.@SHARED_LIB_EXTENSION@ 
-DISTRIBUTION_LIBRARIES = @LIB_PREFIX@bmcommon.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@bmdata.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@bmprotocol.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@moapp.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@mocompress.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@moconfig.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@mocrypto.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@modata.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@moevent.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@mofiber.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@moio.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@mohttp.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@mokernel.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@mologging.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@momodest.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@monet.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@mort.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@mosql.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@mosqlite3.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@moupnp.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@moutil.@SHARED_LIB_EXTENSION@ \
-                         @LIB_PREFIX@movalidation.@SHARED_LIB_EXTENSION@ 
+BITMUNK_COMPONENT = @LIB_PREFIX@bitmunk-components.@DYNAMIC_LIB_EXT@ 
+BITMUNK_MIME_HANDLER = @LIB_PREFIX@npbmd.@DYNAMIC_LIB_EXT@ 
+DISTRIBUTION_LIBRARIES = @LIB_PREFIX@bmcommon.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@bmdata.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@bmprotocol.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@moapp.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@mocompress.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@moconfig.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@mocrypto.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@modata.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@moevent.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@mofiber.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@moio.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@mohttp.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@mokernel.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@mologging.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@momodest.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@monet.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@mort.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@mosql.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@mosqlite3.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@moupnp.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@moutil.@DYNAMIC_LIB_EXT@ \
+                         @LIB_PREFIX@movalidation.@DYNAMIC_LIB_EXT@ 
 
-MODULE_LIBRARIES = @LIB_PREFIX@bmnode.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmbfp.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmcustomcatalog.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmeventreactor.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmeventreactor-downloadstate.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmfilebrowser.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmmedialibrary.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmnegotiate.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmperuserdb.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmportmapper.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmpurchase.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmsell.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmsystem.@SHARED_LIB_EXTENSION@ \
-                   @LIB_PREFIX@bmwebui.@SHARED_LIB_EXTENSION@ 
+MODULE_LIBRARIES = @LIB_PREFIX@bmnode.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmbfp.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmcustomcatalog.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmeventreactor.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmeventreactor-downloadstate.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmfilebrowser.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmmedialibrary.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmnegotiate.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmperuserdb.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmportmapper.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmpurchase.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmsell.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmsystem.@DYNAMIC_LIB_EXT@ \
+                   @LIB_PREFIX@bmwebui.@DYNAMIC_LIB_EXT@ 
 
 WEBUI_PLUGINS = help log login main purchase medialibrary settings
 
@@ -204,8 +204,8 @@ endif
 ifeq (@BITMUNK_PLATFORM@,windows)
 	@echo "Not stripping any windows libraries..."
 else
-	@STRIP@ @STRIP_FLAGS@ `find extension/platform/@FIREFOX_PLATFORM@/libs -name "*.@SHARED_LIB_EXTENSION@"`
-	@STRIP@ @STRIP_FLAGS@ `find extension/platform/@FIREFOX_PLATFORM@/modules -name "*.@SHARED_LIB_EXTENSION@"`
+	@STRIP@ @STRIP_FLAGS@ `find extension/platform/@FIREFOX_PLATFORM@/libs -name "*.@DYNAMIC_LIB_EXT@"`
+	@STRIP@ @STRIP_FLAGS@ `find extension/platform/@FIREFOX_PLATFORM@/modules -name "*.@DYNAMIC_LIB_EXT@"`
 endif
 
 	# Set the auto-login to false.
