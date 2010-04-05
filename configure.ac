@@ -844,7 +844,6 @@ AC_CONFIG_FILES([
    cpp/system/config.h
    cpp/test/Makefile
    cpp/tests/Makefile
-   cpp/tests/bitmunk-unit-tests.h
    cpp/webui/Makefile
 ])
 

@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
  */
-#include "bitmunk-unit-tests.h"
 #include "bitmunk/test/Tester.h"
 #include "monarch/rt/DynamicObject.h"
 #include "monarch/rt/Exception.h"

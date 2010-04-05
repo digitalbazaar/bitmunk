@@ -6,7 +6,6 @@
 #include <iostream>
 #include <sstream>
 
-#include "bitmunk-unit-tests.h"
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/common/Tools.h"
 #include "bitmunk/purchase/TypeDefinitions.h"

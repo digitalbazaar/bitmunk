@@ -3,7 +3,6 @@
  */
 #define __STDC_FORMAT_MACROS
 
-#include "bitmunk-unit-tests.h"
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/customcatalog/Catalog.h"
 #include "bitmunk/data/FormatDetectorInputStream.h"

@@ -40,8 +40,6 @@
 #include "bitmunk/common/CatalogInterface.h"
 #include "bitmunk/test/Tester.h"
 
-#include "bitmunk-unit-tests.h"
-
 using namespace std;
 using namespace monarch::config;
 using namespace monarch::crypto;

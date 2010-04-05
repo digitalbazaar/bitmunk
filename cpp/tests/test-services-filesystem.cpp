@@ -6,7 +6,6 @@
 
 #include <inttypes.h>
 
-#include "bitmunk-unit-tests.h"
 #include "bitmunk/node/Node.h"
 #include "bitmunk/test/Tester.h"
 #include "monarch/data/json/JsonWriter.h"

@@ -103,7 +103,6 @@ TEST_MODULES = \
 	bmtest-services-customcatalog \
 	bmtest-services-medialibrary \
 	bmtest-statemonitor \
-	bitmunk-unit-tests \
 	$(GTKUI_TEST_MODULES)
 
 LIBS_DIR = @BITMUNK_DIR@/dist/lib

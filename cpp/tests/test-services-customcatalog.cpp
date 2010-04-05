@@ -3,7 +3,6 @@
  */
 #define __STDC_FORMAT_MACROS
 
-#include "bitmunk-unit-tests.h"
 #include "bitmunk/node/Node.h"
 #include "bitmunk/test/Tester.h"
 #include "monarch/event/EventWaiter.h"
