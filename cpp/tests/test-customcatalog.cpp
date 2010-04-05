@@ -42,6 +42,8 @@ using namespace monarch::util;
 #define TEST_CONTENT_SIZE (uint64_t)2712402
 #define TEST_PS_ID        1
 
+static string sTestDataDir;
+
 /**
  * This function resets the test environment by logging the user out,
  * deleting the database, and then logging the user back into the node.
@@ -164,7 +166,7 @@ static PayeeScheme buildPayeeScheme()
 
 static Ware buildWare()
 {
-   File file(TEST_DATA_DIRECTORY TEST_FILENAME);
+   File file((sTestDataDir + TEST_FILENAME).c_str());
    FileInfo fi;
    fi["id"] = TEST_FILE_ID;
    fi["path"] = file->getAbsolutePath();
@@ -188,7 +190,7 @@ static Ware buildWare()
 
 static DynamicObject buildListing(bool removal)
 {
-   File file(TEST_DATA_DIRECTORY TEST_FILENAME);
+   File file((sTestDataDir + TEST_FILENAME).c_str());
    FileInfo fi;
    fi["id"] = TEST_FILE_ID;
    fi["mediaId"] = 2;
@@ -298,7 +300,7 @@ void runCustomCatalogTest(
          DynamicObject in;
          DynamicObject out;
          File file(
-            StringTools::format("%s%u.mp3", TEST_DATA_DIRECTORY, i).c_str());
+            StringTools::format("%s%u.mp3", sTestDataDir.c_str(), i).c_str());
          out["path"] = file->getAbsolutePath();
          out["mediaId"] = i;
 
@@ -871,7 +873,7 @@ void initializeCatalog(Node& node, Catalog* cat)
    DynamicObject out;
 
    // create a FileInfo object, do not set file ID or media ID
-   out["path"] = TEST_DATA_DIRECTORY TEST_FILENAME;
+   out["path"] = (sTestDataDir + TEST_FILENAME).c_str();
    out["mediaId"] = 0;
 
    // prepare event waiter
@@ -2461,6 +2463,10 @@ public:
     */
    virtual int runAutomaticTests(TestRunner& tr)
    {
+      ConfigManager* cm = tr.getApp()->getConfigManager();
+      Config cfg = cm->getConfig(BITMUNK_TESTER_CONFIG_ID);
+      sTestDataDir = cfg["test"]["dataPath"]->getString();
+
       // FIXME:
 #if 0
       // create a client node for communicating
@@ -2526,6 +2532,10 @@ public:
     */
    virtual int runInteractiveTests(TestRunner& tr)
    {
+      ConfigManager* cm = tr.getApp()->getConfigManager();
+      Config cfg = cm->getConfig(BITMUNK_TESTER_CONFIG_ID);
+      sTestDataDir = cfg["test"]["dataPath"]->getString();
+
       // FIXME:
 #if 0
       // create a client node for communicating

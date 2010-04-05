@@ -36,6 +36,8 @@ using namespace monarch::test;
 #define TEST_FILE_ID_3  "5E5A503FBD8217274819616929DA1C041C30B4FC"
 #define TEST_WARE_ID_3  "3-" TEST_FILE_ID_3
 
+static string sTestDataDir;
+
 /**
  * This function resets the test environment by logging the user out,
  * deleting the database, and then logging the user back into the node.
@@ -115,7 +117,7 @@ void customCatalogTests(
       FileInfo fi = detailedWare2["fileInfos"]->append();
       fi["id"] = TEST_FILE_ID_2;
       fi["mediaId"] = 2;
-      File file(TEST_DATA_DIRECTORY TEST_FILENAME_2);
+      File file((sTestDataDir + TEST_FILENAME_2).c_str());
       fi["extension"] = file->getExtension() + 1;
       fi["contentType"] = "audio/mpeg";
       fi["contentSize"] = TEST_CONTENT_SIZE_2;
@@ -153,7 +155,7 @@ void customCatalogTests(
       // create a FileInfo object
       string normalizedPath;
       File::normalizePath(
-         TEST_DATA_DIRECTORY TEST_FILENAME_2, normalizedPath);
+         (sTestDataDir + TEST_FILENAME_2).c_str(), normalizedPath);
       out["path"] = normalizedPath.c_str();
       out["mediaId"] = 2;
 
@@ -628,7 +630,7 @@ void interactiveCustomCatalogTests(
       // create a FileInfo object
       string normalizedPath;
       File::normalizePath(
-         TEST_DATA_DIRECTORY TEST_FILENAME_2, normalizedPath);
+         (sTestDataDir + TEST_FILENAME_2).c_str(), normalizedPath);
       out["path"] = normalizedPath.c_str();
       out["mediaId"] = 2;
 
@@ -727,6 +729,11 @@ public:
    {
       printf("Note: You may see security breaches if the user's profile \n"
          "is not in the configured profile directory.\n");
+
+      ConfigManager* cm = tr.getApp()->getConfigManager();
+      Config cfg = cm->getConfig(BITMUNK_TESTER_CONFIG_ID);
+      sTestDataDir = cfg["test"]["dataPath"]->getString();
+
       // FIXME:
 #if 0
       // create a client node for communicating
@@ -768,6 +775,10 @@ public:
     */
    virtual int runInteractiveTests(TestRunner& tr)
    {
+      ConfigManager* cm = tr.getApp()->getConfigManager();
+      Config cfg = cm->getConfig(BITMUNK_TESTER_CONFIG_ID);
+      sTestDataDir = cfg["test"]["dataPath"]->getString();
+
       printf("Note: You may see security breaches if the user's profile \n"
          "is not in the configured profile directory.\n");
       // FIXME:

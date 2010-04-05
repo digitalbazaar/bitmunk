@@ -30,6 +30,8 @@ using namespace monarch::test;
 #define TEST_FILE_ID      "b79068aab92f78ba312d35286a77ea581037b109"
 #define TEST_CONTENT_SIZE (uint64_t)2712402
 
+static string sTestDataDir;
+
 void mediaLibraryTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
 {
    Messenger* messenger = node.getMessenger();
@@ -57,7 +59,7 @@ void mediaLibraryTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
 
       // create a FileInfo object
       out["id"] = TEST_FILE_ID;
-      out["path"] = TEST_DATA_DIRECTORY TEST_FILENAME;
+      out["path"] = (sTestDataDir + TEST_FILENAME).c_str();
       out["mediaId"] = 2;
       out["contentType"] = "audio/mpeg";
       out["formatDetails"]->setType(Map);
@@ -74,7 +76,7 @@ void mediaLibraryTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
 
       // create a FileInfo object
       out["id"] = TEST_FILE_ID;
-      out["path"] = TEST_DATA_DIRECTORY TEST_FILENAME;
+      out["path"] = (sTestDataDir + TEST_FILENAME).c_str();
       out["mediaId"] = 2;
       out["contentType"] = "audio/mpeg";
       out["formatDetails"]->setType(Map);
@@ -122,7 +124,7 @@ void mediaLibraryTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
       DynamicObject out;
 
       // create a FileInfo object
-      out["path"] = TEST_DATA_DIRECTORY "this-file-should-not-exist.mp3";
+      out["path"] = (sTestDataDir + "this-file-should-not-exist.mp3").c_str();
       out["mediaId"] = 2;
 
       // prepare event waiter
@@ -152,7 +154,7 @@ void mediaLibraryTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
    {
       // Create the expected file info
       FileInfo expectedFileInfo;
-      File file(TEST_DATA_DIRECTORY TEST_FILENAME);
+      File file((sTestDataDir + TEST_FILENAME).c_str());
       expectedFileInfo["id"] = TEST_FILE_ID;
       expectedFileInfo["path"] = file->getAbsolutePath();
       expectedFileInfo["mediaId"] = 2;
@@ -192,7 +194,7 @@ void mediaLibraryTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
          messenger->getSelfUrl(true).c_str(), TEST_USER_ID);
       // Create the expected result set
       ResourceSet expectedFileSet;
-      File file(TEST_DATA_DIRECTORY TEST_FILENAME);
+      File file((sTestDataDir + TEST_FILENAME).c_str());
       expectedFileSet["resources"]->setType(Array);
       expectedFileSet["start"] = 0;
       expectedFileSet["num"] = 10;
@@ -246,7 +248,7 @@ void mediaLibraryTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
          messenger->getSelfUrl(true).c_str(), TEST_USER_ID);
       // Create the expected result set
       ResourceSet expectedFileSet;
-      File file(TEST_DATA_DIRECTORY "2.mp3");
+      File file((sTestDataDir + "2.mp3").c_str());
       expectedFileSet["resources"]->setType(Array);
       expectedFileSet["start"] = 0;
       expectedFileSet["num"] = 10;
@@ -309,7 +311,7 @@ void mediaLibraryTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
          messenger->getSelfUrl(true).c_str(), TEST_USER_ID);
       // Create the expected result set
       ResourceSet expectedFileSet;
-      File file(TEST_DATA_DIRECTORY "2.mp3");
+      File file((sTestDataDir + "2.mp3").c_str());
       expectedFileSet["resources"]->setType(Array);
       expectedFileSet["start"] = 0;
       expectedFileSet["num"] = 10;
@@ -359,7 +361,7 @@ void mediaLibraryTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
       DynamicObject out;
 
       // create a FileInfo object, do not set file ID or media ID
-      out["path"] = TEST_DATA_DIRECTORY TEST_FILENAME;
+      out["path"] = (sTestDataDir + TEST_FILENAME).c_str();
       out["mediaId"] = 0;
 
       // prepare event waiter
@@ -413,6 +415,11 @@ public:
    {
       printf("Note: You may see security breaches if the user's profile \n"
          "is not in the configured profile directory.\n");
+
+      ConfigManager* cm = tr.getApp()->getConfigManager();
+      Config cfg = cm->getConfig(BITMUNK_TESTER_CONFIG_ID);
+      sTestDataDir = cfg["test"]["dataPath"]->getString();
+
       // FIXME:
 #if 0
       // create a client node for communicating

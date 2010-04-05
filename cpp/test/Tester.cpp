@@ -18,8 +18,6 @@ using namespace monarch::io;
 using namespace monarch::kernel;
 using namespace monarch::rt;
 
-#define BITMUNK_TESTER_CONFIG_ID   "bitmunk.test.Tester.config.base"
-
 Tester::Tester()
 {
 }
