@@ -33,12 +33,12 @@ XPIDL = @XPIDL@
 
 # Variables for all platforms
 
-CXX ?= @CXX@
+CXX = @CXX@
 CXX_FLAGS += @CXXFLAGS@ @DEFS@ -Wall
 LD_FLAGS += @LDFLAGS@
 LIBS += -L$(MONARCH)/dist/lib -L$(LIB_DIR)
-AR ?= @AR@
-AS ?= @AS@
+AR = @AR@
+AS = @AS@
 
 # Platform-specific variables
 
