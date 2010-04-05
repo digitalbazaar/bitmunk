@@ -223,13 +223,16 @@ typedef monarch::rt::DynamicObjectIterator AccountIterator;
  *    "userId" : UserId,
  *    "firstName" : string,
  *    "lastName" : string,
- *    "address" : Address
+ *    "address" : Address,
+ *    "validated" : boolean
  * }
  *
  * @member userId the ID of the user.
  * @member firstName the first name of the entity.
  * @member lastName the last name of the entity.
  * @member address the Address of the entity.
+ * @member validated true if this identity has been validated by an appropriate
+ *            authority.
  */
 typedef monarch::rt::DynamicObject Identity;
 typedef monarch::rt::DynamicObjectIterator IdentityIterator;
