@@ -668,7 +668,10 @@ if test "$BUILD_FOR_LINUX" = "yes" ; then
    AC_CHECK_PROG(AR, ar, ar, not found)
    AC_CHECK_PROG(AS, as, as, not found)
    AC_CHECK_PROG(STRIP, strip, strip, not found)
-   STRIP_FLAGS=
+   LIB_PREFIX=lib
+   DYNAMIC_LIB_EXT=so
+   STATIC_LIB_EXT=a
+   EXECUTABLE_EXT=
 
    if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
       if test "x$XPIDL" = "x" ; then
@@ -682,8 +685,6 @@ if test "$BUILD_FOR_LINUX" = "yes" ; then
          AC_MSG_ERROR(xpidl not found)
       fi
       FIREFOX_PLATFORM="Linux_x86-gcc3"
-      LIB_PREFIX="lib"
-      SHARED_LIB_EXTENSION="so"
    fi
 
    if test "$BUILD_FLASH" = "yes" ; then
@@ -703,6 +704,11 @@ if test "$BUILD_FOR_WINDOWS" = "yes" ; then
    AC_CHECK_PROG(STRIP, i586-mingw32msvc-strip,
                  i586-mingw32msvc-strip, not found)
    STRIP_FLAGS="--strip-debug"
+   LIB_PREFIX=
+   DYNAMIC_LIB_EXT=dll
+   STATIC_LIB_EXT=a
+   EXECUTABLE_EXT=.exe
+
    # If the mingw32 compiler wasn't found, use the system default
    if test "$WINDOWS_CXX" = "not found" ; then
       AC_PROG_CXX()
@@ -722,8 +728,6 @@ if test "$BUILD_FOR_WINDOWS" = "yes" ; then
          AC_MSG_ERROR(xpidl not found)
       fi
       FIREFOX_PLATFORM="WINNT_x86-msvc"
-      LIB_PREFIX=
-      SHARED_LIB_EXTENSION="dll"
    fi
 
    if test "$BUILD_FLASH" = "yes" ; then
@@ -738,6 +742,10 @@ if test "$BUILD_FOR_MACOS" = "yes" ; then
    AC_CHECK_PROG(AS, as, as, not found)
    AC_CHECK_PROG(STRIP, strip, strip, not found)
    STRIP_FLAGS=-S
+   LIB_PREFIX=lib
+   DYNAMIC_LIB_EXT=dylib
+   STATIC_LIB_EXT=a
+   EXECUTABLE_EXT=
    MACOS_CXX="$CXX"
 
    if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
@@ -753,8 +761,6 @@ if test "$BUILD_FOR_MACOS" = "yes" ; then
          AC_MSG_ERROR(xpidl not found)
       fi
       FIREFOX_PLATFORM="Darwin_x86-gcc3"
-      LIB_PREFIX=lib
-      SHARED_LIB_EXTENSION="dylib"
    fi
 
    if test "$BUILD_FLASH" = "yes" ; then
@@ -772,7 +778,9 @@ AC_SUBST(XULRUNNER_IDL_FLAGS)
 AC_SUBST(BITMUNK_PLATFORM)
 AC_SUBST(FIREFOX_PLATFORM)
 AC_SUBST(LIB_PREFIX)
-AC_SUBST(SHARED_LIB_EXTENSION)
+AC_SUBST(DYNAMIC_LIB_EXT)
+AC_SUBST(STATIC_LIB_EXT)
+AC_SUBST(EXECUTABLE_EXT)
 
 # Library symbol stripping variables
 AC_SUBST(STRIP)
