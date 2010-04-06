@@ -4,7 +4,7 @@ LIBRARIES = bmsell
 bmsell_HEADERS = $(wildcard *.h)
 bmsell_SOURCES = $(wildcard *.cpp)
 
-DYNAMIC_LINK_LIBRARIES = mort moutil momodest moio mocrypto monet mohttp modata mologging movalidation mokernel bmnode bmcommon bmdata bmprotocol
+DYNAMIC_LINK_LIBRARIES = mort moutil momodest moio mocrypto monet mohttp modata mologging movalidation mokernel bmcommon bmdata bmprotocol bmnodemodule
 
 DYNAMIC_MACOS_LINK_LIBRARIES = moconfig moevent mofiber moapp mocompress
 

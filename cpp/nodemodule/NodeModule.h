@@ -7,6 +7,7 @@
 #include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/node/Node.h"
 #include "monarch/kernel/MicroKernelModule.h"
+#include "monarch/logging/Logging.h"
 
 namespace bitmunk
 {

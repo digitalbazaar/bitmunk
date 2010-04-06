@@ -4,7 +4,7 @@ LIBRARIES = bmportmapper
 bmportmapper_HEADERS = $(wildcard *.h)
 bmportmapper_SOURCES = $(wildcard *.cpp)
 
-DYNAMIC_LINK_LIBRARIES = mort moutil momodest moio monet mohttp moconfig mologging movalidation moupnp mokernel bmnode bmcommon bmprotocol
+DYNAMIC_LINK_LIBRARIES = mort moutil momodest moio monet mohttp moconfig mologging movalidation moupnp mokernel bmcommon bmprotocol bmnodemodule
 
 DYNAMIC_MACOS_LINK_LIBRARIES = mocrypto modata mologging mofiber moevent movalidation moapp mocompress moupnp
 

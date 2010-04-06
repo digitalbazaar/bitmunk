@@ -4,7 +4,7 @@ LIBRARIES = bmsystem
 bmsystem_HEADERS = $(wildcard *.h)
 bmsystem_SOURCES = $(wildcard *.cpp)
 
-DYNAMIC_LINK_LIBRARIES = mort moutil momodest moio moconfig monet mohttp modata mologging movalidation mokernel bmnode bmcommon bmprotocol
+DYNAMIC_LINK_LIBRARIES = mort moutil momodest moio moconfig monet mohttp modata mologging movalidation mokernel bmcommon bmprotocol bmnodemodule
 
 DYNAMIC_MACOS_LINK_LIBRARIES = moevent mofiber mocrypto moapp mocompress
 DYNAMIC_WINDOWS_LINK_LIBRARIES = mofiber
