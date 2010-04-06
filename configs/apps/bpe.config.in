@@ -1,0 +1,26 @@
+{
+   "_id_": "bitmunk.apps.bpe",
+   "_version_": "Monarch Config 3.0",
+   "_group_": "main",
+   "_append_": {
+      "monarch.app.Kernel": {
+         "modulePath": [
+            "@BITMUNK_DIR@/dist/modules/apps/@LIB_PREFIX@bitmunk.@DYNAMIC_LIB_EXT@",
+            "@BITMUNK_DIR@/dist/lib/@LIB_PREFIX@bmapp.@DYNAMIC_LIB_EXT@"
+         ]
+      },
+      "bitmunk.apps.bitmunk.Bitmunk": {
+         "configs": {
+            "extra": [
+               "@BITMUNK_DIR@/configs/dev-bpe.config"
+	    ]
+         }
+      }
+   },
+   "_merge_": {
+      "monarch.app.Logging": {
+         "color": true,
+         "level": "max"
+      }
+   }
+}

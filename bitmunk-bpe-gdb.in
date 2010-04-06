@@ -1,8 +1,0 @@
-#!/bin/sh
-# Run the Bitmunk app as a peer
-
-@BITMUNK_DIR@/bitmunk-app-gdb \
-	--log-color \
-	--log-level m \
-	--config configs/dev-bpe.config \
-	"$@"
