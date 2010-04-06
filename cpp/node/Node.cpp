@@ -19,6 +19,7 @@ using namespace monarch::event;
 using namespace monarch::fiber;
 using namespace monarch::io;
 using namespace monarch::kernel;
+using namespace monarch::logging;
 using namespace monarch::modest;
 using namespace monarch::net;
 using namespace monarch::rt;
@@ -27,6 +28,9 @@ using namespace bitmunk::common;
 using namespace bitmunk::protocol;
 using namespace bitmunk::node;
 namespace v = monarch::validation;
+
+// Logging category initialized during NodeModule initialization.
+Category* BM_NODE_CAT;
 
 Node::Node() :
    mKernel(NULL),
