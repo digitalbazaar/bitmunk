@@ -21,6 +21,7 @@ SUBDIRS := \
 	cpp/app \
 	cpp/protocol \
 	cpp/node \
+	cpp/nodemodule \
 	cpp/data \
 	cpp/bfp \
 	cpp/peruserdb \
@@ -45,7 +46,8 @@ INSTALL_APPLICATIONS := \
 
 INSTALL_BASE_LIBS := \
 	dist/lib/libbmcommon.so \
-	dist/lib/libbmprotocol.so
+	dist/lib/libbmprotocol.so \
+	dist/lib/libbmnodemodule.so
 
 INSTALL_BASE_CONFIGS := \
 	configs/live.d/app.config \
