@@ -541,7 +541,16 @@ bool Bitmunk::run()
    // The bitmunk plugin will finish but has setup the kernel to wait for a
    // bitmunk wait event. The node can also signal shutdown and restart events
    // as needed.
-   rval = mMicroKernel->loadModules(cfg["modulePath"]->getString());
+   FileList modulePaths;
+   ConfigIterator mpi = cfg["modulePath"].getIterator();
+   while(rval && mpi->hasNext())
+   {
+      const char* path = mpi->next()->getString();
+      FileList pathList = File::parsePath(path);
+      modulePaths->concat(*pathList);
+   }
+   // load all module paths at once
+   rval = mMicroKernel->loadModules(modulePaths);
 
    return rval;
 }
