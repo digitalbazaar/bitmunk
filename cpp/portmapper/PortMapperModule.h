@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_portmapper_PortMapperModule_H
 #define bitmunk_portmapper_PortMapperModule_H
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/portmapper/PortMapper.h"
 
 namespace bitmunk
@@ -15,28 +15,28 @@ namespace portmapper
 /**
  * A PortMapperModule is a NodeModule that provides an interface for
  * mapping ports.
- * 
+ *
  * @author Dave Longley
  */
-class PortMapperModule : public bitmunk::node::NodeModule
+class PortMapperModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**
     * The PortMapper.
     */
    PortMapper* mPortMapper;
-   
+
 public:
    /**
     * Creates a new PortMapperModule.
     */
    PortMapperModule();
-   
+
    /**
     * Destructs this PortMapperModule.
     */
    virtual ~PortMapperModule();
-   
+
    /**
     * Adds additional dependency information. This includes dependencies
     * beyond the Bitmunk Node module dependencies.

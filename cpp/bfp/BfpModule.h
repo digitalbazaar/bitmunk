@@ -4,7 +4,7 @@
 #ifndef bitmunk_bfp_BfpModule_H
 #define bitmunk_bfp_BfpModule_H
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/bfp/IBfpModule.h"
 
 // module logging category
@@ -20,10 +20,10 @@ namespace bfp
  * and freeing Bfp objects. A Bfp object is used to assign IDs for Wares,
  * FileInfos, and FilePieces and for watermarking, encrypting, and decrypting
  * data transmitted on Bitmunk.
- * 
+ *
  * @author Dave Longley
  */
-class BfpModule : public bitmunk::node::NodeModule
+class BfpModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**
@@ -36,12 +36,12 @@ public:
     * Creates a new BfpModule.
     */
    BfpModule();
-   
+
    /**
     * Destructs this BfpModule.
     */
    virtual ~BfpModule();
-   
+
    /**
     * Adds additional dependency information. This includes dependencies
     * beyond the Bitmunk Node module dependencies.

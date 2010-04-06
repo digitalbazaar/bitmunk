@@ -4,7 +4,7 @@
 #ifndef bitmunk_peruserdb_PerUserDBModule_H
 #define bitmunk_peruserdb_PerUserDBModule_H
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/peruserdb/DatabaseHub.h"
 
 // module logging category
@@ -19,10 +19,10 @@ namespace peruserdb
  * An PerUserDBModule is a NodeModule that provides an interface for
  * manipulating per-user databases, that is, databases that exist on a
  * per-user basis.
- * 
+ *
  * @author Dave Longley
  */
-class PerUserDBModule : public bitmunk::node::NodeModule
+class PerUserDBModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**
@@ -35,12 +35,12 @@ public:
     * Creates a new PerUserDBModule.
     */
    PerUserDBModule();
-   
+
    /**
     * Destructs this PerUserDBModule.
     */
    virtual ~PerUserDBModule();
-   
+
    /**
     * Adds additional dependency information. This includes dependencies
     * beyond the Bitmunk Node module dependencies.

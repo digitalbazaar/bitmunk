@@ -30,7 +30,7 @@ namespace v = monarch::validation;
 Category* BM_WEBUI_CAT;
 
 WebUiModule::WebUiModule() :
-   NodeModule("bitmunk.webui.WebUi", "1.0"),
+   BitmunkModule("bitmunk.webui.WebUi", "1.0"),
    mSessionManager(NULL),
    mMainPluginId(NULL)
 {

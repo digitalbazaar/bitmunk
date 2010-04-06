@@ -6,8 +6,8 @@
 
 #include "bitmunk/node/Node.h"
 
+#include "bitmunk/nodemodule/NodeModule.h"
 #include "bitmunk/node/BtpServer.h"
-#include "bitmunk/node/NodeModule.h"
 #include "monarch/validation/Validation.h"
 
 #include <algorithm>

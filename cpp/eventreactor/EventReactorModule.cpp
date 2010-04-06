@@ -20,7 +20,7 @@ using namespace bitmunk::eventreactor;
 Category* BM_EVENTREACTOR_CAT;
 
 EventReactorModule::EventReactorModule() :
-   NodeModule("bitmunk.eventreactor.EventReactor", "1.0"),
+   BitmunkModule("bitmunk.eventreactor.EventReactor", "1.0"),
    mInterface(NULL)
 {
 }
@@ -42,14 +42,14 @@ bool EventReactorModule::initialize(Node* node)
       "BM_EVENTREACTOR",
       "Bitmunk Event Reactor",
       NULL);
-   
+
    // create and event reactor service
    EventReactorService* ers =
       new EventReactorService(node, "/api/3.0/eventreactor");
    mInterface = ers;
    BtpServiceRef bs = ers;
    rval = node->getBtpServer()->addService(bs, Node::SslOn);
-   
+
    return rval;
 }
 
@@ -57,7 +57,7 @@ void EventReactorModule::cleanup(Node* node)
 {
    // remove services
    node->getBtpServer()->removeService("/api/3.0/eventreactor");
-   
+
    // interface now null
    mInterface = NULL;
 

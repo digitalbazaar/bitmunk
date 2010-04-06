@@ -4,7 +4,7 @@ LIBRARIES = bmpurchase
 bmpurchase_HEADERS = $(wildcard *.h)
 bmpurchase_SOURCES = $(wildcard *.cpp)
 
-DYNAMIC_LINK_LIBRARIES = mort moutil momodest mofiber moio mocrypto monet mohttp modata mosql mosqlite3 mologging movalidation mokernel bmprotocol bmcommon bmnodemodule
+DYNAMIC_LINK_LIBRARIES = mort moutil momodest mofiber moio mocrypto monet mohttp modata mosql mosqlite3 mologging movalidation mokernel bmprotocol bmcommon bmnode
 
 DYNAMIC_MACOS_LINK_LIBRARIES = sqlite3 moevent moconfig moapp mocompress bmdata
 DYNAMIC_WINDOWS_LINK_LIBRARIES = sqlite3 moevent

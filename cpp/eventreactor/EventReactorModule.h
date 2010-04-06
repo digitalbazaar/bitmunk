@@ -4,7 +4,7 @@
 #ifndef bitmunk_eventreactor_EventReactorModule_H
 #define bitmunk_eventreactor_EventReactorModule_H
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 
 // module logging category
 extern monarch::logging::Category* BM_EVENTREACTOR_CAT;
@@ -19,28 +19,28 @@ class IEventReactorModule;
 /**
  * An EventReactorModule is a NodeModule that provides an interface for
  * reacting to events.
- * 
+ *
  * @author Dave Longley
  */
-class EventReactorModule : public bitmunk::node::NodeModule
+class EventReactorModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**
     * The event reactor module interface.
     */
    IEventReactorModule* mInterface;
-   
+
 public:
    /**
     * Creates a new EventReactorModule.
     */
    EventReactorModule();
-   
+
    /**
     * Destructs this EventReactorModule.
     */
    virtual ~EventReactorModule();
-   
+
    /**
     * Adds additional dependency information. This includes dependencies
     * beyond the Bitmunk Node module dependencies.

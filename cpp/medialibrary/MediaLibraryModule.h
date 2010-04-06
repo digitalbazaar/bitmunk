@@ -4,7 +4,7 @@
 #ifndef bitmunk_medialibrary_MediaLibraryModule_H
 #define bitmunk_medialibrary_MediaLibraryModule_H
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 
 // module logging category
 extern monarch::logging::Category* BM_MEDIALIBRARY_CAT;
@@ -19,28 +19,28 @@ class MediaLibrary;
 /**
  * An MediaLibraryModule is a NodeModule that provides an interface for
  * managing a media library.
- * 
+ *
  * @author Manu Sporny
  */
-class MediaLibraryModule : public bitmunk::node::NodeModule
+class MediaLibraryModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**
     * The media library which doubles as the interface for this module.
     */
    MediaLibrary* mMediaLibrary;
-   
+
 public:
    /**
     * Creates a new MediaLibraryModule.
     */
    MediaLibraryModule();
-   
+
    /**
     * Destructs this MediaLibraryModule.
     */
    virtual ~MediaLibraryModule();
-   
+
    /**
     * Adds additional dependency information. This includes dependencies
     * beyond the Bitmunk Node module dependencies.

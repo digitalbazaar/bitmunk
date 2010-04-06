@@ -16,7 +16,7 @@ using namespace bitmunk::node;
 Category* BM_BFP_CAT;
 
 BfpModule::BfpModule() :
-   NodeModule("bitmunk.bfp.Bfp", "1.0"),
+   BitmunkModule("bitmunk.bfp.Bfp", "1.0"),
    mInterface(NULL)
 {
 }

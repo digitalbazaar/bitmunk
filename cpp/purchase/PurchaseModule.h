@@ -4,7 +4,7 @@
 #ifndef bitmunk_purchase_PurchaseModule_H
 #define bitmunk_purchase_PurchaseModule_H
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/purchase/DownloadThrottlerMap.h"
 #include "bitmunk/purchase/IPurchaseModule.h"
 #include "bitmunk/purchase/PurchaseDatabase.h"
@@ -20,22 +20,22 @@ namespace purchase
 /**
  * A PurchaseModule is a NodeModule that provides an interface for
  * purchasing digital content on Bitmunk.
- * 
+ *
  * @author Dave Longley
  */
-class PurchaseModule : public bitmunk::node::NodeModule
+class PurchaseModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**
     * The PurchaseDatabase.
     */
    PurchaseDatabase* mDatabase;
-   
+
    /**
     * A map of download throttlers for users.
     */
    DownloadThrottlerMap* mDownloadThrottlerMap;
-   
+
    /**
     * The interface instance.
     */
@@ -46,12 +46,12 @@ public:
     * Creates a new PurchaseModule.
     */
    PurchaseModule();
-   
+
    /**
     * Destructs this PurchaseModule.
     */
    virtual ~PurchaseModule();
-   
+
    /**
     * Adds additional dependency information. This includes dependencies
     * beyond the Bitmunk Node module dependencies.

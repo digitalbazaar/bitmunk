@@ -4,7 +4,7 @@
 #ifndef bitmunk_sell_SellModule_H
 #define bitmunk_sell_SellModule_H
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 
 // module logging category
 extern monarch::logging::Category* BM_SELL_CAT;
@@ -20,7 +20,7 @@ namespace sell
  *
  * @author Dave Longley
  */
-class SellModule : public bitmunk::node::NodeModule
+class SellModule : public bitmunk::node::BitmunkModule
 {
 public:
    /**

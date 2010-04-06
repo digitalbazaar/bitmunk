@@ -4,7 +4,7 @@ LIBRARIES = bmbfp
 bmbfp_HEADERS = $(wildcard *.h)
 bmbfp_SOURCES = $(wildcard *.cpp)
 
-DYNAMIC_LINK_LIBRARIES = mort moutil momodest moio monet mohttp mologging mocrypto mokernel bmcommon bmprotocol bmdata bmnodemodule
+DYNAMIC_LINK_LIBRARIES = mort moutil momodest moio monet mohttp mologging mocrypto mokernel bmcommon bmprotocol bmdata bmnode
 
 DYNAMIC_MACOS_LINK_LIBRARIES = mofiber moevent moconfig modata movalidation moapp mocompress
 

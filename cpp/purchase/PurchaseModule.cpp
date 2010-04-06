@@ -20,7 +20,7 @@ using namespace bitmunk::purchase;
 Category* BM_PURCHASE_CAT;
 
 PurchaseModule::PurchaseModule() :
-   NodeModule("bitmunk.purchase.Purchase", "1.0"),
+   BitmunkModule("bitmunk.purchase.Purchase", "1.0"),
    mDatabase(NULL),
    mDownloadThrottlerMap(NULL),
    mInterface(NULL)
@@ -34,7 +34,7 @@ PurchaseModule::~PurchaseModule()
 void PurchaseModule::addDependencyInfo(DynamicObject& depInfo)
 {
    // set dependencies:
-   
+
    // requires the bfp module, version 1.0
    {
       DynamicObject dep;
@@ -42,14 +42,14 @@ void PurchaseModule::addDependencyInfo(DynamicObject& depInfo)
       dep["version"] = "1.0";
       depInfo["dependencies"]->append(dep);
    }
-   
+
    // requires any negotiate module
    {
       DynamicObject dep;
       dep["type"] = "bitmunk.negotiate";
       depInfo["dependencies"]->append(dep);
    }
-   
+
    // requires the peruserdb module, version 1.0
    {
       DynamicObject dep;
@@ -67,7 +67,7 @@ bool PurchaseModule::initialize(Node* node)
       "BM_PURCHASE",
       "Bitmunk Purchase",
       NULL);
-   
+
    // initialize download throttler
    Config cfg = node->getConfigManager()->getModuleConfig(
       "bitmunk.purchase.Purchase");
@@ -82,7 +82,7 @@ bool PurchaseModule::initialize(Node* node)
          mDownloadThrottlerMap = new DownloadThrottlerMap();
          rval = mDownloadThrottlerMap->initialize(node);
       }
-      
+
       if(rval)
       {
          // create interface
@@ -101,7 +101,7 @@ bool PurchaseModule::initialize(Node* node)
             delete mDatabase;
             mDatabase = NULL;
          }
-         
+
          // clean up download throttler
          if(mDownloadThrottlerMap != NULL)
          {
@@ -110,7 +110,7 @@ bool PurchaseModule::initialize(Node* node)
          }
       }
    }
-   
+
    return rval;
 }
 
@@ -118,7 +118,7 @@ void PurchaseModule::cleanup(Node* node)
 {
    // remove services
    node->getBtpServer()->removeService("/api/3.0/purchase/contracts");
-   
+
    // clean up interface
    if(mInterface != NULL)
    {
@@ -132,7 +132,7 @@ void PurchaseModule::cleanup(Node* node)
       delete mDatabase;
       mDatabase = NULL;
    }
-   
+
    // clean up download throttler
    if(mDownloadThrottlerMap != NULL)
    {

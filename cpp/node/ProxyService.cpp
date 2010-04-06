@@ -5,10 +5,9 @@
 
 #include "bitmunk/node/ProxyService.h"
 
-#include "bitmunk/common/Logging.h"
 #include "bitmunk/common/Tools.h"
 #include "bitmunk/node/BtpActionDelegate.h"
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 #include "bitmunk/node/RestResourceHandler.h"
 #include "monarch/io/ByteArrayInputStream.h"
 #include "monarch/net/SocketTools.h"

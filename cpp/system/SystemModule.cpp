@@ -25,7 +25,7 @@ using namespace bitmunk::system;
 Category* BM_SYSTEM_CAT;
 
 SystemModule::SystemModule() :
-   NodeModule("bitmunk.system.System", "1.0")
+   BitmunkModule("bitmunk.system.System", "1.0")
 {
 }
 

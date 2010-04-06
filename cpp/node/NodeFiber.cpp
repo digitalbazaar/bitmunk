@@ -3,7 +3,7 @@
  */
 #include "bitmunk/node/NodeFiber.h"
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 
 using namespace bitmunk::common;
 using namespace bitmunk::node;
