@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 
 using namespace monarch::kernel;
 using namespace monarch::rt;

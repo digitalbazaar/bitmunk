@@ -5,8 +5,9 @@
 
 #include "bitmunk/node/LoginManager.h"
 
+#include "bitmunk/common/Logging.h"
 #include "bitmunk/node/Node.h"
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/node/BtpServer.h"
 #include "monarch/config/ConfigManager.h"
 #include "monarch/crypto/AsymmetricKeyFactory.h"

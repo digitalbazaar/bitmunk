@@ -4,7 +4,7 @@
 #ifndef bitmunk_webui_WebUiModule_H
 #define bitmunk_webui_WebUiModule_H
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 #include "bitmunk/webui/FlashPolicyServer.h"
 #include "bitmunk/webui/SessionManager.h"
 
@@ -26,33 +26,33 @@ protected:
     * The SessionManager used by this module.
     */
    SessionManager* mSessionManager;
-   
+
    /**
     * The flash policy server.
     */
    FlashPolicyServer mFlashPolicyServer;
-   
+
    /**
     * A map of web plugin ID to web plugin information.
     */
    monarch::rt::DynamicObject mPluginInfo;
-   
+
    /**
     * The ID of main web plugin.
     */
    char* mMainPluginId;
-   
+
 public:
    /**
     * Creates a new WebUiModule.
     */
    WebUiModule();
-   
+
    /**
     * Destructs this WebUiModule.
     */
    virtual ~WebUiModule();
-   
+
    /**
     * Adds additional dependency information. This includes dependencies
     * beyond the Bitmunk Node module dependencies.
@@ -86,13 +86,13 @@ public:
     */
    virtual monarch::kernel::MicroKernelModuleApi* getApi(
       bitmunk::node::Node* node);
-   
+
 protected:
    /**
     * Load all web plugins based on global configuration information.
-    * 
+    *
     * @param node the Node.
-    * 
+    *
     * @return true if no error, false if an exception occurred.
     */
    virtual bool loadPlugins(bitmunk::node::Node* node);

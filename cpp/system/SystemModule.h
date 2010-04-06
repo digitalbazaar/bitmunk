@@ -4,7 +4,7 @@
 #ifndef bitmunk_system_SystemModule_H
 #define bitmunk_system_SystemModule_H
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 
 // module logging category
 extern monarch::logging::Category* BM_SYSTEM_CAT;
@@ -17,7 +17,7 @@ namespace system
 /**
  * A SystemModule is a NodeModule that provides a web interface for
  * various system services.
- * 
+ *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
  */
 class SystemModule : public bitmunk::node::NodeModule
@@ -27,12 +27,12 @@ public:
     * Creates a new SystemModule.
     */
    SystemModule();
-   
+
    /**
     * Destructs this SystemModule.
     */
    virtual ~SystemModule();
-   
+
    /**
     * Adds additional dependency information. This includes dependencies
     * beyond the Bitmunk Node module dependencies.

@@ -1,8 +1,8 @@
 # Makefile to compile the module in this directory
 
 LIBRARIES = bmnodemodule
-bmnode_HEADERS = $(wildcard *.h)
-bmnode_SOURCES = $(wildcard *.cpp)
+bmnodemodule_HEADERS = $(wildcard *.h)
+bmnodemodule_SOURCES = $(wildcard *.cpp)
 
 DYNAMIC_LINK_LIBRARIES = mort moutil momodest moconfig mokernel
 

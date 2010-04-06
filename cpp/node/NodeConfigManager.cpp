@@ -16,8 +16,7 @@
 #include "monarch/io/FileOutputStream.h"
 #include "monarch/net/Url.h"
 #include "monarch/util/StringTools.h"
-#include "bitmunk/node/Node.h"
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 
 using namespace std;
 using namespace bitmunk::common;

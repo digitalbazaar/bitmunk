@@ -4,7 +4,7 @@
 #ifndef bitmunk_sell_SellModule_H
 #define bitmunk_sell_SellModule_H
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 
 // module logging category
 extern monarch::logging::Category* BM_SELL_CAT;

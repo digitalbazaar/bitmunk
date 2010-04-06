@@ -4,7 +4,7 @@
 #ifndef bitmunk_eventreactor_ErDownloadStateModule_H
 #define bitmunk_eventreactor_ErDownloadStateModule_H
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 
 // module logging category
 extern monarch::logging::Category* BM_EVENTREACTOR_DS_CAT;

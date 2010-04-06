@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_portmapper_FileBrowserModule_H
 #define bitmunk_portmapper_FileBrowserModule_H
 
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 
 namespace bitmunk
 {

@@ -5,7 +5,7 @@
 #define bitmunk_customcatalog_CustomCatalogModule_H
 
 #include "bitmunk/customcatalog/Catalog.h"
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 
 // module logging category
 extern monarch::logging::Category* BM_CUSTOMCATALOG_CAT;
@@ -18,7 +18,7 @@ namespace customcatalog
 /**
  * A CustomCatalogModule is a NodeModule that provides an interface for
  * a media catalog.
- * 
+ *
  * @author Dave Longley
  */
 class CustomCatalogModule : public bitmunk::node::NodeModule
@@ -28,18 +28,18 @@ protected:
     * The Catalog of Wares.
     */
    Catalog* mCatalog;
-   
+
 public:
    /**
     * Creates a new CustomCatalogModule.
     */
    CustomCatalogModule();
-   
+
    /**
     * Destructs this CustomCatalogModule.
     */
    virtual ~CustomCatalogModule();
-   
+
    /**
     * Adds additional dependency information. This includes dependencies
     * beyond the Bitmunk Node module dependencies.

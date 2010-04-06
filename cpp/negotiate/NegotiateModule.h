@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_negotiate_NegotiateModule_H
 #define bitmunk_negotiate_NegotiateModule_H
 
 #include "bitmunk/negotiate/INegotiateModule.h"
-#include "bitmunk/node/NodeModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 
 namespace bitmunk
 {
@@ -15,7 +15,7 @@ namespace negotiate
 /**
  * A NegotiateModule is a NodeModule that provides an implementation for
  * negotiating a ContractSection.
- * 
+ *
  * @author Dave Longley
  */
 class NegotiateModule : public bitmunk::node::NodeModule
@@ -31,12 +31,12 @@ public:
     * Creates a new NegotiateModule.
     */
    NegotiateModule();
-   
+
    /**
     * Destructs this NegotiateModule.
     */
    virtual ~NegotiateModule();
-   
+
    /**
     * Adds additional dependency information. This includes dependencies
     * beyond the Bitmunk Node module dependencies.
