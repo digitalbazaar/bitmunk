@@ -83,7 +83,7 @@ BUILD_FOR_WINDOWS=@BUILD_FOR_WINDOWS@
 BUILD_FOR_MACOS=@BUILD_FOR_MACOS@
 
 # The Bitmunk node modules
-COMMON_MODULES = bmnode bmsystem bmbfp bmnegotiate bmsell
+COMMON_MODULES = bmnodemodule bmsystem bmbfp bmnegotiate bmsell
 
 BPE_MODULES = $(COMMON_MODULES) bmperuserdb bmpurchase bmfilebrowser bmcustomcatalog bmmedialibrary bmeventreactor bmeventreactor-downloadstate bmwebui bmportmapper $(GTKUI_MODULE) $(ADMIN_MODULE)
 
