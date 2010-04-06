@@ -7,6 +7,7 @@ bmnodemodule_SOURCES = $(wildcard *.cpp)
 DYNAMIC_LINK_LIBRARIES = mort moutil momodest moconfig mokernel bmnode
 
 DYNAMIC_MACOS_LINK_LIBRARIES = moio modata mologging mocompress monet mocrypto mofiber moevent movalidation mohttp moapp bmcommon bmprotocol
+DYNAMIC_WINDOW_LINK_LIBRARIES = mologging
 
 # ----------- Standard Makefile
 include @BITMUNK_DIR@/setup/Makefile.base
