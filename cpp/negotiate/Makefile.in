@@ -4,7 +4,7 @@ LIBRARIES = bmnegotiate
 bmnegotiate_HEADERS = $(wildcard *.h)
 bmnegotiate_SOURCES = $(wildcard *.cpp)
 
-DYNAMIC_LINK_LIBRARIES = mort moutil momodest moio modata moconfig monet mosql mokernel bmcommon bmprotocol bmnodemodule
+DYNAMIC_LINK_LIBRARIES = mort moutil momodest moio modata moconfig monet mosql mokernel bmcommon bmprotocol bmnode
 
 DYNAMIC_MACOS_LINK_LIBRARIES = mologging mocrypto mofiber moevent movalidation moapp mocompress mohttp
 

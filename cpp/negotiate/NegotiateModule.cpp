@@ -10,7 +10,7 @@ using namespace bitmunk::node;
 using namespace bitmunk::negotiate;
 
 NegotiateModule::NegotiateModule() :
-   NodeModule("bitmunk.negotiate.Negotiate", "1.0"),
+   BitmunkModule("bitmunk.negotiate.Negotiate", "1.0"),
    mInterface(NULL)
 {
 }

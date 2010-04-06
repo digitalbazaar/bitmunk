@@ -4,7 +4,7 @@
 #ifndef bitmunk_peruserdb_PerUserDBModule_H
 #define bitmunk_peruserdb_PerUserDBModule_H
 
-#include "bitmunk/nodemodule/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/peruserdb/DatabaseHub.h"
 
 // module logging category
@@ -22,7 +22,7 @@ namespace peruserdb
  *
  * @author Dave Longley
  */
-class PerUserDBModule : public bitmunk::node::NodeModule
+class PerUserDBModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**

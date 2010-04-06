@@ -5,7 +5,7 @@
 #define bitmunk_negotiate_NegotiateModule_H
 
 #include "bitmunk/negotiate/INegotiateModule.h"
-#include "bitmunk/nodemodule/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 
 namespace bitmunk
 {
@@ -18,7 +18,7 @@ namespace negotiate
  *
  * @author Dave Longley
  */
-class NegotiateModule : public bitmunk::node::NodeModule
+class NegotiateModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**

@@ -1,19 +1,14 @@
 /*
- * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/node/BitmunkModule.h"
 
 using namespace monarch::kernel;
-using namespace monarch::logging;
-using namespace monarch::modest;
 using namespace monarch::rt;
 using namespace bitmunk::node;
 
-// Logging category initialized during module initialization.
-Category* BM_NODE_CAT;
-
-BitmunkModule::BitmunkModule() :
-   MicroKernelModule("bitmunk.node.Node", "1.0"),
+BitmunkModule::BitmunkModule(const char* name, const char* version) :
+   MicroKernelModule(name, version),
    mNode(NULL)
 {
 }
@@ -29,10 +24,31 @@ DynamicObject BitmunkModule::getDependencyInfo()
    // set name, version, and type for this module
    rval["name"] = mId.name;
    rval["version"] = mId.version;
-   rval["type"] = "bitmunk.node";
 
-   // no dependencies
+   // parse type as everything up to the last period
+   const char* lastPeriod = strrchr(mId.name, '.');
+   if(lastPeriod != NULL)
+   {
+      int len = lastPeriod - mId.name;
+      char type[len + 1];
+      type[len] = 0;
+      strncpy(type, mId.name, len);
+      rval["type"] = type;
+   }
+
+   // set default dependencies
    rval["dependencies"]->setType(Array);
+
+   // depends on bitmunk.node v1.0
+   {
+      DynamicObject dep;
+      dep["name"] = "bitmunk.node.Node";
+      dep["version"] = "1.0";
+      rval["dependencies"]->append(dep);
+   }
+
+   // add custom dependency info
+   addDependencyInfo(rval);
 
    return rval;
 }
@@ -41,20 +57,11 @@ bool BitmunkModule::initialize(MicroKernel* k)
 {
    bool rval = false;
 
-   BM_NODE_CAT = new Category(
-      "BM_NODE",
-      "Bitmunk Node",
-      NULL);
-   BM_NODE_CAT->setAnsiEscapeCodes(
-      MO_ANSI_CSI MO_ANSI_BOLD MO_ANSI_SEP MO_ANSI_FG_HI_RED MO_ANSI_SGR);
-
-   // create and start the bitmunk node
-   mNode = new Node();
-   rval = mNode->start(k);
+   // get bitmunk node and initialize with it
+   mNode = dynamic_cast<Node*>(k->getModuleApi("bitmunk.node.Node"));
+   rval = initialize(mNode);
    if(!rval)
    {
-      // node failed to start
-      delete mNode;
       mNode = NULL;
    }
 
@@ -63,29 +70,20 @@ bool BitmunkModule::initialize(MicroKernel* k)
 
 void BitmunkModule::cleanup(MicroKernel* k)
 {
-   if(mNode != NULL)
+   // get bitmunk node and clean up with it, if the node is NULL, then the
+   // bitmunk module failed to initialize which means no node module would
+   // have initialized ... so we don't need to call cleanup()
+   Node* node = dynamic_cast<Node*>(k->getModuleApi("bitmunk.node.Node"));
+   if(node != NULL)
    {
-      // stop and clean up node
-      mNode->stop();
-      delete mNode;
-      mNode = NULL;
+      cleanup(node);
    }
-
-   delete BM_NODE_CAT;
-   BM_NODE_CAT = NULL;
+   mNode = NULL;
 }
 
 MicroKernelModuleApi* BitmunkModule::getApi(MicroKernel* k)
 {
-   return mNode;
-}
-
-Module* createModestModule()
-{
-   return new BitmunkModule();
-}
-
-void freeModestModule(Module* m)
-{
-   delete m;
+   // get node and return API
+   Node* node = dynamic_cast<Node*>(k->getModuleApi("bitmunk.node.Node"));
+   return getApi(node);
 }

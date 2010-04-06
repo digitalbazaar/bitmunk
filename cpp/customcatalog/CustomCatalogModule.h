@@ -5,7 +5,7 @@
 #define bitmunk_customcatalog_CustomCatalogModule_H
 
 #include "bitmunk/customcatalog/Catalog.h"
-#include "bitmunk/nodemodule/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 
 // module logging category
 extern monarch::logging::Category* BM_CUSTOMCATALOG_CAT;
@@ -21,7 +21,7 @@ namespace customcatalog
  *
  * @author Dave Longley
  */
-class CustomCatalogModule : public bitmunk::node::NodeModule
+class CustomCatalogModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**

@@ -17,7 +17,7 @@ using namespace bitmunk::peruserdb;
 Category* BM_PERUSERDB_CAT;
 
 PerUserDBModule::PerUserDBModule() :
-   NodeModule("bitmunk.peruserdb.PerUserDB", "1.0"),
+   BitmunkModule("bitmunk.peruserdb.PerUserDB", "1.0"),
    mHub(NULL)
 {
 }

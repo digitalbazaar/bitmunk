@@ -18,7 +18,7 @@ using namespace bitmunk::customcatalog;
 Category* BM_CUSTOMCATALOG_CAT;
 
 CustomCatalogModule::CustomCatalogModule() :
-   NodeModule("bitmunk.catalog.CustomCatalog", "1.0"),
+   BitmunkModule("bitmunk.catalog.CustomCatalog", "1.0"),
    mCatalog(NULL)
 {
 }
@@ -30,7 +30,7 @@ CustomCatalogModule::~CustomCatalogModule()
 void CustomCatalogModule::addDependencyInfo(DynamicObject& depInfo)
 {
    // set dependencies:
-   
+
    {
       // requires any medialibrary module, it does not need
       // a specific one, just one that implements the IMediaLibrary
@@ -44,7 +44,7 @@ void CustomCatalogModule::addDependencyInfo(DynamicObject& depInfo)
 bool CustomCatalogModule::initialize(Node* node)
 {
    bool rval;
-   
+
    BM_CUSTOMCATALOG_CAT = new Category(
       "BM_CUSTOMCATALOG",
       "Bitmunk Custom Catalog",
@@ -55,20 +55,20 @@ bool CustomCatalogModule::initialize(Node* node)
    if((rval = mCatalog->init(node)))
    {
       BtpServiceRef bs;
-      
+
       {
          // create and add catalog service
          bs = new CatalogService(node, mCatalog, "/api/3.0/catalog");
          rval = node->getBtpServer()->addService(bs, Node::SslAny);
       }
    }
-   
+
    if(!rval)
    {
       delete mCatalog;
       mCatalog = NULL;
    }
-   
+
    return rval;
 }
 
@@ -76,7 +76,7 @@ void CustomCatalogModule::cleanup(Node* node)
 {
    // remove services
    node->getBtpServer()->removeService("/api/3.0/catalog");
-   
+
    // clean up catalog
    if(mCatalog != NULL)
    {

@@ -4,7 +4,7 @@
 #ifndef bitmunk_portmapper_PortMapperModule_H
 #define bitmunk_portmapper_PortMapperModule_H
 
-#include "bitmunk/nodemodule/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/portmapper/PortMapper.h"
 
 namespace bitmunk
@@ -18,7 +18,7 @@ namespace portmapper
  *
  * @author Dave Longley
  */
-class PortMapperModule : public bitmunk::node::NodeModule
+class PortMapperModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**

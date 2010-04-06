@@ -19,7 +19,7 @@ using namespace bitmunk::eventreactor;
 Category* BM_EVENTREACTOR_DS_CAT;
 
 ErDownloadStateModule::ErDownloadStateModule() :
-   NodeModule("bitmunk.eventreactor.EventReactor.DownloadState", "1.0")
+   BitmunkModule("bitmunk.eventreactor.EventReactor.DownloadState", "1.0")
 {
 }
 

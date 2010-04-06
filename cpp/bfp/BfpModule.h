@@ -4,7 +4,7 @@
 #ifndef bitmunk_bfp_BfpModule_H
 #define bitmunk_bfp_BfpModule_H
 
-#include "bitmunk/nodemodule/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/bfp/IBfpModule.h"
 
 // module logging category
@@ -23,7 +23,7 @@ namespace bfp
  *
  * @author Dave Longley
  */
-class BfpModule : public bitmunk::node::NodeModule
+class BfpModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**

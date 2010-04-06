@@ -19,7 +19,7 @@ using namespace bitmunk::sell;
 Category* BM_SELL_CAT;
 
 SellModule::SellModule() :
-   NodeModule("bitmunk.sell.Sell", "1.0")
+   BitmunkModule("bitmunk.sell.Sell", "1.0")
 {
 }
 
@@ -30,7 +30,7 @@ SellModule::~SellModule()
 void SellModule::addDependencyInfo(DynamicObject& depInfo)
 {
    // set dependencies:
-   
+
    // requires the bfp module, version 1.0
    {
       DynamicObject dep;
@@ -38,14 +38,14 @@ void SellModule::addDependencyInfo(DynamicObject& depInfo)
       dep["version"] = "1.0";
       depInfo["dependencies"]->append(dep);
    }
-   
+
    // requires any catalog module
    {
       DynamicObject dep;
       dep["type"] = "bitmunk.catalog";
       depInfo["dependencies"]->append(dep);
    }
-   
+
    // requires any negotiate module
    {
       DynamicObject dep;
@@ -62,16 +62,16 @@ bool SellModule::initialize(Node* node)
       "BM_SELL",
       "Bitmunk Sell",
       NULL);
-   
+
    BtpServiceRef bs;
-   
+
    if(rval)
    {
       // create and add contract service
       bs = new ContractService(node, "/api/3.0/sales/contract");
       rval = node->getBtpServer()->addService(bs, Node::SslOn);
    }
-   
+
    if(rval)
    {
       // create and add sample service
@@ -80,7 +80,7 @@ bool SellModule::initialize(Node* node)
       bs->setAllowHttp1(true);
       rval = node->getBtpServer()->addService(bs, Node::SslOff);
    }
-   
+
    return rval;
 }
 

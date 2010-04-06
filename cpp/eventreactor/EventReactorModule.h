@@ -4,7 +4,7 @@
 #ifndef bitmunk_eventreactor_EventReactorModule_H
 #define bitmunk_eventreactor_EventReactorModule_H
 
-#include "bitmunk/nodemodule/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 
 // module logging category
 extern monarch::logging::Category* BM_EVENTREACTOR_CAT;
@@ -22,7 +22,7 @@ class IEventReactorModule;
  *
  * @author Dave Longley
  */
-class EventReactorModule : public bitmunk::node::NodeModule
+class EventReactorModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**

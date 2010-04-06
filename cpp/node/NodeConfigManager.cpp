@@ -5,9 +5,6 @@
 
 #include "bitmunk/node/NodeConfigManager.h"
 
-#include <algorithm>
-#include <vector>
-
 #include "monarch/data/json/JsonReader.h"
 #include "monarch/data/json/JsonWriter.h"
 #include "monarch/io/BufferedOutputStream.h"
@@ -16,7 +13,10 @@
 #include "monarch/io/FileOutputStream.h"
 #include "monarch/net/Url.h"
 #include "monarch/util/StringTools.h"
-#include "bitmunk/node/BitmunkModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
+
+#include <algorithm>
+#include <vector>
 
 using namespace std;
 using namespace bitmunk::common;

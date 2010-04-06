@@ -4,7 +4,7 @@
 #ifndef bitmunk_purchase_PurchaseModule_H
 #define bitmunk_purchase_PurchaseModule_H
 
-#include "bitmunk/nodemodule/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/purchase/DownloadThrottlerMap.h"
 #include "bitmunk/purchase/IPurchaseModule.h"
 #include "bitmunk/purchase/PurchaseDatabase.h"
@@ -23,7 +23,7 @@ namespace purchase
  *
  * @author Dave Longley
  */
-class PurchaseModule : public bitmunk::node::NodeModule
+class PurchaseModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**

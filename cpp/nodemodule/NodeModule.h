@@ -1,13 +1,16 @@
 /*
- * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_node_NodeModule_H
 #define bitmunk_node_NodeModule_H
 
-#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/node/Node.h"
 #include "monarch/kernel/MicroKernelModule.h"
 #include "monarch/logging/Logging.h"
+#include "monarch/modest/Module.h"
+
+// module logging category
+extern monarch::logging::Category* BM_NODE_CAT;
 
 namespace bitmunk
 {
@@ -15,10 +18,7 @@ namespace node
 {
 
 /**
- * A BitmunkModule is a MicroKernelModule that depends on the Bitmunk Node
- * module. Any module that builds on top of the core Bitmunk functionality
- * and needs to access the Bitmunk Node should extend this class instead of
- * MicroKernelModule.
+ * The NodeModule provides access to a Bitmunk Node.
  *
  * @author Dave Longley
  */
@@ -26,18 +26,15 @@ class NodeModule : public monarch::kernel::MicroKernelModule
 {
 protected:
    /**
-    * A reference to the Node this module has been initialized with.
+    * The Bitmunk Node.
     */
-   bitmunk::node::Node* mNode;
+   Node* mNode;
 
 public:
    /**
-    * Creates a new NodeModule with the specified name and version.
-    *
-    * @param name the name for this NodeModule.
-    * @param version the version for this NodeModule (major.minor).
+    * Creates a new NodeModule.
     */
-   NodeModule(const char* name, const char* version);
+   NodeModule();
 
    /**
     * Destructs this NodeModule.
@@ -76,41 +73,8 @@ public:
     */
    virtual monarch::kernel::MicroKernelModuleApi* getApi(
       monarch::kernel::MicroKernel* k);
-
-   /**
-    * Adds additional dependency information. This includes dependencies
-    * beyond the Bitmunk Node module dependencies.
-    *
-    * @param depInfo the dependency information to update.
-    */
-   virtual void addDependencyInfo(monarch::rt::DynamicObject& depInfo) = 0;
-
-   /**
-    * Initializes this Module with the passed Node.
-    *
-    * @param node the Node.
-    *
-    * @return true if initialized, false if an Exception occurred.
-    */
-   virtual bool initialize(Node* node) = 0;
-
-   /**
-    * Cleans up this Module just prior to its unloading.
-    *
-    * @param node the Node.
-    */
-   virtual void cleanup(Node* node) = 0;
-
-   /**
-    * Gets the API for this NodeModule.
-    *
-    * @param node the Node.
-    *
-    * @return the API for this NodeModule.
-    */
-   virtual monarch::kernel::MicroKernelModuleApi* getApi(Node* node) = 0;
 };
 
-} // end namespace node
-} // end namespace bitmunk
+} // end namespace kernel
+} // end namespace monarch
 #endif

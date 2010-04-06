@@ -14,7 +14,7 @@ using namespace bitmunk::filebrowser;
 using namespace bitmunk::protocol;
 
 FileBrowserModule::FileBrowserModule() :
-   NodeModule("bitmunk.filebrowser.FileBrowser", "1.0")
+   BitmunkModule("bitmunk.filebrowser.FileBrowser", "1.0")
 {
 }
 

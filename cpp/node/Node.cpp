@@ -6,7 +6,7 @@
 
 #include "bitmunk/node/Node.h"
 
-#include "bitmunk/node/BitmunkModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 #include "bitmunk/node/BtpServer.h"
 #include "monarch/validation/Validation.h"
 

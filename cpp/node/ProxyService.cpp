@@ -7,7 +7,7 @@
 
 #include "bitmunk/common/Tools.h"
 #include "bitmunk/node/BtpActionDelegate.h"
-#include "bitmunk/node/BitmunkModule.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 #include "bitmunk/node/RestResourceHandler.h"
 #include "monarch/io/ByteArrayInputStream.h"
 #include "monarch/net/SocketTools.h"

@@ -4,7 +4,7 @@
 #ifndef bitmunk_portmapper_FileBrowserModule_H
 #define bitmunk_portmapper_FileBrowserModule_H
 
-#include "bitmunk/nodemodule/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 
 namespace bitmunk
 {
@@ -17,7 +17,7 @@ namespace filebrowser
  *
  * @author Manu Sporny
  */
-class FileBrowserModule : public bitmunk::node::NodeModule
+class FileBrowserModule : public bitmunk::node::BitmunkModule
 {
 public:
    /**

@@ -4,7 +4,7 @@
 #ifndef bitmunk_webui_WebUiModule_H
 #define bitmunk_webui_WebUiModule_H
 
-#include "bitmunk/nodemodule/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/webui/FlashPolicyServer.h"
 #include "bitmunk/webui/SessionManager.h"
 
@@ -19,7 +19,7 @@ namespace webui
 /**
  * A WebUiModule provides a web-based user interface for a Bitmunk node.
  */
-class WebUiModule : public bitmunk::node::NodeModule
+class WebUiModule : public bitmunk::node::BitmunkModule
 {
 protected:
    /**

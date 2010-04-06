@@ -20,7 +20,7 @@ using namespace bitmunk::medialibrary;
 Category* BM_MEDIALIBRARY_CAT;
 
 MediaLibraryModule::MediaLibraryModule() :
-   NodeModule("bitmunk.medialibrary.MediaLibrary", "1.0"),
+   BitmunkModule("bitmunk.medialibrary.MediaLibrary", "1.0"),
    mMediaLibrary(NULL)
 {
 }
@@ -32,7 +32,7 @@ MediaLibraryModule::~MediaLibraryModule()
 void MediaLibraryModule::addDependencyInfo(DynamicObject& depInfo)
 {
    // set dependencies:
-   
+
    // requires the bfp module, version 1.0
    {
       DynamicObject dep;
@@ -40,7 +40,7 @@ void MediaLibraryModule::addDependencyInfo(DynamicObject& depInfo)
       dep["version"] = "1.0";
       depInfo["dependencies"]->append(dep);
    }
-   
+
    // requires the peruserdb module, version 1.0
    {
       DynamicObject dep;
@@ -58,7 +58,7 @@ bool MediaLibraryModule::initialize(Node* node)
       "BM_MEDIALIBRARY",
       "Bitmunk Media Library",
       NULL);
-   
+
    // create the media library
    mMediaLibrary = new MediaLibrary(node);
    rval = mMediaLibrary->initialize();
@@ -76,7 +76,7 @@ bool MediaLibraryModule::initialize(Node* node)
       delete mMediaLibrary;
       mMediaLibrary = NULL;
    }
-   
+
    return rval;
 }
 
@@ -84,7 +84,7 @@ void MediaLibraryModule::cleanup(Node* node)
 {
    // remove services
    node->getBtpServer()->removeService("/api/3.2/medialibrary");
-   
+
    // clean up media library
    if(mMediaLibrary != NULL)
    {

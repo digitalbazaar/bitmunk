@@ -4,7 +4,7 @@
 #ifndef bitmunk_system_SystemModule_H
 #define bitmunk_system_SystemModule_H
 
-#include "bitmunk/nodemodule/NodeModule.h"
+#include "bitmunk/node/BitmunkModule.h"
 
 // module logging category
 extern monarch::logging::Category* BM_SYSTEM_CAT;
@@ -20,7 +20,7 @@ namespace system
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
  */
-class SystemModule : public bitmunk::node::NodeModule
+class SystemModule : public bitmunk::node::BitmunkModule
 {
 public:
    /**

@@ -8,9 +8,9 @@
 #include "bitmunk/node/BtpServer.h"
 
 #include "bitmunk/common/Tools.h"
-#include "bitmunk/node/BitmunkModule.h"
 #include "bitmunk/node/CertificateCreator.h"
 #include "bitmunk/node/ProxyService.h"
+#include "bitmunk/nodemodule/NodeModule.h"
 #include "monarch/crypto/AsymmetricKeyFactory.h"
 #include "monarch/net/NullSocketDataPresenter.h"
 #include "monarch/net/SslSocketDataPresenter.h"
