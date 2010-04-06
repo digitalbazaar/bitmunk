@@ -145,7 +145,6 @@ DynamicObject Bitmunk::getCommandLineSpecs()
 "                      are stored.\n"
 "      --profile-path PATH\n"
 "                      The directory where profiles are stored.\n"
-"  -i, --interactive   Run in interactive mode.\n"
 "  -p, --port PORT     The server port to use for all incoming connections.\n"
 "  -a, --auto-login    Auto-login to the node.\n"
 "  -U, --user USER     Node user for auto-login.\n"
@@ -202,12 +201,6 @@ DynamicObject Bitmunk::getCommandLineSpecs()
    opt["long"] = "--config";
    opt["append"] = mExtraConfigs;
    opt["argError"] = "No file specified.";
-
-   opt = spec["options"]->append();
-   opt["short"] = "-i";
-   opt["long"] = "--interactive";
-   opt["setTrue"]["root"] = options;
-   opt["setTrue"]["path"] = "app.interactive";
 
    opt = spec["options"]->append();
    opt["short"] = "-a";
