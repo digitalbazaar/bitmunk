@@ -4,7 +4,7 @@ LIBRARIES = bmmedialibrary
 bmmedialibrary_HEADERS = $(wildcard *.h)
 bmmedialibrary_SOURCES = $(wildcard *.cpp)
 
-DYNAMIC_LINK_LIBRARIES = mort moutil momodest mofiber modata moio monet mohttp moconfig mosql mosqlite3 movalidation mologging mokernel bmnode bmcommon bmprotocol bmdata
+DYNAMIC_LINK_LIBRARIES = mort moutil momodest mofiber modata moio monet mohttp moconfig mosql mosqlite3 movalidation mologging mokernel bmcommon bmprotocol bmdata bmnodemodule
 
 DYNAMIC_MACOS_LINK_LIBRARIES = mocrypto modata mologging mofiber moevent movalidation moapp mocompress
 

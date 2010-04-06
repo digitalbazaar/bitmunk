@@ -4,7 +4,7 @@ LIBRARIES = bmperuserdb
 bmperuserdb_HEADERS = $(wildcard *.h)
 bmperuserdb_SOURCES = $(wildcard *.cpp)
 
-DYNAMIC_LINK_LIBRARIES = mort moutil momodest mofiber moio mocrypto monet modata mologging movalidation mosql mosqlite3 mokernel bmnode bmprotocol bmcommon
+DYNAMIC_LINK_LIBRARIES = mort moutil momodest mofiber moio mocrypto monet modata mologging movalidation mosql mosqlite3 mokernel bmprotocol bmcommon bmnodemodule
 
 DYNAMIC_MACOS_LINK_LIBRARIES = moevent moconfig moapp mocompress mohttp
 DYNAMIC_WINDOWS_LINK_LIBRARIES = moevent

@@ -4,7 +4,7 @@ LIBRARIES = bmeventreactor
 bmeventreactor_HEADERS = $(wildcard *.h)
 bmeventreactor_SOURCES = $(wildcard *.cpp)
 
-DYNAMIC_LINK_LIBRARIES = mort moutil momodest mofiber moio mocrypto monet mohttp modata mologging movalidation mokernel bmnode bmcommon bmprotocol
+DYNAMIC_LINK_LIBRARIES = mort moutil momodest mofiber moio mocrypto monet mohttp modata mologging movalidation mokernel bmcommon bmprotocol bmnodemodule
 
 DYNAMIC_MACOS_LINK_LIBRARIES = moevent moconfig moapp mocompress
 DYNAMIC_WINDOWS_LINK_LIBRARIES = moevent
