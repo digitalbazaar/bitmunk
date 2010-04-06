@@ -695,9 +695,9 @@ fi
 # Conditional setup for Windows build
 if test "$BUILD_FOR_WINDOWS" = "yes" ; then
 
-   AC_CHECK_PROG(CXX, i586-mingw32msvc-g++, 
+   AC_CHECK_PROG(CXX, i586-mingw32msvc-g++,
                  i586-mingw32msvc-g++, not found)
-   AC_CHECK_PROG(AR, i586-mingw32msvc-ar, 
+   AC_CHECK_PROG(AR, i586-mingw32msvc-ar,
                  i586-mingw32msvc-ar, not found)
    AC_CHECK_PROG(AS, i586-mingw32msvc-as,
                  i586-mingw32msvc-as, not found)
@@ -746,7 +746,6 @@ if test "$BUILD_FOR_MACOS" = "yes" ; then
    DYNAMIC_LIB_EXT=dylib
    STATIC_LIB_EXT=a
    EXECUTABLE_EXT=
-   MACOS_CXX="$CXX"
 
    if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
       if test "x$XPIDL" = "x" ; then
