@@ -52,26 +52,6 @@ protected:
     */
    monarch::kernel::MicroKernel* mMicroKernel;
 
-   /**
-    * Package config control.
-    */
-   monarch::config::Config mPackageConfig;
-
-   /**
-    * System config control.
-    */
-   monarch::config::Config mSystemConfig;
-
-   /**
-    * System user config control.
-    */
-   monarch::config::Config mSystemUserConfig;
-
-   /**
-    * List of extra config files to load.
-    */
-   monarch::rt::DynamicObject mExtraConfigs;
-
 public:
    /**
     * Create a Bitmunk instance.
@@ -108,15 +88,6 @@ public:
     * @return the command line spec
     */
    virtual monarch::rt::DynamicObject getCommandLineSpecs();
-
-   /**
-    * Setup default command line options.
-    *
-    * @param args read-only vector of command line arguments.
-    *
-    * @return true on success, false on failure and exception set
-    */
-   virtual bool willParseCommandLine(std::vector<const char*>* args);
 
    /**
     * Setup for config loading.
