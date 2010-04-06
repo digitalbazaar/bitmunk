@@ -6,7 +6,7 @@
 
 #include "bitmunk/node/NodeEventHandler.h"
 
-#include "bitmunk/nodemodule/NodeModule.h"
+#include "bitmunk/node/Node.h"
 #include "monarch/data/json/JsonWriter.h"
 
 using namespace std;
