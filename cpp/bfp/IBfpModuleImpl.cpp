@@ -12,6 +12,7 @@
 #include "monarch/rt/Platform.h"
 #include "bitmunk/bfp/BfpApiVersion.h"
 #include "bitmunk/bfp/BfpModule.h"
+#include "bitmunk/node/Node.h"
 
 using namespace std;
 using namespace monarch::config;
