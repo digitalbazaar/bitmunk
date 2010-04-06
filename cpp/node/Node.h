@@ -6,6 +6,7 @@
 
 #include "monarch/kernel/MicroKernel.h"
 #include "monarch/modest/OperationRunner.h"
+#include "monarch/logging/Logging.h"
 #include "bitmunk/common/PublicKeyCache.h"
 #include "bitmunk/protocol/BtpAction.h"
 #include "bitmunk/node/LoginManager.h"
@@ -14,6 +15,9 @@
 #include "bitmunk/node/NodeEventHandler.h"
 #include "bitmunk/node/NodePublicKeySource.h"
 #include "bitmunk/node/NodeMonitor.h"
+
+// module logging category
+extern monarch::logging::Category* BM_NODE_CAT;
 
 namespace bitmunk
 {
