@@ -1,10 +1,10 @@
 # Makefile to compile the module in this directory
 
-LIBRARIES = bmnode
-bmnode_HEADERS = $(wildcard *.h)
-bmnode_SOURCES = $(wildcard *.cpp)
+LIBRARIES = bmnodemodule
+bmnodemodule_HEADERS = $(wildcard *.h)
+bmnodemodule_SOURCES = $(wildcard *.cpp)
 
-DYNAMIC_LINK_LIBRARIES = mort moutil momodest moconfig mokernel
+DYNAMIC_LINK_LIBRARIES = mort moutil momodest moconfig mokernel bmnode
 
 DYNAMIC_MACOS_LINK_LIBRARIES = moio modata mologging mocompress monet mocrypto mofiber moevent movalidation
 
