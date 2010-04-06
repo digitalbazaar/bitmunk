@@ -47,7 +47,7 @@ INSTALL_APPLICATIONS := \
 INSTALL_BASE_LIBS := \
 	dist/lib/libbmcommon.so \
 	dist/lib/libbmprotocol.so \
-	dist/lib/libbmnodemodule.so
+	dist/lib/libbmnode.so
 
 INSTALL_BASE_CONFIGS := \
 	configs/live.d/app.config \
@@ -56,7 +56,7 @@ INSTALL_BASE_CONFIGS := \
 	configs/live.d/node.config
 
 INSTALL_BASE_MODS := \
-	dist/lib/libbmnode.so
+	dist/lib/libbmnodemodule.so
 
 INSTALL_SYSTEM_MOD_CONFIGS := \
 	configs/live.d/bitmunk.system.System.config
