@@ -6,9 +6,7 @@
 
 #include "bitmunk/bfp/IBfpModule.h"
 #include "bitmunk/bfp/BfpFactory.h"
-
-// forward declare node
-namespace bitmunk { namespace node { class Node; }}
+#include "bitmunk/node/Node.h"
 
 namespace bitmunk
 {

@@ -843,6 +843,7 @@ AC_CONFIG_FILES([
    cpp/medialibrary/Makefile
    cpp/negotiate/Makefile
    cpp/node/Makefile
+   cpp/nodemodule/Makefile
    cpp/peruserdb/Makefile
    cpp/portmapper/Makefile
    cpp/protocol/Makefile

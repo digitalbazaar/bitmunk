@@ -1,0 +1,10 @@
+# Makefile to compile the module in this directory
+
+LIBRARIES = bmnodemodule
+bmnode_HEADERS = $(wildcard *.h)
+bmnode_SOURCES = $(wildcard *.cpp)
+
+DYNAMIC_LINK_LIBRARIES = mologging mort moutil momodest moconfig mokernel
+
+# ----------- Standard Makefile
+include @BITMUNK_DIR@/setup/Makefile.base
