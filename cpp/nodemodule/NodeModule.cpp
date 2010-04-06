@@ -9,9 +9,6 @@ using namespace monarch::modest;
 using namespace monarch::rt;
 using namespace bitmunk::node;
 
-// Logging category initialized during module initialization.
-Category* BM_NODE_CAT;
-
 NodeModule::NodeModule() :
    MicroKernelModule("bitmunk.node.Node", "1.0"),
    mNode(NULL)
