@@ -77,15 +77,77 @@ bool Bitmunk::initMetaConfig(Config& meta)
    bool rval = monarch::app::AppPlugin::initMetaConfig(meta);
 
    // defaults
-   /*
    if(rval)
    {
-      Config config =
+      Config c =
          App::makeMetaConfig(meta, PLUGIN_NAME ".defaults", "defaults");
-      config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
-      Config& c = config[ConfigManager::MERGE];
+      c[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+      Config& cm = c[ConfigManager::MERGE];
+      Config& cmp = c[ConfigManager::MERGE][PLUGIN_NAME];
+      cm["app"]["handlers"]->setType(Map);
+      cm["app"]["events"]->setType(Map);
+
+      // all config info in one map
+      Config& configs = cmp["configs"];
+      configs->setType(Map);
+
+      // setup package config loading
+      {
+         Config& cfg = configs["package"];
+         if(getenv("BITMUNK_PACKAGE_CONFIG") != NULL)
+         {
+            // use environment var and require
+            cfg["path"] = getenv("BITMUNK_PACKAGE_CONFIG");
+            cfg["optional"] = false;
+         }
+         else
+         {
+            // try to load optional default
+            cfg["path"] = BITMUNK_PACKAGE_CONFIG;
+            cfg["optional"] = true;
+         }
+         cfg["load"] = (cfg["path"]->length() > 0);
+      }
+
+      // setup system config loading
+      {
+         Config& cfg = configs["system"];
+         if(getenv("BITMUNK_SYSTEM_CONFIG") != NULL)
+         {
+            // use environment var and require
+            cfg["path"] = getenv("BITMUNK_SYSTEM_CONFIG");
+            cfg["optional"] = false;
+         }
+         else
+         {
+            // try to load optional default
+            cfg["path"] = BITMUNK_SYSTEM_CONFIG;
+            cfg["optional"] = true;
+         }
+         cfg["load"] = (cfg["path"]->length() > 0);
+      }
+
+      // setup system user config loading
+      {
+         Config& cfg = configs["systemUser"];
+         if(getenv("BITMUNK_SYSTEM_USER_CONFIG") != NULL)
+         {
+            // use environment var and require
+            cfg["path"] = getenv("BITMUNK_SYSTEM_USER_CONFIG");
+            cfg["optional"] = false;
+         }
+         else
+         {
+            // try to load optional default
+            cfg["path"] = BITMUNK_SYSTEM_USER_CONFIG;
+            cfg["optional"] = true;
+         }
+         cfg["load"] = (cfg["path"]->length() > 0);
+      }
+
+      // setup extra configs default
+      configs["extra"]->setType(Array);
    }
-   */
 
    // command line options
    if(rval)
@@ -95,6 +157,7 @@ bool Bitmunk::initMetaConfig(Config& meta)
             meta, PLUGIN_CL_CFG_ID, "command line", "options");
       config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
       Config& c = config[ConfigManager::MERGE];
+      c[PLUGIN_NAME]->setType(Map);
 
       // setup default home path early so it can be used as a keyword in
       // command line configs
@@ -132,20 +195,21 @@ DynamicObject Bitmunk::getCommandLineSpecs()
 "      --system-user-config FILE\n"
 "                      The system user configuration file to load.\n"
 "                      Overrides default and BITMUNK_SYSTEM_USER_CONFIG.\n"
+"      --extra-config FILE\n"
+"                      Add extra Bitmunk configuration files. May be specified\n"
+"                      multiple times.\n"
 "      --no-package-config\n"
 "                      Do not load default package configuration file.\n"
 "      --no-system-config\n"
 "                      Do not load default system configuration file.\n"
 "      --no-system-user-config\n"
 "                      Do not load default system user configuration file.\n"
-"  -c, --config FILE   Load a configuration file.  May be specified multiple\n"
-"                      times.\n"
-"  -m, --module-path PATH\n"
-"                      A colon separated directory list where extension modules\n"
-"                      are stored.\n"
+"      --bitmunk-module-path PATH\n"
+"                      A colon separated list of Node modules or directories\n"
+"                      where Node modules are stored. May be specified multiple\n"
+"                      times. Appends to BITMUNK_MODULE_PATH.\n"
 "      --profile-path PATH\n"
 "                      The directory where profiles are stored.\n"
-"  -i, --interactive   Run in interactive mode.\n"
 "  -p, --port PORT     The server port to use for all incoming connections.\n"
 "  -a, --auto-login    Auto-login to the node.\n"
 "  -U, --user USER     Node user for auto-login.\n"
@@ -156,7 +220,8 @@ DynamicObject Bitmunk::getCommandLineSpecs()
    DynamicObject opt;
    Config options = getApp()->getMetaConfig()
       ["options"][PLUGIN_CL_CFG_ID][ConfigManager::MERGE];
-      //["options"][PLUGIN_CL_CFG_ID][ConfigManager::MERGE][PLUGIN_NAME];
+   Config& op = options[PLUGIN_NAME];
+   op->setType(Map);
 
    opt = spec["options"]->append();
    opt["long"] = "--home";
@@ -166,48 +231,54 @@ DynamicObject Bitmunk::getCommandLineSpecs()
 
    opt = spec["options"]->append();
    opt["long"] = "--package-config";
-   opt["arg"]["target"] = mPackageConfig["path"];
-   opt["argError"] = "No file specified.";
-   opt["setTrue"]["target"] = mPackageConfig["load"];
-   opt["setFalse"]["target"] = mPackageConfig["optional"];
+   opt["arg"]["root"] = op;
+   opt["arg"]["path"] = "configs.package.path";
+   opt["argError"] = "No package config file specified.";
+   opt["setTrue"]["root"] = op;
+   opt["setTrue"]["path"] = "configs.package.load";
+   opt["setFalse"]["root"] = op;
+   opt["setFalse"]["path"] = "configs.package.optional";
 
    opt = spec["options"]->append();
    opt["long"] = "--system-config";
-   opt["arg"]["target"] = mSystemConfig["path"];
-   opt["argError"] = "No file specified.";
-   opt["setTrue"]["target"] = mSystemConfig["load"];
-   opt["setFalse"]["target"] = mSystemConfig["optional"];
+   opt["arg"]["root"] = op;
+   opt["arg"]["path"] = "configs.system.path";
+   opt["argError"] = "No system config file specified.";
+   opt["setTrue"]["root"] = op;
+   opt["setTrue"]["path"] = "configs.system.load";
+   opt["setFalse"]["root"] = op;
+   opt["setFalse"]["path"] = "configs.system.optional";
 
    opt = spec["options"]->append();
    opt["long"] = "--system-user-config";
-   opt["arg"]["target"] = mSystemUserConfig["path"];
-   opt["argError"] = "No file specified.";
-   opt["setTrue"]["target"] = mSystemUserConfig["load"];
-   opt["setFalse"]["target"] = mSystemUserConfig["optional"];
+   opt["arg"]["root"] = op;
+   opt["arg"]["path"] = "configs.systemUser.path";
+   opt["argError"] = "No system user config file specified.";
+   opt["setTrue"]["root"] = op;
+   opt["setTrue"]["path"] = "configs.sysmteUser.load";
+   opt["setFalse"]["root"] = op;
+   opt["setFalse"]["path"] = "configs.systemUser.optional";
+
+   opt = spec["options"]->append();
+   opt["long"] = "--extra-config";
+   opt["append"]["root"] = op;
+   opt["append"]["path"] = "configs.extra";
+   opt["argError"] = "No extra config file specified.";
 
    opt = spec["options"]->append();
    opt["long"] = "--no-package-config";
-   opt["setFalse"]["target"] = mPackageConfig["load"];
+   opt["setFalse"]["root"] = op;
+   opt["setFalse"]["path"] = "configs.package.load";
 
    opt = spec["options"]->append();
    opt["long"] = "--no-system-config";
-   opt["setFalse"]["target"] = mSystemConfig["load"];
+   opt["setFalse"]["root"] = op;
+   opt["setFalse"]["path"] = "configs.system.load";
 
    opt = spec["options"]->append();
    opt["long"] = "--no-system-user-config";
-   opt["setFalse"]["target"] = mSystemUserConfig["load"];
-
-   opt = spec["options"]->append();
-   opt["short"] = "-c";
-   opt["long"] = "--config";
-   opt["append"] = mExtraConfigs;
-   opt["argError"] = "No file specified.";
-
-   opt = spec["options"]->append();
-   opt["short"] = "-i";
-   opt["long"] = "--interactive";
-   opt["setTrue"]["root"] = options;
-   opt["setTrue"]["path"] = "app.interactive";
+   opt["setFalse"]["root"] = op;
+   opt["setFalse"]["path"] = "configs.systemUser.load";
 
    opt = spec["options"]->append();
    opt["short"] = "-a";
@@ -220,17 +291,14 @@ DynamicObject Bitmunk::getCommandLineSpecs()
    opt["long"] = "--port";
    opt["arg"]["root"] = options;
    opt["arg"]["path"] = "node.port";
-   opt["arg"]["type"] = (uint64_t)0;;
+   opt["arg"]["type"] = (uint64_t)0;
    opt["argError"] = "No port specified.";
 
-   /*
    opt = spec["options"]->append();
-   opt["short"] = "-m";
-   opt["long"] = "--module-path";
-   opt["arg"]["root"] = options;
-   opt["arg"]["path"] = "node.modulePath";
-   opt["argError"] = "No path specified.";
-   */
+   opt["long"] = "--bitmunk-module-path";
+   opt["append"]["root"] = options;
+   opt["append"]["path"] = "node.modulePath";
+   opt["argError"] = "No node module path specified.";
 
    opt = spec["options"]->append();
    opt["long"] = "--profile-dir";
@@ -255,75 +323,6 @@ DynamicObject Bitmunk::getCommandLineSpecs()
    DynamicObject specs = AppPlugin::getCommandLineSpecs();
    specs->append(spec);
    return specs;
-}
-
-bool Bitmunk::willParseCommandLine(std::vector<const char*>* args)
-{
-   bool rval = AppPlugin::willParseCommandLine(args);
-
-   // setup package config loading
-   if(rval)
-   {
-      mPackageConfig[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
-      if(getenv("BITMUNK_PACKAGE_CONFIG") != NULL)
-      {
-         // use environment var and require
-         mPackageConfig["path"] = getenv("BITMUNK_PACKAGE_CONFIG");
-         mPackageConfig["optional"] = false;
-      }
-      else
-      {
-         // try to load optional default
-         mPackageConfig["path"] = BITMUNK_PACKAGE_CONFIG;
-         mPackageConfig["optional"] = true;
-      }
-      mPackageConfig["load"] = (mPackageConfig["path"]->length() > 0);
-   }
-
-   // setup system config loading
-   if(rval)
-   {
-      mSystemConfig[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
-      if(getenv("BITMUNK_SYSTEM_CONFIG") != NULL)
-      {
-         // use environment var and require
-         mSystemConfig["path"] = getenv("BITMUNK_SYSTEM_CONFIG");
-         mSystemConfig["optional"] = false;
-      }
-      else
-      {
-         // try to load optional default
-         mSystemConfig["path"] = BITMUNK_SYSTEM_CONFIG;
-         mSystemConfig["optional"] = true;
-      }
-      mSystemConfig["load"] = (mSystemConfig["path"]->length() > 0);
-   }
-
-   // setup system user config loading
-   if(rval)
-   {
-      mSystemUserConfig[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
-      if(getenv("BITMUNK_SYSTEM_USER_CONFIG") != NULL)
-      {
-         // use environment var and require
-         mSystemUserConfig["path"] = getenv("BITMUNK_SYSTEM_USER_CONFIG");
-         mSystemUserConfig["optional"] = false;
-      }
-      else
-      {
-         // try to load optional default
-         mSystemUserConfig["path"] = BITMUNK_SYSTEM_USER_CONFIG;
-         mSystemUserConfig["optional"] = true;
-      }
-      mSystemUserConfig["load"] = (mSystemUserConfig["path"]->length() > 0);
-   }
-
-   if(rval)
-   {
-      mExtraConfigs->setType(Array);
-   }
-
-   return rval;
 }
 
 bool Bitmunk::willLoadConfigs()
@@ -392,6 +391,7 @@ bool Bitmunk::didLoadConfigs()
 
    Logger::Level logLevel = Logger::Warning;
    Config appCfg = getApp()->getConfig();
+   Config& c = appCfg[PLUGIN_NAME];
    if(appCfg["app"]["config"]["debug"]->getBoolean())
    {
       logLevel = Logger::Debug;
@@ -416,22 +416,10 @@ bool Bitmunk::didLoadConfigs()
       config[ConfigManager::GROUP] = meta["groups"]["main"]->getString();
       config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
       Config merge = config[ConfigManager::MERGE];
-      merge["app"]["config"]["package"] = mPackageConfig;
-      merge["app"]["config"]["system"] = mSystemConfig;
-      merge["app"]["config"]["system user"] = mSystemUserConfig;
+      merge["app"]["config"]["package"] = c["configs"]["package"];
+      merge["app"]["config"]["system"] = c["configs"]["system"];
+      merge["app"]["config"]["system user"] = c["configs"]["systemUser"];
       rval = getApp()->getConfigManager()->addConfig(config);
-   }
-
-   Config defaults;
-   if(rval)
-   {
-      defaults[ConfigManager::ID] = PLUGIN_NAME ".defaults";
-      defaults[ConfigManager::GROUP] = meta["groups"]["main"]->getString();
-      defaults[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
-      // set defaults for optional items
-      defaults[ConfigManager::MERGE]["app"]["handlers"]->setType(Map);
-      defaults[ConfigManager::MERGE]["app"]["events"]->setType(Map);
-      rval = getApp()->getConfigManager()->addConfig(defaults);
    }
 
    // load system, node, and extra configs
@@ -444,10 +432,11 @@ bool Bitmunk::didLoadConfigs()
       cfg[ConfigManager::ID] = PLUGIN_NAME ".includes";
       cfg[ConfigManager::GROUP] = meta["groups"]["main"]->getString();
       cfg[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
-      cfg[ConfigManager::INCLUDE][i++] = mPackageConfig;
-      cfg[ConfigManager::INCLUDE][i++] = mSystemConfig;
-      cfg[ConfigManager::INCLUDE][i++] = mSystemUserConfig;
-      DynamicObjectIterator eci = mExtraConfigs.getIterator();
+      cfg[ConfigManager::INCLUDE][i++] = c["configs"]["package"];
+      cfg[ConfigManager::INCLUDE][i++] = c["configs"]["system"];
+      cfg[ConfigManager::INCLUDE][i++] = c["configs"]["systemUser"];
+      DynamicObjectIterator eci =
+         appCfg[PLUGIN_NAME]["configs"]["extra"].getIterator();
       while(eci->hasNext())
       {
          DynamicObject& next = eci->next();
@@ -548,7 +537,16 @@ bool Bitmunk::run()
    // The bitmunk plugin will finish but has setup the kernel to wait for a
    // bitmunk wait event. The node can also signal shutdown and restart events
    // as needed.
-   rval = mMicroKernel->loadModules(cfg["modulePath"]->getString());
+   FileList modulePaths;
+   ConfigIterator mpi = cfg["modulePath"].getIterator();
+   while(rval && mpi->hasNext())
+   {
+      const char* path = mpi->next()->getString();
+      FileList pathList = File::parsePath(path);
+      modulePaths->concat(*pathList);
+   }
+   // load all module paths at once
+   rval = mMicroKernel->loadModules(modulePaths);
 
    return rval;
 }

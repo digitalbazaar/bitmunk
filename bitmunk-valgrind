@@ -1,9 +1,0 @@
-#!/bin/sh
-# Run a Bitmunk app in valigrind
-
-./bitmunk-run valgrind \
-	--suppressions=bitmunk.supp \
-	--show-reachable=yes \
-	--tool=memcheck \
-	--leak-check=full \
-	"$@"

@@ -7,15 +7,9 @@
    ],
    "_merge_" : {
       "app" : {
-         "logging" : {
-            "level" : "max"
-         },
          "login" : {
             "auto" : false
          }
-      },
-      "bitmunk.bfp.Bfp" : {
-         "cachePath" : "bitmunk.bfp.Bfp/cache"
       },
       "bitmunk.webui.WebUi" : {
          "flash" : {
