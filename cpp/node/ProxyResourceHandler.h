@@ -35,6 +35,12 @@ protected:
     */
    typedef std::map<
       const char*, monarch::net::UrlRef, monarch::util::StringComparator>
+      PathToUrl;
+
+   /**
+    * A map of host to PathToUrlMap.
+    */
+   typedef std::map<const char*, PathToUrl*, monarch::util::StringComparator>
       ProxyMap;
    ProxyMap mProxyMap;
 
@@ -59,19 +65,21 @@ public:
     * assume relative urls and a path value of '*' will proxy all paths for
     * the given host.
     *
-    * Keep in mind that the given path will be interpreted relative to the path
-    * of the proxy handler. This means that if the proxy handler is for the
-    * resource:
+    * Any sub-path of the given path will also be proxied.
+    *
+    * Note: The given path will be interpreted relative to the path of the
+    * proxy handler. This means that if the proxy handler is for the resource:
     *
     * /path/to/handler
     *
     * Then a path of "/foo/bar" will look for "/path/to/handler/foo/bar" in
     * the HTTP request, regardless of the host value.
     *
-    * @param host the incoming host, "" for the default host.
+    * @param host the incoming host, "*" for any host.
     * @param path the incoming path to map to another URL, relative to the
     *           proxy handler's resource path.
-    * @param url the URL to map to, which may be relative or absolute.
+    * @param url the URL to map to, which may be relative or absolute and
+    *           will, at proxy time, have any sub-paths appended to it.
     */
    virtual void addMapping(const char* host, const char* path, const char* url);
 

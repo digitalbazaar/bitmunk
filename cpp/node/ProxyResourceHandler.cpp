@@ -32,6 +32,12 @@ ProxyResourceHandler::~ProxyResourceHandler()
    free(mPath);
    for(ProxyMap::iterator i = mProxyMap.begin(); i != mProxyMap.end(); i++)
    {
+      PathToUrl* m = i->second;
+      for(PathToUrl::iterator mi = m->begin(); mi != m->end(); mi++)
+      {
+         free((char*)mi->first);
+      }
+      delete m;
       free((char*)i->first);
    }
 }
@@ -52,21 +58,25 @@ void ProxyResourceHandler::addMapping(
    }
    absUrl.append(url);
 
-   /* Build the absolute path (including host) that will be searched for in an
-      HTTP request so that it can be mapped to the absolute url. Only append
-      the proxy service path if it isn't the root path and only add the given
-      path if it isn't a wildcard. The end result will be only the hostname
-      for wildcards and the hostname concatenated with the proxy service path
-      and relative path without having a leading double-slash when the proxy
-      service is the root service.
+   /* Build the absolute path that will be searched for in an HTTP request so
+      that it can be mapped to the absolute url. Only append the proxy service
+      path if it isn't the root path and only add the given path if it isn't a
+      wildcard. The end result will be either a wildcard or the proxy service
+      path concatenated with the relative path without having a leading
+      double-slash when the proxy service is the root service.
 
-      The code that looks for matches will first look for a matching host+path
-      and if that fails, it will look for a host only (for wildcards).
+      The code that looks for matches will first look for the given host, then
+      for a wilcard host if that fails, then for the absolute path within the
+      found host mapping (if any), and then for a path wildcard if that fails.
    */
-   string absPath = host;
+   string absPath;
    bool root = (strcmp(mPath, "/") == 0);
    bool wildcard = (strcmp(path, "*") == 0);
-   if(!wildcard)
+   if(wildcard)
+   {
+      absPath.push_back('*');
+   }
+   else
    {
       if(!root)
       {
@@ -75,24 +85,44 @@ void ProxyResourceHandler::addMapping(
       absPath.append(path);
    }
 
-   // remove duplicate entry
-   ProxyMap::iterator i = mProxyMap.find(absPath.c_str());
+   // find PathToUrl map to update
+   PathToUrl* m;
+   ProxyMap::iterator i = mProxyMap.find(host);
    if(i != mProxyMap.end())
    {
-      MO_CAT_INFO(BM_NODE_CAT,
-         "ProxyResourceHandler removed rule %s => %s",
-         i->first, i->second->toString().c_str());
+      // get existing map
+      m = i->second;
 
-      free((char*)i->first);
-      mProxyMap.erase(i);
+      // remove any duplicate entry
+      PathToUrl::iterator mi = m->find(absPath.c_str());
+      if(mi != m->end())
+      {
+         MO_CAT_INFO(BM_NODE_CAT,
+            "ProxyResourceHandler removed rule: %s%s/* => %s%s/*",
+            host, (wildcard || strlen(mi->first) == 0) ? "" : mi->first,
+            mi->second->getHostAndPort().c_str(),
+            (mi->second->getPath().length() == 1) ?
+               "" : mi->second->getPath().c_str());
+
+         free((char*)mi->first);
+         m->erase(mi);
+      }
+   }
+   else
+   {
+      // add new map
+      m = new PathToUrl;
+      mProxyMap[strdup(host)] = m;
    }
 
    // add new entry and log it
-   mProxyMap[strdup(absPath.c_str())] = new Url(absUrl);
+   UrlRef u = new Url(absUrl);
+   (*m)[strdup(absPath.c_str())] = u;
    MO_CAT_INFO(BM_NODE_CAT,
-      "ProxyResourceHandler added rule %s%s => %s%s",
-      absPath.c_str(), wildcard ? "/*" : "",
-      absUrl.c_str(), wildcard ? "/*" : "");
+      "ProxyResourceHandler added rule: %s%s/* => %s%s/*",
+      host, (wildcard || absPath.length() == 0) ? "" : absPath.c_str(),
+      u->getHostAndPort().c_str(),
+      (u->getPath().length() == 1) ? "" : u->getPath().c_str());
 }
 
 /**
@@ -132,33 +162,104 @@ void ProxyResourceHandler::operator()(BtpAction* action)
    HttpRequestHeader* hrh = action->getRequest()->getHeader();
    string host = hrh->getFieldValue("Host");
 
-   // build proxy mapping (absolute path)
-   string absPath = host;
-   absPath.append(action->getResource());
-
-   // get the URL to proxy to
-   bool wildcard = false;
-   ProxyMap::iterator i = mProxyMap.find(absPath.c_str());
+   // find an entry for the request host
+   ProxyMap::iterator i = mProxyMap.find(host.c_str());
    if(i == mProxyMap.end())
    {
-      // specific path not found, check for wildcard using host only
-      wildcard = true;
-      i = mProxyMap.find(host.c_str());
+      // check for the any-host wildcard
+      i = mProxyMap.find("*");
    }
 
-   if(i == mProxyMap.end())
+   UrlRef url(NULL);
+   string resource;
+   bool wildcard = false;
+   if(i != mProxyMap.end())
+   {
+      PathToUrl* m = i->second;
+
+      // try to find the URL to proxy to based on the incoming absolute path
+      string parent;
+      resource = action->getResource();
+      PathToUrl::iterator mi;
+      do
+      {
+         mi = m->find(resource.c_str());
+         if(mi == m->end())
+         {
+            string parent = Url::getParentPath(resource.c_str());
+            if(strcmp(parent.c_str(), resource.c_str()) != 0)
+            {
+               // haven't hit root path yet, keep checking
+               resource = parent;
+            }
+            else
+            {
+               // path not found, check for wildcard path
+               wildcard = true;
+               mi = m->find("*");
+            }
+         }
+      }
+      while(mi == m->end() && !wildcard);
+
+      if(mi != m->end())
+      {
+         // get URL to proxy to
+         url = mi->second;
+      }
+   }
+
+   if(url.isNull())
    {
       // no proxy mapping found, fall back to rest resource handler
       RestResourceHandler::operator()(action);
    }
    else
    {
-      UrlRef url = i->second;
+      // get client-side request and response
+      HttpRequest* req = action->getRequest();
+      HttpResponse* res = action->getResponse();
+
+      // add X-Forwarded headers
+      HttpRequestHeader* reqHeader = req->getHeader();
+      reqHeader->appendFieldValue("X-Forwarded-For",
+         req->getConnection()->getRemoteAddress()->toString(true).c_str());
+      reqHeader->appendFieldValue("X-Forwarded-Host",
+         req->getHeader()->getFieldValue("Host").c_str());
+      reqHeader->appendFieldValue("X-Forwarded-Server",
+         SocketTools::getHostname().c_str());
+
+      // rewrite host
+      req->getHeader()->setField("Host", url->getHostAndPort().c_str());
+
+      // rewrite the request path if it does not match the URL path to proxy to
+      string path = action->getResource();
+      if(strcmp(action->getResource(), url->getPath().c_str()) != 0)
+      {
+         if(wildcard)
+         {
+            // since a wildcard is used, prepend the URL path to the resource
+            path.insert(0, url->getPath().c_str());
+         }
+         else
+         {
+            // replace the part of the resource that matched the proxy mapping
+            // with the rewrite path from the proxy URL
+            path.replace(0, resource.length(), url->getPath().c_str());
+         }
+
+         // add query and do rewrite
+         DynamicObject query;
+         action->getResourceQuery(query, true);
+         path.append(Url::formEncode(query));
+         req->getHeader()->setPath(path.c_str());
+      }
 
       // do proxy:
       MO_CAT_INFO(BM_NODE_CAT,
-         "ProxyResourceHandler proxying %s => %s",
-         absPath.c_str(), url->toString().c_str());
+         "ProxyResourceHandler proxying %s%s => %s%s",
+         host.c_str(), action->getResource(),
+         url->getHostAndPort().c_str(), path.c_str());
 
       // get a connection
       BtpClient* btpc = mNode->getMessenger()->getBtpClient();
@@ -183,33 +284,6 @@ void ProxyResourceHandler::operator()(BtpAction* action)
       }
       else
       {
-         HttpRequest* req = action->getRequest();
-         HttpResponse* res = action->getResponse();
-
-         // add X-Forwarded headers
-         HttpRequestHeader* reqHeader = req->getHeader();
-         reqHeader->appendFieldValue("X-Forwarded-For",
-            req->getConnection()->getRemoteAddress()->toString(true).c_str());
-         reqHeader->appendFieldValue("X-Forwarded-Host",
-            req->getHeader()->getFieldValue("Host").c_str());
-         reqHeader->appendFieldValue("X-Forwarded-Server",
-            SocketTools::getHostname().c_str());
-
-         // rewrite host
-         req->getHeader()->setField("Host", url->getHostAndPort().c_str());
-
-         // rewrite path if it does not match the URL path and is not
-         // the wildcard path
-         if(!wildcard &&
-            strcmp(action->getResource(), url->getPath().c_str()) != 0)
-         {
-            DynamicObject query;
-            action->getResourceQuery(query, true);
-            string path = url->getPath();
-            path.append(Url::formEncode(query));
-            req->getHeader()->setPath(path.c_str());
-         }
-
          // proxy the client's request and receive server's header
          if(_proxyHttp(req->getHeader(), req->getConnection(), conn) &&
             conn->receiveHeader(res->getHeader()))
