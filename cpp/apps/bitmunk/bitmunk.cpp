@@ -548,6 +548,15 @@ bool Bitmunk::run()
    // load all module paths at once
    rval = mMicroKernel->loadModules(modulePaths);
 
+   MO_CAT_INFO(BM_APP_CAT, "Ready.");
+
+   // send ready event
+   {
+      Event e;
+      e["type"] = "bitmunk.app.Bitmunk.ready";
+      mMicroKernel->getEventController()->schedule(e);
+   }
+
    return rval;
 }
 
