@@ -1,10 +1,11 @@
 /*
  * Copyright (c) 2010 Digital Bazaar, Inc. All rights reserved.
  */
-#ifndef bitmunk_node_ProxyService_H
-#define bitmunk_node_ProxyService_H
+#ifndef bitmunk_node_ProxyResourceHandler_H
+#define bitmunk_node_ProxyResourceHandler_H
 
-#include "bitmunk/node/NodeService.h"
+#include "bitmunk/node/Node.h"
+#include "bitmunk/node/RestResourceHandler.h"
 
 namespace bitmunk
 {
@@ -12,13 +13,23 @@ namespace node
 {
 
 /**
- * A ProxyService redirects HTTP traffic to another server.
+ * A ProxyResourceHandler redirects HTTP traffic to another server.
  *
  * @author Dave Longley
  */
-class ProxyService : public bitmunk::node::NodeService
+class ProxyResourceHandler : public bitmunk::node::RestResourceHandler
 {
 protected:
+   /**
+    * The related Bitmunk Node.
+    */
+   bitmunk::node::Node* mNode;
+
+   /**
+    * The resource path to this handler.
+    */
+   char* mPath;
+
    /**
     * A map of incoming path to new url.
     */
@@ -29,31 +40,17 @@ protected:
 
 public:
    /**
-    * Creates a new ProxyService.
+    * Creates a new ProxyResourceHandler.
     *
     * @param node the associated Bitmunk Node.
-    * @param path the path this servicer handles requests for.
+    * @param path the resource path to this handler.
     */
-   ProxyService(Node* node, const char* path);
+   ProxyResourceHandler(Node* node, const char* path);
 
    /**
-    * Destructs this ProxyService.
+    * Destructs this ProxyResourceHandler.
     */
-   virtual ~ProxyService();
-
-   /**
-    * Initializes this BtpService.
-    *
-    * @return true if initialized, false if an Exception occurred.
-    */
-   virtual bool initialize();
-
-   /**
-    * Cleans up this BtpService.
-    *
-    * Must be called after initialize() regardless of its return value.
-    */
-   virtual void cleanup();
+   virtual ~ProxyResourceHandler();
 
    /**
     * Adds a proxy mapping. If the given host and path are received in an HTTP
@@ -63,7 +60,8 @@ public:
     * the given host.
     *
     * Keep in mind that the given path will be interpreted relative to the path
-    * of the proxy service. This means that if the proxy service is on:
+    * of the proxy handler. This means that if the proxy handler is for the
+    * resource:
     *
     * /path/to/handler
     *
@@ -72,10 +70,10 @@ public:
     *
     * @param host the incoming host, "" for the default host.
     * @param path the incoming path to map to another URL, relative to the
-    *           proxy service's path.
+    *           proxy handler's resource path.
     * @param url the URL to map to, which may be relative or absolute.
     */
-   virtual void addMapping(const char* host, const char* path, const char* url)
+   virtual void addMapping(const char* host, const char* path, const char* url);
 
    /**
     * Proxies incoming HTTP traffic to another server.
@@ -84,7 +82,7 @@ public:
     *
     * @param action the BtpAction.
     */
-   virtual void proxy(bitmunk::protocol::BtpAction* action);
+   virtual void operator()(bitmunk::protocol::BtpAction* action);
 };
 
 } // end namespace webui

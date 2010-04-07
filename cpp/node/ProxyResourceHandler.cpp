@@ -3,76 +3,40 @@
  */
 #define __STDC_FORMAT_MACROS
 
-#include "bitmunk/node/ProxyService.h"
+#include "bitmunk/node/ProxyResourceHandler.h"
 
-#include "bitmunk/common/Tools.h"
 #include "bitmunk/node/BtpActionDelegate.h"
-#include "bitmunk/node/RestResourceHandler.h"
 #include "monarch/io/ByteArrayInputStream.h"
 #include "monarch/net/SocketTools.h"
 
 using namespace std;
 using namespace monarch::config;
-using namespace monarch::crypto;
 using namespace monarch::http;
 using namespace monarch::io;
 using namespace monarch::net;
 using namespace monarch::rt;
-using namespace bitmunk::common;
 using namespace bitmunk::protocol;
 using namespace bitmunk::node;
-
-typedef BtpActionDelegate<ProxyService> Handler;
 
 // Note: Current implementation doesn't lock on proxy map. It is assumed it
 // will be set up before use and not changed thereafter.
 
-// Note: ProxyService could be alternatively implemented as an extension to
-// the HttpConnectionServicer class in the future.
-
-ProxyService::ProxyService(Node* node, const char* path) :
-   NodeService(node, path)
+ProxyResourceHandler::ProxyResourceHandler(Node* node, const char* path) :
+   mNode(node),
+   mPath(strdup(path))
 {
 }
 
-ProxyService::~ProxyService()
+ProxyResourceHandler::~ProxyResourceHandler()
 {
+   free(mPath);
    for(ProxyMap::iterator i = mProxyMap.begin(); i != mProxyMap.end(); i++)
    {
       free((char*)i->first);
    }
 }
 
-bool ProxyService::initialize()
-{
-   // root
-   {
-      RestResourceHandlerRef proxyResource = new RestResourceHandler();
-      addResource("/", proxyResource);
-
-      // METHOD .../
-      ResourceHandler h = new Handler(
-         mNode, this, &ProxyService::proxy,
-         BtpAction::AuthOptional);
-
-      proxyResource->addHandler(h, BtpMessage::Post, -1);
-      proxyResource->addHandler(h, BtpMessage::Put, -1);
-      proxyResource->addHandler(h, BtpMessage::Get, -1);
-      proxyResource->addHandler(h, BtpMessage::Delete, -1);
-      proxyResource->addHandler(h, BtpMessage::Head, -1);
-      proxyResource->addHandler(h, BtpMessage::Options, -1);
-   }
-
-   return true;
-}
-
-void ProxyService::cleanup()
-{
-   // remove resources
-   removeResource("/");
-}
-
-void ProxyService::addMapping(
+void ProxyResourceHandler::addMapping(
    const char* host, const char* path, const char* url)
 {
    // convert relative url into absolute url if needed
@@ -116,7 +80,7 @@ void ProxyService::addMapping(
    if(i != mProxyMap.end())
    {
       MO_CAT_INFO(BM_NODE_CAT,
-         "ProxyService removed rule %s => %s",
+         "ProxyResourceHandler removed rule %s => %s",
          i->first, i->second->toString().c_str());
 
       free((char*)i->first);
@@ -126,7 +90,7 @@ void ProxyService::addMapping(
    // add new entry and log it
    mProxyMap[strdup(absPath.c_str())] = new Url(absUrl);
    MO_CAT_INFO(BM_NODE_CAT,
-      "ProxyService added rule %s%s => %s%s",
+      "ProxyResourceHandler added rule %s%s => %s%s",
       absPath.c_str(), wildcard ? "/*" : "",
       absUrl.c_str(), wildcard ? "/*" : "");
 }
@@ -162,7 +126,7 @@ static bool _proxyHttp(
    return rval;
 }
 
-void ProxyService::proxy(BtpAction* action)
+void ProxyResourceHandler::operator()(BtpAction* action)
 {
    // get request host
    HttpRequestHeader* hrh = action->getRequest()->getHeader();
@@ -174,7 +138,7 @@ void ProxyService::proxy(BtpAction* action)
 
    // get the URL to proxy to
    bool wildcard = false;
-   ProxyMap::iterator i = mProxyMap.find(absPath);
+   ProxyMap::iterator i = mProxyMap.find(absPath.c_str());
    if(i == mProxyMap.end())
    {
       // specific path not found, check for wildcard using host only
@@ -193,7 +157,7 @@ void ProxyService::proxy(BtpAction* action)
 
       // do proxy:
       MO_CAT_INFO(BM_NODE_CAT,
-         "ProxyService proxying %s => %s",
+         "ProxyResourceHandler proxying %s => %s",
          absPath.c_str(), url->toString().c_str());
 
       // get a connection

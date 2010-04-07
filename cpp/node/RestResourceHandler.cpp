@@ -34,7 +34,7 @@ void RestResourceHandler::operator()(BtpAction* action)
 
    if(hmi == mHandlers.end())
    {
-      // no handler ground, send 404
+      // no handler found, send 404
       action->getResponse()->getHeader()->setStatus(404, "Not Found");
       ExceptionRef e = new Exception(
          "Resource not found.", "bitmunk.node.ResourceNotFound", 404);
