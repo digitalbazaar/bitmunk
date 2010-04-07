@@ -6,6 +6,7 @@
 #include "bitmunk/common/Logging.h"
 #include "monarch/config/ConfigManager.h"
 #include "monarch/io/File.h"
+#include "monarch/rt/Platform.h"
 #include "monarch/test/Test.h"
 
 using namespace std;
@@ -85,7 +86,11 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr)
    assert(path.length() > 0);
 
    // load node module
-   File file(File::join(path.c_str(), "libbmnode.so").c_str());
+   string libname;
+   libname.append(Platform::getDynamicLibraryPrefix());
+   libname.append("bmnodemodule.");
+   libname.append(Platform::getDynamicLibraryExt());
+   File file(File::join(path.c_str(), libname.c_str()).c_str());
    MicroKernel* k = tr.getMicroKernel();
    MicroKernelModule* mod = k->loadMicroKernelModule(file->getAbsolutePath());
    if(mod != NULL)
