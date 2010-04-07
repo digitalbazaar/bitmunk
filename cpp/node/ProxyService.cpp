@@ -24,8 +24,6 @@ using namespace bitmunk::node;
 
 typedef BtpActionDelegate<ProxyService> Handler;
 
-#define PATH_WILDCARD   "*"
-
 // Note: Current implementation doesn't lock on proxy map. It is assumed it
 // will be set up before use and not changed thereafter.
 
@@ -52,7 +50,7 @@ bool ProxyService::initialize()
       RestResourceHandlerRef proxyResource = new RestResourceHandler();
       addResource("/", proxyResource);
 
-      // METHOD .../proxy
+      // METHOD .../
       ResourceHandler h = new Handler(
          mNode, this, &ProxyService::proxy,
          BtpAction::AuthOptional);
@@ -74,37 +72,47 @@ void ProxyService::cleanup()
    removeResource("/");
 }
 
-void ProxyService::addMapping(const char* path, const char* url)
+void ProxyService::addMapping(
+   const char* host, const char* path, const char* url)
 {
-   // convert simple path into full local url if needed
-   string fullUrl;
+   // convert relative url into absolute url if needed
+   string absUrl;
    if(url[0] == '/')
    {
       // build full url
-      fullUrl = mNode->getMessenger()->getSelfUrl(false);
+      absUrl = mNode->getMessenger()->getSelfUrl(false);
    }
    else if(strncmp(url, "http://", 7) != 0)
    {
-      fullUrl = "http://";
+      absUrl = "http://";
    }
-   fullUrl.append(url);
+   absUrl.append(url);
 
-   // prepend proxy service path to given path
+   /* Build the absolute path (including host) that will be searched for in an
+      HTTP request so that it can be mapped to the absolute url. Only append
+      the proxy service path if it isn't the root path and only add the given
+      path if it isn't a wildcard. The end result will be only the hostname
+      for wildcards and the hostname concatenated with the proxy service path
+      and relative path without having a leading double-slash when the proxy
+      service is the root service.
+
+      The code that looks for matches will first look for a matching host+path
+      and if that fails, it will look for a host only (for wildcards).
+   */
+   string absPath = host;
    bool root = (strcmp(mPath, "/") == 0);
-   bool wildcard = (strcmp(path, PATH_WILDCARD) == 0);
-   string fullPath;
-   if(!root && !wildcard)
+   bool wildcard = (strcmp(path, "*") == 0);
+   if(!wildcard)
    {
-      fullPath = mPath;
-      fullPath.append(path);
-   }
-   else
-   {
-      fullPath = path;
+      if(!root)
+      {
+         absPath.append(mPath);
+      }
+      absPath.append(path);
    }
 
    // remove duplicate entry
-   ProxyMap::iterator i = mProxyMap.find(fullPath.c_str());
+   ProxyMap::iterator i = mProxyMap.find(absPath.c_str());
    if(i != mProxyMap.end())
    {
       MO_CAT_INFO(BM_NODE_CAT,
@@ -115,13 +123,12 @@ void ProxyService::addMapping(const char* path, const char* url)
       mProxyMap.erase(i);
    }
 
-   // add new entry
-   mProxyMap[strdup(fullPath.c_str())] = new Url(fullUrl);
-
+   // add new entry and log it
+   mProxyMap[strdup(absPath.c_str())] = new Url(absUrl);
    MO_CAT_INFO(BM_NODE_CAT,
-      "ProxyService added rule %s%s%s => %s%s",
-      root ? "" : mPath, wildcard ? "/" : "",
-      path, fullUrl.c_str(), wildcard ? "/" PATH_WILDCARD : "");
+      "ProxyService added rule %s%s => %s%s",
+      absPath.c_str(), wildcard ? "/*" : "",
+      absUrl.c_str(), wildcard ? "/*" : "");
 }
 
 /**
@@ -157,35 +164,28 @@ static bool _proxyHttp(
 
 void ProxyService::proxy(BtpAction* action)
 {
-   bool pass = false;
+   // get request host
+   HttpRequestHeader* hrh = action->getRequest()->getHeader();
+   string host = hrh->getFieldValue("Host");
 
-   // get the URL to connect to, based on the resource
+   // build proxy mapping (absolute path)
+   string absPath = host;
+   absPath.append(action->getResource());
+
+   // get the URL to proxy to
    bool wildcard = false;
-   ProxyMap::iterator i = mProxyMap.find(action->getResource());
+   ProxyMap::iterator i = mProxyMap.find(absPath);
    if(i == mProxyMap.end())
    {
-      // specific path not found, use wildcard path
+      // specific path not found, check for wildcard using host only
       wildcard = true;
-      i = mProxyMap.find(PATH_WILDCARD);
+      i = mProxyMap.find(host.c_str());
    }
 
    if(i == mProxyMap.end())
    {
-      // send 404
-      HttpResponseHeader* header = action->getResponse()->getHeader();
-      header->setStatus(404, "Not Found");
-      string content =
-         "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
-         "<html><head>\n"
-         "<title>404 Not Found</title>\n"
-         "</head><body>\n"
-         "<h1>Not Found</h1>\n"
-         "<p>The document was not found.</p>\n"
-         "</body></html>";
-      ByteBuffer b(content.length());
-      b.put(content.c_str(), content.length(), false);
-      ByteArrayInputStream bais(&b);
-      action->sendResult(&bais);
+      // no proxy mapping found, fall back to rest resource handler
+      RestResourceHandler::operator()(action);
    }
    else
    {
@@ -194,7 +194,7 @@ void ProxyService::proxy(BtpAction* action)
       // do proxy:
       MO_CAT_INFO(BM_NODE_CAT,
          "ProxyService proxying %s => %s",
-         action->getResource(), url->toString().c_str());
+         absPath.c_str(), url->toString().c_str());
 
       // get a connection
       BtpClient* btpc = mNode->getMessenger()->getBtpClient();
@@ -246,27 +246,27 @@ void ProxyService::proxy(BtpAction* action)
             req->getHeader()->setPath(path.c_str());
          }
 
-         // proxy the client's request and the server's response
-         pass =
-            _proxyHttp(req->getHeader(), req->getConnection(), conn) &&
-            conn->receiveHeader(res->getHeader()) &&
+         // proxy the client's request and receive server's header
+         if(_proxyHttp(req->getHeader(), req->getConnection(), conn) &&
+            conn->receiveHeader(res->getHeader()))
+         {
+            // proxy the server's response, consider result sent
             _proxyHttp(res->getHeader(), conn, req->getConnection());
+            action->setResultSent(true);
+         }
 
          // close connection
          conn->close();
 
          // clean up
          delete conn;
-
-         // result sent
-         action->setResultSent(true);
       }
-   }
 
-   if(!pass && !action->isResultSent())
-   {
-      // send exception (client's fault if code < 500)
-      ExceptionRef e = Exception::get();
-      action->sendException(e, e->getCode() < 500);
+      if(!action->isResultSent())
+      {
+         // send exception (client's fault if code < 500)
+         ExceptionRef e = Exception::get();
+         action->sendException(e, e->getCode() < 500);
+      }
    }
 }

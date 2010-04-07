@@ -56,15 +56,26 @@ public:
    virtual void cleanup();
 
    /**
-    * Adds a proxy mapping. If the given path (resource) is received in
-    * an HTTP request, that request will be proxied to the given URL and
-    * the proceeding response will be proxied back to the client.
+    * Adds a proxy mapping. If the given host and path are received in an HTTP
+    * request, that request will be proxied to the given URL and the proceeding
+    * response will be proxied back to the client. A blank host value will
+    * assume relative urls and a path value of '*' will proxy all paths for
+    * the given host.
     *
+    * Keep in mind that the given path will be interpreted relative to the path
+    * of the proxy service. This means that if the proxy service is on:
+    *
+    * /path/to/handler
+    *
+    * Then a path of "/foo/bar" will look for "/path/to/handler/foo/bar" in
+    * the HTTP request, regardless of the host value.
+    *
+    * @param host the incoming host, "" for the default host.
     * @param path the incoming path to map to another URL, relative to the
-    *           path of the proxy service.
-    * @param url the URL to map the path to.
+    *           proxy service's path.
+    * @param url the URL to map to, which may be relative or absolute.
     */
-   virtual void addMapping(const char* path, const char* url);
+   virtual void addMapping(const char* host, const char* path, const char* url)
 
    /**
     * Proxies incoming HTTP traffic to another server.
