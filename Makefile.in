@@ -151,7 +151,11 @@ link-monarch-libs:
 
 link-monarch-bins:
 	@mkdir -p $(BIN_DIR)
+ifeq ($(BUILD_FOR_WINDOWS),yes)
+	@ln -sf @MONARCH_DIR@/dist/bin/monarch.exe $(BIN_DIR)/bitmunk.exe
+else
 	@ln -sf @MONARCH_DIR@/dist/bin/monarch $(BIN_DIR)/bitmunk
+endif
 
 link-modules: $(MODULE_FILES)
 
