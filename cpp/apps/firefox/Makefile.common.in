@@ -3,18 +3,29 @@
 CXX_FLAGS = @XULRUNNER_CXX_FLAGS@
 LD_FLAGS = @XULRUNNER_LD_FLAGS@
 
+DYNAMIC_LINUX_LINK_LIBRARIES = xpcomglue_s xpcom
+DYNAMIC_MACOS_LINK_LIBRARIES = xpcomglue_s xpcom nspr4 plds4 plc4
+
 # ----------- Standard Makefile
 include @BITMUNK_DIR@/setup/Makefile.base
 
-DYNAMIC_LINUX_LIBRARIES += xpcomglue_s xpcom
-
+ifeq ($(BUILD_FOR_MACOS),yes)
 MACOS_SDK_DIR = /Developer/SDKs/MacOSX10.4u.sdk
 MACOS_GECKO_SDK_DIR = /usr/local/gecko-sdk
 # Use standard compiler
-MACOS_CXX = g++
-MACOS_CXX_FLAGS += -isysroot $(MACOS_SDK_DIR) -g -DMOZILLA_STRICT_API -DXP_UNIX -DXP_MACOSX -include "mozilla-config.h" -Wno-ctor-dtor-privacy -Wno-non-virtual-dtor -fno-rtti -I build/macos -I $(MACOS_SDK_DIR)/Developer/Headers/FlatCarbon
-MACOS_INCLUDES += -I$(MACOS_BUILD_DIR) -I$(MACOS_GECKO_SDK_DIR)/include
-MACOS_LD_FLAGS = @LDFLAGS@ -Wl,-executable_path,/Library/Frameworks/XUL.framework/Versions/Current -L$(MACOS_GECKO_SDK_DIR)/lib
+CXX = g++
+CXX_FLAGS += -isysroot $(MACOS_SDK_DIR) -g -DMOZILLA_STRICT_API -DXP_UNIX -DXP_MACOSX -Wno-ctor-dtor-privacy -Wno-non-virtual-dtor -fno-rtti -I build/macos -I $(MACOS_SDK_DIR)/Developer/Headers/FlatCarbon
+INCLUDES += -I$(MACOS_GECKO_SDK_DIR)/include -include mozilla-config.h
+LD_FLAGS = -Wl,-executable_path,/Library/Frameworks/XUL.framework/Versions/Current -L$(MACOS_GECKO_SDK_DIR)/lib
 # Clear normal versioning flags
-MACOS_LIBRARY_LD_FLAGS =
-DYNAMIC_MACOS_LIBRARIES += xpcomglue_s xpcom nspr4 plds4 plc4
+LIB_LD_FLAGS =
+
+# Redefine the library building mechanism to remove the "-shared" option for Mac OS X
+%.$(DYNAMIC_LIB_EXT):
+	@echo "Linking $(subst $(TOP_BUILD_DIR)/,,$@)..."
+	$(PCMD) mkdir -p $(@D)
+	$(PCMD) $(CXX) $(LD_FLAGS) $(LIB_LD_FLAGS) $(LIBS) $(call extra_ld_flags,$(@F)) -o $@ $^ $(DYNAMIC_LIBRARIES:%=-l%) $($(call makevar, $(@F)__LIBS):%=-l%)
+
+endif
+
+
