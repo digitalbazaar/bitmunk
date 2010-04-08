@@ -35,7 +35,7 @@ DISTRIBUTION_LIBRARIES = @LIB_PREFIX@bmcommon.@DYNAMIC_LIB_EXT@ \
                          @LIB_PREFIX@moutil.@DYNAMIC_LIB_EXT@ \
                          @LIB_PREFIX@movalidation.@DYNAMIC_LIB_EXT@ 
 
-MODULE_LIBRARIES = @LIB_PREFIX@bmnode.@DYNAMIC_LIB_EXT@ \
+MODULE_LIBRARIES = @LIB_PREFIX@bmnodemodule.@DYNAMIC_LIB_EXT@ \
                    @LIB_PREFIX@bmbfp.@DYNAMIC_LIB_EXT@ \
                    @LIB_PREFIX@bmcustomcatalog.@DYNAMIC_LIB_EXT@ \
                    @LIB_PREFIX@bmeventreactor.@DYNAMIC_LIB_EXT@ \

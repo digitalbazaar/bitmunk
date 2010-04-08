@@ -13,11 +13,11 @@ ALL_DIRECTORIES += $(XPT_DIR) $(XPI_DIR)
 # Build rules to build header and xpt files from IDL files
 $(BUILD_DIR)/%.h: %.idl
 	@echo "Building $@..."
-	$(PCMD) $(XPIDL) -m header @XULRUNNER_IDL_FLAGS@ -o $(basename $@) $<
+	$(PCMD) $(XPIDL) -m header $(XULRUNNER_IDL_FLAGS) -o $(basename $@) $<
 
 $(XPT_DIR)/%.xpt: %.idl
 	@echo "Generating dist/$(subst .P,.o,$(subst $(BITMUNK)/dist/,,$@))..."
-	$(PCMD) $(XPIDL) -m typelib @XULRUNNER_IDL_FLAGS@ -o $(basename $@) $<
+	$(PCMD) $(XPIDL) -m typelib $(XULRUNNER_IDL_FLAGS) -o $(basename $@) $<
 
 # Override the default platform build rule with one that includes all
 # generated headers

@@ -28,6 +28,7 @@ endif
 
 # Platform agnostic variables
 XPIDL = @XPIDL@
+XULRUNNER_IDL_FLAGS = @XULRUNNER_IDL_FLAGS@
 
 .SECONDEXPANSION:
 

@@ -1,4 +1,5 @@
-SOURCES = BitmunkMimetypePlugin.cpp
+LIBRARIES = npbmd
+npbmd_SOURCES = BitmunkMimetypePlugin.cpp
 COMPONENT_LIBRARIES = npbmd
 
 # Common Firefox Makefile

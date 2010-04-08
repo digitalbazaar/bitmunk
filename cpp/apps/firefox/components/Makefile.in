@@ -1,5 +1,6 @@
-HEADERS = BitmunkExtension.h
-SOURCES = BitmunkExtension.cpp
+LIBRARIES = bitmunk-components
+bmcomponents_HEADERS = BitmunkExtension.h
+bmcomponents_SOURCES = BitmunkExtension.cpp
 IDL_SOURCES = IBitmunkExtension.idl
 COMPONENT_LIBRARIES = bitmunk-components
 

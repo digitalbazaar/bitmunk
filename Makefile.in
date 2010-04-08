@@ -110,6 +110,7 @@ TEST_MODULES = \
 	$(GTKUI_TEST_MODULES)
 
 LIBS_DIR = @BITMUNK_DIR@/dist/lib
+BIN_DIR = @BITMUNK_DIR@/dist/bin
 MODULES_DIR = @BITMUNK_DIR@/dist/modules
 
 ifeq ($(BUILD_FOR_LINUX),yes)
@@ -130,9 +131,9 @@ MODULE_FILES += $(patsubst %,$(MODULES_DIR)/apps/lib%.dylib, $(APP_MODULES))
 MODULE_FILES += $(patsubst %,$(MODULES_DIR)/tests/lib%.dylib, $(TEST_MODULES))
 endif
 
-.PHONY: all verbose clean test internal-docs clean-docs link-monarch-libs
+.PHONY: all verbose clean test internal-docs clean-docs link-monarch-libs link-monarch-bins
 
-all: link-monarch-libs
+all: link-monarch-libs link-monarch-bins
 	@$(foreach dir,$(SUBDIRS),IGNORE_DEPENDENCIES=true $(MAKE_DIR) build-headers &&) true
 	@$(foreach dir,$(SUBDIRS),$(MAKE_DIR) build-objects build-libraries &&) true
 	@$(foreach dir,$(EXECUTABLE_SUBDIRS),$(MAKE_DIR) build-executables &&) true
@@ -147,6 +148,10 @@ clean:
 link-monarch-libs:
 	@mkdir -p $(LIBS_DIR)
 	@ln -sf @MONARCH_DIR@/dist/lib/* $(LIBS_DIR)
+
+link-monarch-bins:
+	@mkdir -p $(BIN_DIR)
+	@ln -sf @MONARCH_DIR@/dist/bin/monarch $(BIN_DIR)/bitmunk
 
 link-modules: $(MODULE_FILES)
 
