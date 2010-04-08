@@ -9,7 +9,9 @@
          "host" : "0.0.0.0",
          "port" : @BITMUNK_LOCAL_API_PORT@,
          "bitmunkHomePath" : "{BITMUNK_HOME}",
-         "modulePath" : "@BITMUNK_MODULES_DIR@",
+         "modulePath" : [
+            "@BITMUNK_MODULES_DIR@"
+         ],
          "profilePath" : "@BITMUNK_PROFILES_DIR@",
          "usersPath" : "@BITMUNK_USERS_DIR@",
          "sslGenerate" : true,

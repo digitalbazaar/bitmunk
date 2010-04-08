@@ -76,23 +76,17 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr)
 {
    Node* rval = NULL;
 
-   // get modules directory
+   // get test config
    ConfigManager* cm = tr.getApp()->getConfigManager();
    Config cfg = cm->getConfig(BITMUNK_TESTER_CONFIG_ID);
    assertNoException();
    assert(!cfg.isNull());
-   assert(cfg["node"]->hasMember("modulePath"));
-   string path = cfg["node"]["modulePath"]->getString();
-   assert(path.length() > 0);
 
    // load node module
-   string libname;
-   libname.append(Platform::getDynamicLibraryPrefix());
-   libname.append("bmnodemodule.");
-   libname.append(Platform::getDynamicLibraryExt());
-   File file(File::join(path.c_str(), libname.c_str()).c_str());
+   assert(cfg["test"]->hasMember("nodeModule"));
+   const char* nodeModule = cfg["test"]["nodeModule"]->getString();
    MicroKernel* k = tr.getMicroKernel();
-   MicroKernelModule* mod = k->loadMicroKernelModule(file->getAbsolutePath());
+   MicroKernelModule* mod = k->loadMicroKernelModule(nodeModule);
    if(mod != NULL)
    {
       rval = dynamic_cast<Node*>(mod->getApi(k));
@@ -103,7 +97,7 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr)
          ExceptionRef e = new Exception(
             "Invalid node module.",
             "bitmunk.test.Tester.InvalidNodeModule");
-         e->getDetails()["filename"] = file->getAbsolutePath();
+         e->getDetails()["filename"] = nodeModule;
          Exception::set(e);
       }
    }

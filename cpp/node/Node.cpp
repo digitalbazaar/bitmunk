@@ -68,7 +68,10 @@ static bool _validateConfig(Config& cfg)
       "port", new v::Int(v::Int::NonNegative),
       "bitmunkUrl", new v::Type(String),
       "secureBitmunkUrl", new v::Type(String),
-      "modulePath", new v::Type(String),
+      "modulePath", new v::All(
+         new v::Type(Array),
+         new v::Each(new v::Type(String)),
+         NULL),
       "sslGenerate", new v::Optional(new v::Type(Boolean)),
       "sslCertificate", new v::Type(String),
       "sslPrivateKey", new v::Type(String),

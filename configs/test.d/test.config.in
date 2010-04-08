@@ -5,7 +5,8 @@
    "_version_" : "Bitmunk 3.0",
    "_merge_" : {
       "test" : {
-         "dataPath" : "@BITMUNK_DIR@/../bmtest/"
+         "dataPath" : "@BITMUNK_DIR@/../bmtest/",
+         "nodeModule" : "@BITMUNK_MODULES_DIR@/@LIB_PREFIX@bmnodemodule.@DYNAMIC_LIB_EXT@"
       }
    }
 }
