@@ -9,6 +9,7 @@
 #include "bitmunk/webui/ForceSslService.h"
 #include "bitmunk/webui/FrontendService.h"
 #include "bitmunk/webui/RedirectService.h"
+#include "bitmunk/webui/RobotsService.h"
 #include "bitmunk/webui/SessionService.h"
 #include "bitmunk/webui/StatusService.h"
 #include "monarch/logging/Logging.h"
@@ -78,6 +79,14 @@ bool WebUiModule::initialize(Node* node)
 
          if(rval)
          {
+            // create and add robots server
+            bs = new RobotsService(node, "/robots.txt");
+            bs->setAllowHttp1(true);
+            rval = node->getBtpServer()->addService(bs, Node::SslOff);
+         }
+
+         if(rval)
+         {
             bs = new SessionService(mSessionManager, "/api/3.0/webui");
             rval = node->getBtpServer()->addService(bs, Node::SslOn);
          }
@@ -129,6 +138,7 @@ bool WebUiModule::initialize(Node* node)
 
 void WebUiModule::cleanup(Node* node)
 {
+   node->getBtpServer()->removeService("/robots.txt");
    node->getBtpServer()->removeService("/api/3.0/webui");
    node->getBtpServer()->removeService("/api/3.0/webui/proxy");
    node->getBtpServer()->removeService("/api/3.0/webui/status");

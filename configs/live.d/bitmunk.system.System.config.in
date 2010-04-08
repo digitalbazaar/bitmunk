@@ -4,7 +4,6 @@
    "_version_" : "Bitmunk 3.0",
    "_merge_" : {
       "bitmunk.system.System" : {
-         "staticContentPath" : "/usr/share/bitmunk3/content"
       }
    }
 }

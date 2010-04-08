@@ -1,11 +1,11 @@
 /*
  * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
-#include "bitmunk/system/RobotsService.h"
+#include "bitmunk/webui/RobotsService.h"
 
 #include "bitmunk/node/BtpActionDelegate.h"
 #include "bitmunk/node/RestResourceHandler.h"
-#include "bitmunk/system/SystemModule.h"
+#include "bitmunk/webui/WebUiModule.h"
 #include "monarch/io/FileInputStream.h"
 
 using namespace std;
@@ -19,7 +19,7 @@ using namespace monarch::util;
 using namespace bitmunk::common;
 using namespace bitmunk::protocol;
 using namespace bitmunk::node;
-using namespace bitmunk::system;
+using namespace bitmunk::webui;
 namespace v = monarch::validation;
 
 typedef BtpActionDelegate<RobotsService> Handler;
@@ -40,7 +40,7 @@ bool RobotsService::initialize()
       // FIXME: change later to serve up static files?
       RestResourceHandlerRef sf = new RestResourceHandler();
       addResource("/", sf);
-      
+
       // GET .../
       {
          ResourceHandler h = new Handler(
@@ -49,7 +49,7 @@ bool RobotsService::initialize()
          sf->addHandler(h, BtpMessage::Get);
       }
    }
-   
+
    return true;
 }
 
@@ -61,18 +61,18 @@ void RobotsService::cleanup()
 
 /**
  * Handles serving static content from disk.
- * 
+ *
  * @param action the BtpAction.
- * @param file the file that should be read from disk and served to the 
+ * @param file the file that should be read from disk and served to the
  *             requesting client.
- * 
+ *
  * @return true if the file was served successfully, false if the file
  *         could not be served.
  */
 static bool serveFile(BtpAction* action, File& file)
 {
    bool rval = false;
-   
+
    // setup response header
    HttpResponseHeader* resHeader = action->getResponse()->getHeader();
    resHeader->setStatus(200, "OK");
@@ -83,7 +83,7 @@ static bool serveFile(BtpAction* action, File& file)
    string str;
    date.format(str, HttpHeader::sDateFormat, &gmt);
    resHeader->setField("Last-Modified", str.c_str());
-   
+
    // don't do any content-encoding (no gzip)
    action->getRequest()->getHeader()->removeField("Accept-Encoding");
    resHeader->setField("Content-Length", file->getLength());
@@ -92,22 +92,22 @@ static bool serveFile(BtpAction* action, File& file)
    FileInputStream fis(file);
    rval = action->sendResult(&fis);
    fis.close();
-   
+
    return rval;
 }
 
 /**
  * Check if file is modified based on action headers.
- * 
+ *
  * @param action the BtpAction.
  * @param file the file that should be checked for modification.
- * 
+ *
  * @return true if the message was modified, false if not.
  */
 static bool isModified(BtpAction* action, File& file)
 {
    bool rval = true;
-   
+
    HttpRequestHeader* reqHeader = action->getRequest()->getHeader();
    if(reqHeader->hasField("If-Modified-Since"))
    {
@@ -124,15 +124,15 @@ static bool isModified(BtpAction* action, File& file)
          rval = (mods > imsds) || (imsds > nows);
       }
    }
-   
+
    return rval;
 }
 
 /**
  * Handles serving a resource not modified message.
- * 
+ *
  * @param action the BtpAction.
- * 
+ *
  * @return true if the message was served successfully, false if not.
  */
 static bool serveNotModified(BtpAction* action)
@@ -144,9 +144,9 @@ static bool serveNotModified(BtpAction* action)
 
 /**
  * Handles serving a resource not found message.
- * 
+ *
  * @param action the BtpAction.
- * 
+ *
  * @return true if the error was served successfully, false if not.
  */
 static bool serveNotFound(BtpAction* action)
@@ -159,9 +159,9 @@ static bool serveNotFound(BtpAction* action)
 
 /**
  * Handles serving a resource forbidden message.
- * 
+ *
  * @param action the BtpAction.
- * 
+ *
  * @return true if the error was served successfully, false if not.
  */
 static bool serveForbidden(BtpAction* action)
@@ -177,24 +177,24 @@ bool RobotsService::getFile(
    BtpAction* action, DynamicObject& in, DynamicObject& out)
 {
    bool rval = true;
-   
+
    // get the configuration
    bool notFound = true;
    Config cfg = mNode->getConfigManager()->getModuleConfig(
-      "bitmunk.system.System");
+      "bitmunk.webui.Webui");
    if(!cfg.isNull() && cfg->hasMember("staticContentPath"))
    {
       string path = File::join(
          cfg["staticContentPath"]->getString(), "robots.txt");
       File file(path.c_str());
-      
-      MO_CAT_DEBUG(BM_SYSTEM_CAT, "GET %s => %s",
+
+      MO_CAT_DEBUG(BM_WEBUI_CAT, "GET %s => %s",
          "/robots.txt", path.c_str());
-      
+
       if(file->exists())
       {
          notFound = false;
-         
+
          if(!file->isReadable())
          {
             rval = serveForbidden(action);
@@ -209,7 +209,7 @@ bool RobotsService::getFile(
          }
       }
    }
-   
+
    if(notFound)
    {
       rval = serveNotFound(action);
@@ -217,4 +217,3 @@ bool RobotsService::getFile(
 
    return rval;
 }
-

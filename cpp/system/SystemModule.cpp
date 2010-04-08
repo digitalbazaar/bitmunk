@@ -8,7 +8,6 @@
 #include "bitmunk/system/ControlService.h"
 #include "bitmunk/system/DirectiveService.h"
 #include "bitmunk/system/EventService.h"
-#include "bitmunk/system/RobotsService.h"
 #include "bitmunk/system/StatisticsService.h"
 #include "bitmunk/system/TestService.h"
 #include "bitmunk/system/VersionService.h"
@@ -48,14 +47,6 @@ bool SystemModule::initialize(Node* node)
       NULL);
 
    BtpServiceRef bs;
-
-   if(rval)
-   {
-      // create and add robots server
-      bs = new RobotsService(node, "/robots.txt");
-      bs->setAllowHttp1(true);
-      rval = node->getBtpServer()->addService(bs, Node::SslOff);
-   }
 
    if(rval)
    {
@@ -113,7 +104,6 @@ bool SystemModule::initialize(Node* node)
 void SystemModule::cleanup(Node* node)
 {
    // remove services
-   node->getBtpServer()->removeService("/robots.txt");
    node->getBtpServer()->removeService("/api/3.0/system/config");
    node->getBtpServer()->removeService("/api/3.0/system/control");
    node->getBtpServer()->removeService("/api/3.0/system/events");
