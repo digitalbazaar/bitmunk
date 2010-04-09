@@ -1,8 +1,7 @@
 LIBRARIES = bitmunk-components
-bmcomponents_HEADERS = BitmunkExtension.h
-bmcomponents_SOURCES = BitmunkExtension.cpp
+bitmunk_components_HEADERS = BitmunkExtension.h
+bitmunk_components_SOURCES = BitmunkExtension.cpp
 IDL_SOURCES = IBitmunkExtension.idl
-COMPONENT_LIBRARIES = bitmunk-components
 
 # Common Firefox Makefile
 include ../Makefile.common
