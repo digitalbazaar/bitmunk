@@ -94,8 +94,6 @@ bool Node::start(MicroKernel* k)
 {
    bool rval = false;
 
-   mKernel = k;
-
    // NodeConfigManager needs to be able to get the ConfigManager from the
    // kernel.
    mNodeConfigManager.setMicroKernel(k);
@@ -104,6 +102,8 @@ bool Node::start(MicroKernel* k)
    rval = _validateConfig(cfg);
    if(rval)
    {
+      mKernel = k;
+
       // dump some configuration information to the logs
       MO_CAT_INFO(BM_NODE_CAT,
          "Home: %s", cfg["bitmunkHomePath"]->getString());
@@ -145,14 +145,19 @@ bool Node::start(MicroKernel* k)
 void Node::stop()
 {
    // FIXME: might need to lock around this to prevent logins during stop()?
-   logoutAllUsers();
+   // only stop node if it is running on a kernel
+   if(mKernel != NULL)
+   {
+      logoutAllUsers();
 
-   // clean up
-   mEventHandler.cleanup();
-   mBtpServer->cleanup();
-   mMonitor.removeAll();
-   mMessenger.setNull();
-   mPublicKeyCache.clear();
+      // clean up
+      mEventHandler.cleanup();
+      mBtpServer->cleanup();
+      mMonitor.removeAll();
+      mMessenger.setNull();
+      mPublicKeyCache.clear();
+      mKernel = NULL;
+   }
 }
 
 bool Node::login(const char* username, const char* password, UserId* userId)
