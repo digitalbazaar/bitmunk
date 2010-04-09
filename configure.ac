@@ -83,7 +83,7 @@ fi
 
 # Check for Firefox plugin build
 AC_ARG_ENABLE([firefox-plugin],
-   AS_HELP_STRING([--enable-firefox-plugin], [compile firefox plugin [[yes]]]),
+   AS_HELP_STRING([--enable-firefox-plugin], [compile firefox plugin [[no]]]),
    [
       case "${enableval}" in
          yes) BUILD_FIREFOX_PLUGIN=yes ;;
@@ -93,7 +93,12 @@ AC_ARG_ENABLE([firefox-plugin],
    ], 
    [
       # By default, build the Firefox plugin
-      BUILD_FIREFOX_PLUGIN=yes
+      if test "x$BUILD_FOR_MACOS" = "xyes" -o \
+              "x$BUILD_FOR_WINDOWS" = "xyes"; then
+          BUILD_FIREFOX_PLUGIN=yes
+      else
+          BUILD_FIREFOX_PLUGIN=no
+      fi
    ])  dnl Default value
 AC_SUBST(BUILD_FIREFOX_PLUGIN)
 
