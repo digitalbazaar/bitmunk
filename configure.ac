@@ -83,7 +83,7 @@ fi
 
 # Check for Firefox plugin build
 AC_ARG_ENABLE([firefox-plugin],
-   AS_HELP_STRING([--enable-firefox-plugin], [compile firefox plugin [[no]]]),
+   AS_HELP_STRING([--enable-firefox-plugin], [compile firefox plugin [[yes]]]),
    [
       case "${enableval}" in
          yes) BUILD_FIREFOX_PLUGIN=yes ;;
@@ -92,14 +92,8 @@ AC_ARG_ENABLE([firefox-plugin],
       esac
    ], 
    [
-      # By default, build the Firefox plugin in Windows and Mac OS X only
-      if test "x$BUILD_FOR_WINDOWS" = xyes; then
-         BUILD_FIREFOX_PLUGIN=yes
-      elif test "x$BUILD_FOR_MACOS" = xyes; then
-         BUILD_FIREFOX_PLUGIN=yes
-      else
-         BUILD_FIREFOX_PLUGIN=no
-      fi
+      # By default, build the Firefox plugin
+      BUILD_FIREFOX_PLUGIN=yes
    ])  dnl Default value
 AC_SUBST(BUILD_FIREFOX_PLUGIN)
 
@@ -884,6 +878,12 @@ AC_CONFIG_FILES([
 ])
 fi
 
+if test "x$BUILD_FIREFOX_PLUGIN" = "xyes"; then
+AC_CONFIG_FILES([
+    configs/firefox-plugin.config
+])
+fi
+
 # Generate scripts and configuration files for release
 AC_CONFIG_FILES([
    installers/debian/changelog
@@ -976,3 +976,4 @@ fi
 echo "BFP API Version   : $BITMUNK_BFP_API_VERSION"
 echo "GTK UI enabled    : $BUILD_GTK_UI"
 echo "Release build     : $BITMUNK_RELEASE_MODE"
+

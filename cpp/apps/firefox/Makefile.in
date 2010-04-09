@@ -12,43 +12,50 @@ BITMUNK_MODULES_DIR = $(BITMUNK_DIST_DIR)/modules
 
 BITMUNK_COMPONENT = @LIB_PREFIX@bitmunk-components.@DYNAMIC_LIB_EXT@ 
 BITMUNK_MIME_HANDLER = @LIB_PREFIX@npbmd.@DYNAMIC_LIB_EXT@ 
-DISTRIBUTION_LIBRARIES = @LIB_PREFIX@bmcommon.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@bmdata.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@bmprotocol.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@moapp.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@mocompress.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@moconfig.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@mocrypto.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@modata.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@moevent.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@mofiber.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@moio.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@mohttp.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@mokernel.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@mologging.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@momodest.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@monet.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@mort.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@mosql.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@mosqlite3.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@moupnp.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@moutil.@DYNAMIC_LIB_EXT@ \
-                         @LIB_PREFIX@movalidation.@DYNAMIC_LIB_EXT@ 
+DISTRIBUTION_LIBRARIES = \
+   @LIB_PREFIX@bmcommon.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmdata.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmnode.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmprotocol.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@moapp.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@mocompress.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@moconfig.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@mocrypto.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@modata.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@moevent.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@mofiber.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@moio.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@mohttp.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@mokernel.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@mologging.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@momodest.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@monet.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@mort.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@mosql.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@mosqlite3.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@moupnp.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@moutil.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@movalidation.@DYNAMIC_LIB_EXT@ 
 
-MODULE_LIBRARIES = @LIB_PREFIX@bmnodemodule.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmbfp.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmcustomcatalog.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmeventreactor.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmeventreactor-downloadstate.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmfilebrowser.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmmedialibrary.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmnegotiate.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmperuserdb.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmportmapper.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmpurchase.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmsell.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmsystem.@DYNAMIC_LIB_EXT@ \
-                   @LIB_PREFIX@bmwebui.@DYNAMIC_LIB_EXT@ 
+APP_LIBRARIES = \
+   @LIB_PREFIX@bitmunk.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmapp.@DYNAMIC_LIB_EXT@
+
+MODULE_LIBRARIES = \
+   @LIB_PREFIX@bmbfp.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmcustomcatalog.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmeventreactor.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmeventreactor-downloadstate.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmfilebrowser.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmmedialibrary.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmnegotiate.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmnodemodule.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmperuserdb.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmportmapper.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmpurchase.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmsell.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmsystem.@DYNAMIC_LIB_EXT@ \
+   @LIB_PREFIX@bmwebui.@DYNAMIC_LIB_EXT@
 
 WEBUI_PLUGINS = help log login main purchase medialibrary settings
 
@@ -63,39 +70,42 @@ WEBUI_PLUGINS += support debug test
 endif
 
 ifeq (@BITMUNK_RELEASE_MODE@,yes)
-CONFIG_FILES = app.config \
-               bitmunk.bfp.Bfp.config \
-               bitmunk.catalog.CustomCatalog.config \
-               bitmunk.medialibrary.MediaLibrary.config \
-               bitmunk.purchase.Purchase.config \
-               bitmunk.sell.Sell.config \
-               bitmunk.system.System.config \
-               bitmunk.webui.WebUi.config \
-               events.config \
-               node.config
+CONFIG_FILES = \
+   app.config \
+   bitmunk.bfp.Bfp.config \
+   bitmunk.catalog.CustomCatalog.config \
+   bitmunk.medialibrary.MediaLibrary.config \
+   bitmunk.purchase.Purchase.config \
+   bitmunk.sell.Sell.config \
+   bitmunk.system.System.config \
+   bitmunk.webui.WebUi.config \
+   events.config \
+   node.config
 else
-CONFIG_FILES = app.config \
-               bitmunk.bfp.Bfp.config \
-               bitmunk.catalog.CustomCatalog.config \
-               bitmunk.medialibrary.MediaLibrary.config \
-               bitmunk.purchase.Purchase.config \
-               bitmunk.sell.Sell.config \
-               bitmunk.system.System.config \
-               bitmunk.webui.WebUi.config \
-               events.config \
-               node.config
+CONFIG_FILES = \
+   app.config \
+   bitmunk.bfp.Bfp.config \
+   bitmunk.catalog.CustomCatalog.config \
+   bitmunk.medialibrary.MediaLibrary.config \
+   bitmunk.purchase.Purchase.config \
+   bitmunk.sell.Sell.config \
+   bitmunk.system.System.config \
+   bitmunk.webui.WebUi.config \
+   events.config \
+   node.config
 endif
 
-EXTERNAL_WINDOWS_LIBRARIES = pthreadGCE2.dll \
-                             charset1.dll \
-                             libiconv2.dll \
-                             sqlite3.dll \
-                             libexpat.dll \
-                             mgwz.dll \
-                             mingwm10.dll \
-                             libgnurx-0.dll \
-                             libeay32.dll \
-                             ssleay32.dll
+EXTERNAL_WINDOWS_LIBRARIES = \
+   pthreadGCE2.dll \
+   charset1.dll \
+   libiconv2.dll \
+   sqlite3.dll \
+   libexpat.dll \
+   mgwz.dll \
+   mingwm10.dll \
+   libgnurx-0.dll \
+   libeay32.dll \
+   ssleay32.dll
 
 EXTERNAL_MACOS_LIBRARIES = /sw/lib/libsqlite3.0.dylib
 
@@ -119,6 +129,7 @@ endif
 	# Create all of the necessary directories
 	mkdir -p dist
 	mkdir -p extension/components
+	mkdir -p extension/platform/@FIREFOX_PLATFORM@/apps
 	mkdir -p extension/platform/@FIREFOX_PLATFORM@/libs
 	mkdir -p extension/platform/@FIREFOX_PLATFORM@/modules
 	mkdir -p extension/platform/@FIREFOX_PLATFORM@/extensions
@@ -165,6 +176,7 @@ endif
 		extension/platform/@FIREFOX_PLATFORM@
 	$(foreach lib,$(DISTRIBUTION_LIBRARIES),cp -LR $(BITMUNK_LIB_DIR)/$(lib) extension/platform/@FIREFOX_PLATFORM@/libs &&) true
 	$(foreach mod,$(MODULE_LIBRARIES),cp -LR $(BITMUNK_MODULES_DIR)/bpe/$(mod) extension/platform/@FIREFOX_PLATFORM@/modules &&) true
+	$(foreach mod,$(APP_LIBRARIES),cp -LR $(BITMUNK_MODULES_DIR)/apps/$(mod) extension/platform/@FIREFOX_PLATFORM@/apps &&) true
 
 ifeq (@BITMUNK_PLATFORM@,windows)
 	$(foreach lib,$(EXTERNAL_WINDOWS_LIBRARIES),cp -LR @MONARCH_DIR@/dist/lib/$(lib) extension/platform/@FIREFOX_PLATFORM@/libs &&) true

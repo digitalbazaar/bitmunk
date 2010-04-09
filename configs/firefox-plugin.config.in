@@ -1,0 +1,49 @@
+{
+   "_id_": "bitmunk.apps.firefox-bpe",
+   "_version_": "Monarch Config 3.0",
+   "_group_": "main",
+   "_append_": {
+      "monarch.app.Kernel": {
+         "modulePath": [
+            "{RESOURCE_PATH}/apps/@LIB_PREFIX@bitmunk.@DYNAMIC_LIB_EXT@",
+            "{RESOURCE_PATH}/apps/@LIB_PREFIX@bmapp.@DYNAMIC_LIB_EXT@"
+         ]
+      },
+      "node" : {
+         "modulePath" : ["@BITMUNK_MODULES_DIR@"]
+      },
+      "bitmunk.apps.bitmunk.Bitmunk": {
+         "configs": {
+            "extra": [
+               "{RESOURCE_PATH}/configs/conf.d"
+            ]
+         }
+      }
+   },
+   "_merge_": {
+      "monarch.app.Logging": {
+         "color": true,
+         "level": "max"
+      },
+      "app" : {
+         "login" : {
+            "auto" : false
+         }
+      },
+      "bitmunk.webui.WebUi" : {
+         "flash" : {
+            "policyServer" : {
+               "host" : "@BITMUNK_LOCAL_API_HOST@",
+               "port" : @BITMUNK_FLASH_POLICY_PORT@
+            }
+         }
+      },
+      "node" : {
+         "host" : "@BITMUNK_LOCAL_API_HOST@",
+         "port" : @BITMUNK_LOCAL_API_PORT@,
+         "login" : {
+            "auto" : false
+         }
+      }
+   }
+}
