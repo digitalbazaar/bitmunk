@@ -178,6 +178,7 @@ static PRInt32 _startBitmunk(
       {
          (char*)"bitmunk",
          (char*)"--resource-path", (char*)resourcePath.c_str(),
+         (char*)"--config", (char*)packageConfigFile.c_str(),
          (char*)"--package-config", (char*)packageConfigFile.c_str(),
          (char*)"--option", (char*)nodePortFileKey,
          (char*)nodePortFile.c_str(),
