@@ -251,11 +251,12 @@ void Node::removeUserFiber(FiberId id, UserId userId)
             mUserFibers.erase(i);
             delete list;
 
-            // send event that all user fibers have been cleaned up
+            // send event that all user fibers have been cleaned up, send
+            // event synchronously to ensure immediate delivery
             Event e;
             e["type"] = "bitmunk.node.Node.userFibersExited";
             e["details"]["userId"] = userId;
-            getEventController()->schedule(e);
+            getEventController()->schedule(e, false);
          }
       }
    }
@@ -290,11 +291,12 @@ void Node::interruptUserFibers(UserId id)
       }
       else
       {
-         // send event that all user fibers have been cleaned up
+         // send event that all user fibers have been cleaned up, send
+         // event synchronously to ensure immediate delivery
          Event e;
          e["type"] = "bitmunk.node.Node.userFibersExited";
          e["details"]["userId"] = id;
-         getEventController()->schedule(e);
+         getEventController()->schedule(e, false);
       }
    }
    mUserFiberLock.unlock();
