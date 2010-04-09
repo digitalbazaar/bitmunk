@@ -884,6 +884,12 @@ AC_CONFIG_FILES([
 ])
 fi
 
+if test "x$BUILD_FIREFOX_PLUGIN" = "xyes"; then
+AC_CONFIG_FILES([
+    configs/firefox-plugin.config
+])
+fi
+
 # Generate scripts and configuration files for release
 AC_CONFIG_FILES([
    installers/debian/changelog
@@ -976,3 +982,4 @@ fi
 echo "BFP API Version   : $BITMUNK_BFP_API_VERSION"
 echo "GTK UI enabled    : $BUILD_GTK_UI"
 echo "Release build     : $BITMUNK_RELEASE_MODE"
+
