@@ -259,7 +259,7 @@ void NodeEventHandler::handleEvent(
 
       // schedule shutdown event
       Event event;
-      event["type"] = "monarch.kernel.MicroKernel.shutdown";
+      event["type"] = "monarch.kernel.Kernel.shutdown";
       mNode->getEventController()->schedule(event);
    }
    // Unknown event
