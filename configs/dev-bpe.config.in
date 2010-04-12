@@ -5,13 +5,6 @@
    "_include_" : [
       "dev.config"
    ],
-   "_append_" : {
-      "node" : {
-         "modulePath" : [
-            "@BITMUNK_DIR@/dist/modules/bpe"
-         ]
-      }
-   },
    "_merge_" : {
       "app" : {
          "login" : {
