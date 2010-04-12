@@ -28,10 +28,6 @@ AC_SUBST(DATE_RFC_2822)
 AC_SUBST(FULL_VERSION)
 AC_SUBST(FULL_DOTTED_VERSION)
 
-# Default BFP constants
-BITMUNK_DEFAULT_BFP_ID=1
-BITMUNK_DEFAULT_BFP_API_VERSION=${PACKAGE_VERSION}-`date +%Y%m%d%H%M`
-
 dnl ----------------- platform -----------------
 AC_ARG_ENABLE([linux],
    AS_HELP_STRING([--enable-linux], [compile for linux [[yes]]]),
@@ -213,6 +209,7 @@ if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
    BITMUNK_SYSTEM_USER_CONFIG="dev.config"
 if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    dnl === Linux === Development === Firefox Plugin ===
+   BITMUNK_LOCAL_API_HOST="0.0.0.0"
    BITMUNK_LOCAL_API_PORT=19200
    BITMUNK_FLASH_POLICY_PORT=19943
    BITMUNK_MODULES_DIR="{RESOURCE_PATH}/modules"
@@ -561,11 +558,7 @@ dnl ----------------- BFP config -----------------
 dnl === BFP API version ===
 
 # use simple constant in development mode
-if test "x$BITMUNK_RELEASE_MODE" = xno; then
-   BITMUNK_BFP_API_VERSION=${PACKAGE_VERSION}-1
-else
-   BITMUNK_BFP_API_VERSION=${BITMUNK_DEFAULT_BFP_API_VERSION}
-fi
+BITMUNK_BFP_API_VERSION=${PACKAGE_VERSION}
 
 AC_ARG_WITH(bfp-api-version,
   AC_HELP_STRING([--with-bfp-api-version=VERSION],
@@ -797,7 +790,6 @@ AC_SUBST(BITMUNK_PURCHASE_DOWNLOAD_DIR)
 AC_SUBST(BITMUNK_PURCHASE_TEMP_DIR)
 AC_SUBST(BITMUNK_MODULES_DIR)
 AC_SUBST(BITMUNK_BFP_PEM_DIR)
-AC_SUBST(BITMUNK_BFP_ID)
 AC_SUBST(BITMUNK_BFP_PRIVATE_KEY_PEM)
 AC_SUBST(BITMUNK_BFP_PRIVATE_KEY_PW)
 AC_SUBST(BITMUNK_BFP_API_VERSION)
