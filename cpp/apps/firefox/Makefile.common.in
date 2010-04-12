@@ -9,6 +9,10 @@ DYNAMIC_MACOS_LINK_LIBRARIES = xpcomglue_s xpcom nspr4 plds4 plc4
 # ----------- Standard Makefile
 include @BITMUNK_DIR@/setup/Makefile.base
 
+ifeq ($(BUILD_FOR_LINUX),yes)
+CXX_FLAGS += -I$(BUILD_DIR)
+endif
+
 ifeq ($(BUILD_FOR_MACOS),yes)
 MACOS_SDK_DIR = /Developer/SDKs/MacOSX10.4u.sdk
 MACOS_GECKO_SDK_DIR = /usr/local/gecko-sdk
