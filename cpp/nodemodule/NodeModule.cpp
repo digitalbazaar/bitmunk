@@ -46,8 +46,8 @@ bool NodeModule::initialize(MicroKernel* k)
       MO_ANSI_CSI MO_ANSI_BOLD MO_ANSI_SEP MO_ANSI_FG_HI_RED MO_ANSI_SGR);
 
    // create and start the bitmunk node
-   mNode = new Node();
-   rval = mNode->start(k);
+   mNode = new Node(k);
+   rval = mNode->start();
    if(!rval)
    {
       // node failed to start

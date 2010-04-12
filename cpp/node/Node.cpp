@@ -32,13 +32,18 @@ namespace v = monarch::validation;
 // Logging category initialized during NodeModule initialization.
 Category* BM_NODE_CAT;
 
-Node::Node() :
-   mKernel(NULL),
+Node::Node(MicroKernel* k) :
+   mKernel(k),
    mEventHandler(this),
    mBtpServer(NULL),
    mLoginManager(this),
-   mMessenger(NULL)
+   mMessenger(NULL),
+   mRunning(false)
 {
+   // NodeConfigManager needs to be able to get the ConfigManager from the
+   // kernel
+   mNodeConfigManager.setMicroKernel(k);
+
    // create BtpServer
    mBtpServer = new BtpServer(this);
 
@@ -90,19 +95,15 @@ static bool _validateConfig(Config& cfg)
    return rval;
 }
 
-bool Node::start(MicroKernel* k)
+bool Node::start()
 {
    bool rval = false;
-
-   // NodeConfigManager needs to be able to get the ConfigManager from the
-   // kernel.
-   mNodeConfigManager.setMicroKernel(k);
 
    Config cfg = getConfigManager()->getNodeConfig();
    rval = _validateConfig(cfg);
    if(rval)
    {
-      mKernel = k;
+      mRunning = true;
 
       // dump some configuration information to the logs
       MO_CAT_INFO(BM_NODE_CAT,
@@ -144,10 +145,9 @@ bool Node::start(MicroKernel* k)
 
 void Node::stop()
 {
-   // FIXME: might need to lock around this to prevent logins during stop()?
-   // only stop node if it is running on a kernel
-   if(mKernel != NULL)
+   if(mRunning)
    {
+      // FIXME: might need to lock around this to prevent logins during stop()?
       logoutAllUsers();
 
       // clean up
@@ -156,7 +156,7 @@ void Node::stop()
       mMonitor.removeAll();
       mMessenger.setNull();
       mPublicKeyCache.clear();
-      mKernel = NULL;
+      mRunning = false;
    }
 }
 

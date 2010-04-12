@@ -117,11 +117,18 @@ protected:
     */
    monarch::modest::OperationList mUserOperations;
 
+   /**
+    * Set to true when the node is running.
+    */
+   bool mRunning;
+
 public:
    /**
     * Creates a new Node.
+    *
+    * @param k the associated MicroKernel.
     */
-   Node();
+   Node(monarch::kernel::MicroKernel* k);
 
    /**
     * Destructs this Node.
@@ -131,11 +138,9 @@ public:
    /**
     * Initializes and starts this Node and its services.
     *
-    * @param k the associated MicroKernel.
-    *
     * @return true on success, false on failure with exception set.
     */
-   virtual bool start(monarch::kernel::MicroKernel* k);
+   virtual bool start();
 
    /**
     * Stops node services.
