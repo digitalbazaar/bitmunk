@@ -92,17 +92,17 @@ static void _cleanup() {};
 #define WINDOWS_FIREFOX_LOG "C:\\temp\\bitmunk-firefox.log"
 // logging macros
 #define _logOpen() \
-   return fopen(WINDOWS_FIREFOX_LOG, "a")
+   fopen(WINDOWS_FIREFOX_LOG, "a")
 #define _logClose(fp) \
    fclose(fp)
-#define _log(fp, args...) \
-   fprintf(fp, ##args)
+#define _log(fp, ...) \
+   fprintf(fp, __VA_ARGS__)
 #else
 // empty logging macros
-#define _logOpen() return NULL
-#define _log(fp, args...)
+#define _logOpen() NULL
+#define _log(fp, ...)
 #define _logClose(fp)
-#define _logLastError(fp)
+#define _logLastError(fp, str)
 #endif
 
 #ifdef WINDOWS_BITMUNK_LOG_FILE
@@ -139,9 +139,9 @@ inline static void _createWindowsEnvironment(string& path)
    {
       // no PATH in current environment, just create new path and
       // append library path
-      DWORD length = libraryPath.length() + 1;
+      DWORD length = path.length() + 1;
       newPath = (LPTSTR)malloc(length);
-      StringCchCopy(newPath, length, const_cast<LPSTR>(libraryPath.c_str()));
+      StringCchCopy(newPath, length, const_cast<LPSTR>(path.c_str()));
    }
    else
    {
@@ -150,16 +150,15 @@ inline static void _createWindowsEnvironment(string& path)
       GetEnvironmentVariable("PATH", oldPath, oldPathSize);
 
       // allocate enough space for the old path AND the new path
-      libraryPath.insert(0, PATH_SEPARATOR);
-
-      newPathSize = oldPathSize + libraryPath.length();
+      path.insert(0, PATH_SEPARATOR);
+      newPathSize = oldPathSize + path.length();
       newPath = (LPTSTR)malloc(newPathSize * sizeof(TCHAR));
 
       // copy old path into new path and append library directory
       StringCchCopy(newPath, oldPathSize, oldPath);
       StringCchCat(
-         newPath, oldPathSize + libraryPath.length(),
-         const_cast<LPSTR>(libraryPath.c_str()));
+         newPath, oldPathSize + path.length(),
+         const_cast<LPSTR>(path.c_str()));
    }
 
    /* Note: We no longer save the old path and reset it after
@@ -231,7 +230,7 @@ static string _getLastErrorMsg(DWORD error)
    memset(errorString, 0, 100);
    unsigned int size = FormatMessage(
       FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-      FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dwLastError, 0,
+      FORMAT_MESSAGE_IGNORE_INSERTS, NULL, error, 0,
       (LPTSTR)&lpBuffer, 0, NULL);
    if(size > 0)
    {
@@ -349,7 +348,7 @@ inline static PRInt32 _execve(
 
    // log information about starting bitmunk
    FILE* fp = _logOpen();
-   _log(fp, "Launching bitmunk app...\n");
+   _log(fp, "Launching bitmunk app...\n\n");
    _log(fp, "PATH: %s\n\n", libraryPath.c_str());
    _log(fp, "CreateProcess() params:\n\n");
    _log(fp, "lpApplicationName: %s\n\n", bitmunkApp.c_str());
