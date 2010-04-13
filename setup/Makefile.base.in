@@ -111,7 +111,7 @@ $(ALL_DIRECTORIES):
 
 clean: build-clean clean-objects clean-libraries clean-executables clean-flash clean-min-js clean-xpts
 
-build-headers: $(ALL_HEADERS)
+build-headers: $(ALL_GENERATED_HEADERS) $(ALL_HEADERS)
 
 build-objects: $(ALL_DIRECTORIES) $(ALL_SOURCES) $(ALL_OBJECTS)
 
