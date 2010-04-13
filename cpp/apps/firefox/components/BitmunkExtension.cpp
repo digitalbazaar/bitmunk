@@ -56,6 +56,7 @@ NS_IMPL_ISUPPORTS1(nsBitmunkExtension, nsIBitmunkExtension)
 #define PATH_SEPARATOR   ":"
 #define FILE_SEPARATOR   "/"
 #define BITMUNK_BIN      "bitmunk"
+#define BITMUNK_BIN_PATH BITMUNK_BIN
 #if defined(__i386__)
 #define PLATFORM_DIR     "Linux_x86-gcc3"
 #endif
@@ -69,6 +70,7 @@ static void _cleanup() {};
 #define PATH_SEPARATOR   ":"
 #define FILE_SEPARATOR   "/"
 #define BITMUNK_BIN      "bitmunk"
+#define BITMUNK_BIN_PATH BITMUNK_BIN
 #if defined(__i386__)
 #define PLATFORM_DIR     "Darwin_x86-gcc3"
 #endif
@@ -81,14 +83,29 @@ static void _cleanup() {};
 #define ENV_HOME         "USERPROFILE"
 #define PATH_SEPARATOR   ";"
 #define FILE_SEPARATOR   "\\"
-#define BITMUNK_BIN      "libs\\bitmunk.exe"
+#define BITMUNK_BIN      "bitmunk.exe"
+#define BITMUNK_BIN_PATH "libs\\" BITMUNK_BIN
 #define PLATFORM_DIR     "WINNT_x86-msvc"
 
 #ifdef WINDOWS_DEBUG_MODE
+// log file
 #define WINDOWS_FIREFOX_LOG "C:\\temp\\bitmunk-firefox.log"
+// logging macros
+#define _logOpen() \
+   return fopen(WINDOWS_FIREFOX_LOG, "a")
+#define _logClose(fp) \
+   fclose(fp)
+#define _log(fp, args...) \
+   fprintf(fp, ##args)
+#else
+// empty logging macros
+#define _logOpen() return NULL
+#define _log(fp, args...)
+#define _logClose(fp)
 #endif
 
 #ifdef WINDOWS_BITMUNK_LOG_FILE
+// log file for bitmunk process output
 #define WINDOWS_BITMUNK_LOG "C:\\temp\\bitmunk-output.log"
 #endif
 
@@ -96,163 +113,10 @@ static void _cleanup() {};
    windows process properly. Seriously. */
 static LPCH gEnvironment = NULL;
 
-// Windows doesn't have a good string replace function. Seriously.
-static string& stringReplaceAll(
-   string& str, const string& find, const string& replace)
+// Windows has to create a globally-used environment once and then it will
+// be cloned on each CreateProcess call
+inline static void _createGlobalEnvironment(string& path)
 {
-   string::size_type found = str.find(find);
-   while(found != string::npos)
-   {
-      str.replace(found, find.length(), replace);
-      found = str.find(find, found + replace.length());
-   }
-
-   return str;
-}
-
-// Windows has to clean up its globally created environment.
-static void _cleanup()
-{
-   // release global environment handle
-   if(gEnvironment != NULL)
-   {
-      FreeEnvironmentStrings(gEnvironment);
-   }
-}
-
-#endif
-
-/**
- * Starts the bitmunk application using the given parameters, with a
- * specific implementation for each supported OS.
- *
- * @param bitmunkApp the full path to the bitmunk binary.
- * @param libraryPath the environment library path.
- * @param homePath the environment home path.
- * @param resourcePath the config system resource path option.
- * @param packageConfigFile the config system package config option.
- * @param nodePortFile the config system node port file option.
- * @param logFile the config system log file option.
- *
- * @return the pid of the new bitmunk process or 0 on error.
- */
-static PRInt32 _startBitmunk(
-   string& bitmunkApp, string& libraryPath, string& homePath,
-   string& resourcePath, string& packageConfigFile, string& nodePortFile,
-   string& logFile)
-{
-   PRInt32 rval = 0;
-
-   /* This is the path to the node port file config key, a '.' is a
-      separator between levels in our config tree, and since this value
-      resides at:
-
-      "bitmunk.system.System" : {
-         "nodePortFile" : "<insert value here>"
-      }
-
-      We must escape the first 2 dots, but not the last one.
-   */
-   const char* nodePortFileKey = "bitmunk\\.system\\.System.nodePortFile";
-
-   // linux/apple specific implementation
-#if defined(__linux__) || defined(__APPLE__)
-   // make bitmunk app executable (fix firefox 3.6.0 bug)
-   nsCOMPtr<nsILocalFile> file;
-   nsDependentCString cstr(bitmunkApp.c_str());
-   nsDependentString astr;
-   NS_CStringToUTF16(cstr, NS_CSTRING_ENCODING_UTF8, astr);
-   nsresult rv = NS_NewLocalFile(astr, PR_FALSE, getter_AddRefs(file));
-   if(rv != NS_OK)
-   {
-      // could not set permissions
-      return 0;
-   }
-   file->SetPermissions(0755);
-
-   pid_t pid = fork();
-   if(pid == 0)
-   {
-      // build command line
-      char* cmd[] =
-      {
-         (char*)"bitmunk",
-         (char*)"--resource-path", (char*)resourcePath.c_str(),
-         (char*)"--config", (char*)packageConfigFile.c_str(),
-         (char*)"--package-config", (char*)packageConfigFile.c_str(),
-         (char*)"--option", (char*)nodePortFileKey,
-         (char*)nodePortFile.c_str(),
-         (char*)"--log", (char*)logFile.c_str(),
-         (NULL)
-      };
-
-      // build environment
-      char* env[] =
-      {
-         (char*)libraryPath.c_str(),
-         (char*)homePath.c_str(),
-         (NULL)
-      };
-
-      // the child should overlay the Bitmunk application
-      execve(bitmunkApp.c_str(), cmd, env);
-      perror("execve");   /* execve() only returns on error */
-      exit(EXIT_FAILURE);
-   }
-   else if(pid == -1)
-   {
-      //printf("Failed to launch Bitmunk Application\n");
-      rval = pid;
-   }
-   else
-   {
-      //printf("Attempting to launch Bitmunk...\n");
-      rval = pid;
-   }
-
-   // windows specific implementation
-#elif defined(WIN32)
-
-#ifdef WINDOWS_DEBUG_MODE
-   FILE* fp = fopen(WINDOWS_FIREFOX_LOG, "a");
-   fprintf(fp, "Launching bitmunk app...\n");
-#endif
-
-   // normalize resource path to '/' (it is passed to the Bitmunk app, and
-   // it understands '/' to be a valid file separator on any OS)
-   stringReplaceAll(resourcePath, "\\", "/");
-
-   // escape bitmunk application path (it must be escaped for CreateProcess,
-   // quoting it will cause CreateProcess to fail)
-   stringReplaceAll(bitmunkApp, "\\", "\\\\");
-
-   // build the parameter list
-   // the first parameter needs to be the exe itself, windows wants that
-   string parameters;
-   parameters.append("bitmunk.exe");
-   // resource path
-   parameters.append(" --resource-path ");
-   parameters.append("\"");
-   parameters.append(resourcePath.c_str());
-   parameters.append("\"");
-   // package config file
-   parameters.append(" --package-config ");
-   parameters.append("\"");
-   parameters.append(packageConfigFile.c_str());
-   parameters.append("\"");
-   // set the node port file
-   parameters.append(" --option ");
-   parameters.append("\"");
-   parameters.append(nodePortFileKey);
-   parameters.append("\" \"");
-   parameters.append(nodePortFile.c_str());
-   parameters.append("\"");
-   // set log file
-   parameters.append(" --log ");
-   parameters.append("\"");
-   parameters.append(logFile.c_str());
-   parameters.append("\"");
-
    // we only need to create the global environment once, thereafter it will
    // be cloned via CreateProcess
    if(gEnvironment == NULL)
@@ -309,10 +173,8 @@ static PRInt32 _startBitmunk(
          windows paths (for system32, etc)... that doesn't work. We clean
          up the global environment variable when we destroy the plugin.
        */
-#ifdef WINDOWS_DEBUG_MODE
-      fprintf(fp, "PATH: %s\n\n", (const char*)newPath);
-#endif
       // set new path value and then free new and old paths
+      path = newPath;
       SetEnvironmentVariable("PATH", newPath);
       free(newPath);
       if(oldPath != NULL)
@@ -323,12 +185,163 @@ static PRInt32 _startBitmunk(
       // *NOW* get the current environment since our PATH has been updated
       gEnvironment = GetEnvironmentStrings();
    }
+}
+
+// Windows has to clean up its globally created environment.
+static void _cleanup()
+{
+   // release global environment handle
+   if(gEnvironment != NULL)
+   {
+      FreeEnvironmentStrings(gEnvironment);
+   }
+}
+
+// Windows doesn't have a good string replace function. Seriously.
+static string& _stringReplaceAll(
+   string& str, const string& find, const string& replace)
+{
+   string::size_type found = str.find(find);
+   while(found != string::npos)
+   {
+      str.replace(found, find.length(), replace);
+      found = str.find(find, found + replace.length());
+   }
+
+   return str;
+}
+
+// Windows must quote command line parameters
+inline static void _quote(string& str)
+{
+   str.insert(0, "\"");
+   str.push_back('"');
+}
 
 #ifdef WINDOWS_DEBUG_MODE
-   fprintf(fp, "CreateProcess() params:\n\n");
-   fprintf(fp, "lpApplicationName: %s\n\n", bitmunkApp.c_str());
-   fprintf(fp, "lpCommandLine: %s\n\n", parameters.c_str());
+// Gets an error message on Windows
+static string _getWindowsErrorMessage(DWORD dwLastError)
+{
+   string rval;
+
+   // get last error message
+   if(dwLastError != 0)
+   {
+      // get the last error in an allocated string buffer
+      //
+      // Note: A LPTSTR is a pointer to an UTF-8 string (TSTR). If any
+      // characters in the error message are not ASCII, then they will
+      // get munged unless the bytes in the returned string are converted
+      // back to wide characters for display/other use
+      LPVOID lpBuffer;
+      char errorString[100];
+      memset(errorString, 0, 100);
+      unsigned int size = FormatMessage(
+         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+         FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dwLastError, 0,
+         (LPTSTR)&lpBuffer, 0, NULL);
+      if(size > 0)
+      {
+         // copy into error string
+         size = (size > 99) ? 99 : size;
+         memcpy(errorString, lpBuffer, size);
+         rval = errorString;
+      }
+
+      // free lpBuffer
+      LocalFree(lpBuffer);
+   }
+
+   return rval;
+}
 #endif
+
+#ifdef WINDOWS_BITMUNK_LOG_FILE
+// Creates a log file for the BitmunkExtension on Windows
+inline static void _createWindowsLogFile(
+   STARTUPINFO& siStartupInfo, BOOL& inheritHandles, HANDLE& hFile, FILE* fp)
+{
+   // only for debugging
+   inheritHandles = FALSE;
+   SECURITY_ATTRIBUTES securityAttr;
+   securityAttr.nLength = sizeof(securityAttr);
+   securityAttr.bInheritHandle = TRUE;
+   securityAttr.lpSecurityDescriptor = NULL;
+   hFile = CreateFile(
+      WINDOWS_BITMUNK_LOG,
+      GENERIC_WRITE, FILE_SHARE_WRITE, &securityAttr,
+      OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+   siStartupInfo.dwFlags    = STARTF_USESTDHANDLES;
+   siStartupInfo.hStdInput  = INVALID_HANDLE_VALUE;
+   if(hFile != INVALID_HANDLE_VALUE)
+   {
+      siStartupInfo.hStdError  = hFile;
+      siStartupInfo.hStdOutput = hFile;
+   }
+   else
+   {
+      _log(fp, "Could not create file handle for debug output.\n");
+   }
+}
+#endif
+
+#endif
+
+/**
+ * Starts the bitmunk process.
+ *
+ * @param bitmunkApp the full path to the bitmunk executable.
+ * @param argv the arguments to the bitmunk app.
+ * @param libraryPath the library path environment variable.
+ * @param homePath the home environment variable.
+ *
+ * @return on linux/macos: does not return on success and returns 0 on
+ *         failure, on windows: pid on success, 0 on failure.
+ */
+inline static PRInt32 _execve(
+   string& bitmunkApp, char* argv[], string& libraryPath, string& homePath)
+{
+   PRInt32 rval = 0;
+
+// linux/apple specific implementation
+#if defined(__linux__) || defined(__APPLE__)
+   // build environment
+   char* envp[] =
+   {
+      (char*)libraryPath.c_str(),
+      (char*)homePath.c_str(),
+      (NULL)
+   };
+
+   // the child should overlay the Bitmunk application
+   execve(bitmunkApp.c_str(), argv, envp);
+   perror("execve");
+   exit(EXIT_FAILURE);
+
+// windows specific implementation
+#elif defined(WIN32)
+   // build the parameter list
+   string params;
+   for(int i = 0; argv[i] != NULL; i++)
+   {
+      if(i > 0)
+      {
+         params.push_back(' ');
+      }
+      params.append(argv[i]);
+   }
+   // get library path (ignore home path)
+   string libraryPath = envp[0];
+
+   // create global environment to be cloned
+   _createGlobalEnvironment(libraryPath);
+
+   FILE* fp = _logOpen();
+   _log(fp, "Launching bitmunk app...\n");
+   _log(fp, "PATH: %s\n\n", libraryPath.c_str());
+   _log(fp, "CreateProcess() params:\n\n");
+   _log(fp, "lpApplicationName: %s\n\n", bitmunkApp.c_str());
+   _log(fp, "lpCommandLine: %s\n\n", params.c_str());
 
    /* CreateProcess API initialization */
    STARTUPINFO siStartupInfo;
@@ -336,54 +349,34 @@ static PRInt32 _startBitmunk(
    memset(&siStartupInfo, 0, sizeof(siStartupInfo));
    memset(&piProcessInfo, 0, sizeof(piProcessInfo));
    siStartupInfo.cb = sizeof(siStartupInfo);
-
-   // do not inherit handles unless in debug mode
+   // do not inherit handles
    BOOL inheritHandles = TRUE;
 
-#ifdef WINDOWS_BITMUNK_LOG_FILE
-   // only for debugging
-   inheritHandles = FALSE;
-   SECURITY_ATTRIBUTES securityAttr;
-   securityAttr.nLength = sizeof(securityAttr);
-   securityAttr.bInheritHandle = TRUE;
-   securityAttr.lpSecurityDescriptor = NULL;
-   HANDLE hFile = CreateFile(
-      WINDOWS_BITMUNK_LOG,
-      GENERIC_WRITE, FILE_SHARE_WRITE, &securityAttr,
-      OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-   if(hFile == INVALID_HANDLE_VALUE)
-   {
-      fprintf(fp, "Could not create file handle for debug output.\n");
-   }
-   siStartupInfo.dwFlags    = STARTF_USESTDHANDLES;
-   siStartupInfo.hStdInput  = INVALID_HANDLE_VALUE;
-   siStartupInfo.hStdError  = hFile;
-   siStartupInfo.hStdOutput = hFile;
-#endif
+   // open bitmunk process log file
+   HANDLE hFile = INVALID_HANDLE_VALUE;
+   _createWindowsLogFile(siStartupInfo, inheritHandles, hFile, fp);
 
-   if(CreateProcess(const_cast<LPSTR>(bitmunkApp.c_str()),
-                    const_cast<LPSTR>(parameters.c_str()), 0, 0,
-                    inheritHandles,
-                    CREATE_NO_WINDOW, /* create no console window */
-                    gEnvironment, /* use saved global environment */
-                    NULL, /* current directory not needed */
-                    &siStartupInfo, &piProcessInfo) != 0)
+   if(CreateProcess(
+      const_cast<LPSTR>(bitmunkApp.c_str()),
+      const_cast<LPSTR>(params.c_str()), 0, 0,
+      inheritHandles,
+      CREATE_NO_WINDOW, /* create no console window */
+      gEnvironment, /* use saved global environment */
+      NULL, /* current directory not needed */
+      &siStartupInfo, &piProcessInfo) != 0)
    {
-#ifdef WINDOWS_DEBUG_MODE
-      fprintf(fp, "Process created.\n");
-#endif
+      _log(fp, "Process created.\n");
+
       /* Wait to see if process immediately terminates */
-      DWORD waitRc = WaitForSingleObject(piProcessInfo.hProcess, (1 * 1000));
+      DWORD waitRc = WaitForSingleObject(piProcessInfo.hProcess, 1000);
       if(waitRc == 0)
       {
-#ifdef WINDOWS_DEBUG_MODE
-         fprintf(fp, "Process terminated.\n");
+         _log(fp, "Process terminated.\n");
          DWORD exitCode = 0;
          if(GetExitCodeProcess(piProcessInfo.hProcess, &exitCode))
          {
-            fprintf(fp, "Process exit code: (%d)\n", exitCode);
+            _log(fp, "Process exit code: (%d)\n", exitCode);
          }
-#endif
       }
       else
       {
@@ -391,65 +384,122 @@ static PRInt32 _startBitmunk(
          rval = GetProcessId(piProcessInfo.hProcess);
       }
    }
-#ifdef WINDOWS_DEBUG_MODE
    else
    {
       /* CreateProcess failed */
-      DWORD dwLastError = GetLastError();
-      fprintf(fp, "Process creation failed: (%d)\n", dwLastError);
-
-      // get last error message
-      if(dwLastError != 0)
-      {
-         // get the last error in an allocated string buffer
-         //
-         // Note: A LPTSTR is a pointer to an UTF-8 string (TSTR). If any
-         // characters in the error message are not ASCII, then they will
-         // get munged unless the bytes in the returned string are converted
-         // back to wide characters for display/other use
-         LPVOID lpBuffer;
-         char errorString[100];
-         memset(errorString, 0, 100);
-         unsigned int size = FormatMessage(
-            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-            FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dwLastError, 0,
-            (LPTSTR)&lpBuffer, 0, NULL);
-         if(size > 0)
-         {
-            // copy into error string
-            size = (size > 99) ? 99 : size;
-            memcpy(errorString, lpBuffer, size);
-            fprintf(fp, "Error message: %s\n", errorString);
-         }
-
-         // free lpBuffer
-         LocalFree(lpBuffer);
-      }
+      DWORD dwl = GetLastError();
+      _log(fp, "Process creation failed: (%d)\n", dwl);
+      _log(fp, "Error message: %s\n", _getWindowsErrorMessage(dwl).c_str());
    }
-#endif
 
    /* Release handles */
-#ifdef WINDOWS_BITMUNK_LOG_FILE
-   CloseHandle(hFile);
-#endif
+   if(hFile != INVALID_HANDLE_VALUE)
+   {
+      CloseHandle(hFile);
+   }
    CloseHandle(piProcessInfo.hProcess);
    CloseHandle(piProcessInfo.hThread);
 
-#ifdef WINDOWS_DEBUG_MODE
    if(rval > 0)
    {
-      fprintf(fp, "Bitmunk launch succeeded. PID: %d\n", rval);
+      _log(fp, "Bitmunk launch succeeded. PID: %d\n", rval);
    }
    else
    {
-      fprintf(fp, "Bitmunk launch failed.\n");
+      _log(fp, "Bitmunk launch failed.\n");
    }
 
    // close log file
-   fclose(fp);
-#endif
+   _logClose(fp);
 
-#endif // end of OS specific implementations
+#endif // end OS-specific implementations
+
+   return rval;
+}
+
+/**
+ * Starts the bitmunk application using the given parameters, with a
+ * specific implementation for each supported OS.
+ *
+ * @param bitmunkApp the full path to the bitmunk binary.
+ * @param libraryPath the environment library path.
+ * @param homePath the environment home path.
+ * @param resourcePath the config system resource path option.
+ * @param packageConfigFile the config system package config option.
+ * @param nodePortFile the config system node port file option.
+ * @param logFile the config system log file option.
+ *
+ * @return the pid of the new bitmunk process or 0 on error.
+ */
+static PRInt32 _startBitmunk(
+   string& bitmunkApp, string& libraryPath, string& homePath,
+   string& resourcePath, string& packageConfigFile, string& nodePortFile,
+   string& logFile)
+{
+   PRInt32 rval = 0;
+
+   /* This is the path to the node port file config key, a '.' is a
+      separator between levels in our config tree, and since this value
+      resides at:
+
+      "bitmunk.system.System" : {
+         "nodePortFile" : "<insert value here>"
+      }
+
+      We must escape the first 2 dots, but not the last one.
+   */
+   string nodePortFileKey = "bitmunk\\.system\\.System.nodePortFile";
+
+// linux/apple specific implementation
+#if defined(__linux__) || defined(__APPLE__)
+   pid_t pid = fork();
+// windows specific implementation
+#elif defined(WIN32)
+   int pid = 0;
+
+   // normalize resource path to '/' (it is passed to the Bitmunk app, and
+   // it understands '/' to be a valid file separator on any OS)
+   _stringReplaceAll(resourcePath, "\\", "/");
+
+   // escape bitmunk application path (it must be escaped for CreateProcess,
+   // quoting it will cause CreateProcess to fail)
+   _stringReplaceAll(bitmunkApp, "\\", "\\\\");
+
+   // quote parameter values
+   _quote(resourcePath);
+   _quote(packageConfigFile);
+   _quote(nodePortFileKey);
+   _quote(nodePortFile);
+   _quote(logFile);
+#endif
+   if(pid == 0)
+   {
+      // build command line arguments
+      char* argv[] =
+      {
+         (char*)BITMUNK_BIN,
+         (char*)"--resource-path", (char*)resourcePath.c_str(),
+         (char*)"--config", (char*)packageConfigFile.c_str(),
+         (char*)"--package-config", (char*)packageConfigFile.c_str(),
+         (char*)"--option", (char*)nodePortFileKey.c_str(),
+         (char*)nodePortFile.c_str(),
+         (char*)"--log", (char*)logFile.c_str(),
+         (NULL)
+      };
+
+      // execute bitmunk application
+      rval = _execve(bitmunkApp, argv, libraryPath, homePath);
+   }
+   else if(pid == -1)
+   {
+      //printf("Failed to launch Bitmunk Application\n");
+      rval = pid;
+   }
+   else
+   {
+      //printf("Attempting to launch Bitmunk...\n");
+      rval = pid;
+   }
 
    return rval;
 }
@@ -466,7 +516,7 @@ nsresult _stopBitmunk(PRInt32 pid)
 {
    nsresult rval = NS_ERROR_NOT_IMPLEMENTED;
 
-   // linux/apple specific implementation
+// linux/apple specific implementation
 #if defined(__linux__) || defined(__APPLE__)
    if(kill(pid, SIGTERM) == 0)
    {
@@ -474,9 +524,9 @@ nsresult _stopBitmunk(PRInt32 pid)
    }
    else
    {
-      // FIXME: set rval to something useful, now it returns not implemented
+      // FIXME: set rval to something useful, not "NS_ERROR_NOT_IMPLEMENTED"
    }
-   // windows specific implementation
+// windows specific implementation
 #elif defined(WIN32)
    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
    if(hProcess != NULL)
@@ -488,46 +538,13 @@ nsresult _stopBitmunk(PRInt32 pid)
    }
    else
    {
-      // FIXME: set rval to something useful, not it returns not implemented
-
-#ifdef WINDOWS_DEBUG_MODE
-      DWORD dwLastError = GetLastError();
-      FILE* fp = fopen(WINDOWS_FIREFOX_LOG, "a");
-      fprintf(fp, "Process termination failed: (%d)\n", dwLastError);
-
-      // get last error message
-      if(dwLastError != 0)
-      {
-         // get the last error in an allocated string buffer
-         //
-         // Note: A LPTSTR is a pointer to an UTF-8 string (TSTR). If any
-         // characters in the error message are not ASCII, then they will
-         // get munged unless the bytes in the returned string are converted
-         // back to wide characters for display/other use
-         LPVOID lpBuffer;
-         char errorString[100];
-         memset(errorString, 0, 100);
-         unsigned int size = FormatMessage(
-            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-            FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dwLastError, 0,
-            (LPTSTR)&lpBuffer, 0, NULL);
-         if(size > 0)
-         {
-            // copy into error string
-            size = (size > 99) ? 99 : size;
-            memcpy(errorString, lpBuffer, size);
-            fprintf(fp, "Error message: %s\n", errorString);
-         }
-
-         // free lpBuffer
-         LocalFree(lpBuffer);
-      }
-
-      // close log file
-      fclose(fp);
-#endif // windows debug mode
+      // FIXME: set rval to something useful, not "NS_ERROR_NOT_IMPLEMENTED"
+      DWORD error = GetLastError();
+      FILE* fp = _logOpen();
+      _log(fp, "Process termination failed: (%d)\n", error);
+      _log(fp, "Error message: %s\n", _getWindowsErrorMessage(error).c_str());
+      _logClose();
    }
-
 #endif // end OS-specific implementations
 
    return rval;
@@ -629,7 +646,7 @@ PRInt32 nsBitmunkExtension::launchBitmunkApplication(nsCString pluginDir)
       start the Bitmunk application. These paths need to have system-dependent
       slashes. */
    string bitmunkApp(pluginDir.get());
-   bitmunkApp.append(FILE_SEPARATOR BITMUNK_BIN);
+   bitmunkApp.append(FILE_SEPARATOR BITMUNK_BIN_PATH);
 
    // libs path must contain *BOTH* libs and modules because currently
    // some modules link to other modules
@@ -652,6 +669,19 @@ PRInt32 nsBitmunkExtension::launchBitmunkApplication(nsCString pluginDir)
    string packageConfigFile("{RESOURCE_PATH}/configs/default.config");
    string nodePortFile("{RESOURCE_PATH}/" NODE_PORT_FILE);
    string logFile("{BITMUNK_HOME}/bitmunk.log");
+
+   // make bitmunk app executable (fix firefox 3.6.0 bug)
+   nsCOMPtr<nsILocalFile> file;
+   nsDependentCString cstr(bitmunkApp.c_str());
+   nsDependentString astr;
+   NS_CStringToUTF16(cstr, NS_CSTRING_ENCODING_UTF8, astr);
+   nsresult rv = NS_NewLocalFile(astr, PR_FALSE, getter_AddRefs(file));
+   if(rv != NS_OK)
+   {
+      // could not set permissions
+      return 0;
+   }
+   file->SetPermissions(0755);
 
    // start bitmunk application
    rval = _startBitmunk(
@@ -781,18 +811,8 @@ NS_IMETHODIMP nsBitmunkExtension::GetBitmunkPort(PRInt32 *port, PRBool *_retval)
 NS_IMETHODIMP nsBitmunkExtension::TerminateBitmunk(PRInt32 pid, PRBool* _retval)
 {
    //printf("nsBitmunkExtension::TerminateBitmunk\n");
-
    nsresult rval = _stopBitmunk(pid);
-
-   if(rval == NS_OK)
-   {
-      (*_retval) = PR_TRUE;
-   }
-   else
-   {
-      (*_retval) = PR_FALSE;
-   }
-
+   (*_retval) = (rval == NS_OK) ? PR_TRUE : PR_FALSE;
    return rval;
 }
 
