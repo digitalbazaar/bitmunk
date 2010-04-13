@@ -18,7 +18,7 @@ MACOS_SDK_DIR = /Developer/SDKs/MacOSX10.4u.sdk
 MACOS_GECKO_SDK_DIR = /usr/local/gecko-sdk
 # Use standard compiler
 CXX = g++
-CXX_FLAGS += -isysroot $(MACOS_SDK_DIR) -g -DMOZILLA_STRICT_API -DXP_UNIX -DXP_MACOSX -Wno-ctor-dtor-privacy -Wno-non-virtual-dtor -fno-rtti -I build/macos -I $(MACOS_SDK_DIR)/Developer/Headers/FlatCarbon
+CXX_FLAGS += -isysroot $(MACOS_SDK_DIR) -g -DMOZILLA_STRICT_API -DXP_UNIX -DXP_MACOSX -Wno-ctor-dtor-privacy -Wno-non-virtual-dtor -fno-rtti -I build/macos -I $(MACOS_SDK_DIR)/Developer/Headers/FlatCarbon -I$(BUILD_DIR)
 INCLUDES += -I$(MACOS_GECKO_SDK_DIR)/include -include mozilla-config.h
 LD_FLAGS = -Wl,-executable_path,/Library/Frameworks/XUL.framework/Versions/Current -L$(MACOS_GECKO_SDK_DIR)/lib
 # Clear normal versioning flags
