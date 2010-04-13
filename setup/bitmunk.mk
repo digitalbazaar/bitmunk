@@ -23,7 +23,7 @@ $(XPT_DIR)/%.xpt: %.idl
 # generated headers
 %-$(PLATFORM).o %-$(PLATFORM).P: %.cpp $(ALL_GENERATED_HEADERS)
 	@echo "Compiling build/$(subst .P,.o,$(subst $(TOP_BUILD_DIR)/build/,,$@))..."
-	$(PCMD) $(CXX) $(MO_CXX_FLAGS) -c -MD -o $(basename $@).o $(INCLUDES) $(realpath $<)
+	$(PCMD) $(CXX) $(CXX_FLAGS) -c -MD -o $(basename $@).o $(INCLUDES) $(realpath $<)
 	$(PCMD) cp $(basename $@).d $(basename $@).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' -e '/^$$/ d' -e 's/$$/ :/' < $(basename $@).d >> $(basename $@).P; \
 		rm -f $(basename $@).d

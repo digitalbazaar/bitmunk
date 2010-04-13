@@ -3,5 +3,9 @@ bitmunk_components_HEADERS = BitmunkExtension.h
 bitmunk_components_SOURCES = BitmunkExtension.cpp
 IDL_SOURCES = IBitmunkExtension.idl
 
+# Make sure that the base %.o/%.P build rule is not used since we need to
+# ensure that IDL headers are generated before %.o/%.P files are built
+OVERRIDE_OP_BUILDRULE=1
+
 # Common Firefox Makefile
 include ../Makefile.common
