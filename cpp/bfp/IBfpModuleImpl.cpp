@@ -77,7 +77,7 @@ Bfp* IBfpModuleImpl::createBfp(BfpId id)
       {
          // make a platform specific library name
          // format is <prefix>bmbfp-<id>-<apiversion>-<os>-<cputype>.<ext>
-         // ex: libbmbfp-1-3.1-200901010101-linux-x86.so
+         // ex: libbmbfp-1-3.2.2-linux-x86.so
          DynamicObject libname;
          libname->format("%sbmbfp-%u-%s-%s-%s.%s",
             Platform::getDynamicLibraryPrefix(pi["os"]->getString()),
