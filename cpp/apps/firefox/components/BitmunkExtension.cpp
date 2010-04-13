@@ -102,6 +102,7 @@ static void _cleanup() {};
 #define _logOpen() return NULL
 #define _log(fp, args...)
 #define _logClose(fp)
+#define _logLastError(fp)
 #endif
 
 #ifdef WINDOWS_BITMUNK_LOG_FILE
@@ -115,76 +116,71 @@ static LPCH gEnvironment = NULL;
 
 // Windows has to create a globally-used environment once and then it will
 // be cloned on each CreateProcess call
-inline static void _createGlobalEnvironment(string& path)
+inline static void _createWindowsEnvironment(string& path)
 {
-   // we only need to create the global environment once, thereafter it will
-   // be cloned via CreateProcess
-   if(gEnvironment == NULL)
+   /* For windows, we must get the old PATH environment variable,
+      append our library directory to it and save a handle to the current
+      environment strings after doing so. Then we pass that environment
+      to CreateProcess(). Once we're finished with that, we restore the
+      other PATH value and free the handle to the current environment.
+
+      We cannot simply call SetEnvironmentVariable("PATH") and then pass
+      NULL to CreateProcess. This does not work... and we're not sure
+      why. All we get is an Access Violation exit code of 0xc0000005
+      from the process.
+    */
+
+   // get the old path value
+   LPTSTR newPath = NULL;
+   LPTSTR oldPath = NULL;
+   DWORD newPathSize = 0;
+   DWORD oldPathSize = GetEnvironmentVariable("PATH", oldPath, 0);
+   if(oldPathSize == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND)
    {
-      /* For windows, we must get the old PATH environment variable,
-         append our library directory to it and save a handle to the current
-         environment strings after doing so. Then we pass that environment
-         to CreateProcess(). Once we're finished with that, we restore the
-         other PATH value and free the handle to the current environment.
-
-         We cannot simply call SetEnvironmentVariable("PATH") and then pass
-         NULL to CreateProcess. This does not work... and we're not sure
-         why. All we get is an Access Violation exit code of 0xc0000005
-         from the process.
-       */
-
-      // get the old path value
-      LPTSTR newPath = NULL;
-      LPTSTR oldPath = NULL;
-      DWORD newPathSize = 0;
-      DWORD oldPathSize = GetEnvironmentVariable("PATH", oldPath, 0);
-      if(oldPathSize == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND)
-      {
-         // no PATH in current environment, just create new path and
-         // append library path
-         DWORD length = libraryPath.length() + 1;
-         newPath = (LPTSTR)malloc(length);
-         StringCchCopy(newPath, length, const_cast<LPSTR>(libraryPath.c_str()));
-      }
-      else
-      {
-         // allocate enough space for the old path and get it
-         LPTSTR oldPath = (LPTSTR)malloc(oldPathSize * sizeof(TCHAR));
-         GetEnvironmentVariable("PATH", oldPath, oldPathSize);
-
-         // allocate enough space for the old path AND the new path
-         libraryPath.insert(0, PATH_SEPARATOR);
-
-         newPathSize = oldPathSize + libraryPath.length();
-         newPath = (LPTSTR)malloc(newPathSize * sizeof(TCHAR));
-
-         // copy old path into new path and append library directory
-         StringCchCopy(newPath, oldPathSize, oldPath);
-         StringCchCat(
-            newPath, oldPathSize + libraryPath.length(),
-            const_cast<LPSTR>(libraryPath.c_str()));
-      }
-
-      /* Note: We no longer save the old path and reset it after
-         calling create process because we have to save the environment
-         for use later. No one knows why. Any calls to start the bitmunk
-         app after the first call will have no usable environment that
-         we can append our path to. And you can't just add the typical
-         windows paths (for system32, etc)... that doesn't work. We clean
-         up the global environment variable when we destroy the plugin.
-       */
-      // set new path value and then free new and old paths
-      path = newPath;
-      SetEnvironmentVariable("PATH", newPath);
-      free(newPath);
-      if(oldPath != NULL)
-      {
-         free(oldPath);
-      }
-
-      // *NOW* get the current environment since our PATH has been updated
-      gEnvironment = GetEnvironmentStrings();
+      // no PATH in current environment, just create new path and
+      // append library path
+      DWORD length = libraryPath.length() + 1;
+      newPath = (LPTSTR)malloc(length);
+      StringCchCopy(newPath, length, const_cast<LPSTR>(libraryPath.c_str()));
    }
+   else
+   {
+      // allocate enough space for the old path and get it
+      LPTSTR oldPath = (LPTSTR)malloc(oldPathSize * sizeof(TCHAR));
+      GetEnvironmentVariable("PATH", oldPath, oldPathSize);
+
+      // allocate enough space for the old path AND the new path
+      libraryPath.insert(0, PATH_SEPARATOR);
+
+      newPathSize = oldPathSize + libraryPath.length();
+      newPath = (LPTSTR)malloc(newPathSize * sizeof(TCHAR));
+
+      // copy old path into new path and append library directory
+      StringCchCopy(newPath, oldPathSize, oldPath);
+      StringCchCat(
+         newPath, oldPathSize + libraryPath.length(),
+         const_cast<LPSTR>(libraryPath.c_str()));
+   }
+
+   /* Note: We no longer save the old path and reset it after
+      calling create process because we have to save the environment
+      for use later. No one knows why. Any calls to start the bitmunk
+      app after the first call will have no usable environment that
+      we can append our path to. And you can't just add the typical
+      windows paths (for system32, etc)... that doesn't work. We clean
+      up the global environment variable when we destroy the plugin.
+    */
+   // set new path value and then free new and old paths
+   path = newPath;
+   SetEnvironmentVariable("PATH", newPath);
+   free(newPath);
+   if(oldPath != NULL)
+   {
+      free(oldPath);
+   }
+
+   // *NOW* get the current environment since our PATH has been updated
+   gEnvironment = GetEnvironmentStrings();
 }
 
 // Windows has to clean up its globally created environment.
@@ -220,48 +216,62 @@ inline static void _quote(string& str)
 
 #ifdef WINDOWS_DEBUG_MODE
 // Gets an error message on Windows
-static string _getWindowsErrorMessage(DWORD dwLastError)
+static string _getLastErrorMsg(DWORD error)
 {
    string rval;
 
-   // get last error message
-   if(dwLastError != 0)
+   // get the last error in an allocated string buffer
+   //
+   // Note: A LPTSTR is a pointer to an UTF-8 string (TSTR). If any
+   // characters in the error message are not ASCII, then they will
+   // get munged unless the bytes in the returned string are converted
+   // back to wide characters for display/other use
+   LPVOID lpBuffer;
+   char errorString[100];
+   memset(errorString, 0, 100);
+   unsigned int size = FormatMessage(
+      FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+      FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dwLastError, 0,
+      (LPTSTR)&lpBuffer, 0, NULL);
+   if(size > 0)
    {
-      // get the last error in an allocated string buffer
-      //
-      // Note: A LPTSTR is a pointer to an UTF-8 string (TSTR). If any
-      // characters in the error message are not ASCII, then they will
-      // get munged unless the bytes in the returned string are converted
-      // back to wide characters for display/other use
-      LPVOID lpBuffer;
-      char errorString[100];
-      memset(errorString, 0, 100);
-      unsigned int size = FormatMessage(
-         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-         FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dwLastError, 0,
-         (LPTSTR)&lpBuffer, 0, NULL);
-      if(size > 0)
-      {
-         // copy into error string
-         size = (size > 99) ? 99 : size;
-         memcpy(errorString, lpBuffer, size);
-         rval = errorString;
-      }
-
-      // free lpBuffer
-      LocalFree(lpBuffer);
+      // copy into error string
+      size = (size > 99) ? 99 : size;
+      memcpy(errorString, lpBuffer, size);
+      rval = errorString;
    }
+
+   // free lpBuffer
+   LocalFree(lpBuffer);
 
    return rval;
 }
+
+// logs the last error message on Windows
+#define _logLastError(fp, str) \
+DWORD error = GetLastError(); \
+if(error != 0) \
+{ \
+   FILE* tmp = fp; \
+   if(fp == NULL) \
+   { \
+      tmp = _logOpen(); \
+   } \
+   string msg = _getLastErrorMsg(error); \
+   _log(tmp, "%s: (%d)\nError message: %s\n", error, msg.c_str()); \
+   if(fp == NULL) \
+   { \
+      _logClose(tmp); \
+   } \
+}
 #endif
 
-#ifdef WINDOWS_BITMUNK_LOG_FILE
-// Creates a log file for the BitmunkExtension on Windows
-inline static void _createWindowsLogFile(
+// Creates a log file for bitmunk process std output on Windows
+inline static void _createBitmunkLogFile(
    STARTUPINFO& siStartupInfo, BOOL& inheritHandles, HANDLE& hFile, FILE* fp)
 {
-   // only for debugging
+#ifdef WINDOWS_BITMUNK_LOG_FILE
+   // cannot inherit handles when piping output to a file
    inheritHandles = FALSE;
    SECURITY_ATTRIBUTES securityAttr;
    securityAttr.nLength = sizeof(securityAttr);
@@ -280,10 +290,10 @@ inline static void _createWindowsLogFile(
    }
    else
    {
-      _log(fp, "Could not create file handle for debug output.\n");
+      _log(fp, "Could not get file handle for debug output.\n");
    }
-}
 #endif
+}
 
 #endif
 
@@ -330,12 +340,14 @@ inline static PRInt32 _execve(
       }
       params.append(argv[i]);
    }
-   // get library path (ignore home path)
-   string libraryPath = envp[0];
 
-   // create global environment to be cloned
-   _createGlobalEnvironment(libraryPath);
+   // create windows environment to be cloned, we only need to do this once
+   if(gEnvironment == NULL)
+   {
+      _createWindowsEnvironment(libraryPath);
+   }
 
+   // log information about starting bitmunk
    FILE* fp = _logOpen();
    _log(fp, "Launching bitmunk app...\n");
    _log(fp, "PATH: %s\n\n", libraryPath.c_str());
@@ -349,12 +361,11 @@ inline static PRInt32 _execve(
    memset(&siStartupInfo, 0, sizeof(siStartupInfo));
    memset(&piProcessInfo, 0, sizeof(piProcessInfo));
    siStartupInfo.cb = sizeof(siStartupInfo);
-   // do not inherit handles
    BOOL inheritHandles = TRUE;
 
    // open bitmunk process log file
    HANDLE hFile = INVALID_HANDLE_VALUE;
-   _createWindowsLogFile(siStartupInfo, inheritHandles, hFile, fp);
+   _createBitmunkLogFile(siStartupInfo, inheritHandles, hFile, fp);
 
    if(CreateProcess(
       const_cast<LPSTR>(bitmunkApp.c_str()),
@@ -371,6 +382,7 @@ inline static PRInt32 _execve(
       DWORD waitRc = WaitForSingleObject(piProcessInfo.hProcess, 1000);
       if(waitRc == 0)
       {
+         // process returned immediately (some error occurred)
          _log(fp, "Process terminated.\n");
          DWORD exitCode = 0;
          if(GetExitCodeProcess(piProcessInfo.hProcess, &exitCode))
@@ -380,16 +392,14 @@ inline static PRInt32 _execve(
       }
       else
       {
-         // return windows process ID
+         // success, return windows process ID
          rval = GetProcessId(piProcessInfo.hProcess);
       }
    }
    else
    {
       /* CreateProcess failed */
-      DWORD dwl = GetLastError();
-      _log(fp, "Process creation failed: (%d)\n", dwl);
-      _log(fp, "Error message: %s\n", _getWindowsErrorMessage(dwl).c_str());
+      _logLastError(fp, "Process creation failed");
    }
 
    /* Release handles */
@@ -539,11 +549,7 @@ nsresult _stopBitmunk(PRInt32 pid)
    else
    {
       // FIXME: set rval to something useful, not "NS_ERROR_NOT_IMPLEMENTED"
-      DWORD error = GetLastError();
-      FILE* fp = _logOpen();
-      _log(fp, "Process termination failed: (%d)\n", error);
-      _log(fp, "Error message: %s\n", _getWindowsErrorMessage(error).c_str());
-      _logClose();
+      _logLastError(NULL, "Process termination failed");
    }
 #endif // end OS-specific implementations
 
