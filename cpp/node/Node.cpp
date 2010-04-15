@@ -113,7 +113,7 @@ bool Node::initialize()
 
       // setup messenger
       mMessenger = new Messenger(this, cfg);
-      mPublicKeySource.setMessenger(&(*mMessenger));
+      mPublicKeySource.setMessenger(mMessenger);
       BtpClient* btpc = mMessenger->getBtpClient();
 
       // setup verify certificate authority (CA) file

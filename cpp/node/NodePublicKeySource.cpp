@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_FORMAT_MACROS
 
@@ -21,7 +21,7 @@ NodePublicKeySource::~NodePublicKeySource()
 {
 }
 
-void NodePublicKeySource::setMessenger(Messenger* m)
+void NodePublicKeySource::setMessenger(MessengerRef& m)
 {
    mMessenger = m;
 }

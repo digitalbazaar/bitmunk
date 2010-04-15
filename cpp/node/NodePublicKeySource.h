@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_node_NodePublicKeySource_H
 #define bitmunk_node_NodePublicKeySource_H
@@ -23,7 +23,7 @@ protected:
    /**
     * The Node's Messenger.
     */
-   Messenger* mMessenger;
+   MessengerRef mMessenger;
 
 public:
    /**
@@ -41,7 +41,7 @@ public:
     *
     * @param m the messenger to use.
     */
-   virtual void setMessenger(Messenger* m);
+   virtual void setMessenger(MessengerRef& m);
 
    /**
     * Gets the PublicKey for the given UserId and ProfileId.
