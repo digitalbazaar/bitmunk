@@ -25,14 +25,13 @@ DefaultObserverContainer::DefaultObserverContainer(
 
 DefaultObserverContainer::~DefaultObserverContainer()
 {
-   // remove all observer lists
-   for(UserObserverMap::iterator i = mUserObserverMap.begin();
-       i != mUserObserverMap.end(); i++)
+   // force unregister all users
+   mUserObserverMapLock.lock();
+   while(!mUserObserverMap.empty())
    {
-      i->second->unregisterFrom(mNode->getEventController());
-      delete i->second;
+      unregisterUser(mUserObserverMap.begin()->first);
    }
-   mUserObserverMap.clear();
+   mUserObserverMapLock.unlock();
 }
 
 void DefaultObserverContainer::registerUser(UserId userId)
