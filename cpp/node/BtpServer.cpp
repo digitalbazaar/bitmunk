@@ -42,8 +42,11 @@ bool BtpServer::initialize(Config& cfg)
 {
    bool rval = true;
 
-   // create SSL server context ("TLS" is most secure and recent SSL)
-   mSslContext = new SslContext("TLS", false);
+   // create SSL server context ("TLS" is most secure and recent SSL but we
+   // must use "ALL" to handle browsers that hit the api using earlier SSL
+   // versions ... TLS is only required for BTP and not all SSL traffic to
+   // the BtpServer must be BTP)
+   mSslContext = new SslContext("ALL", false);
 
    // setup certificate file and private key
    File certFile(cfg["sslCertificate"]->getString());
