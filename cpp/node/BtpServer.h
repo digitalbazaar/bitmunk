@@ -82,7 +82,9 @@ public:
    virtual ~BtpServer();
 
    /**
-    * Initializes this BtpServer.
+    * Initializes this BtpServer. Must be called before start() at least once.
+    * To reconfigure the BtpServer after it has stopped, call cleanup() then
+    * initialize() with the new configuration.
     *
     * @param cfg the configuration to use.
     *
@@ -94,6 +96,18 @@ public:
     * Cleans up this BtpServer.
     */
    virtual void cleanup();
+
+   /**
+    * Starts this BtpServer.
+    *
+    * @return true if successful, false if not.
+    */
+   virtual bool start();
+
+   /**
+    * Stops this BtpServer.
+    */
+   virtual void stop();
 
    /**
     * Adds a BtpService. If initialize is true, then initialize() will be

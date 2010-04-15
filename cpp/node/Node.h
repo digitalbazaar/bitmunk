@@ -136,7 +136,22 @@ public:
    virtual ~Node();
 
    /**
-    * Initializes and starts this Node and its services.
+    * Initializes this Node. Must be called before start() at least once. To
+    * reconfigure the Node after it has stopped, call cleanup() then
+    * initialize().
+    *
+    * @return true on success, false on failure.
+    */
+   virtual bool initialize();
+
+   /**
+    * Cleans up this Node before reconfiguration or destruction. Should be
+    * called after stop() if the Node is to be reconfigured or destroyed.
+    */
+   virtual void cleanup();
+
+   /**
+    * Starts this Node and its services.
     *
     * @return true on success, false on failure with exception set.
     */

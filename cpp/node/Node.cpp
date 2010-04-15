@@ -95,7 +95,7 @@ static bool _validateConfig(Config& cfg)
    return rval;
 }
 
-bool Node::start()
+bool Node::initialize()
 {
    bool rval = false;
 
@@ -103,8 +103,6 @@ bool Node::start()
    rval = _validateConfig(cfg);
    if(rval)
    {
-      mRunning = true;
-
       // dump some configuration information to the logs
       MO_CAT_INFO(BM_NODE_CAT,
          "Home: %s", cfg["bitmunkHomePath"]->getString());
@@ -126,18 +124,36 @@ bool Node::start()
          mBtpServer->initialize(cfg) &&
          btpc->getSslContext()->setVerifyCAs(&caFile, NULL) &&
          mEventHandler.initialize();
-      if(rval)
+      if(!rval)
       {
-         // send event that node has started
-         Event e;
-         e["type"] = "bitmunk.node.Node.started";
-         getEventController()->schedule(e);
+         // failed to initialize, clean up node
+         cleanup();
       }
-      else
-      {
-         // start failed, so stop node
-         stop();
-      }
+   }
+
+   return rval;
+}
+
+void Node::cleanup()
+{
+   mEventHandler.cleanup();
+   mBtpServer->cleanup();
+   mMonitor.removeAll();
+   mMessenger.setNull();
+   mPublicKeyCache.clear();
+}
+
+bool Node::start()
+{
+   bool rval = mBtpServer->start();
+   if(rval)
+   {
+      mRunning = true;
+
+      // send event that node has started
+      Event e;
+      e["type"] = "bitmunk.node.Node.started";
+      getEventController()->schedule(e);
    }
 
    return rval;
@@ -149,14 +165,13 @@ void Node::stop()
    {
       // FIXME: might need to lock around this to prevent logins during stop()?
       logoutAllUsers();
-
-      // clean up
-      mEventHandler.cleanup();
-      mBtpServer->cleanup();
-      mMonitor.removeAll();
-      mMessenger.setNull();
-      mPublicKeyCache.clear();
+      mBtpServer->stop();
       mRunning = false;
+
+      // send event that node has stopped
+      Event e;
+      e["type"] = "bitmunk.node.Node.stopped";
+      getEventController()->schedule(e);
    }
 }
 

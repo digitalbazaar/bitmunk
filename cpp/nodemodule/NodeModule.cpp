@@ -45,12 +45,12 @@ bool NodeModule::initialize(MicroKernel* k)
    BM_NODE_CAT->setAnsiEscapeCodes(
       MO_ANSI_CSI MO_ANSI_BOLD MO_ANSI_SEP MO_ANSI_FG_HI_RED MO_ANSI_SGR);
 
-   // create and start the bitmunk node
+   // create and initialize the bitmunk node
    mNode = new Node(k);
-   rval = mNode->start();
+   rval = mNode->initialize();
    if(!rval)
    {
-      // node failed to start
+      // node failed to initialize
       delete mNode;
       mNode = NULL;
    }
@@ -62,8 +62,8 @@ void NodeModule::cleanup(MicroKernel* k)
 {
    if(mNode != NULL)
    {
-      // stop and clean up node
-      mNode->stop();
+      // clean up node
+      mNode->cleanup();
       delete mNode;
       mNode = NULL;
    }

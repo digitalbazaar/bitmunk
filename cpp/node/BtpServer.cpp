@@ -109,21 +109,6 @@ bool BtpServer::initialize(Config& cfg)
       NullSocketDataPresenter* nsdp = new NullSocketDataPresenter();
       mSocketDataPresenterList->add(ssdp);
       mSocketDataPresenterList->add(nsdp);
-
-      // add http connection service
-      mServiceId = mNode->getServer()->addConnectionService(
-         &(*mHostAddress), &mHttpConnectionServicer,
-         &(*mSocketDataPresenterList), "MainHttpService");
-      if(mServiceId == Server::sInvalidServiceId)
-      {
-         // could not add connection service
-         rval = false;
-      }
-      else
-      {
-         MO_CAT_INFO(BM_NODE_CAT, "Serving on %s",
-            mHostAddress->toString(false).c_str());
-      }
    }
 
    return rval;
@@ -141,17 +126,42 @@ void BtpServer::cleanup()
       removeService(mNonSecureServices.begin()->first);
    }
 
+   // clean up
+   mHostAddress.setNull();
+   mSslContext.setNull();
+   mSocketDataPresenterList.setNull();
+}
+
+bool BtpServer::start()
+{
+   bool rval = true;
+
+   // add http connection service
+   mServiceId = mNode->getServer()->addConnectionService(
+      &(*mHostAddress), &mHttpConnectionServicer,
+      &(*mSocketDataPresenterList), "MainHttpService");
+   if(mServiceId == Server::sInvalidServiceId)
+   {
+      // could not add connection service
+      rval = false;
+   }
+   else
+   {
+      MO_CAT_INFO(BM_NODE_CAT, "Serving on %s",
+         mHostAddress->toString(false).c_str());
+   }
+
+   return rval;
+}
+
+void BtpServer::stop()
+{
    // remove http connection service
    if(mServiceId != Server::sInvalidServiceId)
    {
       mNode->getServer()->removePortService(mServiceId);
       mServiceId = Server::sInvalidServiceId;
    }
-
-   // clean up
-   mHostAddress.setNull();
-   mSslContext.setNull();
-   mSocketDataPresenterList.setNull();
 }
 
 bool BtpServer::addService(
