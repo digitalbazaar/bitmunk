@@ -6,7 +6,7 @@ bitmunk_SOURCES = $(wildcard *.cpp)
 
 HEADER_DIST_DIR = dist/include/bitmunk/apps/bitmunk
 
-DYNAMIC_LINK_LIBRARIES = mort momodest moutil moio mologging mocrypto monet mohttp modata moevent mofiber moconfig mocompress movalidation moapp mokernel bmcommon bmprotocol mosql $(MYSQL_DYNAMIC_LINK_LIBRARIES) mosqlite3 $(SPHINX_DYNAMIC_LINK_LIBRARIES)
+DYNAMIC_LINK_LIBRARIES = mort momodest moutil moio mologging mocrypto monet mohttp modata moevent mofiber moconfig mocompress movalidation moapp mokernel bmcommon bmprotocol bmnode mosql $(MYSQL_DYNAMIC_LINK_LIBRARIES) mosqlite3 $(SPHINX_DYNAMIC_LINK_LIBRARIES)
 DYNAMIC_LINUX_LINK_LIBRARIES = pthread crypto ssl expat sqlite3 $(MYSQL_DYNAMIC_LINUX_LIBRARIES)
 DYNAMIC_WINDOWS_LIBRARIES = sqlite3 $(MYSQL_DYNAMIC_WINDOWS_LIBRARIES)
 

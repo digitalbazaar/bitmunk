@@ -206,7 +206,7 @@ if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
    BITMUNK_PACKAGE_CONFIG=""
    BITMUNK_SYSTEM_CONFIG_DIR="$BITMUNK_DIR/configs"
    BITMUNK_SYSTEM_CONFIG="$BITMUNK_DIR/configs/dev.config"
-   BITMUNK_SYSTEM_USER_CONFIG="dev.config"
+   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
 if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    dnl === Linux === Development === Firefox Plugin ===
    BITMUNK_LOCAL_API_HOST="0.0.0.0"
@@ -219,7 +219,7 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_PACKAGE_CONFIG=""
    BITMUNK_SYSTEM_CONFIG_DIR="$BITMUNK_DIR/configs"
    BITMUNK_SYSTEM_CONFIG="$BITMUNK_DIR/configs/dev.config"
-   BITMUNK_SYSTEM_USER_CONFIG="dev.config"
+   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
 fi
 fi
 if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
@@ -244,7 +244,7 @@ if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
    BITMUNK_PACKAGE_CONFIG=""
    BITMUNK_SYSTEM_CONFIG_DIR="$sysconfdir/bitmunk3/conf.d"
    BITMUNK_SYSTEM_CONFIG="$sysconfdir/bitmunk3/system.config"
-   BITMUNK_SYSTEM_USER_CONFIG="default.config"
+   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
 if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    dnl === Linux === Release === Firefox Plugin ===
    BITMUNK_LOCAL_API_HOST="0.0.0.0"
@@ -257,7 +257,7 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_PACKAGE_CONFIG="{RESOURCE_PATH}/configs/default.config"
    BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
    BITMUNK_SYSTEM_CONFIG="/etc/bitmunk3/system.config"
-   BITMUNK_SYSTEM_USER_CONFIG="default.config"
+   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
 fi
 fi
 
@@ -272,7 +272,7 @@ if test "x$BUILD_FOR_MACOS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
    BITMUNK_PACKAGE_CONFIG=""
    BITMUNK_SYSTEM_CONFIG_DIR="$BITMUNK_DIR/configs"
    BITMUNK_SYSTEM_CONFIG="$BITMUNK_DIR/configs/dev.config"
-   BITMUNK_SYSTEM_USER_CONFIG="dev.config"
+   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
 if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    dnl === Mac OS === Development === Firefox Plugin ===
    BITMUNK_LOCAL_API_PORT=19200
@@ -284,7 +284,7 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_PACKAGE_CONFIG=""
    BITMUNK_SYSTEM_CONFIG_DIR="$BITMUNK_DIR/configs"
    BITMUNK_SYSTEM_CONFIG="$BITMUNK_DIR/configs/dev.config"
-   BITMUNK_SYSTEM_USER_CONFIG="dev.config"
+   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
 fi
 fi
 if test "x$BUILD_FOR_MACOS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
@@ -296,7 +296,7 @@ if test "x$BUILD_FOR_MACOS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
    BITMUNK_PACKAGE_CONFIG=""
    BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
    BITMUNK_SYSTEM_CONFIG="/etc/bitmunk3/system.config"
-   BITMUNK_SYSTEM_USER_CONFIG="default.config"
+   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
 if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    dnl === Mac OS === Release === Firefox Plugin ===
    BITMUNK_LOCAL_API_HOST="0.0.0.0"
@@ -309,7 +309,7 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_PACKAGE_CONFIG="{RESOURCE_PATH}/configs/default.config"
    BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
    BITMUNK_SYSTEM_CONFIG="/etc/bitmunk3/system.config"
-   BITMUNK_SYSTEM_USER_CONFIG="default.config"
+   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
 fi
 fi
 
@@ -336,7 +336,7 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    # NOTE: See note about this var in Win/Rel/FF section below.
    #BITMUNK_SYSTEM_CONFIG="C:/Program Files/Bitmunk3/configs/system.config"
    BITMUNK_SYSTEM_CONFIG=""
-   BITMUNK_SYSTEM_USER_CONFIG="dev.config"
+   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
 fi
 fi
 if test "x$BUILD_FOR_WINDOWS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
@@ -362,7 +362,7 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    # In the future, change "C:" to a magic %%-type of var.
    #BITMUNK_SYSTEM_CONFIG="C:/Program Files/Bitmunk3/configs/system.config"
    BITMUNK_SYSTEM_CONFIG=""
-   BITMUNK_SYSTEM_USER_CONFIG="default.config"
+   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
 fi
 fi
 

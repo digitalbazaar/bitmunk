@@ -5,12 +5,8 @@
 #include "monarch/config/ConfigManager.h"
 #include "monarch/data/json/JsonReader.h"
 #include "monarch/data/json/JsonWriter.h"
-#include "monarch/io/FileOutputStream.h"
 #include "monarch/modest/Module.h"
-#include "monarch/logging/OutputStreamLogger.h"
 #include "monarch/util/Macros.h"
-//#include "monarch/event/EventWaiter.h"
-//#include "monarch/rt/Thread.h"
 #include "monarch/rt/DynamicObject.h"
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/app/App.h"
@@ -37,6 +33,9 @@ using namespace bitmunk::node;
 
 #define PLUGIN_NAME "bitmunk.apps.bitmunk.Bitmunk"
 #define PLUGIN_CL_CFG_ID PLUGIN_NAME ".commandLine"
+
+#define BITMUNK_NODE_RESTART_EVENT "bitmunk.node.Node.restart"
+#define BITMUNK_NODE_SHUTDOWN_EVENT "bitmunk.node.Node.shutdown"
 
 const char* BITMUNK_NAME = "Bitmunk";
 
@@ -76,78 +75,7 @@ bool Bitmunk::initMetaConfig(Config& meta)
 {
    bool rval = monarch::app::AppPlugin::initMetaConfig(meta);
 
-   // defaults
-   if(rval)
-   {
-      Config c =
-         App::makeMetaConfig(meta, PLUGIN_NAME ".defaults", "defaults");
-      c[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
-      Config& cm = c[ConfigManager::MERGE];
-      Config& cmp = c[ConfigManager::MERGE][PLUGIN_NAME];
-      cm["app"]["handlers"]->setType(Map);
-      cm["app"]["events"]->setType(Map);
-
-      // all config info in one map
-      Config& configs = cmp["configs"];
-      configs->setType(Map);
-
-      // setup package config loading
-      {
-         Config& cfg = configs["package"];
-         if(getenv("BITMUNK_PACKAGE_CONFIG") != NULL)
-         {
-            // use environment var and require
-            cfg["path"] = getenv("BITMUNK_PACKAGE_CONFIG");
-            cfg["optional"] = false;
-         }
-         else
-         {
-            // try to load optional default
-            cfg["path"] = BITMUNK_PACKAGE_CONFIG;
-            cfg["optional"] = true;
-         }
-         cfg["load"] = (cfg["path"]->length() > 0);
-      }
-
-      // setup system config loading
-      {
-         Config& cfg = configs["system"];
-         if(getenv("BITMUNK_SYSTEM_CONFIG") != NULL)
-         {
-            // use environment var and require
-            cfg["path"] = getenv("BITMUNK_SYSTEM_CONFIG");
-            cfg["optional"] = false;
-         }
-         else
-         {
-            // try to load optional default
-            cfg["path"] = BITMUNK_SYSTEM_CONFIG;
-            cfg["optional"] = true;
-         }
-         cfg["load"] = (cfg["path"]->length() > 0);
-      }
-
-      // setup system user config loading
-      {
-         Config& cfg = configs["systemUser"];
-         if(getenv("BITMUNK_SYSTEM_USER_CONFIG") != NULL)
-         {
-            // use environment var and require
-            cfg["path"] = getenv("BITMUNK_SYSTEM_USER_CONFIG");
-            cfg["optional"] = false;
-         }
-         else
-         {
-            // try to load optional default
-            cfg["path"] = BITMUNK_SYSTEM_USER_CONFIG;
-            cfg["optional"] = true;
-         }
-         cfg["load"] = (cfg["path"]->length() > 0);
-      }
-
-      // setup extra configs default
-      configs["extra"]->setType(Array);
-   }
+   // defaults added in willLoadConfigs()
 
    // command line options
    if(rval)
@@ -255,7 +183,7 @@ DynamicObject Bitmunk::getCommandLineSpecs()
    opt["arg"]["path"] = "configs.systemUser.path";
    opt["argError"] = "No system user config file specified.";
    opt["setTrue"]["root"] = op;
-   opt["setTrue"]["path"] = "configs.sysmteUser.load";
+   opt["setTrue"]["path"] = "configs.systemUser.load";
    opt["setFalse"]["root"] = op;
    opt["setFalse"]["path"] = "configs.systemUser.optional";
 
@@ -351,6 +279,87 @@ bool Bitmunk::willLoadConfigs()
       }
    }
 
+   // defaults
+   // Note: Done here instead of in initMetaConfig so {BITMUNK_HOME} can be
+   // used in defaults.
+   if(rval)
+   {
+      Config meta = getApp()->getMetaConfig();
+      Config c =
+         App::makeMetaConfig(meta, PLUGIN_NAME ".defaults", "defaults");
+      c[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+      Config& cm = c[ConfigManager::MERGE];
+      Config& cmp = c[ConfigManager::MERGE][PLUGIN_NAME];
+      cm["node"]["handlers"]->setType(Map);
+      cm["node"]["events"]->setType(Map);
+
+      // all config info in one map
+      Config& configs = cmp["configs"];
+      configs->setType(Map);
+
+      // setup package config loading
+      {
+         Config& cfg = configs["package"];
+         if(getenv("BITMUNK_PACKAGE_CONFIG") != NULL)
+         {
+            // use environment var and require
+            cfg["path"] = getenv("BITMUNK_PACKAGE_CONFIG");
+            cfg["optional"] = false;
+         }
+         else
+         {
+            // try to load optional default
+            cfg["path"] = BITMUNK_PACKAGE_CONFIG;
+            cfg["optional"] = true;
+         }
+         cfg["load"] = (cfg["path"]->length() > 0);
+      }
+
+      // setup system config loading
+      {
+         Config& cfg = configs["system"];
+         if(getenv("BITMUNK_SYSTEM_CONFIG") != NULL)
+         {
+            // use environment var and require
+            cfg["path"] = getenv("BITMUNK_SYSTEM_CONFIG");
+            cfg["optional"] = false;
+         }
+         else
+         {
+            // try to load optional default
+            cfg["path"] = BITMUNK_SYSTEM_CONFIG;
+            cfg["optional"] = true;
+         }
+         cfg["load"] = (cfg["path"]->length() > 0);
+      }
+
+      // setup system user config loading
+      // Note: see didLoadConfigs() for special code that tries to find this
+      // config and may prepend {BITMUNK_HOME} automatically.
+      {
+         Config& cfg = configs["systemUser"];
+         if(getenv("BITMUNK_SYSTEM_USER_CONFIG") != NULL)
+         {
+            // use environment var and require
+            cfg["path"] = getenv("BITMUNK_SYSTEM_USER_CONFIG");
+            cfg["optional"] = false;
+         }
+         else
+         {
+            // try to load optional default
+            cfg["path"] = BITMUNK_SYSTEM_USER_CONFIG;
+            cfg["optional"] = true;
+         }
+         cfg["load"] = (cfg["path"]->length() > 0);
+      }
+
+      // setup extra configs default
+      configs["extra"]->setType(Array);
+
+      // add to config manager
+      getApp()->getConfigManager()->addConfig(c);
+   }
+
    return rval;
 }
 
@@ -374,150 +383,171 @@ bool Bitmunk::didLoadConfigs()
    are added as a Default.
 
    defaults - internal hard coded config
+   package - package config
    system - default system config, BITMUNK_SYSTEM_CONFIG env, --system-config,
       or none if --no-system-config
-   node - default node config, BITMUNK_SYSTEM_USER_CONFIG env, --node-config,
-          or none if --no-node-config
+   system user - default node config, BITMUNK_SYSTEM_USER_CONFIG env,
+      --system-user-config, or none if --no-system-user-config
    cl - additional config files specified on the command line
 
    If a config file is specified then it must exist.  Defaults config files
    can be missing.
    */
 
-   // special config logger
-   // used only during configuration
-   FileOutputStream logStream(FileOutputStream::StdOut);
-   OutputStreamLogger logger(&logStream, false);
-
-   Logger::Level logLevel = Logger::Warning;
-   Config appCfg = getApp()->getConfig();
-   Config& c = appCfg[PLUGIN_NAME];
-   if(appCfg["app"]["config"]["debug"]->getBoolean())
-   {
-      logLevel = Logger::Debug;
-   }
-   logger.setLevel(logLevel);
-   Logger::addLogger(&logger);
+   Config c = getApp()->getConfig()[PLUGIN_NAME];
 
    // app meta config
    Config meta = getApp()->getMetaConfig();
-
-   // setup meta config
-   if(rval)
-   {
-      /**
-       * Meta config about configs.
-       * For "system" and "node" types:
-       *    cfg["app"]["config"][type]["load"] = true|false
-       *    cfg["app"]["config"][type]["path"] = ...
-       */
-      Config config;
-      config[ConfigManager::ID] = PLUGIN_NAME ".meta";
-      config[ConfigManager::GROUP] = meta["groups"]["main"]->getString();
-      config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
-      Config merge = config[ConfigManager::MERGE];
-      merge["app"]["config"]["package"] = c["configs"]["package"];
-      merge["app"]["config"]["system"] = c["configs"]["system"];
-      merge["app"]["config"]["system user"] = c["configs"]["systemUser"];
-      rval = getApp()->getConfigManager()->addConfig(config);
-   }
 
    // load system, node, and extra configs
    if(rval)
    {
       // fake a config with includes
       Config cfg;
-      int i = 0;
 
       cfg[ConfigManager::ID] = PLUGIN_NAME ".includes";
       cfg[ConfigManager::GROUP] = meta["groups"]["main"]->getString();
       cfg[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
-      cfg[ConfigManager::INCLUDE][i++] = c["configs"]["package"];
-      cfg[ConfigManager::INCLUDE][i++] = c["configs"]["system"];
-      cfg[ConfigManager::INCLUDE][i++] = c["configs"]["systemUser"];
-      DynamicObjectIterator eci =
-         appCfg[PLUGIN_NAME]["configs"]["extra"].getIterator();
-      while(eci->hasNext())
+
+      // add standard configs
+      cfg[ConfigManager::INCLUDE]->append() = c["configs"]["package"];
+      cfg[ConfigManager::INCLUDE]->append() = c["configs"]["system"];
+      cfg[ConfigManager::INCLUDE]->append() = c["configs"]["systemUser"];
+
+      // add extra configs
+      DynamicObjectIterator ei = c["configs"]["extra"].getIterator();
+      while(ei->hasNext())
       {
-         DynamicObject& next = eci->next();
-         Config& ecfg = cfg[ConfigManager::INCLUDE][i++];
+         DynamicObject& next = ei->next();
+         Config ecfg = cfg[ConfigManager::INCLUDE]->append();
          ecfg["path"] = next->getString();
          ecfg["load"] = true;
          ecfg["optional"] = false;
       }
+
+      // load all configs
       rval = getApp()->getConfigManager()->addConfig(cfg);
    }
 
-#if 0
-   if(rval)
-   {
-      Config cfg = getApp()->getConfig();
-      if(cfg["app"]["config"]["dump"]->getBoolean())
-      {
-         // array of maps with named configs
-         // FIXME: put this or more comprehensive code in NodeConfigManager
-         ConfigManager* cm = getConfigManager();
-         /*
-         DynamicObject dump;
-         dump->setType(Array);
-         // merged groups
-         dump->append()["boot"] = cm->getConfig("boot");
-         dump->append()["system"] = cm->getConfig("system");
-         dump->append()["system user"] = cm->getConfig("system user");
-         dump->append()["node"] = cm->getConfig("system");
-         dump->append()["modules"] = cm->getConfig("system");
-         dump->append()["command line"] = cm->getConfig("command line");
-         dump->append()[meta["groups"]["main"]->getString()] =
-            cm->getConfig(meta["groups"]["main"]->getString());
-         dump->append()["users"] = cm->getConfig("users");
-         dump->append()["meta"] = cm->getConfig("bitmunk.app meta");
-         // even more debug
-         dump->append()["debug"] = cm->getDebugInfo();
-         JsonWriter::writeToStdOut(dump);
-         */
-         // all debug info
-         JsonWriter::writeToStdOut(cm->getDebugInfo());
-      }
-   }
-#endif
+   return rval;
+}
 
-   Logger::removeLogger(&logger);
+FileList Bitmunk::getModulePaths()
+{
+   FileList rval;
+
+   Config cfg = getApp()->getConfigManager()->getConfig("main")["node"];
+   ConfigIterator mpi = cfg["modulePath"].getIterator();
+   while(mpi->hasNext())
+   {
+      const char* path = mpi->next()->getString();
+      FileList pathList = File::parsePath(path);
+      rval->concat(*pathList);
+   }
 
    return rval;
 }
 
-/*
-bool Bitmunk::waitForNode()
+bool Bitmunk::startNode()
+{
+   bool rval;
+   // setup app wait event
+   // The bitmunk plugin run() call will finish normally but we must setup a
+   // wait event so the kernel knows bitmunk is still running.
+   //...
+
+   // observe node events
+   mNodeRestartObserver =
+      new ObserverDelegate<Bitmunk>(this, &Bitmunk::restartNodeHandler);
+   mMicroKernel->getEventController()->registerObserver(
+      &(*mNodeRestartObserver), BITMUNK_NODE_RESTART_EVENT);
+   MO_CAT_DEBUG(BM_APP_CAT,
+      "Bitmunk registered for " BITMUNK_NODE_RESTART_EVENT);
+
+   /*
+   Currently shutdown event will cause kernel to stop everything so no need
+   to handle it here.  At some point need node vs kernel shutdown handling.
+
+   mNodeShutdownObserver =
+      new ObserverDelegate<Bitmunk>(this, &Bitmunk::shutdownNodeHandler);
+   mMicroKernel->getEventController()->registerObserver(
+      &(*mNodeShutdownObserver), BITMUNK_NODE_SHUTDOWN_EVENT);
+   MO_CAT_DEBUG(BM_APP_CAT,
+      "Bitmunk registered for " BITMUNK_NODE_SHUTDOWN_EVENT);
+   */
+
+   // get node and other related module paths
+   FileList modulePaths = getModulePaths();
+   // load all module paths at once
+   rval = mMicroKernel->loadModules(modulePaths);
+   Node* node =
+      dynamic_cast<Node*>(mMicroKernel->getModuleApi("bitmunk.node.Node"));
+   if(node != NULL)
+   {
+      rval = node->start();
+   }
+
+   // send ready event
+   if(rval)
+   {
+      MO_CAT_INFO(BM_APP_CAT, "Ready.");
+      Event e;
+      e["type"] = "bitmunk.app.Bitmunk.ready";
+      mMicroKernel->getEventController()->schedule(e);
+   }
+
+   return rval;
+}
+
+bool Bitmunk::stopNode(bool restarting)
 {
    bool rval = true;
 
-   MO_CAT_INFO(BM_APP_CAT, "Ready.");
+   // stop watching for node events
+   mMicroKernel->getEventController()->unregisterObserver(
+      &(*mNodeRestartObserver), BITMUNK_NODE_RESTART_EVENT);
+   mNodeRestartObserver.setNull();
 
-   // send ready event
+   /*
+   No need to implement this until node can be shutdown without shutting down
+   the kernel.
+
+   if(!restarting)
    {
-      Event e;
-      e["type"] = "bitmunk.app.Bitmunk.ready";
-      mKernel->getEventController()->schedule(e);
+      undo app wait event
    }
+   */
 
-   EventWaiter waiter(mKernel->getEventController());
-   waiter.start("bitmunk.node.Node.shutdown");
-   waiter.start("bitmunk.node.Node.restart");
-   waiter.waitForEvent();
-
-   Event e = waiter.popEvent();
-   if(strcmp("bitmunk.node.Node.shutdown", e["type"]->getString()) == 0)
+   Node* node =
+      dynamic_cast<Node*>(mMicroKernel->getModuleApi("bitmunk.node.Node"));
+   if(node != NULL)
    {
-      mState = Stopping;
-   }
-   else if(strcmp("bitmunk.node.Node.restart", e["type"]->getString()) == 0)
-   {
-      mState = Restarting;
+      node->stop();
+      // unload node module and all modules depending on it
+      rval = mMicroKernel->unloadModule("bitmunk.node.Node");
    }
 
    return rval;
 }
-*/
+
+bool Bitmunk::restartNode()
+{
+   return stopNode(true) && startNode();
+}
+
+void Bitmunk::restartNodeHandler(Event& e)
+{
+   MO_CAT_INFO(BM_APP_CAT, "Handling node restart event.");
+   bool success = restartNode();
+   // FIXME: handle exceptions
+}
+
+void Bitmunk::shutdownNodeHandler(Event& e)
+{
+   MO_CAT_INFO(BM_APP_CAT, "Handling node shutdown event.");
+   bool success = stopNode();
+   // FIXME: handle exceptions
+}
 
 bool Bitmunk::run()
 {
@@ -532,30 +562,7 @@ bool Bitmunk::run()
    MO_CAT_INFO(BM_APP_CAT, "Modules path: %s",
       JsonWriter::writeToString(cfg["modulePath"]).c_str());
 
-   // load modules
-   // this will load the node and other modules
-   // The bitmunk plugin will finish but has setup the kernel to wait for a
-   // bitmunk wait event. The node can also signal shutdown and restart events
-   // as needed.
-   FileList modulePaths;
-   ConfigIterator mpi = cfg["modulePath"].getIterator();
-   while(rval && mpi->hasNext())
-   {
-      const char* path = mpi->next()->getString();
-      FileList pathList = File::parsePath(path);
-      modulePaths->concat(*pathList);
-   }
-   // load all module paths at once
-   rval = mMicroKernel->loadModules(modulePaths);
-
-   MO_CAT_INFO(BM_APP_CAT, "Ready.");
-
-   // send ready event
-   {
-      Event e;
-      e["type"] = "bitmunk.app.Bitmunk.ready";
-      mMicroKernel->getEventController()->schedule(e);
-   }
+   rval = startNode();
 
    return rval;
 }

@@ -107,12 +107,19 @@ bool NodeConfigManager::saveSystemUserConfig()
 {
 
    bool rval;
-   Config meta = getConfigManager()->getConfig("bitmunk.app meta");
-   // get initial value
-   const char* suPath =
-      meta["app"]["config"]["system user"]["path"]->getString();
+   Config cfg = getModuleConfig("bitmunk.apps.bitmunk.Bitmunk");
+   const char* suPath;
    string path;
-   rval = expandBitmunkHomePath(suPath, path);
+
+   rval = !cfg.isNull();
+
+   if(rval)
+   {
+      // get initial value
+      suPath = cfg["configs"]["systemUser"]["path"]->getString();
+      rval = expandBitmunkHomePath(suPath, path);
+   }
+
    if(rval)
    {
       // FIXME: do we need locking for load/save/get/remove?
