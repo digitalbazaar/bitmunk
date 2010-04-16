@@ -50,7 +50,6 @@ INSTALL_BASE_LIBS := \
 	dist/lib/libbmnode.so
 
 INSTALL_BASE_CONFIGS := \
-	configs/live.d/app.config \
 	configs/live.d/events.config \
 	configs/live.d/login.config \
 	configs/live.d/node.config

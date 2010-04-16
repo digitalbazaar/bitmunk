@@ -71,7 +71,6 @@ endif
 
 ifeq (@BITMUNK_RELEASE_MODE@,yes)
 CONFIG_FILES = \
-   app.config \
    bitmunk.bfp.Bfp.config \
    bitmunk.catalog.CustomCatalog.config \
    bitmunk.medialibrary.MediaLibrary.config \
@@ -83,7 +82,6 @@ CONFIG_FILES = \
    node.config
 else
 CONFIG_FILES = \
-   app.config \
    bitmunk.bfp.Bfp.config \
    bitmunk.catalog.CustomCatalog.config \
    bitmunk.medialibrary.MediaLibrary.config \
@@ -219,9 +217,6 @@ else
 	@STRIP@ @STRIP_FLAGS@ `find extension/platform/@FIREFOX_PLATFORM@/libs -name "*.@DYNAMIC_LIB_EXT@"`
 	@STRIP@ @STRIP_FLAGS@ `find extension/platform/@FIREFOX_PLATFORM@/modules -name "*.@DYNAMIC_LIB_EXT@"`
 endif
-
-	# Set the auto-login to false.
-	@sed -i -e "s/\"auto\" \: true/\"auto\" \: false/g" extension/platform/@FIREFOX_PLATFORM@/configs/conf.d/app.config
 
 	@mkdir -p @BITMUNK_DIR@/dist/xpi/
 	@cd extension && \
