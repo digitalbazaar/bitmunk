@@ -538,14 +538,16 @@ bool Bitmunk::restartNode()
 void Bitmunk::restartNodeHandler(Event& e)
 {
    MO_CAT_INFO(BM_APP_CAT, "Handling node restart event.");
-   bool success = restartNode();
+   //bool success =
+   restartNode();
    // FIXME: handle exceptions
 }
 
 void Bitmunk::shutdownNodeHandler(Event& e)
 {
    MO_CAT_INFO(BM_APP_CAT, "Handling node shutdown event.");
-   bool success = stopNode();
+   //bool success =
+   stopNode();
    // FIXME: handle exceptions
 }
 
