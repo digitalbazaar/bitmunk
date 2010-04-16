@@ -6,11 +6,6 @@
       "dev.config"
    ],
    "_merge_" : {
-      "app" : {
-         "login" : {
-            "auto" : false
-         }
-      },
       "bitmunk.webui.WebUi" : {
          "flash" : {
             "policyServer" : {

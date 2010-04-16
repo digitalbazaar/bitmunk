@@ -25,11 +25,6 @@
          "color": true,
          "level": "max"
       },
-      "app" : {
-         "login" : {
-            "auto" : false
-         }
-      },
       "bitmunk.webui.WebUi" : {
          "flash" : {
             "policyServer" : {
