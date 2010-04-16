@@ -12,7 +12,7 @@
       "node" : {
          "modulePath" : ["@BITMUNK_MODULES_DIR@"]
       },
-      "bitmunk.apps.bitmunk.Bitmunk": {
+      "bitmunk.apps.Bitmunk": {
          "configs": {
             "extra": [
                "{RESOURCE_PATH}/configs/conf.d"

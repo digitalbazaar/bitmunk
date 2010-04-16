@@ -27,11 +27,11 @@ using namespace monarch::logging;
 using namespace monarch::modest;
 using namespace monarch::net;
 using namespace monarch::rt;
-using namespace bitmunk::apps::bitmunk;
+using namespace bitmunk::apps;
 using namespace bitmunk::common;
 using namespace bitmunk::node;
 
-#define PLUGIN_NAME "bitmunk.apps.bitmunk.Bitmunk"
+#define PLUGIN_NAME "bitmunk.apps.Bitmunk"
 #define PLUGIN_CL_CFG_ID PLUGIN_NAME ".commandLine"
 
 #define BITMUNK_NODE_RESTART_EVENT "bitmunk.node.Node.restart"

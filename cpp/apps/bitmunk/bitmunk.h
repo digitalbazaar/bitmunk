@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
-#ifndef bitmunk_apps_bitmunk_Bitmunk_h
-#define bitmunk_apps_bitmunk_Bitmunk_h
+#ifndef bitmunk_apps_Bitmunk_h
+#define bitmunk_apps_Bitmunk_h
 
 #include "monarch/app/AppPlugin.h"
 #include "monarch/event/ObserverDelegate.h"
@@ -13,8 +13,6 @@
 namespace bitmunk
 {
 namespace apps
-{
-namespace bitmunk
 {
 
 /**
@@ -159,7 +157,6 @@ public:
    virtual bool run();
 };
 
-} // end namespace bitmunk
 } // end namespace apps
 } // end namespace bitmunk
 

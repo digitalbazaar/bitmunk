@@ -9,7 +9,7 @@
             "@BITMUNK_DIR@/dist/lib/@LIB_PREFIX@bmapp.@DYNAMIC_LIB_EXT@"
          ]
       },
-      "bitmunk.apps.bitmunk.Bitmunk": {
+      "bitmunk.apps.Bitmunk": {
          "configs": {
             "extra": [
                "@BITMUNK_DIR@/configs/dev-bpe.config"

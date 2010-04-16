@@ -107,7 +107,7 @@ bool NodeConfigManager::saveSystemUserConfig()
 {
 
    bool rval;
-   Config cfg = getModuleConfig("bitmunk.apps.bitmunk.Bitmunk");
+   Config cfg = getModuleConfig("bitmunk.apps.Bitmunk");
    const char* suPath;
    string path;
 
