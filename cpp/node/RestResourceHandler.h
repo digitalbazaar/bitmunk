@@ -16,19 +16,19 @@ namespace node
 
 /**
  * A RestResourceHandler is a BtpActionHandler dispatcher based on action
- * parameter count and input message method type.  It simplifies setting up
- * a RESTful interface.  Handlers can also have Validators for both the query
+ * parameter count and input message method type. It simplifies setting up
+ * a RESTful interface. Handlers can also have Validators for both the query
  * parameters and for the input content.
  *
- * The order of processing is important to consider.  Under some circumstances
+ * The order of processing is important to consider. Under some circumstances
  * it may be more appropriate to do more direct handling of BtpActions.  This
  * class is intended to simplify a more general case.
  *
- * 1. The parameter count is checked.  If no match is found then a HTTP 404
+ * 1. The parameter count is checked. If no match is found then a HTTP 404
  *    type exception is thrown.
- * 2. The input message method type is checked.  If no match is found then a
+ * 2. The input message method type is checked. If no match is found then a
  *    HTTP 405 type exception is thrown.
- * 3. The action's canPerformAction() method is checked.  This can be used to
+ * 3. The action's canPerformAction() method is checked. This can be used to
  *    perform early security checks.
  * 4. The query is validated.
  * 5. The content is validated.
@@ -92,7 +92,7 @@ public:
    virtual ~RestResourceHandler();
 
    /**
-    * Handles the passed BtpAction.  The parameter count and input message type
+    * Handles the passed BtpAction. The parameter count and input message type
     * are used to further dispatch the action to the appropriate registered
     * handler.
     *
@@ -102,7 +102,7 @@ public:
 
    /**
     * Register an action handler for a specific message type and parameter
-    * count.  Handlers can also have query and content validators.  These are
+    * count. Handlers can also have query and content validators. These are
     * automatically checked if present.
     *
     * @param handler an action handler to register.
@@ -110,9 +110,9 @@ public:
     * @param paramCount the count to match with the action parameter count,
     *                   -1 for an arbitrary number if parameters.
     * @param queryValidator a Validator to check the input message query
-    *    (optional)
+    *           (optional)
     * @param contentValidator a Validator to check the input message content
-    *    (optional)
+    *           (optional)
     * @param flags flags for this handler.
     */
    virtual void addHandler(
@@ -124,17 +124,17 @@ public:
       uint32_t flags = 0);
 
    /**
-    * Register an action handler for a specific message type.  Handlers can
-    * also have resource, query, and content validators.  These are
+    * Register an action handler for a specific message type. Handlers can
+    * also have resource, query, and content validators. These are
     * automatically checked if present.
     *
     * @param handler an action handler to register.
     * @param type a type to match against the action input message type.
     * @param resourceValidator a Validator to check the input message resource
     * @param queryValidator a Validator to check the input message query
-    *    (optional)
+    *           (optional)
     * @param contentValidator a Validator to check the input message content
-    *    (optional)
+    *           (optional)
     * @param flags flags for this handler.
     */
    virtual void addHandler(
@@ -144,6 +144,26 @@ public:
       monarch::validation::ValidatorRef* queryValidator = NULL,
       monarch::validation::ValidatorRef* contentValidator = NULL,
       uint32_t flags = 0);
+
+protected:
+   /**
+    * Finds the handler for the given action.
+    *
+    * @param action the action to find the handler for.
+    *
+    * @return the handler iterator, mHandlers.end() if none could be found.
+    */
+   virtual HandlerMap::iterator findHandler(
+      bitmunk::protocol::BtpAction* action);
+
+   /**
+    * Handles the passed BtpAction using the already-found handler.
+    *
+    * @param action the BtpAction to handle.
+    * @param hmi the handler iterator to use.
+    */
+   virtual void handleAction(
+      bitmunk::protocol::BtpAction* action, HandlerMap::iterator hmi);
 };
 
 // define counted reference rest resource handler

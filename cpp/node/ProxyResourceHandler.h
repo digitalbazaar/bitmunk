@@ -15,6 +15,12 @@ namespace node
 /**
  * A ProxyResourceHandler redirects HTTP traffic to another server.
  *
+ * An HTTP request (BTP action) is processed by this handler as follows:
+ *
+ * 1. See if any resource handlers can handle the action. If so, delegate.
+ * 2. If not, see if there are any proxy mappings. If so, delegate.
+ * 3. If not, send 404.
+ *
  * @author Dave Longley
  */
 class ProxyResourceHandler : public bitmunk::node::RestResourceHandler
