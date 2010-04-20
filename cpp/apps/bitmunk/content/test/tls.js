@@ -3,7 +3,7 @@
  *
  * @author Dave Longley
  *
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * An API for using TLS.
  * 
@@ -228,7 +228,7 @@
    var CC_: 6;  // send client certificate
    var CK_: 7;  // send client key exchange
    var CV_: 8;  // send certificate verify
-   var CS_: 9; // send change cipher spec
+   var CS_: 9;  // send change cipher spec
    var FN_: 10; // send finished
    var _CS: 11; // rcv change cipher spec
    var _FN: 12; // rcv finished
@@ -328,10 +328,9 @@
    ];
 
    /**
-    * The crypto namespace.
+    * The tls implementation.
     */
-   crypto = crypto || {};
-   crypto.tls =
+   var tls =
    {
       /**
        * Whether this entity is considered the "client" or "server".
@@ -665,18 +664,18 @@
          // new parameters have no compression, encryption, or MAC algorithms
          var securityParams =
          {
-            entity: crypto.tls.ConnectionEnd.client,
-            prf_algorithm: crypto.tls.PRFAlgorithm.tls_prf_sha256,
-            bulk_cipher_algorithm: crypto.tls.BulkCipherAlgorithm.none,
-            cipher_type: crypto.tls.CipherType.block,
+            entity: tls.ConnectionEnd.client,
+            prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
+            bulk_cipher_algorithm: tls.BulkCipherAlgorithm.none,
+            cipher_type: tls.CipherType.block,
             enc_key_length: 0,
             block_length: 0,
             fixed_iv_length: 0,
             record_iv_length: 0,
-            mac_algorithm: crypto.tls.MACAlgorithm.none,
+            mac_algorithm: tls.MACAlgorithm.none,
             mac_length: 0,
             mac_key_length: 0,
-            compression_algorithm: crypto.tls.CompressionMethod.none,
+            compression_algorithm: tls.CompressionMethod.none,
             master_secret: null,
             client_random: null,
             server_random: null
@@ -750,7 +749,7 @@
          var prf;
          switch(sp.prf_algorithm)
          {
-            case crypto.tls.PRFAlgorithm.tls_prf_sha256:
+            case tls.PRFAlgorithm.tls_prf_sha256:
                prf = prf_sha256;
                break;
             default:
@@ -832,7 +831,7 @@
          {
             switch(sp.bulk_cipher_algorithm)
             {
-               case crypto.tls.BulkCipherAlgorithm.aes:
+               case tls.BulkCipherAlgorithm.aes:
                   cipherState =
                   {
                      key: keys.encryptionKey;
@@ -846,7 +845,7 @@
             
             switch(sp.cipher_type)
             {
-               case crypto.tls.CipherType.block:
+               case tls.CipherType.block:
                   break;
                default:
                   throw 'Unsupported cipher type';
@@ -854,7 +853,7 @@
             
             switch(sp.mac_algorithm)
             {
-               case crypto.tls.MACAlgorithm.hmac_sha1:
+               case tls.MACAlgorithm.hmac_sha1:
                   state.macKey = keys.macKey;
                   break;
                 default:
@@ -863,25 +862,25 @@
             
             switch(sp.compression_algorithm)
             {
-               case crypto.tls.CompressionMethod.none:
+               case tls.CompressionMethod.none:
                   break;
                default:
                   throw 'Unsupported compression algorithm';
             }
             
             /*
-            entity: crypto.tls.ConnectionEnd.client,
-            prf_algorithm: crypto.tls.PRFAlgorithm.tls_prf_sha256,
-            bulk_cipher_algorithm: crypto.tls.BulkCipherAlgorithm.none,
-            cipher_type: crypto.tls.CipherType.block,
+            entity: tls.ConnectionEnd.client,
+            prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
+            bulk_cipher_algorithm: tls.BulkCipherAlgorithm.none,
+            cipher_type: tls.CipherType.block,
             enc_key_length: 0,
             block_length: 0,
             fixed_iv_length: 0,
             record_iv_length: 0,
-            mac_algorithm: crypto.tls.MACAlgorithm.none,
+            mac_algorithm: tls.MACAlgorithm.none,
             mac_length: 0,
             mac_key_length: 0,
-            compression_algorithm: crypto.tls.CompressionMethod.none,
+            compression_algorithm: tls.CompressionMethod.none,
             master_secret: null,
             client_random: null,
             server_random: null
@@ -889,143 +888,6 @@
          }
          
          return state;
-      },
-      
-      /**
-       * Creates a new TLS connection. This does not make any assumptions about
-       * the transport layer that TLS is working on top of, ie it does not
-       * assume there is a TCP/IP connection or establish one. A TLS connection
-       * is totally abstracted away from the layer is runs on top of, it merely
-       * establishes a secure channel between two "peers".
-       * 
-       * A TLS connection contains 4 connection states: pending read and write,
-       * and current read and write.
-       * 
-       * At initialization, the current read and write states will be null.
-       * Only once the security parameters have been set and the keys have
-       * been generated can the pending states be converted into current
-       * states. Current states will be updated for each record processed.
-       * 
-       * @param options the options for this connection:
-       *    sessionId: a session ID to reuse, null for a new connection.
-       *    recordReady: function(conn, record) called when a TLS record has
-       *       been generated and should be written somewhere like a socket.
-       *    closed: function(conn) called when the connection has been closed.
-       * 
-       * @return the new TLS connection.
-       */
-      createConnection: function(options)
-      {
-         // FIXME: add callback for when a record is ready to be written
-         // somewhere
-         // FIXME: add flush call to force that callback to be called
-         // FIXME: add callback for when a (app data) record is received
-         
-         //crypto.tls.createSecurityParameters()
-         
-         var connection =
-         {
-            sessionId: options.sessionId,
-            state:
-            {
-               pending:
-               {
-                  read: crypto.tls.createConnectionState(),
-                  write: crypto.tls.createConnectionState(),
-               },
-               current:
-               {
-                  read: null,
-                  write: null
-               }
-            },
-            recordReady: options.recordReady,
-            closed: options.closed,
-            
-            /**
-             * Performs a handshake using the TLS Handshake Protocol.
-             * 
-             * The TLS Handshake Protocol involves the following steps:
-             *
-             * - Exchange hello messages to agree on algorithms, exchange
-             * random values, and check for session resumption.
-             * 
-             * - Exchange the necessary cryptographic parameters to allow the
-             * client and server to agree on a premaster secret.
-             * 
-             * - Exchange certificates and cryptographic information to allow
-             * the client and server to authenticate themselves.
-             * 
-             * - Generate a master secret from the premaster secret and
-             * exchanged random values.
-             * 
-             * - Provide security parameters to the record layer.
-             * 
-             * - Allow the client and server to verify that their peer has
-             * calculated the same security parameters and that the handshake
-             * occurred without tampering by an attacker.
-             * 
-             * Up to 4 different messages may be sent during a key exchange.
-             * The server certificate, the server key exchange, the client
-             * certificate, and the client key exchange.
-             * 
-             * A typical handshake (from the client's perspective).
-             * 
-             * 1. Client sends ClientHello.
-             * 2. Client receives ServerHello.
-             * 3. Client receives optional Certificate.
-             * 4. Client receives optional ServerKeyExchange.
-             * 5. Client receives ServerHelloDone.
-             * 6. Client sends optional Certificate.
-             * 7. Client sends ClientKeyExchange.
-             * 8. Client sends optional CertificateVerify.
-             * 9. Client sends ChangeCipherSpec.
-             * 10. Client sends Finished.
-             * 11. Client receives ChangeCipherSpec.
-             * 12. Client receives Finished.
-             * 13. Client sends/receives application data.
-             *
-             * To reuse an existing session:
-             * 
-             * 1. Client sends ClientHello with session ID for reuse.
-             * 2. Client receives ServerHello with same session ID if reusing.
-             * 3. Client receives ChangeCipherSpec message if reusing.
-             * 4. Client receives Finished.
-             * 5. Client sends ChangeCipherSpec.
-             * 6. Client sends Finished.
-             * 
-             * Note: Client ignores HelloRequest if in the middle of a
-             * handshake.
-             * 
-             * @param sessionId the session ID to use, null to use a new one.
-             */
-            doHandshake: function(sessionId)
-            {
-               // FIXME: send a ClientHello with the given session ID,
-               // the rest will be handled by the TLS record handler
-               // FIXME: add createClientHello method
-               //connection.recordReady(createRecord(
-               //   crypto.tls.ContentType.handshake,
-            },
-            
-            /**
-             * Writes application data to this connection. It may not be
-             * sent over the connection until flush() is called.
-             */
-            send: function(data)
-            {
-               // FIXME:
-            },
-            
-            /**
-             * Sends any previously written data over this connection.
-             */
-            flush: function()
-            {
-               // FIXME:
-            }
-         };
-         return connection;
       },
       
       /**
@@ -1298,7 +1160,7 @@
          return
          {
             gmt_unix_time: utc,
-            random_bytes: crypto.tls.getRandomBytes(28)
+            random_bytes: tls.getRandomBytes(28)
          };
       },
       
@@ -1363,7 +1225,7 @@
          };
          
          // convert body into TLS-encoded bytes
-         var array = crypto.tls.createArray();
+         var array = tls.createArray();
          array.pushInt(body.version.major, 8);
          array.pushInt(body.version.minor, 8);
          array.pushInt(body.random.gmt_unix_time, 32);
@@ -1399,8 +1261,159 @@
       {
          // FIXME: might not even need this method ... just something
          // to handle the byte array
-      },
+      }
       
       // FIXME: next up, process server certificate message
+   };
+   
+   /**
+    * The crypto namespace and tls API.
+    */
+   crypto = crypto || {};
+   crypto.tls = 
+   {
+      /**
+       * Creates a new TLS connection. This does not make any assumptions about
+       * the transport layer that TLS is working on top of, ie it does not
+       * assume there is a TCP/IP connection or establish one. A TLS connection
+       * is totally abstracted away from the layer is runs on top of, it merely
+       * establishes a secure channel between two "peers".
+       * 
+       * A TLS connection contains 4 connection states: pending read and write,
+       * and current read and write.
+       * 
+       * At initialization, the current read and write states will be null.
+       * Only once the security parameters have been set and the keys have
+       * been generated can the pending states be converted into current
+       * states. Current states will be updated for each record processed.
+       * 
+       * @param options the options for this connection:
+       *    sessionId: a session ID to reuse, null for a new connection.
+       *    recordReady: function(conn, record) called when a TLS record has
+       *       been prepared and is ready to be used (typically sent over a
+       *       socket connection to its destination).
+       *    dataReady: function(conn, data) called when application data has
+       *       been parsed from a TLS record and should be consumed by the
+       *       application.
+       *    closed: function(conn) called when the connection has been closed.
+       * 
+       * @return the new TLS connection.
+       */
+      createConnection: function(options)
+      {
+         var connection =
+         {
+            sessionId: options.sessionId,
+            state:
+            {
+               pending:
+               {
+                  read: tls.createConnectionState(),
+                  write: tls.createConnectionState(),
+               },
+               current:
+               {
+                  read: null,
+                  write: null
+               }
+            },
+            recordReady: options.recordReady,
+            dataReady: options.dataReady,
+            closed: options.closed,
+            
+            /**
+             * Performs a handshake using the TLS Handshake Protocol.
+             * 
+             * The TLS Handshake Protocol involves the following steps:
+             *
+             * - Exchange hello messages to agree on algorithms, exchange
+             * random values, and check for session resumption.
+             * 
+             * - Exchange the necessary cryptographic parameters to allow the
+             * client and server to agree on a premaster secret.
+             * 
+             * - Exchange certificates and cryptographic information to allow
+             * the client and server to authenticate themselves.
+             * 
+             * - Generate a master secret from the premaster secret and
+             * exchanged random values.
+             * 
+             * - Provide security parameters to the record layer.
+             * 
+             * - Allow the client and server to verify that their peer has
+             * calculated the same security parameters and that the handshake
+             * occurred without tampering by an attacker.
+             * 
+             * Up to 4 different messages may be sent during a key exchange.
+             * The server certificate, the server key exchange, the client
+             * certificate, and the client key exchange.
+             * 
+             * A typical handshake (from the client's perspective).
+             * 
+             * 1. Client sends ClientHello.
+             * 2. Client receives ServerHello.
+             * 3. Client receives optional Certificate.
+             * 4. Client receives optional ServerKeyExchange.
+             * 5. Client receives ServerHelloDone.
+             * 6. Client sends optional Certificate.
+             * 7. Client sends ClientKeyExchange.
+             * 8. Client sends optional CertificateVerify.
+             * 9. Client sends ChangeCipherSpec.
+             * 10. Client sends Finished.
+             * 11. Client receives ChangeCipherSpec.
+             * 12. Client receives Finished.
+             * 13. Client sends/receives application data.
+             *
+             * To reuse an existing session:
+             * 
+             * 1. Client sends ClientHello with session ID for reuse.
+             * 2. Client receives ServerHello with same session ID if reusing.
+             * 3. Client receives ChangeCipherSpec message if reusing.
+             * 4. Client receives Finished.
+             * 5. Client sends ChangeCipherSpec.
+             * 6. Client sends Finished.
+             * 
+             * Note: Client ignores HelloRequest if in the middle of a
+             * handshake.
+             * 
+             * The recordReady handler will be called when a TLS record has
+             * been prepared.
+             * 
+             * @param sessionId the session ID to use, null to start a new one.
+             */
+            handshake: function(sessionId)
+            {
+               // FIXME: send a ClientHello with the given session ID,
+               // the rest will be handled by the TLS record handler
+               // FIXME: add createClientHello method
+               //connection.recordReady(createRecord(
+               //   tls.ContentType.handshake,
+            },
+            
+            /**
+             * Called when a TLS record has been received from somewhere and
+             * should be processed by the TLS engine.
+             * 
+             * @param record the TLS record to process.
+             */
+            process: function(record)
+            {
+               // FIXME:
+            },
+            
+            /**
+             * Requests that application data be packaged into a TLS record.
+             * The recordReady handler will be called when a TLS record has
+             * been prepared.
+             * 
+             * @param data the application data to be sent.
+             */
+            prepare: function(data)
+            {
+               // FIXME:
+            }
+         };
+         return connection;
+      }
    };
 })();
