@@ -11,20 +11,6 @@
  */
 (function($)
 {
-   // load time and global seed
-   var gLoadTime = +new Date();
-   var gSeed = Math.random() + gLoadTime;
-   
-   // collect mouse data for random generation
-   var gMouseBytes = [];
-   $().mousemove(function(e)
-   {
-      if(gMouseBytes.length < 1024)
-      {
-         gMouseBytes.push((e.clientX ^ e.clientY) & 0xFF);
-      }
-   });
-   
    /**
     * Private Pseudo Random Functions (PRF).
     */
@@ -1040,96 +1026,6 @@
       },
       
       /**
-       * Gets random bytes. This method tries to make the bytes more
-       * unpredictable by taking from mouse movements and navigator
-       * properties.
-       * 
-       * @param count the number of random bytes to get.
-       * 
-       * @return the random bytes.
-       */
-      getRandomBytes: function(count)
-      {
-         var b = [];
-         var n = 0;
-         
-         // timing
-         b[n++] = (+new Date() - gLoadTime) & 0xFF;
-         b[n++] = (b[n - 2] ^ +new Date()) & 0xFF;
-         
-         // iterate over properties in navigator
-         for(var p in navigator)
-         {
-            // if we have enough bytes, quit
-            if(b.length >= count)
-            {
-               break;
-            }
-            
-            var obj = navigator[p];
-            switch(obj.constructor)
-            {
-               case Object:
-               case Array:
-                  obj = JSON.stringify(obj);
-                  break;
-               case String:
-                  break;
-               case Number:
-                  obj = '' + obj;
-               default:
-                  // skip functions/handlers/etc.
-                  continue;
-            }
-            
-            for(var i = 0; i < obj.length; i++)
-            {
-               b[n++] = ((Math.random() * 256) ^ obj.charCodeAt(i)) & 0xFF;
-            }
-         }
-         
-         // get some collected mouse bytes
-         var mb = gMouseBytes.splice(0, count);
-         
-         /* Park-Miller "minimal standard" 31 bit PRNG, implemented with
-         David G. Carta's optimization: with 32 bit math and without
-         division (Public Domain). */
-         var hi, lo;
-         n = 0;
-         for(var x = 0; x < count; x++)
-         {
-            lo = 16807 * (gSeed & 0xFFFF);
-            hi = 16807 * (gSeed >> 16);
-            lo += (hi & 0x7FFF) << 16;
-            lo += hi >> 15;
-            lo = (lo & 0x7FFFFFFF) + (lo >> 31);
-            gSeed = lo & 0xFFFFFFFF;
-            
-            // throw in existing byte
-            gSeed = gSeed ^ b[n++];
-            if(n == b.length)
-            {
-               n = 0;
-            }
-            
-            // throw in mouse byte
-            if(n < mb.length)
-            {
-               gSeed = gSeed ^ mb[n];
-            }
-            // throw in pseudo-random byte
-            else
-            {
-               gSeed = gSeed ^ (Math.random() * 0xFFFFFFFF);
-            }
-            
-            b[x] = gSeed & 0xFF;
-         }
-         
-         return b;
-      },
-      
-      /**
        * Creates a Random structure.
        * 
        * struct {
@@ -1160,7 +1056,7 @@
          return
          {
             gmt_unix_time: utc,
-            random_bytes: tls.getRandomBytes(28)
+            random_bytes: window.krypto.random.getRandomBytes(28)
          };
       },
       
@@ -1269,8 +1165,8 @@
    /**
     * The crypto namespace and tls API.
     */
-   crypto = crypto || {};
-   crypto.tls = 
+   window.krypto = window.krypto || {};
+   window.krypto.tls = 
    {
       /**
        * Creates a new TLS connection. This does not make any assumptions about
@@ -1383,11 +1279,12 @@
              */
             handshake: function(sessionId)
             {
-               // FIXME: send a ClientHello with the given session ID,
-               // the rest will be handled by the TLS record handler
-               // FIXME: add createClientHello method
-               //connection.recordReady(createRecord(
-               //   tls.ContentType.handshake,
+               // create ClientHello message
+               recordReady(tls.createRecord(
+               {
+                  type: tls.ContentType.handshake,
+                  data: createClientHello(sessionId)
+               }));
             },
             
             /**
@@ -1416,4 +1313,4 @@
          return connection;
       }
    };
-})();
+})(jQuery);

@@ -6,22 +6,10 @@
       }
       </style> 
       <script type="text/javascript" src="/bitmunk/js/swfobject/swfobject.js"></script>
+      <script type="text/javascript" src="/bitmunk/js/jquery.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/random.js"></script>
       
       <script type="text/javascript">
-      // load time and global seed
-      var gLoadTime = +new Date();
-      var gSeed = Math.random() + gLoadTime;
-      
-      // collect mouse data for random generation
-      var gMouseBytes = [];
-      document.onmousemove = function(e)
-      {
-         if(gMouseBytes.length < 1024)
-         {
-            gMouseBytes.push((e.clientX ^ e.clientY) & 0xFF);
-         }
-      };
-      
       var flashvars = {};
       var params = {};
       var attributes = {};
@@ -127,88 +115,6 @@
          return false;
       }
 
-      // FIXME: replace with call from tls.js
-      function getRandomBytes(count)
-      {
-         var b = [];
-         var n = 0;
-         
-         // timing
-         b[n++] = (+new Date() - gLoadTime) & 0xFF;
-         b[n++] = (b[n - 2] ^ +new Date()) & 0xFF;
-
-         // iterate over properties in navigator
-         for(var p in navigator)
-         {
-            // if we have enough bytes, quit
-            if(b.length == count)
-            {
-               break;
-            }
-            
-            var obj = navigator[p];
-            switch(obj.constructor)
-            {
-               case Object:
-               case Array:
-                  obj = JSON.stringify(obj);
-                  break;
-               case String:
-                  break;
-               case Number:
-                  obj = '' + obj;
-               default:
-                  // skip functions/handlers/etc.
-                  continue;
-            }
-            
-            for(var i = 0; i < obj.length; i++)
-            {
-               b[n++] = ((Math.random() * 256) ^ obj.charCodeAt(i)) & 0xFF;
-            }
-         }
-         
-         // get some collected mouse bytes
-         var mb = gMouseBytes.splice(0, count);
-         
-         /* Park-Miller "minimal standard" 31 bit PRNG, implemented with
-            David G. Carta's optimization: with 32 bit math and without
-            division (Public Domain). */
-         var hi, lo;
-         n = 0;
-         for(var x = 0; x < count; x++)
-         {
-            lo = 16807 * (gSeed & 0xFFFF);
-            hi = 16807 * (gSeed >> 16);
-            lo += (hi & 0x7FFF) << 16;
-            lo += hi >> 15;
-            lo = (lo & 0x7FFFFFFF) + (lo >> 31);
-            gSeed = lo & 0xFFFFFFFF;
-            
-            // throw in existing byte
-            gSeed = gSeed ^ b[n++];
-            if(n == b.length)
-            {
-               n = 0;
-            }
-            
-            // throw in mouse byte
-            if(n < mb.length)
-            {
-               gSeed = gSeed ^ mb[n];
-            }
-            // throw in pseudo-random byte
-            else
-            {
-               gSeed = gSeed ^ (Math.random() * 0xFFFFFFFF);
-            }
-            
-            b[x] = gSeed & 0xFF;
-         }
-
-         return b;
-      }
-
       function do_random()
       {
          console.log('painting canvas');
@@ -217,7 +123,8 @@
          var imgData = ctx.createImageData(canvas.width, canvas.height);
 
          // generate random bytes
-         var bytes = getRandomBytes(canvas.width * canvas.height * 3);
+         var bytes = window.krypto.random.getBytes(
+            canvas.width * canvas.height * 3);
          var n = 0;
          for(var x = 0; x < imgData.width; x++)
          {
