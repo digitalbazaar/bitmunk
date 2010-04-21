@@ -86,28 +86,28 @@ public:
    /**
     * Setup command line option config.
     *
-    * @return true on success, false on failure and exception set
+    * @return true on success, false on failure and exception set.
     */
    virtual bool initMetaConfig(monarch::config::Config& meta);
 
    /**
     * Get a specification of the command line paramters.
     *
-    * @return the command line spec
+    * @return the command line spec.
     */
    virtual monarch::rt::DynamicObject getCommandLineSpecs();
 
    /**
     * Setup for config loading.
     *
-    * @return true on success, false on failure and exception set
+    * @return true on success, false on failure and exception set.
     */
    virtual bool willLoadConfigs();
 
    /**
     * Load Bitmunk specific configs.
     *
-    * @return true on success, false on failure and exception set
+    * @return true on success, false on failure and exception set.
     */
    virtual bool didLoadConfigs();
 
@@ -121,7 +121,7 @@ public:
    /**
     * Load node modules and setup related events.
     *
-    * @return true on success, false on failure and exception set
+    * @return true on success, false on failure and exception set.
     */
    virtual bool startNode();
 
@@ -130,14 +130,14 @@ public:
     *
     * @param restarting true if attempting a restart
     *
-    * @return true on success, false on failure and exception set
+    * @return true on success, false on failure and exception set.
     */
    virtual bool stopNode(bool restarting = false);
 
    /**
     * Restart a node with stopNode() and startNode().
     *
-    * @return true on success, false on failure and exception set
+    * @return true on success, false on failure and exception set.
     */
    virtual bool restartNode();
 

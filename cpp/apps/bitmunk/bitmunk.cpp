@@ -482,7 +482,15 @@ bool Bitmunk::startNode()
    rval = mMicroKernel->loadModules(modulePaths);
    Node* node =
       dynamic_cast<Node*>(mMicroKernel->getModuleApi("bitmunk.node.Node"));
-   if(node != NULL)
+   if(node == NULL)
+   {
+      ExceptionRef e = new Exception(
+         "Could not load Node interface. No compatible Node module found.",
+         PLUGIN_NAME ".InvalidNodeModule");
+      Exception::set(e);
+      rval = false;
+   }
+   else
    {
       rval = node->start();
    }
