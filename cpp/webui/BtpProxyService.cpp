@@ -9,6 +9,7 @@
 #include "bitmunk/common/Tools.h"
 #include "bitmunk/node/BtpActionDelegate.h"
 #include "bitmunk/node/RestResourceHandler.h"
+#include "monarch/net/SocketTools.h"
 #include "monarch/validation/Validation.h"
 
 using namespace std;
@@ -131,16 +132,29 @@ static bool _getProxyUrl(
       // convert simple path into full local url if needed
       if(params["url"]->getString()[0] == '/')
       {
-         // build full url
-         Config cfg = node->getConfigManager()->getNodeConfig();
-         InternetAddress addr;
-         action->getRequest()->getConnection()->writeLocalAddress(&addr);
-         value.append("https://");
-         value.append(addr.getAddress());
-         value.push_back(':');
-         value.append(cfg["port"]->getString());
-         value.append(params["url"]->getString());
-         params["url"] = value.c_str();
+         // build full url, try host field from header first
+         string host = header->getFieldValue("Host");
+         if(host.length() == 0)
+         {
+            // no host from header, so get local address
+            Config cfg = node->getConfigManager()->getNodeConfig();
+            InternetAddress addr;
+            action->getRequest()->getConnection()->writeLocalAddress(&addr);
+            if(strcmp(addr.getAddress(), "0.0.0.0") == 0)
+            {
+               // use hostname if any address is the local address
+               host = SocketTools::getHostname();
+            }
+            else
+            {
+               host = addr.getAddress();
+            }
+            host.push_back(':');
+            host.append(cfg["port"]->getString());
+         }
+         host.insert(0, "https://");
+         host.append(params["url"]->getString());
+         params["url"] = host.c_str();
       }
    }
 
