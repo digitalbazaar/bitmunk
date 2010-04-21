@@ -121,7 +121,7 @@ bool SessionService::initialize()
    // session access
    {
       RestResourceHandlerRef access = new RestResourceHandler();
-      addResource("/session/access", access);
+      addResource("/session/access/users", access);
 
       // GET .../session/access/users
       {
