@@ -179,7 +179,7 @@ fi
 
 
 dnl ------------- Bitmunk API port numbers -------------------
-BITMUNK_LOCAL_API_HOST=localhost
+BITMUNK_LOCAL_API_HOST="0.0.0.0"
 if test "x$BITMUNK_RELEASE_MODE" = xyes; then
    BITMUNK_API_HOST=bitmunk.com
    BITMUNK_API_PORT=8100
