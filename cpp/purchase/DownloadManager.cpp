@@ -17,6 +17,7 @@
 #include "monarch/util/Date.h"
 
 #include <algorithm>
+#include <cmath>
 
 using namespace bitmunk::common;
 using namespace bitmunk::purchase;
@@ -1332,9 +1333,48 @@ bool DownloadManager::progressPolled(DynamicObject& msg)
    e["type"] = EVENT_DOWNLOAD_STATE ".progressUpdate";
    e["details"]["files"]->setType(Map);
 
+   // add progress from current downloading pieces
+   DynamicObject fpMap;
+   fpMap->setType(Map);
+   for(PieceDownloaderMap::iterator i = mPieceDownloaders.begin();
+       i != mPieceDownloaders.end(); i++)
+   {
+      FileId fileId = i->second.fileId.c_str();
+      DynamicObject& entry = fpMap[fileId];
+
+      // get piece size
+      FileProgress& fp = mDownloadState["progress"][fileId];
+      uint64_t size = fp["sellerPool"]["pieceSize"]->getUInt64();
+
+      // get piece stats
+      // calculate ETA (delta in seconds until download complete)
+      uint64_t downloaded = i->second.rateAverager->getTotalItemCount();
+      uint64_t remaining = (downloaded > size) ? 0 : (size - downloaded);
+      double rate = i->second.rateAverager->getItemsPerSecond();
+      double totalRate = i->second.rateAverager->getTotalItemsPerSecond();
+      uint64_t eta = (remaining == 0) ?
+         0 : (uint64_t)roundl(remaining / totalRate);
+
+      // save piece stats
+      DynamicObject& piece = entry["pieces"]->append();
+      piece["index"] = i->second.pieceIndex;
+      piece["downloaded"] = downloaded;
+      piece["size"] = size;
+      piece["eta"] = eta;
+      piece["rate"] = rate;
+      piece["totalRate"] = totalRate;
+
+      // increment total file stats
+      entry["downloaded"] = entry["downloaded"]->getUInt64() + downloaded;
+      entry["rate"] = entry["rate"]->getDouble() + rate;
+      entry["totalRate"] = entry["totalRate"]->getDouble() + totalRate;
+   }
+
    // calculate download progress for all files
    uint64_t totalSize = 0;
    uint64_t totalDownloaded = 0;
+   double rate = 0;
+   double totalRate = 0;
    uint32_t totalNegotiatedSellers = 0;
    FileProgressIterator fpi = mDownloadState["progress"].getIterator();
    while(fpi->hasNext())
@@ -1342,16 +1382,6 @@ bool DownloadManager::progressPolled(DynamicObject& msg)
       FileProgress& fp = fpi->next();
       FileId fileId = BM_FILE_ID(fp["fileInfo"]["id"]);
       DynamicObject& perFile = e["details"]["files"][fileId];
-
-      // get bytes fully downloaded so far
-      uint64_t downloaded = fp["bytesDownloaded"]->getUInt64();
-
-      // get ETA (delta in seconds until download complete)
-      uint64_t eta = 0;
-
-      // get file content size
-      uint64_t size = fp["fileInfo"]["contentSize"]->getUInt64();
-      uint64_t remaining = (downloaded > size) ? 0 : (size - downloaded);
 
       // add indexes of pieces that are downloaded already
       DynamicObject& downloadedPieces = perFile["pieces"]["downloaded"];
@@ -1367,47 +1397,45 @@ bool DownloadManager::progressPolled(DynamicObject& msg)
          }
       }
 
-      // add indexes of pieces that are in progress
-      DynamicObject& currentPieces = perFile["pieces"]["assigned"];
-      currentPieces->setType(Array);
+      // get bytes downloaded so far and total file size
+      uint64_t downloaded = fp["bytesDownloaded"]->getUInt64();
+      uint64_t size = fp["fileInfo"]["contentSize"]->getUInt64();
 
-      // add current downloading pieces
-      double rate = 0;
-      double totalRate = 0;
-      for(PieceDownloaderMap::iterator i = mPieceDownloaders.begin();
-          i != mPieceDownloaders.end(); i++)
+      // add current piece information
+      double fileRate = 0;
+      double fileTotalRate = 0;
+      if(fpMap->hasMember(fileId))
       {
-         if(BM_FILE_ID_EQUALS(i->second.fileId.c_str(), fileId))
-         {
-            // get piece stats and increment total stats
-            uint64_t pDownloaded = i->second.rateAverager->getTotalItemCount();
-            uint64_t pEta = i->second.rateAverager->getEta(remaining, false);
-            double pRate = i->second.rateAverager->getItemsPerSecond();
-            double ptRate = i->second.rateAverager->getTotalItemsPerSecond();
-            downloaded += pDownloaded;
-            eta += pEta;
-            rate += pRate;
-            totalRate += ptRate;
+         // add indexes of pieces that are in progress
+         DynamicObject& entry = fpMap[fileId];
+         perFile["pieces"]["assigned"] = entry["pieces"];
 
-            // include stats per piece
-            DynamicObject& piece = currentPieces->append();
-            piece["index"] = i->second.pieceIndex;
-            piece["downloaded"] = pDownloaded;
-            piece["eta"] = pEta;
-            piece["rate"] = pRate;
-            piece["totalRate"] = ptRate;
-         }
+         // increment stats
+         downloaded += entry["downloaded"]->getUInt64();
+         fileRate += entry["rate"]->getDouble();
+         fileTotalRate += entry["totalRate"]->getDouble();
+      }
+      else
+      {
+         // no pieces in progress or stats to update
+         perFile["pieces"]["assigned"]->setType(Array);
       }
 
+      // set per file stats
+      // calculate ETA (delta in seconds until download complete)
+      uint64_t remaining = (downloaded > size) ? 0 : (size - downloaded);
+      perFile["eta"] = (remaining == 0) ?
+         0 : (uint64_t)roundl(remaining / fileTotalRate);
+      perFile["downloaded"] = downloaded;
+      perFile["rate"] = fileRate;
+      perFile["totalRate"] = fileTotalRate;
+      perFile["size"] = size;
       perFile["pieces"]["size"] = fp["sellerPool"]["pieceSize"]->getUInt32();
       perFile["pieces"]["count"] = fp["sellerPool"]["pieceCount"]->getUInt32();
-      perFile["downloaded"] = downloaded;
-      perFile["eta"] = eta;
-      perFile["rate"] = rate;
-      perFile["totalRate"] = totalRate;
-      perFile["size"] = size;
-      totalSize += fp["fileInfo"]["contentSize"]->getUInt64();
+      totalSize += size;
       totalDownloaded += downloaded;
+      rate += fileRate;
+      totalRate += fileTotalRate;
 
       // seller info
       uint32_t sellerCount = fp["sellers"]->length();
@@ -1415,12 +1443,14 @@ bool DownloadManager::progressPolled(DynamicObject& msg)
       perFile["sellers"]["negotiated"] = sellerCount;
    }
 
+   // calculate ETA (delta in seconds until download complete)
    uint64_t remaining = (totalDownloaded > totalSize) ?
       0 : totalSize - totalDownloaded;
+   e["details"]["eta"] = (remaining == 0) ?
+      0 : (uint64_t)roundl(remaining / totalRate);
    e["details"]["downloaded"] = totalDownloaded;
-   e["details"]["eta"] = mDownloadRate.getEta(remaining, false);
-   e["details"]["rate"] = mDownloadRate.getItemsPerSecond();
-   e["details"]["totalRate"] = mDownloadRate.getTotalItemsPerSecond();
+   e["details"]["rate"] = rate;
+   e["details"]["totalRate"] = totalRate;
    e["details"]["size"] = totalSize;
    e["details"]["sellers"]["negotiated"] = totalNegotiatedSellers;
    e["details"]["sellers"]["active"] =
