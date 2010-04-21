@@ -489,9 +489,10 @@ static PRInt32 _startBitmunk(
          (char*)BITMUNK_BIN,
          (char*)"--resource-path", (char*)resourcePath.c_str(),
          (char*)"--config", (char*)packageConfigFile.c_str(),
-         (char*)"--package-config", (char*)packageConfigFile.c_str(),
          (char*)"--option", (char*)nodePortFileKey.c_str(),
          (char*)nodePortFile.c_str(),
+         // delayed open so {BITMUNK_HOME} can be used in log filename
+         (char*)"--log-delay-open",
          (char*)"--log", (char*)logFile.c_str(),
          (NULL)
       };
