@@ -141,25 +141,30 @@ bool LoginManager::loginUser(
 
                if(!profile.isNull())
                {
-                  // loading new profile succeeded, so create login data
-                  LoginData* data = new LoginData;
-                  data->user["id"] = id;
-                  data->user["username"] = username;
-                  data->profile = profile;
+                  // new profile loaded, add virtual host entry
+                  rval = mNode->getBtpServer()->addVirtualHost(profile);
+                  if(rval)
+                  {
+                     // loading new profile succeeded, so create login data
+                     LoginData* data = new LoginData;
+                     data->user["id"] = id;
+                     data->user["username"] = username;
+                     data->profile = profile;
 
-                  // add new data to maps
-                  mUsernameMap.insert(make_pair(username, data));
-                  mUserIdMap.insert(make_pair(id, data));
+                     // add new data to maps
+                     mUsernameMap.insert(make_pair(username, data));
+                     mUserIdMap.insert(make_pair(id, data));
 
-                  // append to user ID queue
-                  mUserIdQueue.push_back(id);
+                     // append to user ID queue
+                     mUserIdQueue.push_back(id);
+                  }
                }
 
                // release exclusive login data lock
                mLoginDataLock.unlockExclusive();
 
                // load user's config
-               rval = mNode->getConfigManager()->loadUserConfig(id);
+               rval = rval && mNode->getConfigManager()->loadUserConfig(id);
             }
 
             // release login lock
@@ -567,12 +572,6 @@ bool LoginManager::loadProfile(ProfileRef& p, const char* password, File& file)
             rval = false;
          }
       }
-   }
-
-   if(rval)
-   {
-      // add virtual host entry to btp server
-      rval = mNode->getBtpServer()->addVirtualHost(p);
    }
 
    return rval;
