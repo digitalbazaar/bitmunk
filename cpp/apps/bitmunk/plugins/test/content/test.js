@@ -10,10 +10,48 @@
    
    var sScriptTask = bitmunk.resource.getScriptTask(
       'bitmunk.webui.Test', 'test.js');
+   
+   // FIXME: should be in a model
+   var updateAccessRules = function()
+   {
+      // DEBUG: output
+      bitmunk.log.debug(cat, 'getting access rules...');
+      $.ajax(
+      {
+         type: 'GET',
+         url: '/api/3.0/webui/session/access/users',
+         dataType: 'json',
+         success: function(rules)
+         {
+            // DEBUG: output
+            bitmunk.log.debug(cat, 'access rules retrieved', rules);
+            
+            // clear old access rules
+            $('#accessRules').html();
+            
+            // add new access rules
+            $.each(rules, function(i, rule)
+            {
+               var ruleNode = $
+                  ('<li>Grant user ID: ' + rule.userId +
+                  ' @ ' + rule.ip + '</li>');
+               $('#accessRules').append(ruleNode);
+            });
+         },
+         error: function()
+         {
+            ruleNode.html('<li>Error: Failed to fetch user access rules.</li>');
+         },
+         xhr: bitmunk.xhr.create
+      });
+   };
       
    var show = function() 
    {
       bitmunk.log.debug(cat, 'test show');
+      
+      // update user access rules display
+      updateAccessRules();
       
       // create audio download directive
       $('#audioDirectiveButton').click(function()
@@ -314,13 +352,13 @@
                // DEBUG: output
                bitmunk.log.debug(cat, 'access changed.');
                
-               ruleNode.html('Rule: ' + access + ' ' + entry.username +
-                  ' @ ' + entry.ip);
+               // update user access rules display
+               updateAccessRules();
             },
             error: function()
             {
-               ruleNode.html('Error: ' + access + ' ' + entry.username +
-                  ' @ ' + entry.ip);
+               ruleNode.html('<li>Error: ' + access + ' ' + entry.username +
+                  ' @ ' + entry.ip + '</li>');
             },
             xhr: bitmunk.xhr.create
          });
