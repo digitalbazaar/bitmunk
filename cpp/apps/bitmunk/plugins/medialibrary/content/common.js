@@ -161,7 +161,7 @@
       bitmunk.api.proxy(
       {
          method: 'GET',
-         url: bitmunk.api.localRoot + '/catalog/server',
+         url: bitmunk.api.localRoot + 'catalog/server',
          params: { nodeuser: bitmunk.user.getUserId() },
          success: function(data)
          {
