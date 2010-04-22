@@ -1,0 +1,105 @@
+<html>
+   <head>
+      <style> 
+      canvas {
+        background: black;
+      }
+      </style>
+      <script type="text/javascript" src="/bitmunk/js/jquery.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/random.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/utils.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/prng4.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/rng.js"></script>
+      
+      <script type="text/javascript">
+
+      var krypto = window.krypto;
+
+      var canvas_clear = function()
+      {
+         var canvas = document.getElementById("canvas");
+         var ctx = canvas.getContext("2d");
+         ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      var random_krypto = function()
+      {
+         do_random(window.krypto.random);
+      };
+
+      var random_tom_wu = function()
+      {
+         do_random(
+         {
+            getBytes: function(count)
+            {
+               var ba = [];
+               ba[count - 1] = 0;
+               var sr = new SecureRandom();
+               sr.nextBytes(ba);
+               return ba;
+            }
+         });
+      };
+      
+      var do_random = function(inf)
+      {
+         console.log('painting canvas');
+         var canvas = document.getElementById("canvas");
+         var ctx = canvas.getContext("2d");
+         var imgData = ctx.createImageData(canvas.width, canvas.height);
+
+         // generate random bytes
+         var bytes = inf.getBytes(canvas.width * canvas.height * 3);
+         var n = 0;
+         for(var x = 0; x < imgData.width; x++)
+         {
+            for(var y = 0; y < imgData.height; y++)
+            {
+               // index of the pixel in the array
+               var idx = (x + y * imgData.width) * 4;
+
+               // set values
+               imgData.data[idx + 0] = bytes[n++]; // Red channel
+               imgData.data[idx + 1] = bytes[n++]; // Green channel
+               imgData.data[idx + 2] = bytes[n++]; // Blue channel
+               imgData.data[idx + 3] = 255;        // Alpha channel
+            }
+         }
+
+         ctx.putImageData(imgData, 0, 0);
+         console.log('done');
+      };
+
+      var test_byte_array = function()
+      {
+         ba = krypto.utils.createByteArray();
+         ba.pushByte(1);
+         ba.pushByte(2);
+         ba.pushByte(3);
+         ba.pushByte(4);
+         ba.pushWord(4);
+         ba.pushByte(1);
+         ba.pushByte(2);
+         ba.pushByte(3);
+         ba.pushWord(4294967295);
+         var expect = [1, 2, 3, 4, 0, 0, 0, 4, 1, 2, 3, 255, 255, 255, 255];
+         console.log('ba', ba.bytes());
+         console.log('ex', expect);
+      };
+
+      </script>
+   </head>
+   <body>
+      <p>Use the controls below to test krypto stuff.</p>
+      <div id="random_controls">
+         <button id="clear" onclick="javascript:return canvas_clear();">clear</button>
+         <button id="random1" onclick="javascript:return random_krypto();">krypto</button>
+         <button id="random2" onclick="javascript:return random_tom_wu();">tom wu</button>
+      </div>
+      <canvas id="canvas" width="300" height="300"></canvas>
+      <div id="util_controls">
+         <button id="byte_array" onclick="javascript:return test_byte_array();">byte array</button>
+      </div>
+   </body>
+</html>

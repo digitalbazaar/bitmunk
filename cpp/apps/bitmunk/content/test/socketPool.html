@@ -6,8 +6,6 @@
       }
       </style> 
       <script type="text/javascript" src="/bitmunk/js/swfobject/swfobject.js"></script>
-      <script type="text/javascript" src="/bitmunk/js/jquery.js"></script>
-      <script type="text/javascript" src="/bitmunk/test/random.js"></script>
       
       <script type="text/javascript">
       var flashvars = {};
@@ -115,36 +113,6 @@
          return false;
       }
 
-      function do_random()
-      {
-         console.log('painting canvas');
-         var canvas = document.getElementById("canvas");
-         var ctx = canvas.getContext("2d");
-         var imgData = ctx.createImageData(canvas.width, canvas.height);
-
-         // generate random bytes
-         var bytes = window.krypto.random.getBytes(
-            canvas.width * canvas.height * 3);
-         var n = 0;
-         for(var x = 0; x < imgData.width; x++)
-         {
-            for(var y = 0; y < imgData.height; y++)
-            {
-               // index of the pixel in the array
-               var idx = (x + y * imgData.width) * 4;
-
-               // set values
-               imgData.data[idx + 0] = bytes[n++]; // Red channel
-               imgData.data[idx + 1] = bytes[n++]; // Green channel
-               imgData.data[idx + 2] = bytes[n++]; // Blue channel
-               imgData.data[idx + 3] = 255;        // Alpha channel
-            }
-         }
-
-         ctx.putImageData(imgData, 0, 0);
-         console.log('done');
-      }
-
       </script>
    </head>
    <body>
@@ -161,13 +129,10 @@
          <button id="connect" onclick="javascript:return sp_connect();">connect</button>
          <button id="send" onclick="javascript:return sp_send();">send</button>
          <button id="close" onclick="javascript:return sp_close();">close</button>
-         <button id="random" onclick="javascript:return do_random();">random</button>
       </div>
       <p>Feedback from the flash SocketPool:</p>
       <div id="feedback">
       None
       </div>
-      <canvas id="canvas" width="300" height="300"></canvas>
-      <!-- <textarea id="foo" cols=80 rows=5></textarea> -->
    </body>
 </html>
