@@ -104,7 +104,7 @@
       // add general feedback
       try
       {
-         if(exception.type != 'db.validation.ValidationError')
+         if(exception.type != 'monarch.validation.ValidationError')
          /*
          {
             addFeedback(

@@ -91,7 +91,7 @@
             (ex != null) &&
             (ex.type ==
                'bitmunk.catalog.NetAccessTestError') &&
-            (ex.cause.type == 'db.upnp.SoapFault') &&
+            (ex.cause.type == 'monarch.upnp.SoapFault') &&
             (ex.cause.details.fault.params.detail.UPnPError.errorCode ==
                '718');
       }

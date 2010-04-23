@@ -287,7 +287,7 @@
             // user config table
             name: sTable,
             eventGroups: [{
-               events: ['db.config.Config.changed'],
+               events: ['monarch.config.Config.changed'],
                // filter events based on these details
                filter: {
                   details: {
@@ -297,7 +297,7 @@
                eventCallback: configChanged
             },
             {
-               events: ['db.config.Config.changed'],
+               events: ['monarch.config.Config.changed'],
                // filter events based on these details
                filter: {
                   details: {
