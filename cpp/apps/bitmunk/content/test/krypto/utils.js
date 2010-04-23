@@ -101,6 +101,19 @@
                   b.push(ba.get(i));
                }
                return b;
+            },
+            
+            /**
+             * Creates a copy of this array.
+             * 
+             * @return the copy.
+             */
+            copy: function()
+            {
+               return {
+                  words: ba.words.slice(),
+                  length: ba.length
+               };
             }
          };
          return ba;
