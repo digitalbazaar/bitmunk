@@ -27,7 +27,7 @@
             bitmunk.log.debug(cat, 'access rules retrieved', rules);
             
             // clear old access rules
-            $('#accessRules').html();
+            $('#accessRules').empty();
             
             // add new access rules
             $.each(rules, function(i, rule)
