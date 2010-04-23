@@ -31,6 +31,7 @@ package
    {
       import com.hurlant.crypto.cert.X509Certificate;
       import com.hurlant.crypto.cert.X509CertificateCollection;
+      import com.hurlant.crypto.tls.CipherSuites;
       import com.hurlant.crypto.tls.TLSConfig;
       import com.hurlant.crypto.tls.TLSEngine;
       import com.hurlant.util.der.PEM;
@@ -285,7 +286,10 @@ package
             // entity, cipher suites, compressions, cert, key, CA store
             tlsconfig = new TLSConfig(
                TLSEngine.CLIENT, // entity
-               null,             // cipher suites
+               // cipher suites
+               //[CipherSuites.TLS_RSA_WITH_RC4_128_MD5],
+               //[CipherSuites.TLS_RSA_WITH_RC4_128_SHA],
+               [CipherSuites.TLS_RSA_WITH_AES_128_CBC_SHA],
                null,             // compressions
                null,             // certificate
                null,             // private key
