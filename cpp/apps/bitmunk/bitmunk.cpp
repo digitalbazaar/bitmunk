@@ -357,7 +357,7 @@ bool Bitmunk::willLoadConfigs()
       configs["extra"]->setType(Array);
 
       // add to config manager
-      getApp()->getConfigManager()->addConfig(c);
+      rval = getApp()->getConfigManager()->addConfig(c);
    }
 
    return rval;
