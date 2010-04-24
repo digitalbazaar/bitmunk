@@ -350,7 +350,7 @@
             
             // add payment editor feedback, showing specific validation
             // errors if possible
-            if(ex.type == 'db.validation.ValidationError')
+            if(ex.type == 'monarch.validation.ValidationError')
             {
                $.each(ex.details.errors, function(name, error)
                {
