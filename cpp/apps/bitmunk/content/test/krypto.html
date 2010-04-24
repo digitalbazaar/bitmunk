@@ -5,14 +5,28 @@
         background: black;
       }
       </style>
+      <script type="text/javascript" src="/bitmunk/js/swfobject/swfobject.js"></script>
       <script type="text/javascript" src="/bitmunk/js/jquery.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/random.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/utils.js"></script>
-      <script type="text/javascript" src="/bitmunk/test/krypto/prng4.js"></script>
-      <script type="text/javascript" src="/bitmunk/test/krypto/rng.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/pidcrypt/string_extend.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/pidcrypt/pidcrypt.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/pidcrypt/pidcrypt_util.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/pidcrypt/prng4.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/pidcrypt/rng.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/pidcrypt/md5.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/pidcrypt/aes_core.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/pidcrypt/aes_cbc.js"></script>
       
       <script type="text/javascript">
 
+      // load flash tester
+      swfobject.embedSWF(
+         "/bitmunk/test/Test.swf", "flashTest", "0", "0", "9.0.0",
+         "/bitmunk/js/swfobject/expressInstall.swf",
+         {}, {allowscriptaccess: 'always'}, {});
+
+      // set krypto alias
       var krypto = window.krypto;
 
       var canvas_clear = function()
@@ -24,10 +38,10 @@
 
       var random_krypto = function()
       {
-         do_random(window.krypto.random);
+         do_random(krypto.random);
       };
 
-      var random_tom_wu = function()
+      var random_pidcrypt = function()
       {
          do_random(
          {
@@ -88,6 +102,111 @@
          console.log('ex', expect);
       };
 
+      // 128-bit test keys
+      var aesKeys = [
+         '00010203050607080A0B0C0D0F101112',
+         '14151617191A1B1C1E1F202123242526',
+         '28292A2B2D2E2F30323334353738393A',
+         '3C3D3E3F41424344464748494B4C4D4E',
+         '50515253555657585A5B5C5D5F606162',
+         '64656667696A6B6C6E6F707173747576',
+         '78797A7B7D7E7F80828384858788898A',
+         '8C8D8E8F91929394969798999B9C9D9E',
+         'A0A1A2A3A5A6A7A8AAABACADAFB0B1B2',
+         'B4B5B6B7B9BABBBCBEBFC0C1C3C4C5C6',
+         'C8C9CACBCDCECFD0D2D3D4D5D7D8D9DA',
+         'DCDDDEDFE1E2E3E4E6E7E8E9EBECEDEE',
+         'F0F1F2F3F5F6F7F8FAFBFCFDFE010002',
+         '04050607090A0B0C0E0F101113141516',
+         '2C2D2E2F31323334363738393B3C3D3E',
+         '40414243454647484A4B4C4D4F505152',
+         '54555657595A5B5C5E5F606163646566',
+         '68696A6B6D6E6F70727374757778797A',
+         '7C7D7E7F81828384868788898B8C8D8E',
+         'A4A5A6A7A9AAABACAEAFB0B1B3B4B5B6'];
+
+      // create aes IV
+      var aesIvBytes = krypto.random.getBytes(16);
+      var aesIv = '';
+      for(var i = 0; i < aesIvBytes.length; i++)
+      {
+         var hex = aesIvBytes[i].toString(16);
+         aesIv += (hex.length == 1) ? ('0' + hex) : hex; 
+      }
+      console.log('aesIv', aesIv);
+
+      // test data to encrypt
+      var aesPlain =
+         'GET /my/url/index.html HTTP/1.1\r\n' +
+         'Accept: text/html,*/*\r\n' +
+         'Accept-Charset: UTF-8,*\r\n' +
+         'Accept-Encoding: gzip,deflate\r\n' +
+         'Accept-Language: en-us,en;q=0.5\r\n' +
+         'Cache-Control: max-age=0\r\n' +
+         'Connection: keep-alive\r\n' +
+         'Host: localhost:19300\r\n' +
+         'If-Modified-Since: Fri, 23 Apr 2010 16:40:05 GMT\r\n' +
+         'Keep-Alive: 115\r\n' +
+         'User-Agent: MyBrowser/1.0\r\n' +
+         '\r\n';
+
+      var aes_krypto = function()
+      {
+         console.log('testing AES (krypto) ...');
+      };
+
+      var aes_pid_crypt = function()
+      {
+         console.log('testing AES (pidcrypt) ...');
+
+         var now;
+         var totalEncrypt = 0;
+         var totalDecrypt = 0;
+         for(var i = 0; i < aesKeys.length; i++)
+         {
+            var aes = new pidCrypt.AES.CBC();
+            var key = aesKeys[i];
+            var plainBytes = aesPlain.toByteArray();
+
+            // encrypt
+            aes.initByValues('', key, aesIv);
+            now = +new Date();
+            var cipherBytes = aes.encryptRaw(plainBytes);
+            totalEncrypt += (+new Date()) - now;
+            
+            // decrypt
+            aes.initByValues('', key, aesIv);
+            now = +new Date();
+            aes.decryptRaw(cipherBytes);
+            totalDecrypt += (+new Date()) - now;
+
+            /* Base64-encoding used here
+            // encrypt
+            aes.initByValues(aesPlain, key, aesIv);
+            now = +new Date();
+            var ciphered = aes.encrypt();
+            totalEncrypt += (+new Date()) - now;
+
+            // decrypt
+            aes.initByValues(ciphered, key, aesIv);
+            now = +new Date();
+            aes.decrypt();
+            totalDecrypt += (+new Date()) - now;
+            */
+         }
+
+         var len = aesKeys.length;
+         console.log('encrypt time: ' + (totalEncrypt / len) + ' ms');
+         console.log('decrypt time: ' + (totalDecrypt / len) + ' ms');
+         console.log('pidcrypt aes test complete.');         
+      };
+
+      var aes_as3crypto = function()
+      {
+         console.log('testing AES (as3crypto) ...');
+         document.getElementById('flashTest').aes();
+      };
+
       </script>
    </head>
    <body>
@@ -95,11 +214,19 @@
       <div id="random_controls">
          <button id="clear" onclick="javascript:return canvas_clear();">clear</button>
          <button id="random1" onclick="javascript:return random_krypto();">krypto</button>
-         <button id="random2" onclick="javascript:return random_tom_wu();">tom wu</button>
+         <button id="random2" onclick="javascript:return random_pidcrypt();">pidcrypt</button>
       </div>
       <canvas id="canvas" width="300" height="300"></canvas>
       <div id="util_controls">
          <button id="byte_array" onclick="javascript:return test_byte_array();">byte array</button>
+      </div>
+      <div id="flashTest">
+         <p>Could not load the flash Test.</p>
+      </div>
+      <div id="aes_controls">
+         <button id="aes1" onclick="javascript:return aes_krypto();">jscrypto</button>
+         <button id="aes2" onclick="javascript:return aes_pid_crypt();">pidcrypt</button>
+         <button id="aes3" onclick="javascript:return aes_as3crypto();">as3crypto</button>
       </div>
    </body>
 </html>
