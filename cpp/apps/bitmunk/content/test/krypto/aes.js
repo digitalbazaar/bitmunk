@@ -516,10 +516,10 @@
             // will inverse-substitute it (effectively cancel the substitution
             // because round key bytes aren't sub'd in decryption mode)
             w[i] =
-               imx0[sbox[w[i] >>> 24] & 0xFF] ^
-               imx1[sbox[w[i] >>> 16 & 0xFF] & 0xFF] ^
-               imx2[sbox[w[i] >>> 8 & 0xFF] & 0xFF] ^
-               imx3[sbox[w[i] & 0xFF] & 0xFF];
+               imx0[sbox[w[i] >>> 24]] ^
+               imx1[sbox[w[i] >>> 16 & 0xFF]] ^
+               imx2[sbox[w[i] >>> 8 & 0xFF]] ^
+               imx3[sbox[w[i] & 0xFF]];
          }
       }
       
