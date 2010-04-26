@@ -769,66 +769,89 @@
    };
    
    /**
+    * Creates an AES cipher object.
+    * 
+    * @param key the symmetric key to use, as a byte array.
+    * @param decrypt true for decryption, false for encryption.
+    * 
+    * @return the cipher.
+    */
+   var createCipher = function(key, decrypt)
+   {
+      var cipher = null;
+      
+      if(!init)
+      {
+         initialize();
+      }
+      
+      // FIXME: validate key
+      var w;
+      if(key.length == 4 || key.length == 6 || key.length == 8)
+      {
+         var tmp = window.krypto.utils.createByteArray();
+         for(var i = 0; i < key.length; i++)
+         {
+            tmp.pushWord(key[i]);
+         }
+         w = expandKey(tmp, decrypt);
+         
+         cipher =
+         {
+            key: w,
+            
+            /**
+             * Updates the next block.
+             * 
+             * @param input the byte array to read from.
+             * @param output the byte array to write to.
+             */
+            update: function(input, output)
+            {
+               updateBlock(cipher.key, input, 0, output, decrypt);
+            }
+         };
+      }
+      return cipher;
+   };
+   
+   /**
     * The crypto namespace and aes API.
     */
    window.krypto = window.krypto || {};
    window.krypto.aes =
    {
       /**
-       * Creates an AES cipher object that can encrypt or decrypt using
-       * the given symmetric key.
+       * Creates an AES cipher object to encrypt data using the given
+       * symmetric key.
        * 
        * @param key the symmetric key to use, as a byte array.
        * 
        * @return the cipher.
        */
-      createCipher: function(key)
+      startEncrypting: function(key)
       {
-         if(!init)
-         {
-            initialize();
-         }
+         var cipher = createCipher(key, false);
          
-         var ew;
-         var dw;
-         if(key.length == 4)
-         {
-            var tmp = window.krypto.utils.createByteArray();
-            tmp.pushWord(key[0]);
-            tmp.pushWord(key[1]);
-            tmp.pushWord(key[2]);
-            tmp.pushWord(key[3]);
-            ew = expandKey(tmp, false);
-            dw = expandKey(tmp, true);
-         }
+         // FIXME: handle IV, padding, etc.
          
-         var cipher =
-         {
-            encryptKey: ew,
-            decryptKey: dw,
-            
-            /**
-             * Encrypts the given bytes.
-             * 
-             * @param input the byte array to read from.
-             * @param output the byte array to write to.
-             */
-            encrypt: function(input, output)
-            {
-               updateBlock(cipher.encryptKey, input, 0, output, false);
-            },
-            
-            /**
-             * Decrypts the given bytes.
-             * 
-             * @param input the byte array to read from.
-             * @param output the byte array to write to.
-             */
-            decrypt: function(input, output)
-            {
-               updateBlock(cipher.decryptKey, input, 0, output, true);
-            }
-         };
+         return cipher;
+      },
+      
+      /**
+       * Creates an AES cipher object to decrypt data using the given
+       * symmetric key.
+       * 
+       * @param key the symmetric key to use, as a byte array.
+       * 
+       * @return the cipher.
+       */
+      startDecrypting: function(key)
+      {
+         var cipher = createCipher(key, true);
+         
+         // FIXME: handle IV, padding, etc.
+         
          return cipher;
       }
    };
