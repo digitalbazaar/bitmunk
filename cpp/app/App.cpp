@@ -28,8 +28,10 @@ App::~App()
 
 bool App::initConfigManager()
 {
-   // add acceptable bitmunk version
-   getApp()->getConfigManager()->addVersion(BITMUNK_CONFIG_VERSION);
+   // Acceptable bitmunk config version
+   // Note: As of 3.2.2 this is just for backwards compatibility. New configs
+   // should use a Monarch config version (MO_DEFAULT_CONFIG_VERSION).
+   getApp()->getConfigManager()->addVersion("Bitmunk 3.0");
 
    return true;
 }
@@ -37,7 +39,7 @@ bool App::initConfigManager()
 Config App::makeMetaConfig(Config& meta, const char* id, const char* groupId)
 {
    Config rval = monarch::app::App::makeMetaConfig(meta, id, groupId);
-   rval[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+   rval[ConfigManager::VERSION] = MO_DEFAULT_CONFIG_VERSION;
    return rval;
 }
 

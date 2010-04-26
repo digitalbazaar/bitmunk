@@ -83,7 +83,7 @@ bool Bitmunk::initMetaConfig(Config& meta)
       Config config =
          App::makeMetaConfig(
             meta, PLUGIN_CL_CFG_ID, "command line", "options");
-      config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+      config[ConfigManager::VERSION] = MO_DEFAULT_CONFIG_VERSION;
       Config& c = config[ConfigManager::MERGE];
       c[PLUGIN_NAME]->setType(Map);
 
@@ -287,7 +287,7 @@ bool Bitmunk::willLoadConfigs()
       Config meta = getApp()->getMetaConfig();
       Config c =
          App::makeMetaConfig(meta, PLUGIN_NAME ".defaults", "defaults");
-      c[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+      c[ConfigManager::VERSION] = MO_DEFAULT_CONFIG_VERSION;
       Config& cm = c[ConfigManager::MERGE];
       Config& cmp = c[ConfigManager::MERGE][PLUGIN_NAME];
       cm["node"]["handlers"]->setType(Map);
@@ -300,6 +300,7 @@ bool Bitmunk::willLoadConfigs()
       // setup package config loading
       {
          Config& cfg = configs["package"];
+         cfg["id"] = PLUGIN_NAME ".configs.package";
          if(getenv("BITMUNK_PACKAGE_CONFIG") != NULL)
          {
             // use environment var and require
@@ -318,6 +319,7 @@ bool Bitmunk::willLoadConfigs()
       // setup system config loading
       {
          Config& cfg = configs["system"];
+         cfg["id"] = PLUGIN_NAME ".configs.system";
          if(getenv("BITMUNK_SYSTEM_CONFIG") != NULL)
          {
             // use environment var and require
@@ -338,6 +340,7 @@ bool Bitmunk::willLoadConfigs()
       // config and may prepend {BITMUNK_HOME} automatically.
       {
          Config& cfg = configs["systemUser"];
+         cfg["id"] = PLUGIN_NAME ".configs.systemUser";
          if(getenv("BITMUNK_SYSTEM_USER_CONFIG") != NULL)
          {
             // use environment var and require
@@ -357,7 +360,7 @@ bool Bitmunk::willLoadConfigs()
       configs["extra"]->setType(Array);
 
       // add to config manager
-      getApp()->getConfigManager()->addConfig(c);
+      rval = getApp()->getConfigManager()->addConfig(c);
    }
 
    return rval;
@@ -407,7 +410,7 @@ bool Bitmunk::didLoadConfigs()
 
       cfg[ConfigManager::ID] = PLUGIN_NAME ".includes";
       cfg[ConfigManager::GROUP] = meta["groups"]["main"]->getString();
-      cfg[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+      cfg[ConfigManager::VERSION] = MO_DEFAULT_CONFIG_VERSION;
 
       // add standard configs
       cfg[ConfigManager::INCLUDE]->append() = c["configs"]["package"];
@@ -420,6 +423,7 @@ bool Bitmunk::didLoadConfigs()
       {
          DynamicObject& next = ei->next();
          Config ecfg = cfg[ConfigManager::INCLUDE]->append();
+         ecfg["path"] = PLUGIN_NAME ".configs.extra";
          ecfg["path"] = next->getString();
          ecfg["load"] = true;
          ecfg["optional"] = false;

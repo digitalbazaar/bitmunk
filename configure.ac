@@ -2,6 +2,7 @@
 # Usage: Run ./configure once 
 # Author: Manu Sporny
 
+AC_PREREQ([2.60])
 AC_INIT([bitmunk],[3.2.2],[support@digitalbazaar.com])
 AC_CONFIG_AUX_DIR(setup)
 
@@ -809,6 +810,7 @@ dnl ----------------------------------
 
 # Generating files
 AC_CONFIG_FILES([
+   .gitignore
    Makefile
    setup/Makefile.base
    setup/docs.doxygen
@@ -888,13 +890,11 @@ AC_CONFIG_FILES([
 AC_CONFIG_FILES([bitmunk-run], [chmod +x bitmunk-run])
 AC_CONFIG_FILES([installers/debian/rules], [chmod +x installers/debian/rules])
 
-AC_OUTPUT
+# add newlines to internal output file list
+CONFIGURE_GENERATED_FILES="`echo $ac_config_files | tr ' ' '\n'`"
+AC_SUBST(CONFIGURE_GENERATED_FILES)
 
-# Write a proper .gitignore file based on files that are generated
-GIT_IGNORE_FILES=".gitignore build dist autom4te.cache config.log config.status 
-configure"
-GIT_IGNORE_FILES="$GIT_IGNORE_FILES $ac_config_files"
-echo $GIT_IGNORE_FILES | tr ' ' '\n' > .gitignore
+AC_OUTPUT
 
 # Dump the path configuration
 echo -e "\n--------- Bitmunk Path Configuration -----------"

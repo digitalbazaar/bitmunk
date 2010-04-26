@@ -57,7 +57,7 @@
                      ex = {
                         code: 0,
                         message: 'An unknown error occurred while logging in.'
-                        //type: 'db....'
+                        //type: '...'
                      };
                   }
                   else if(ex.cause)

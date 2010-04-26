@@ -257,7 +257,7 @@
                {
                   '_id_': 'custom system user',
                   '_group_': 'system user',
-                  '_version_': 'Bitmunk 3.0'
+                  '_version_': 'Monarch Config 3.0'
                };
                bitmunk.model.update(
                   sModel, sTable, 'system user:raw', cfg, seqNum);
@@ -287,7 +287,7 @@
             // user config table
             name: sTable,
             eventGroups: [{
-               events: ['db.config.Config.changed'],
+               events: ['monarch.config.Config.changed'],
                // filter events based on these details
                filter: {
                   details: {
@@ -297,7 +297,7 @@
                eventCallback: configChanged
             },
             {
-               events: ['db.config.Config.changed'],
+               events: ['monarch.config.Config.changed'],
                // filter events based on these details
                filter: {
                   details: {
