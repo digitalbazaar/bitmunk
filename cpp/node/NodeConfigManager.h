@@ -10,12 +10,6 @@
 
 #include <string>
 
-/**
- * Current Bitmunk config version.
- */
-#define BITMUNK_CONFIG_VERSION_3_0 "Bitmunk 3.0"
-#define BITMUNK_CONFIG_VERSION BITMUNK_CONFIG_VERSION_3_0
-
 namespace bitmunk
 {
 namespace node
