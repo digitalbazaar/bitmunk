@@ -225,7 +225,7 @@
          mix[i] = new Array(256);
          imix[i] = new Array(256);
       }
-      var e = 0, ei = 0, e2, e4, e8, sx, me, ime;
+      var e = 0, ei = 0, e2, e4, e8, sx, sx2, me, ime;
       for(var i = 0; i < 256; i++)
       {
          /* We need to generate the SubBytes() sbox and isbox tables so that
@@ -391,7 +391,7 @@
          {
             // e = 2e + 2*2*2*(10e)) = multiply e by 82 (chosen generator)
             // ei = ei + 2*2*ei = multiply ei by 5 (inverse generator)
-            e = e2^xtime[xtime[xtime[e2^e8]]];
+            e = e2 ^ xtime[xtime[xtime[e2 ^ e8]]];
             ei ^= xtime[xtime[ei]];
          }
       }
@@ -772,11 +772,12 @@
     * Creates an AES cipher object.
     * 
     * @param key the symmetric key to use, as a byte array.
+    * @param output the byte array to write to.
     * @param decrypt true for decryption, false for encryption.
     * 
     * @return the cipher.
     */
-   var createCipher = function(key, decrypt)
+   var createCipher = function(key, output, decrypt)
    {
       var cipher = null;
       
@@ -785,7 +786,7 @@
          initialize();
       }
       
-      // FIXME: validate key
+      // FIXME: validate key, allow for other kinds of inputs
       var w;
       if(key.length == 4 || key.length == 6 || key.length == 8)
       {
@@ -799,16 +800,29 @@
          cipher =
          {
             key: w,
+            output: output || window.krypto.utils.createByteArray(),
             
             /**
              * Updates the next block.
              * 
              * @param input the byte array to read from.
-             * @param output the byte array to write to.
+             * @param idx the index in the given byte array to read from.
              */
-            update: function(input, output)
+            update: function(input, idx)
             {
-               updateBlock(cipher.key, input, 0, output, decrypt);
+               idx = idx || 0;
+               updateBlock(cipher.key, input, idx, cipher.output, decrypt);
+            },
+            
+            /**
+             * Finishes encrypting or decrypting.
+             * 
+             * @return true if successful, false on error.
+             */
+            finish: function()
+            {
+               // FIXME: need to keep track of the amount of output and
+               // input so we can generate finished output
             }
          };
       }
@@ -823,15 +837,17 @@
    {
       /**
        * Creates an AES cipher object to encrypt data using the given
-       * symmetric key.
+       * symmetric key. The output will be stored in the 'output' member
+       * of the returned cipher.
        * 
        * @param key the symmetric key to use, as a byte array.
+       * @param output the byte array to write to, null to create one.
        * 
        * @return the cipher.
        */
-      startEncrypting: function(key)
+      startEncrypting: function(key, output)
       {
-         var cipher = createCipher(key, false);
+         var cipher = createCipher(key, output, false);
          
          // FIXME: handle IV, padding, etc.
          
@@ -840,15 +856,17 @@
       
       /**
        * Creates an AES cipher object to decrypt data using the given
-       * symmetric key.
+       * symmetric key. The output will be stored in the 'output' member
+       * of the returned cipher.
        * 
        * @param key the symmetric key to use, as a byte array.
+       * @param output the byte array to write to, null to create one.
        * 
        * @return the cipher.
        */
-      startDecrypting: function(key)
+      startDecrypting: function(key, output)
       {
-         var cipher = createCipher(key, true);
+         var cipher = createCipher(key, output, true);
          
          // FIXME: handle IV, padding, etc.
          

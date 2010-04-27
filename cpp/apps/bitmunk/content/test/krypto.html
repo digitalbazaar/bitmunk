@@ -261,20 +261,20 @@
          expect.push(0x70b4c55a);
          
          var cipher = krypto.aes.startEncrypting(key);
-         var ct = krypto.utils.createByteArray();
-         cipher.update(block, ct);
-         console.log('ct', word_array_to_string(ct.words));
+         cipher.update(block);
+         console.log('ciphered', word_array_to_string(cipher.output.words));
          console.log('expect', word_array_to_string(expect));
          console.log('assert',
-            word_array_to_string(ct.words) == word_array_to_string(expect));
+            word_array_to_string(cipher.output.words) ==
+            word_array_to_string(expect));
 
-         var dt = krypto.utils.createByteArray();
+         var ct = cipher.output;
          cipher = krypto.aes.startDecrypting(key);
-         cipher.update(ct, dt);
-         console.log('dt', word_array_to_string(dt.words));
+         cipher.update(ct);
+         console.log('plain', word_array_to_string(cipher.output.words));
          console.log('expect', word_array_to_string(block.words));
          console.log('assert',
-            word_array_to_string(dt.words) ==
+            word_array_to_string(cipher.output.words) ==
             word_array_to_string(block.words));
       };
 
@@ -303,20 +303,20 @@
          expect.push(0xec0d7191);
          
          var cipher = krypto.aes.startEncrypting(key);
-         var ct = krypto.utils.createByteArray();
-         cipher.update(block, ct);
-         console.log('ct', word_array_to_string(ct.words));
+         cipher.update(block);
+         console.log('ciphered', word_array_to_string(cipher.output.words));
          console.log('expect', word_array_to_string(expect));
          console.log('assert',
-            word_array_to_string(ct.words) == word_array_to_string(expect));
+            word_array_to_string(cipher.output.words) ==
+            word_array_to_string(expect));
 
-         var dt = krypto.utils.createByteArray();
+         var ct = cipher.output;
          cipher = krypto.aes.startDecrypting(key);
-         cipher.update(ct, dt);
-         console.log('dt', word_array_to_string(dt.words));
+         cipher.update(ct);
+         console.log('plain', word_array_to_string(cipher.output.words));
          console.log('expect', word_array_to_string(block.words));
          console.log('assert',
-            word_array_to_string(dt.words) ==
+            word_array_to_string(cipher.output.words) ==
             word_array_to_string(block.words));
       };
 
@@ -347,20 +347,20 @@
          expect.push(0x4b496089);
          
          var cipher = krypto.aes.startEncrypting(key);
-         var ct = krypto.utils.createByteArray();
-         cipher.update(block, ct);
-         console.log('ct', word_array_to_string(ct.words));
+         cipher.update(block);
+         console.log('ciphered', word_array_to_string(cipher.output.words));
          console.log('expect', word_array_to_string(expect));
          console.log('assert',
-            word_array_to_string(ct.words) == word_array_to_string(expect));
+            word_array_to_string(cipher.output.words) ==
+            word_array_to_string(expect));
 
-         var dt = krypto.utils.createByteArray();
+         var ct = cipher.output;
          cipher = krypto.aes.startDecrypting(key);
-         cipher.update(ct, dt);
-         console.log('dt', word_array_to_string(dt.words));
+         cipher.update(ct);
+         console.log('plain', word_array_to_string(cipher.output.words));
          console.log('expect', word_array_to_string(block.words));
          console.log('assert',
-            word_array_to_string(dt.words) ==
+            word_array_to_string(cipher.output.words) ==
             word_array_to_string(block.words));
       };
 
@@ -394,21 +394,18 @@
                block.pushByte(0x00);
                block.pushByte(0x00);
                // FIXME: remove above
-               
-               // for storing ciphered and plain
-               var ct = krypto.utils.createByteArray();
-               var pt = krypto.utils.createByteArray();
    
                // encrypt
                cipher = krypto.aes.startEncrypting(key);
                now = +new Date();
-               cipher.update(block, ct);
+               cipher.update(block);
                totalEncrypt += (+new Date()) - now;
    
                // decrypt
+               var ct = cipher.output;
                cipher = krypto.aes.startDecrypting(key);
                now = +new Date();
-               cipher.update(ct, pt);
+               cipher.update(ct);
                totalDecrypt += (+new Date()) - now;
             }
          }
@@ -556,6 +553,18 @@
          document.getElementById('flashTest').aes();
       };
 
+      var aes_flash_128 = function()
+      {
+         console.log('testing AES (flash 128) ...');
+         document.getElementById('flashTest').aes_flash_128();
+      };
+
+      var aes_flash_test = function()
+      {
+         console.log('testing AES (flash) ...');
+         document.getElementById('flashTest').aes_test();
+      };
+
       </script>
    </head>
    <body>
@@ -581,6 +590,8 @@
          <button id="aes5" onclick="javascript:return aes_jscrypto();">jscrypto</button>
          <button id="aes6" onclick="javascript:return aes_pid_crypt();">pidcrypt</button>
          <button id="aes7" onclick="javascript:return aes_as3crypto();">as3crypto</button>
+         <button id="aes8" onclick="javascript:return aes_flash_128();">flash 128</button>
+         <button id="aes8" onclick="javascript:return aes_flash_test();">flash test</button>
       </div>
    </body>
 </html>
