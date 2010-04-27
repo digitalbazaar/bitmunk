@@ -125,25 +125,30 @@ package
          var now:uint;
          var totalEncrypt:Number = 0;
          var totalDecrypt:Number = 0;
-         for(var i:uint = 0; i < keys.length; i++)
+         var count:uint = 100;
+         var totalTimes:uint = keys.length * count;
+         for(var n:uint = 0; n < count; n++)
          {
-            var key:ByteArray = Hex.toArray(keys[i]);
-            var aes:AESKey = new AESKey(key);
-            var ba:ByteArray = Hex.toArray(data);
-            
-	         // encrypt
-	         now = getTimer();
-	         aes.encrypt(ba);
-            totalEncrypt += getTimer() - now;
-	         
-	         // decrypt
-            now = getTimer();
-	         aes.decrypt(ba);
-            totalDecrypt += getTimer() - now;
+            for(var i:uint = 0; i < keys.length; i++)
+            {
+               var key:ByteArray = Hex.toArray(keys[i]);
+               var aes:AESKey = new AESKey(key);
+               var ba:ByteArray = Hex.toArray(data);
+               
+   	         // encrypt
+	            now = getTimer();
+	            aes.encrypt(ba);
+               totalEncrypt += getTimer() - now;
+	            
+   	         // decrypt
+               now = getTimer();
+	            aes.decrypt(ba);
+               totalDecrypt += getTimer() - now;
+            }
          }
          
-         log('encrypt time: ' + (totalEncrypt / keys.length) + ' ms');
-         log('decrypt time: ' + (totalDecrypt / keys.length) + ' ms');
+         log('encrypt time: ' + (totalEncrypt / totalTimes) + ' ms');
+         log('decrypt time: ' + (totalDecrypt / totalTimes) + ' ms');
          log('flash aes test complete.');
       }
       

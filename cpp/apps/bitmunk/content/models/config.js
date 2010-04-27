@@ -257,7 +257,7 @@
                {
                   '_id_': 'custom system user',
                   '_group_': 'system user',
-                  '_version_': 'Bitmunk 3.0'
+                  '_version_': 'Monarch Config 3.0'
                };
                bitmunk.model.update(
                   sModel, sTable, 'system user:raw', cfg, seqNum);

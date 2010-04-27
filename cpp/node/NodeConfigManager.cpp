@@ -140,7 +140,7 @@ bool NodeConfigManager::saveSystemUserConfig()
       }
       else
       {
-         c[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+         c[ConfigManager::VERSION] = MO_DEFAULT_CONFIG_VERSION;
          c[ConfigManager::ID] = "custom system user";
          c[ConfigManager::GROUP] = "system user";
       }
@@ -256,7 +256,7 @@ bool NodeConfigManager::loadUserConfig(UserId userId)
       snprintf(loaderId, loaderIdMax, "%s (loader)", cfgId);
       Config loader;
       loader[ConfigManager::ID] = loaderId;
-      loader[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+      loader[ConfigManager::VERSION] = MO_DEFAULT_CONFIG_VERSION;
       // optionally load
       Config inc = loader[ConfigManager::INCLUDE][0];
 
@@ -283,7 +283,7 @@ bool NodeConfigManager::loadUserConfig(UserId userId)
             Config config;
             config[ConfigManager::ID] = cfgId;
             config[ConfigManager::PARENT] = USER_PARENT_ID;
-            config[ConfigManager::VERSION] = BITMUNK_CONFIG_VERSION;
+            config[ConfigManager::VERSION] = MO_DEFAULT_CONFIG_VERSION;
             rval = getConfigManager()->addConfig(config);
          }
       }

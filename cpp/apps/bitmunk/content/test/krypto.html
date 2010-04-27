@@ -7,8 +7,10 @@
       </style>
       <script type="text/javascript" src="/bitmunk/js/swfobject/swfobject.js"></script>
       <script type="text/javascript" src="/bitmunk/js/jquery.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/jscrypto/jscrypto.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/random.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/utils.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/aes.js"></script>
       <script type="text/javascript" src="/bitmunk/test/pidcrypt/string_extend.js"></script>
       <script type="text/javascript" src="/bitmunk/test/pidcrypt/pidcrypt.js"></script>
       <script type="text/javascript" src="/bitmunk/test/pidcrypt/pidcrypt_util.js"></script>
@@ -150,9 +152,356 @@
          'User-Agent: MyBrowser/1.0\r\n' +
          '\r\n';
 
+      var aes_test_tables = function()
+      {
+         console.log('generating AES test tables ...');
+
+         var xtime = new Array(256);
+         for(var i = 0; i < 128; i++)
+         {
+            xtime[i] = i << 1;
+            xtime[i + 128] = (i + 128) << 1 ^ 0x11B;
+         }
+         console.log('first xtime', xtime);   
+
+         // compute xtime table which maps b onto GF(b, 0x02)
+         // compute anti-log and log tables
+         var xtime = new Array(256);
+         var atable = new Array(256);
+         var ltable = new Array(256);
+         var b = 1, b2;
+         for(var i = 0; i < 256; i++)
+         {
+            atable[i] = b;
+            ltable[b] = i;
+            b2 = (b & 128) ? (b << 1 ^ 0x11b) : (b << 1 & 0xFF);
+            xtime[b] = b2;
+            b ^= b2;
+         }
+         xtime[0] = 0;
+         atable[255] = atable[0];
+         ltable[0] = 0;
+
+         // compute sbox and isbox
+         var sbox = new Array(256);
+         var isbox = new Array(256);
+         for(var i = 0; i < 256; i++)
+         {
+            // multiplicative inverse: 0 or atable[255 - ltable[i]]
+            b = (i == 0) ? 0 : atable[255 - ltable[i]];
+
+            // SubBytes() affine transformation 
+            b = b ^ (b << 1) ^ (b << 2) ^ (b << 3) ^ (b << 4);
+            b = (b >> 8) ^ (b & 0xFF) ^ 0x63;
+            sbox[i] = b;
+            isbox[b] = i;
+         }
+         
+         var inv = [];
+         for(var i = 0; i < 256; i++)
+         {
+            inv[i] = (i == 0) ? 0 : atable[(255 - ltable[i])];
+         }
+         console.log('inv', inv);
+
+         // inverse: atable[255 - ltable[b]];
+         console.log('atable', atable);
+         console.log('ltable', ltable);
+         console.log('xtime', xtime);
+
+         console.log('xtime(61)=' + xtime[61] + ',gmul=' +
+               atable[(ltable[61] + ltable[2])%255]);
+         console.log('sbox', sbox);
+         console.log('isbox', isbox);
+      };
+
+      var word_array_to_string = function(wa)
+      {
+         var str = '[';
+         for(var i = 0; i < wa.length; i++)
+         {
+            // handle signed hex
+            if(wa[i] < 0)
+            {
+               str += (wa[i] + 0xFFFFFFFF + 1).toString(16);
+            }
+            else
+            {
+               str += wa[i].toString(16);
+            }
+            if(i + 1 < wa.length)
+            {
+               str += ',';
+            }
+         }
+         str += ']';
+         return str;
+      };
+
+      var aes_krypto_128 = function()
+      {
+         console.log('testing krypto AES-128 ...');
+         
+         var block = krypto.utils.createByteArray();
+         block.pushWord(0x00112233);
+         block.pushWord(0x44556677);
+         block.pushWord(0x8899aabb);
+         block.pushWord(0xccddeeff);
+         
+         var key = [];
+         key.push(0x00010203);
+         key.push(0x04050607);
+         key.push(0x08090a0b);
+         key.push(0x0c0d0e0f);
+         
+         var expect = [];
+         expect.push(0x69c4e0d8);
+         expect.push(0x6a7b0430);
+         expect.push(0xd8cdb780);
+         expect.push(0x70b4c55a);
+         
+         var cipher = krypto.aes.startEncrypting(key);
+         var ct = krypto.utils.createByteArray();
+         cipher.update(block, ct);
+         console.log('ct', word_array_to_string(ct.words));
+         console.log('expect', word_array_to_string(expect));
+         console.log('assert',
+            word_array_to_string(ct.words) == word_array_to_string(expect));
+
+         var dt = krypto.utils.createByteArray();
+         cipher = krypto.aes.startDecrypting(key);
+         cipher.update(ct, dt);
+         console.log('dt', word_array_to_string(dt.words));
+         console.log('expect', word_array_to_string(block.words));
+         console.log('assert',
+            word_array_to_string(dt.words) ==
+            word_array_to_string(block.words));
+      };
+
+      var aes_krypto_192 = function()
+      {
+         console.log('testing krypto AES-192 ...');
+         
+         var block = krypto.utils.createByteArray();
+         block.pushWord(0x00112233);
+         block.pushWord(0x44556677);
+         block.pushWord(0x8899aabb);
+         block.pushWord(0xccddeeff);
+         
+         var key = [];
+         key.push(0x00010203);
+         key.push(0x04050607);
+         key.push(0x08090a0b);
+         key.push(0x0c0d0e0f);
+         key.push(0x10111213);
+         key.push(0x14151617);
+         
+         var expect = [];
+         expect.push(0xdda97ca4);
+         expect.push(0x864cdfe0);
+         expect.push(0x6eaf70a0);
+         expect.push(0xec0d7191);
+         
+         var cipher = krypto.aes.startEncrypting(key);
+         var ct = krypto.utils.createByteArray();
+         cipher.update(block, ct);
+         console.log('ct', word_array_to_string(ct.words));
+         console.log('expect', word_array_to_string(expect));
+         console.log('assert',
+            word_array_to_string(ct.words) == word_array_to_string(expect));
+
+         var dt = krypto.utils.createByteArray();
+         cipher = krypto.aes.startDecrypting(key);
+         cipher.update(ct, dt);
+         console.log('dt', word_array_to_string(dt.words));
+         console.log('expect', word_array_to_string(block.words));
+         console.log('assert',
+            word_array_to_string(dt.words) ==
+            word_array_to_string(block.words));
+      };
+
+      var aes_krypto_256 = function()
+      {
+         console.log('testing krypto AES-256 ...');
+         
+         var block = krypto.utils.createByteArray();
+         block.pushWord(0x00112233);
+         block.pushWord(0x44556677);
+         block.pushWord(0x8899aabb);
+         block.pushWord(0xccddeeff);
+         
+         var key = [];
+         key.push(0x00010203);
+         key.push(0x04050607);
+         key.push(0x08090a0b);
+         key.push(0x0c0d0e0f);
+         key.push(0x10111213);
+         key.push(0x14151617);
+         key.push(0x18191a1b);
+         key.push(0x1c1d1e1f);
+         
+         var expect = [];
+         expect.push(0x8ea2b7ca);
+         expect.push(0x516745bf);
+         expect.push(0xeafc4990);
+         expect.push(0x4b496089);
+         
+         var cipher = krypto.aes.startEncrypting(key);
+         var ct = krypto.utils.createByteArray();
+         cipher.update(block, ct);
+         console.log('ct', word_array_to_string(ct.words));
+         console.log('expect', word_array_to_string(expect));
+         console.log('assert',
+            word_array_to_string(ct.words) == word_array_to_string(expect));
+
+         var dt = krypto.utils.createByteArray();
+         cipher = krypto.aes.startDecrypting(key);
+         cipher.update(ct, dt);
+         console.log('dt', word_array_to_string(dt.words));
+         console.log('expect', word_array_to_string(block.words));
+         console.log('assert',
+            word_array_to_string(dt.words) ==
+            word_array_to_string(block.words));
+      };
+
       var aes_krypto = function()
       {
          console.log('testing AES (krypto) ...');
+
+         var now;
+         var totalEncrypt = 0;
+         var totalDecrypt = 0;
+         var count = 100;
+         var totalTimes = aesKeys.length * count;
+         for(var n = 0; n < count; n++)
+         {
+            for(var i = 0; i < aesKeys.length; i++)
+            {
+               var k = aesKeys[i];
+               var key = [];
+               key.push(parseInt(k.substr(0, 8), 16));
+               key.push(parseInt(k.substr(8, 8), 16));
+               key.push(parseInt(k.substr(16, 8), 16));
+               key.push(parseInt(k.substr(24, 8), 16));
+   
+               var block = krypto.utils.createByteArray();
+               for(var x = 0; x < aesPlain.length; x++)
+               {
+                  block.pushByte(aesPlain[x]);
+               }
+               // FIXME: remove this
+               block.pushWord(0x00);
+               block.pushByte(0x00);
+               block.pushByte(0x00);
+               // FIXME: remove above
+               
+               // for storing ciphered and plain
+               var ct = krypto.utils.createByteArray();
+               var pt = krypto.utils.createByteArray();
+   
+               // encrypt
+               cipher = krypto.aes.startEncrypting(key);
+               now = +new Date();
+               cipher.update(block, ct);
+               totalEncrypt += (+new Date()) - now;
+   
+               // decrypt
+               cipher = krypto.aes.startDecrypting(key);
+               now = +new Date();
+               cipher.update(ct, pt);
+               totalDecrypt += (+new Date()) - now;
+            }
+         }
+
+         console.log('encrypt time: ' + (totalEncrypt / totalTimes) + ' ms');
+         console.log('decrypt time: ' + (totalDecrypt / totalTimes) + ' ms');
+         console.log('krypto aes test complete.');
+      };
+
+      var aes_jscrypto = function()
+      {
+         console.log('testing AES (jscrypto) ...');
+
+         var block = [];
+         block.push(0x3243f6a8);
+         block.push(0x885a308d);
+         block.push(0x313198a2);
+         block.push(0xe0370734);
+         /*
+         block.push(0x00112233);
+         block.push(0x44556677);
+         block.push(0x8899aabb);
+         block.push(0xccddeeff);
+         */
+         
+         var key = [];
+         key.push(0x2b7e1516);
+         key.push(0x28aed2a6);
+         key.push(0xabf71588);
+         key.push(0x09cf4f3c);
+         /*
+         key.push(0x00010203);
+         key.push(0x04050607);
+         key.push(0x08090a0b);
+         key.push(0x0c0d0e0f);
+         */
+         
+         var expect = [];
+         expect.push(0x3925841d);
+         expect.push(0x02dc09fb);
+         expect.push(0xdc118597);
+         expect.push(0x196a0b32);
+         /*
+         expect.push(0x69c4e0d8);
+         expect.push(0x6a7b0430);
+         expect.push(0xd8cdb780);
+         expect.push(0x70b4c55a);
+         */
+         
+         var cipher = new aes(key);
+         var ct = [];
+         cipher.encryptBlock(block, ct, false);
+         
+         console.log('ct', ct);
+         console.log('expect', expect);
+
+         var dt = [];
+         cipher.decryptBlock(ct, dt);
+
+         console.log('dt', dt);
+         console.log('expect', block);
+
+         /*
+         var now;
+         var totalEncrypt = 0;
+         var totalDecrypt = 0;
+         for(var i = 0; i < aesKeys.length; i++)
+         {
+            var key = aesKeys[i];
+            var cipher = new aes(key, OCB);
+            var ciphered = [];
+            var plain = [];
+            var macTag = [];
+
+            // encrypt
+            now = +new Date();
+            cipher.encrypt(aesIv, aesPlain, ciphered, '', macTag);
+            totalEncrypt += (+new Date()) - now;
+            console.log('ciphered', aes._hex(ciphered));
+            
+            // decrypt
+            now = +new Date();
+            cipher.decrypt(ciphered, plain, macTag);
+            totalDecrypt += (+new Date()) - now;
+
+            console.log('plain', plain);
+         }
+
+         var len = aesKeys.length;
+         console.log('encrypt time: ' + (totalEncrypt / len) + ' ms');
+         console.log('decrypt time: ' + (totalDecrypt / len) + ' ms');
+         console.log('jscrypto aes test complete.');
+         */
       };
 
       var aes_pid_crypt = function()
@@ -164,33 +513,33 @@
          var totalDecrypt = 0;
          for(var i = 0; i < aesKeys.length; i++)
          {
-            var aes = new pidCrypt.AES.CBC();
+            var cipher = new pidCrypt.AES.CBC();
             var key = aesKeys[i];
             var plainBytes = aesPlain.toByteArray();
 
             // encrypt
-            aes.initByValues('', key, aesIv);
+            cipher.initByValues('', key, aesIv);
             now = +new Date();
-            var cipherBytes = aes.encryptRaw(plainBytes);
+            var cipherBytes = cipher.encryptRaw(plainBytes);
             totalEncrypt += (+new Date()) - now;
             
             // decrypt
-            aes.initByValues('', key, aesIv);
+            cipher.initByValues('', key, aesIv);
             now = +new Date();
-            aes.decryptRaw(cipherBytes);
+            cipher.decryptRaw(cipherBytes);
             totalDecrypt += (+new Date()) - now;
 
             /* Base64-encoding used here
             // encrypt
-            aes.initByValues(aesPlain, key, aesIv);
+            cipher.initByValues(aesPlain, key, aesIv);
             now = +new Date();
-            var ciphered = aes.encrypt();
+            var ciphered = cipher.encrypt();
             totalEncrypt += (+new Date()) - now;
 
             // decrypt
-            aes.initByValues(ciphered, key, aesIv);
+            cipher.initByValues(ciphered, key, aesIv);
             now = +new Date();
-            aes.decrypt();
+            cipher.decrypt();
             totalDecrypt += (+new Date()) - now;
             */
          }
@@ -198,7 +547,7 @@
          var len = aesKeys.length;
          console.log('encrypt time: ' + (totalEncrypt / len) + ' ms');
          console.log('decrypt time: ' + (totalDecrypt / len) + ' ms');
-         console.log('pidcrypt aes test complete.');         
+         console.log('pidcrypt aes test complete.');
       };
 
       var aes_as3crypto = function()
@@ -224,9 +573,14 @@
          <p>Could not load the flash Test.</p>
       </div>
       <div id="aes_controls">
-         <button id="aes1" onclick="javascript:return aes_krypto();">jscrypto</button>
-         <button id="aes2" onclick="javascript:return aes_pid_crypt();">pidcrypt</button>
-         <button id="aes3" onclick="javascript:return aes_as3crypto();">as3crypto</button>
+         <button id="aes1" onclick="javascript:return aes_krypto_128();">krypto 128</button>
+         <button id="aes2" onclick="javascript:return aes_krypto_192();">krypto 192</button>
+         <button id="aes3" onclick="javascript:return aes_krypto_256();">krypto 256</button>
+         <br />
+         <button id="aes4" onclick="javascript:return aes_krypto();">krypto</button>
+         <button id="aes5" onclick="javascript:return aes_jscrypto();">jscrypto</button>
+         <button id="aes6" onclick="javascript:return aes_pid_crypt();">pidcrypt</button>
+         <button id="aes7" onclick="javascript:return aes_as3crypto();">as3crypto</button>
       </div>
    </body>
 </html>

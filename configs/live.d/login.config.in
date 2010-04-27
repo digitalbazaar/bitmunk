@@ -1,7 +1,7 @@
 {
    "_id_" : "node",
    "_group_" : "defaults",
-   "_version_" : "Bitmunk 3.0",
+   "_version_" : "Monarch Config 3.0",
    "_merge_" : {
       "node" : {
          "login" : {
