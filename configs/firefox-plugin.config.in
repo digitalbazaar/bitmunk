@@ -22,7 +22,7 @@
    },
    "_merge_": {
       "monarch.app.Logging": {
-         "color": true,
+         "color": false,
          "level": "max"
       },
       "bitmunk.webui.WebUi" : {
