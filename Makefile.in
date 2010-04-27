@@ -55,6 +55,7 @@ INSTALL_BASE_CONFIGS := \
 	configs/live.d/node.config
 
 INSTALL_BASE_MODS := \
+	dist/lib/libbitmunk.so \
 	dist/lib/libbmapp.so \
 	dist/lib/libbmnodemodule.so
 
@@ -186,7 +187,7 @@ $(MODULE_FILES):
 #       it will work for single arch builds and is difficult to know which
 #       arch to specify otherwise.
 test: all
-	./bitmunk-run dist/bin/bitmunk-unit-tests
+	./bitmunk-run test
 
 clean-docs:
 	rm -rf docs/bitmunk-api-@BITMUNK_MAJORMINOR@
