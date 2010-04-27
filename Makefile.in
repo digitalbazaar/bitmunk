@@ -55,6 +55,7 @@ INSTALL_BASE_CONFIGS := \
 	configs/live.d/node.config
 
 INSTALL_BASE_MODS := \
+	dist/lib/libbmapp.so \
 	dist/lib/libbmnodemodule.so
 
 INSTALL_SYSTEM_MOD_CONFIGS := \
@@ -83,28 +84,28 @@ BUILD_FOR_MACOS=@BUILD_FOR_MACOS@
 
 # The Bitmunk node modules
 COMMON_MODULES = \
-   bmnodemodule \
-   bmsystem \
-   bmbfp \
-   bmnegotiate \
-   bmsell
+	bmnodemodule \
+	bmsystem \
+	bmbfp \
+	bmnegotiate \
+	bmsell
 
 BPE_MODULES = \
-   $(COMMON_MODULES) \
-   bmperuserdb \
-   bmpurchase \
-   bmfilebrowser \
-   bmcustomcatalog \
-   bmmedialibrary \
-   bmeventreactor \
-   bmeventreactor-downloadstate \
-   bmwebui \
-   bmportmapper \
-   $(GTKUI_MODULE) \
-   $(ADMIN_MODULE) 
+	$(COMMON_MODULES) \
+	bmperuserdb \
+	bmpurchase \
+	bmfilebrowser \
+	bmcustomcatalog \
+	bmmedialibrary \
+	bmeventreactor \
+	bmeventreactor-downloadstate \
+	bmwebui \
+	bmportmapper \
+	$(GTKUI_MODULE) \
+	$(ADMIN_MODULE) 
 
 APP_MODULES = \
-    bmapp \
+	bmapp \
 	bfp-file-id \
 	bitmunk \
 	format-detect \
