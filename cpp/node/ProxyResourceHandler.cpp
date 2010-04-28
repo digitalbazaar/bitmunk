@@ -87,7 +87,7 @@ void ProxyResourceHandler::addMapping(
       double-slash when the proxy service is the root service.
 
       The code that looks for matches will first look for the given host, then
-      for a wilcard host if that fails, then for the absolute path within the
+      for a wildcard host if that fails, then for the absolute path within the
       found host mapping (if any), and then for a path wildcard if that fails.
    */
    string absPath;
