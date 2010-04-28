@@ -212,7 +212,7 @@ DynamicObject Bitmunk::getCommandLineSpecs()
    opt["short"] = "-a";
    opt["long"] = "--auto-login";
    opt["setTrue"]["root"] = options;
-   opt["setTrue"]["path"] = "app.login.auto";
+   opt["setTrue"]["path"] = "node.login.auto";
 
    opt = spec["options"]->append();
    opt["short"] = "-p";
@@ -238,14 +238,14 @@ DynamicObject Bitmunk::getCommandLineSpecs()
    opt["short"] = "-U";
    opt["long"] = "--user";
    opt["arg"]["root"] = options;
-   opt["arg"]["path"] = "node.password";
+   opt["arg"]["path"] = "node.login.username";
    opt["argError"] = "No user specified.";
 
    opt = spec["options"]->append();
    opt["short"] = "-P";
    opt["long"] = "--password";
    opt["arg"]["root"] = options;
-   opt["arg"]["path"] = "node.password";
+   opt["arg"]["path"] = "node.login.password";
    opt["argError"] = "No password specified.";
 
    DynamicObject specs = AppPlugin::getCommandLineSpecs();
