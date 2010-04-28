@@ -317,6 +317,11 @@ void ProxyResourceHandler::operator()(BtpAction* action)
          "ProxyResourceHandler proxying %s%s => %s%s",
          host.c_str(), action->getResource(),
          url->getHostAndPort().c_str(), path.c_str());
+      MO_CAT_DEBUG(BM_NODE_CAT,
+         "ProxyResourceHandler request header for %s%s => %s%s:\n%s",
+         host.c_str(), action->getResource(),
+         url->getHostAndPort().c_str(), path.c_str(),
+         req->getHeader()->toString().c_str());
 
       // get a connection
       BtpClient* btpc = mNode->getMessenger()->getBtpClient();
