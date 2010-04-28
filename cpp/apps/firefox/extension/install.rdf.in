@@ -3,7 +3,7 @@
     <Description about="urn:mozilla:install-manifest">
         <em:id>bitmunk@digitalbazaar.com</em:id>
         <em:name>Bitmunk</em:name>
-        <em:version>@FULL_VERSION@</em:version>
+        <em:version>@FULL_DOTTED_VERSION@</em:version>
         <em:description>Bitmunk - Collaborative Content Distribution.</em:description>
         <em:creator>Digital Bazaar, Inc.</em:creator>
         <em:contributor>Dave Longley (Digital Bazaar, Inc.)</em:contributor>
