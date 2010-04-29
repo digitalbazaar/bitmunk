@@ -8,6 +8,8 @@
 #include "bitmunk/node/BtpActionDelegate.h"
 #include "monarch/io/ByteArrayInputStream.h"
 #include "monarch/net/SocketTools.h"
+#include "monarch/util/StringTokenizer.h"
+#include "monarch/util/StringTools.h"
 
 #include <algorithm>
 
@@ -17,6 +19,8 @@ using namespace monarch::http;
 using namespace monarch::io;
 using namespace monarch::net;
 using namespace monarch::rt;
+using namespace monarch::util;
+using namespace monarch::util::regex;
 using namespace bitmunk::protocol;
 using namespace bitmunk::node;
 
@@ -45,11 +49,104 @@ ProxyResourceHandler::~ProxyResourceHandler()
    }
 }
 
-void ProxyResourceHandler::addPermittedHost(const char* host)
+bool ProxyResourceHandler::addPermittedHost(const char* host)
 {
-   mPermittedHosts.push_back(strdup(host));
-   MO_CAT_INFO(BM_NODE_CAT,
-      "ProxyResourceHandler added permitted host: %s", host);
+   bool rval = true;
+
+   // see if the host contains a wildcard
+   if(strchr(host, '*') == NULL)
+   {
+      // not a wildcard
+      mPermittedHosts.push_back(strdup(host));
+      MO_CAT_INFO(BM_NODE_CAT,
+         "ProxyResourceHandler added permitted host: %s", host);
+   }
+   else
+   {
+      // build regex, tokenizing on wildcards
+      int paren = 0;
+      string regex;
+      StringTokenizer st(host, '*');
+      while(st.hasNextToken())
+      {
+         // escape periods in token
+         string token = st.nextToken();
+         if(token.length() == 0 && regex.length() != 0)
+         {
+            regex.append(".*");
+         }
+         else if(token.length() > 0)
+         {
+            // handle ending without a colon or any port number
+            if(token.at(token.length() - 1) == ':')
+            {
+               token.replace(token.length() - 1, 1, "($|:");
+               paren++;
+            }
+
+            // start regex
+            if(regex.length() == 0)
+            {
+               // handle starting with no period or with text then a period
+               if(token.at(0) == '.')
+               {
+                  regex.append("(^|^.*\\.)");
+                  token.erase(0, 1);
+               }
+               else
+               {
+                  regex.append("^.*");
+               }
+            }
+            // continue regex
+            else
+            {
+               regex.append(".*");
+            }
+
+            StringTools::replaceAll(token, ".", "\\.");
+            regex.append(token);
+         }
+      }
+      if(regex.length() == 0)
+      {
+         // handle the anything regex
+         regex.append("^.*$");
+      }
+      else
+      {
+         // end regex
+         regex.push_back('$');
+         regex.append(paren, ')');
+      }
+
+      PatternRef pattern = Pattern::compile(regex.c_str(), true, false);
+      if(pattern.isNull())
+      {
+         ExceptionRef e = new Exception(
+            "Invalid permitted host wildcard format.",
+            "bitmunk.node.ProxyResourceHandler.InvalidPermittedHost");
+         e->getDetails()["host"] = host;
+         e->getDetails()["regex"] = regex.c_str();
+         Exception::push(e);
+         rval = false;
+      }
+      else
+      {
+         mWildcardHosts.push_back(pattern);
+         MO_CAT_INFO(BM_NODE_CAT,
+            "ProxyResourceHandler added permitted host: %s (regex: '%s')",
+            host, regex.c_str());
+      }
+   }
+
+   if(rval)
+   {
+      MO_CAT_INFO(BM_NODE_CAT,
+         "ProxyResourceHandler added permitted host: %s", host);
+   }
+
+   return rval;
 }
 
 void ProxyResourceHandler::clearPermittedHosts()
@@ -60,6 +157,7 @@ void ProxyResourceHandler::clearPermittedHosts()
       free(*i);
    }
    mPermittedHosts.clear();
+   mWildcardHosts.clear();
    MO_CAT_INFO(BM_NODE_CAT, "ProxyResourceHandler cleared permitted hosts");
 }
 
@@ -375,7 +473,7 @@ bool ProxyResourceHandler::isPermittedHost(const char* host)
 {
    bool rval = false;
 
-   if(mPermittedHosts.empty())
+   if(mPermittedHosts.empty() && mWildcardHosts.empty())
    {
       // all hosts are permitted
       rval = true;
@@ -389,6 +487,19 @@ bool ProxyResourceHandler::isPermittedHost(const char* host)
          if(strcasecmp(host, *i) == 0)
          {
             rval = true;
+         }
+      }
+
+      if(!rval)
+      {
+         // check wildcards
+         for(WildcardHosts::iterator i = mWildcardHosts.begin();
+             !rval && i != mWildcardHosts.end(); i++)
+         {
+            if((*i)->match(host))
+            {
+               rval = true;
+            }
          }
       }
    }

@@ -6,6 +6,7 @@
 
 #include "bitmunk/node/Node.h"
 #include "bitmunk/node/RestResourceHandler.h"
+#include "monarch/util/regex/Pattern.h"
 
 namespace bitmunk
 {
@@ -80,6 +81,12 @@ protected:
    typedef std::vector<char*> PermittedHosts;
    PermittedHosts mPermittedHosts;
 
+   /**
+    * A list of wildcard permitted hosts.
+    */
+   typedef std::vector<monarch::util::regex::PatternRef> WildcardHosts;
+   WildcardHosts mWildcardHosts;
+
 public:
    /**
     * Creates a new ProxyResourceHandler.
@@ -107,9 +114,13 @@ public:
     * added via this method or clearPermittedHosts() is called, then resource
     * handlers may be used for any host.
     *
+    * Wild cards like '*.mywebsite.com' or '*.mywebsite.com:*' are permitted.
+    *
     * @param host the host to add.
+    *
+    * @return true if successful, false if not.
     */
-   virtual void addPermittedHost(const char* host);
+   virtual bool addPermittedHost(const char* host);
 
    /**
     * Clears all permitted hosts. Unless addPermittedHost() is called again,
