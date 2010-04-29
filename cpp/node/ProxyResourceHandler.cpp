@@ -276,6 +276,7 @@ void ProxyResourceHandler::operator()(BtpAction* action)
    // get request host
    HttpRequestHeader* hrh = action->getRequest()->getHeader();
    string host = hrh->getFieldValue("Host");
+   // FIXME: add support for using X-Forwarded-Host if provided?
 
    // find a virtual host entry for the request host
    ProxyMap::iterator i = mProxyMap.find(host.c_str());
