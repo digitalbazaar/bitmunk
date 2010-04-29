@@ -41,7 +41,6 @@ ProxyResourceHandler::~ProxyResourceHandler()
    {
       PathToInfo* m = i->second;
       for(PathToInfo::iterator mi = m->begin(); mi != m->end(); mi++)
-      {
          free((char*)mi->first);
       }
       delete m;
@@ -138,12 +137,6 @@ bool ProxyResourceHandler::addPermittedHost(const char* host)
             "ProxyResourceHandler added permitted host: %s (regex: '%s')",
             host, regex.c_str());
       }
-   }
-
-   if(rval)
-   {
-      MO_CAT_INFO(BM_NODE_CAT,
-         "ProxyResourceHandler added permitted host: %s", host);
    }
 
    return rval;
