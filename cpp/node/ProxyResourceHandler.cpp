@@ -41,6 +41,7 @@ ProxyResourceHandler::~ProxyResourceHandler()
    {
       PathToInfo* m = i->second;
       for(PathToInfo::iterator mi = m->begin(); mi != m->end(); mi++)
+      {
          free((char*)mi->first);
       }
       delete m;
