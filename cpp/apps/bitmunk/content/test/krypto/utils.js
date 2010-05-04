@@ -14,109 +14,155 @@
    window.krypto.utils =
    {
       /**
-       * Creates a ByteArray that stores its bytes as big-endian 32-bit
-       * integers.
+       * Creates a buffer that stores bytes.
+       * 
+       * @param b the bytes to wrap (as a string) (optional).
        */
-      createByteArray: function()
+      createBuffer: function(b)
       {
-         var ba =
+         var buf =
          {
             /**
-             * Stores the 32-bit integers that make up this array.
+             * The data in this buffer.
              */
-            words: [],
+            data: b || new String(),
             
             /**
-             * The number of bytes in this array.
+             * The pointer for reading from this buffer.
              */
-            length: 0,
+            read: 0,
             
             /**
-             * Pushes a byte.
+             * Gets the number of bytes in this buffer.
              * 
-             * @param b the byte to push.
+             * @return the number of bytes in this buffer.
              */
-            pushByte: function(b)
+            length: function()
             {
-               ba.set(ba.length, b);
-               ba.length++;
+               return buf.data.length - buf.read;
             },
             
             /**
-             * Pushes a 32-bit integer.
+             * Puts a byte in this buffer.
+             * 
+             * @param b the byte to put.
+             */
+            putByte: function(b)
+            {
+               buf.data += String.fromCharCode(b);
+            },
+            
+            /**
+             * Puts a 32-bit integer in this buffer.
              * 
              * @param w the 32-bit integer (word).
              */
-            pushWord: function(w)
+            putInt32: function(w)
             {
-               // simple case, length is on a word barrier
-               if(ba.length % 4 == 0)
-               {
-                  ba.words.push(w);
-                  ba.length += 4;
-               }
-               // complex case, must break the word up into bytes
-               else
-               {
-                  for(var i = 3; i >= 0; i--)
-                  {
-                     ba.pushByte((w >> (i << 3)) & 0xFF);
-                  }
-               }
+               var str =
+                  String.fromCharCode(w >> 24 & 0xFF) +
+                  String.fromCharCode(w >> 16 & 0xFF) +
+                  String.fromCharCode(w >> 8 & 0xFF) +
+                  String.fromCharCode(w & 0xFF);
+               buf.data += str;
             },
             
             /**
-             * Gets a byte from the array.
+             * Puts the given buffer into this buffer.
              * 
-             * @param i the index to the byte.
+             * @param buffer the buffer to put into this one.
+             */
+            putBuffer: function(buffer)
+            {
+               buf.data += buffer.data;
+               buffer.clear();
+            },
+            
+            /**
+             * Gets a byte from this buffer and advances the read pointer by 1.
              * 
              * @return the byte.
              */
-            get: function(i)
+            getByte: function()
             {
-               return (ba.words[i >> 2] >> ((3 - (i % 4)) << 3)) & 0xFF;
+               return buf.data.charCodeAt(buf.read++);
             },
             
             /**
-             * Sets a byte in the array.
+             * Gets a word from this buffer and advances the read pointer by 4.
              * 
-             * @param i the index to the byte.
-             * @param b the new byte to set. 
+             * @return the word.
              */
-            set: function(i, b)
+            getInt32: function()
             {
-               ba.words[i >> 2] |= b << ((3 - (ba.length % 4)) << 3);
+               // Note: unexpected behavior here if you just return the
+               // result ... buf.read will not be incremented ... so we
+               // make a var here instead
+               var rval =
+                  buf.data.charCodeAt(buf.read++) << 24 ^
+                  buf.data.charCodeAt(buf.read++) << 16 ^
+                  buf.data.charCodeAt(buf.read++) << 8 ^
+                  buf.data.charCodeAt(buf.read++);
+               return rval;
             },
             
             /**
-             * Gets a javascript array with each element as a byte (0-255).
+             * Reads all bytes out into a string and clears the buffer.
+             * 
+             * @return a string of bytes.
+             */
+            getBytes: function()
+            {
+               var rval = buf.data.slice(buf.read);
+               buf.clear();
+               return rval;
+            },
+            
+            /**
+             * Gets a string of all the bytes without modifying the read
+             * pointer.
              * 
              * @return an array of bytes.
              */
             bytes: function()
             {
-               var b = [];
-               for(var i = 0; i < ba.length; i++)
-               {
-                  b.push(ba.get(i));
-               }
-               return b;
+               return buf.data.slice(buf.read);
             },
             
             /**
-             * Creates a copy of this array.
+             * Creates a copy of this buffer.
              * 
              * @return the copy.
              */
             copy: function()
             {
-               return {
-                  words: ba.words.slice(),
-                  length: ba.length
-               };
+               var c = window.krypto.utils.createBuffer(buf.data);
+               c.read = buf.read;
+               return c;
+            },
+            
+            /**
+             * Compacts this buffer.
+             */
+            compact: function()
+            {
+               if(buf.read > 0)
+               {
+                  buf.data = buf.data.slice(buf.read);
+                  buf.read = 0;
+               }
+            },
+            
+            /**
+             * Clears this buffer.
+             */
+            clear: function()
+            {
+               buf.data = new String();
+               buf.read = 0;
             }
          };
-         return ba;
-      }      
+         return buf;
+      }
    };
 })(jQuery);

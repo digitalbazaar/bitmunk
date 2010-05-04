@@ -87,20 +87,25 @@
          console.log('done');
       };
 
-      var test_byte_array = function()
+      var test_buffer = function()
       {
-         ba = krypto.utils.createByteArray();
-         ba.pushByte(1);
-         ba.pushByte(2);
-         ba.pushByte(3);
-         ba.pushByte(4);
-         ba.pushWord(4);
-         ba.pushByte(1);
-         ba.pushByte(2);
-         ba.pushByte(3);
-         ba.pushWord(4294967295);
+         ba = krypto.utils.createBuffer();
+         ba.putByte(1);
+         ba.putByte(2);
+         ba.putByte(3);
+         ba.putByte(4);
+         ba.putInt32(4);
+         ba.putByte(1);
+         ba.putByte(2);
+         ba.putByte(3);
+         ba.putInt32(4294967295);
+         var bytes = [];
+         while(ba.length() > 0)
+         {
+            bytes.push(ba.getByte());
+         }
          var expect = [1, 2, 3, 4, 0, 0, 0, 4, 1, 2, 3, 255, 255, 255, 255];
-         console.log('ba', ba.bytes());
+         console.log('ba', bytes);
          console.log('ex', expect);
       };
 
@@ -217,6 +222,21 @@
 
       var word_array_to_string = function(wa)
       {
+         // get words from buffer
+         if(wa.constructor != Array)
+         {
+            var bytes = wa.bytes();
+            wa = [];
+            for(var i = 0; i < bytes.length; i += 4)
+            {
+               wa.push(
+                  bytes.charCodeAt(i) << 24 ^
+                  bytes.charCodeAt(i + 1) << 16 ^
+                  bytes.charCodeAt(i + 2) << 8 ^
+                  bytes.charCodeAt(i + 3));
+            }
+         }
+         
          var str = '[';
          for(var i = 0; i < wa.length; i++)
          {
@@ -242,11 +262,12 @@
       {
          console.log('testing krypto AES-128 ...');
          
-         var block = krypto.utils.createByteArray();
-         block.pushWord(0x00112233);
-         block.pushWord(0x44556677);
-         block.pushWord(0x8899aabb);
-         block.pushWord(0xccddeeff);
+         var block = krypto.utils.createBuffer();
+         block.putInt32(0x00112233);
+         block.putInt32(0x44556677);
+         block.putInt32(0x8899aabb);
+         block.putInt32(0xccddeeff);
+         var plain = block.copy();
          
          var key = [];
          key.push(0x00010203);
@@ -262,31 +283,34 @@
          
          var cipher = krypto.aes.startEncrypting(key);
          cipher.update(block);
-         console.log('ciphered', word_array_to_string(cipher.output.words));
+         cipher.finish();
+         console.log('ciphered', word_array_to_string(cipher.output));
          console.log('expect', word_array_to_string(expect));
          console.log('assert',
-            word_array_to_string(cipher.output.words) ==
+            word_array_to_string(cipher.output) ==
             word_array_to_string(expect));
 
          var ct = cipher.output;
          cipher = krypto.aes.startDecrypting(key);
          cipher.update(ct);
-         console.log('plain', word_array_to_string(cipher.output.words));
-         console.log('expect', word_array_to_string(block.words));
+         cipher.finish();
+         console.log('plain', word_array_to_string(cipher.output));
+         console.log('expect', word_array_to_string(plain));
          console.log('assert',
-            word_array_to_string(cipher.output.words) ==
-            word_array_to_string(block.words));
+            word_array_to_string(cipher.output) ==
+            word_array_to_string(plain));
       };
 
       var aes_krypto_192 = function()
       {
          console.log('testing krypto AES-192 ...');
          
-         var block = krypto.utils.createByteArray();
-         block.pushWord(0x00112233);
-         block.pushWord(0x44556677);
-         block.pushWord(0x8899aabb);
-         block.pushWord(0xccddeeff);
+         var block = krypto.utils.createBuffer();
+         block.putInt32(0x00112233);
+         block.putInt32(0x44556677);
+         block.putInt32(0x8899aabb);
+         block.putInt32(0xccddeeff);
+         var plain = block.copy();
          
          var key = [];
          key.push(0x00010203);
@@ -304,31 +328,34 @@
          
          var cipher = krypto.aes.startEncrypting(key);
          cipher.update(block);
-         console.log('ciphered', word_array_to_string(cipher.output.words));
+         cipher.finish();
+         console.log('ciphered', word_array_to_string(cipher.output));
          console.log('expect', word_array_to_string(expect));
          console.log('assert',
-            word_array_to_string(cipher.output.words) ==
+            word_array_to_string(cipher.output) ==
             word_array_to_string(expect));
 
          var ct = cipher.output;
          cipher = krypto.aes.startDecrypting(key);
          cipher.update(ct);
-         console.log('plain', word_array_to_string(cipher.output.words));
-         console.log('expect', word_array_to_string(block.words));
+         cipher.finish();
+         console.log('plain', word_array_to_string(cipher.output));
+         console.log('expect', word_array_to_string(plain));
          console.log('assert',
-            word_array_to_string(cipher.output.words) ==
-            word_array_to_string(block.words));
+            word_array_to_string(cipher.output) ==
+            word_array_to_string(plain));
       };
 
       var aes_krypto_256 = function()
       {
          console.log('testing krypto AES-256 ...');
          
-         var block = krypto.utils.createByteArray();
-         block.pushWord(0x00112233);
-         block.pushWord(0x44556677);
-         block.pushWord(0x8899aabb);
-         block.pushWord(0xccddeeff);
+         var block = krypto.utils.createBuffer();
+         block.putInt32(0x00112233);
+         block.putInt32(0x44556677);
+         block.putInt32(0x8899aabb);
+         block.putInt32(0xccddeeff);
+         var plain = block.copy();
          
          var key = [];
          key.push(0x00010203);
@@ -348,20 +375,22 @@
          
          var cipher = krypto.aes.startEncrypting(key);
          cipher.update(block);
-         console.log('ciphered', word_array_to_string(cipher.output.words));
+         cipher.finish();
+         console.log('ciphered', word_array_to_string(cipher.output));
          console.log('expect', word_array_to_string(expect));
          console.log('assert',
-            word_array_to_string(cipher.output.words) ==
+            word_array_to_string(cipher.output) ==
             word_array_to_string(expect));
 
          var ct = cipher.output;
          cipher = krypto.aes.startDecrypting(key);
          cipher.update(ct);
-         console.log('plain', word_array_to_string(cipher.output.words));
-         console.log('expect', word_array_to_string(block.words));
+         cipher.finish();
+         console.log('plain', word_array_to_string(cipher.output));
+         console.log('expect', word_array_to_string(plain));
          console.log('assert',
-            word_array_to_string(cipher.output.words) ==
-            word_array_to_string(block.words));
+            word_array_to_string(cipher.output) ==
+            word_array_to_string(plain));
       };
 
       var aes_krypto = function()
@@ -384,15 +413,15 @@
                key.push(parseInt(k.substr(16, 8), 16));
                key.push(parseInt(k.substr(24, 8), 16));
    
-               var block = krypto.utils.createByteArray();
+               var block = krypto.utils.createBuffer();
                for(var x = 0; x < aesPlain.length; x++)
                {
-                  block.pushByte(aesPlain[x]);
+                  block.putByte(aesPlain[x]);
                }
                // FIXME: remove this
-               block.pushWord(0x00);
-               block.pushByte(0x00);
-               block.pushByte(0x00);
+               block.putInt32(0x00);
+               block.putByte(0x00);
+               block.putByte(0x00);
                // FIXME: remove above
    
                // encrypt
@@ -576,7 +605,7 @@
       </div>
       <canvas id="canvas" width="300" height="300"></canvas>
       <div id="util_controls">
-         <button id="byte_array" onclick="javascript:return test_byte_array();">byte array</button>
+         <button id="buffer" onclick="javascript:return test_buffer();">buffer</button>
       </div>
       <div id="flashTest">
          <p>Could not load the flash Test.</p>

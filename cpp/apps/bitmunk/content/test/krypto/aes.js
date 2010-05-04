@@ -416,7 +416,7 @@
     * Nb is the number of columns (32-bit words) comprising the State (or
     * number of bytes in a block). For AES, Nb=4.
     * 
-    * @param key the key to schedule.
+    * @param key the key to schedule (as an array of 32-bit words).
     * @param decrypt true to modify the key schedule to decrypt, false not to.
     * 
     * @return the generated key schedule.
@@ -424,7 +424,7 @@
    var expandKey = function(key, decrypt)
    {
       // copy the key's words to initialize the key schedule
-      var w = key.words.slice(0);
+      var w = key.slice(0);
       
       /* RotWord() will rotate a word, moving the first byte to the last
          byte's position (shifting the other bytes left).
@@ -531,12 +531,11 @@
     * encrypt or decrypt the block.
     * 
     * @param w the key schedule.
-    * @param input the input byte array.
-    * @param idx the index into the byte array.
-    * @param output the output byte array.
+    * @param block the input block (an array of 32-bit words).
+    * @param output the updated output block.
     * @param decrypt true to decrypt the block, false to encrypt it.
     */
-   var updateBlock = function(w, input, idx, output, decrypt)
+   var updateBlock = function(w, block, output, decrypt)
    {
       /*
       Cipher(byte in[4*Nb], byte out[4*Nb], word w[Nb*(Nr+1)])
@@ -598,11 +597,10 @@
       // Decrypt: AddRoundKey(state, w[Nr*Nb, (Nr+1)*Nb-1])
       var Nr = w.length / 4 - 1;
       var i = decrypt ? Nr * Nb : 0;
-      var state = input.words;
-      var s0 = state[idx] ^ w[i];
-      var s1 = state[idx + 1] ^ w[i + 1];
-      var s2 = state[idx + 2] ^ w[i + 2];
-      var s3 = state[idx + 3] ^ w[i + 3];
+      var s0 = block[0] ^ w[i];
+      var s1 = block[1] ^ w[i + 1];
+      var s2 = block[2] ^ w[i + 2];
+      var s3 = block[3] ^ w[i + 3];
       
       /* In order to share code we follow the encryption algorithm when both
          encrypting and decrypting. To account for the changes required in the
@@ -762,17 +760,17 @@
          (sub[order[3] >>> 16 & 0xFF] << 16) ^
          (sub[t1 >>> 8 & 0xFF] << 8) ^
          (sub[order[1] & 0xFF]) ^ w[i + 3];
-      output.pushWord(s0);
-      output.pushWord(s1);
-      output.pushWord(s2);
-      output.pushWord(s3);
+      output[0] = s0;
+      output[1] = s1;
+      output[2] = s2;
+      output[3] = s3;
    };
    
    /**
     * Creates an AES cipher object.
     * 
-    * @param key the symmetric key to use, as a byte array.
-    * @param output the byte array to write to.
+    * @param key the symmetric key to use, as an array of 32-bit words.
+    * @param output the buffer to write to.
     * @param decrypt true for decryption, false for encryption.
     * 
     * @return the cipher.
@@ -790,28 +788,46 @@
       var w;
       if(key.length == 4 || key.length == 6 || key.length == 8)
       {
-         var tmp = window.krypto.utils.createByteArray();
-         for(var i = 0; i < key.length; i++)
-         {
-            tmp.pushWord(key[i]);
-         }
-         w = expandKey(tmp, decrypt);
+         w = expandKey(key, decrypt);
          
          cipher =
          {
             key: w,
-            output: output || window.krypto.utils.createByteArray(),
+            output: output || window.krypto.utils.createBuffer(),
+            iv: new Array(Nb),
+            input: window.krypto.utils.createBuffer(),
+            blockSize: Nb << 2,
             
             /**
              * Updates the next block.
              * 
-             * @param input the byte array to read from.
-             * @param idx the index in the given byte array to read from.
+             * @param input the buffer to read from.
              */
-            update: function(input, idx)
+            update: function(input)
             {
-               idx = idx || 0;
-               updateBlock(cipher.key, input, idx, cipher.output, decrypt);
+               // fill the cipher input buffer
+               cipher.input.putBuffer(input);
+               
+               // update full blocks
+               var block = new Array(Nb);
+               while(cipher.input.length() >= cipher.blockSize)
+               {
+                  for(var i = 0; i < Nb; i++)
+                  {
+                     block[i] = cipher.input.getInt32();
+                  }
+                  
+                  // update block and overwrite previous block (IV)
+                  updateBlock(cipher.key, block, cipher.iv, decrypt);
+                  
+                  // write to output
+                  for(var i = 0; i < Nb; i++)
+                  {
+                     cipher.output.putInt32(cipher.iv[i]);
+                  }
+                  
+                  return;
+               }
             },
             
             /**
@@ -821,8 +837,26 @@
              */
             finish: function()
             {
-               // FIXME: need to keep track of the amount of output and
-               // input so we can generate finished output
+               // FIXME: add PKCS#7 padding to block (each pad byte is the
+               // value of the number of pad bytes)
+               
+               // FIXME:
+               /*
+               if(cipher.block.input.length() > 0)
+               {
+                  // FIXME: update last block(s)
+                  // update block and overwrite previous block (IV)
+                  updateBlock(
+                     cipher.key, cipher.block.getWords(), cipher.iv,
+                     decrypt);
+                  
+                  // write to output
+                  for(var i = 0; i < Nb; i++)
+                  {
+                     cipher.output.putWord(cipher.iv[i]);
+                  }
+               }
+               */
             }
          };
       }
@@ -840,8 +874,8 @@
        * symmetric key. The output will be stored in the 'output' member
        * of the returned cipher.
        * 
-       * @param key the symmetric key to use, as a byte array.
-       * @param output the byte array to write to, null to create one.
+       * @param key the symmetric key to use, as an array of 32-bit words.
+       * @param output the buffer to write to, null to create one.
        * 
        * @return the cipher.
        */
@@ -859,8 +893,8 @@
        * symmetric key. The output will be stored in the 'output' member
        * of the returned cipher.
        * 
-       * @param key the symmetric key to use, as a byte array.
-       * @param output the byte array to write to, null to create one.
+       * @param key the symmetric key to use, as an array of 32-bit words.
+       * @param output the buffer to write to, null to create one.
        * 
        * @return the cipher.
        */
