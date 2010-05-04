@@ -34,6 +34,7 @@ BtpAction::BtpAction(const char* resource) :
 
    mContentReceived = false;
    setResultSent(false);
+   mSelectContentEncoding = true;
 }
 
 BtpAction::~BtpAction()
@@ -80,6 +81,11 @@ void BtpAction::setContentEncoding()
          mResponse->getHeader()->setField("Content-Encoding", "gzip");
       }
    }
+}
+
+void BtpAction::setSelectContentEncoding(bool on)
+{
+   mSelectContentEncoding = on;
 }
 
 bool BtpAction::checkSecurity()
@@ -204,7 +210,8 @@ bool BtpAction::sendResult(InputStream* is)
       mOutMessage.setContentSource(is);
 
       // set content encoding if not set
-      if(!mResponse->getHeader()->hasField("Content-Encoding"))
+      if(mSelectContentEncoding &&
+         !mResponse->getHeader()->hasField("Content-Encoding"))
       {
          setContentEncoding();
       }
@@ -256,7 +263,8 @@ bool BtpAction::sendResult(DynamicObject& dyno)
       mOutMessage.setDynamicObject(dyno, contentType.c_str());
 
       // set content encoding if not set
-      if(!mResponse->getHeader()->hasField("Content-Encoding"))
+      if(mSelectContentEncoding &&
+         !mResponse->getHeader()->hasField("Content-Encoding"))
       {
          setContentEncoding();
       }
@@ -318,7 +326,8 @@ bool BtpAction::sendException(ExceptionRef& e, bool client)
       mOutMessage.setDynamicObject(dyno, contentType.c_str());
 
       // set content encoding if not set
-      if(!mResponse->getHeader()->hasField("Content-Encoding"))
+      if(mSelectContentEncoding &&
+         !mResponse->getHeader()->hasField("Content-Encoding"))
       {
          setContentEncoding();
       }
