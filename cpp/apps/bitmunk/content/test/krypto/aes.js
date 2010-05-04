@@ -531,11 +531,11 @@
     * encrypt or decrypt the block.
     * 
     * @param w the key schedule.
-    * @param block the input block (an array of 32-bit words).
+    * @param input the input block (an array of 32-bit words).
     * @param output the updated output block.
     * @param decrypt true to decrypt the block, false to encrypt it.
     */
-   var updateBlock = function(w, block, output, decrypt)
+   var updateBlock = function(w, input, output, decrypt)
    {
       /*
       Cipher(byte in[4*Nb], byte out[4*Nb], word w[Nb*(Nr+1)])
@@ -573,11 +573,17 @@
       end
       */
       
-      // get tables
+      // Encrypt: AddRoundKey(state, w[0, Nb-1])
+      // Decrypt: AddRoundKey(state, w[Nr*Nb, (Nr+1)*Nb-1])
+      // Note: To understand the purpose of the 'order' var read on below.
+      var Nr = w.length / 4 - 1;
+      var i, delta, order;
       var mx0, mx1, mx2, mx3, sub;
       if(decrypt)
       {
-         // use inverted tables for decryption
+         i = Nr * Nb;
+         delta = -4;
+         order = [3, 0, 1, 2];
          mx0 = imix[0];
          mx1 = imix[1];
          mx2 = imix[2];
@@ -586,21 +592,19 @@
       }
       else
       {
+         i = 0;
+         delta = 4;
+         order = [1, 2, 3, 0];
          mx0 = mix[0];
          mx1 = mix[1];
          mx2 = mix[2];
          mx3 = mix[3];
          sub = sbox;
       }
-      
-      // Encrypt: AddRoundKey(state, w[0, Nb-1])
-      // Decrypt: AddRoundKey(state, w[Nr*Nb, (Nr+1)*Nb-1])
-      var Nr = w.length / 4 - 1;
-      var i = decrypt ? Nr * Nb : 0;
-      var s0 = block[0] ^ w[i];
-      var s1 = block[1] ^ w[i + 1];
-      var s2 = block[2] ^ w[i + 2];
-      var s3 = block[3] ^ w[i + 3];
+      output[0] = input[0] ^ w[i];
+      output[1] = input[1] ^ w[i + 1];
+      output[2] = input[2] ^ w[i + 2];
+      output[3] = input[3] ^ w[i + 3];
       
       /* In order to share code we follow the encryption algorithm when both
          encrypting and decrypting. To account for the changes required in the
@@ -609,7 +613,6 @@
          order of transformations applied when performing rounds. We also get
          key rounds in reverse order (relative to encryption).
       */
-      var order;
       var t0, t1, t2, t3;
       for(var round = 1; round < Nr; round++)
       {
@@ -681,51 +684,31 @@
             encrypt: c1,c2,c3,c0
             decrypt: c3,c0,c1,c2
          */
-         if(decrypt)
-         {
-            i -= 4;
-            order = [s3, s0, s1, s2];
-         }
-         else
-         {
-            i += 4;
-            order = [s1, s2, s3, s0];
-         }
+         i += delta;
          t0 =
-            mx0[s0 >>> 24] ^
-            mx1[order[0] >>> 16 & 0xFF] ^
-            mx2[s2 >>> 8 & 0xFF] ^
-            mx3[order[2] & 0xFF] ^ w[i];
+            mx0[output[0] >>> 24] ^
+            mx1[output[order[0]] >>> 16 & 0xFF] ^
+            mx2[output[2] >>> 8 & 0xFF] ^
+            mx3[output[order[2]] & 0xFF] ^ w[i];
          t1 =
-            mx0[s1 >>> 24] ^
-            mx1[order[1] >>> 16 & 0xFF] ^
-            mx2[s3 >>> 8 & 0xFF] ^
-            mx3[order[3] & 0xFF] ^ w[i + 1];
+            mx0[output[1] >>> 24] ^
+            mx1[output[order[1]] >>> 16 & 0xFF] ^
+            mx2[output[3] >>> 8 & 0xFF] ^
+            mx3[output[order[3]] & 0xFF] ^ w[i + 1];
          t2 =
-            mx0[s2 >>> 24] ^
-            mx1[order[2] >>> 16 & 0xFF] ^
-            mx2[s0 >>> 8 & 0xFF] ^
-            mx3[order[0] & 0xFF] ^ w[i + 2];
+            mx0[output[2] >>> 24] ^
+            mx1[output[order[2]] >>> 16 & 0xFF] ^
+            mx2[output[0] >>> 8 & 0xFF] ^
+            mx3[output[order[0]] & 0xFF] ^ w[i + 2];
          t3 =
-            mx0[s3 >>> 24] ^
-            mx1[order[3] >>> 16 & 0xFF] ^
-            mx2[s1 >>> 8 & 0xFF] ^
-            mx3[order[1] & 0xFF] ^ w[i + 3];
-         s0 = t0;
-         s1 = t1;
-         s2 = t2;
-         s3 = t3;
-      }
-      
-      if(decrypt)
-      {
-         i -= 4;
-         order = [s3, s0, s1, s2];
-      }
-      else
-      {
-         i += 4;
-         order = [s1, s2, s3, s0];
+            mx0[output[3] >>> 24] ^
+            mx1[output[order[3]] >>> 16 & 0xFF] ^
+            mx2[output[1] >>> 8 & 0xFF] ^
+            mx3[output[order[1]] & 0xFF] ^ w[i + 3];
+         output[0] = t0;
+         output[1] = t1;
+         output[2] = t2;
+         output[3] = t3;
       }
       
       /*
@@ -740,42 +723,45 @@
        AddRoundKey(state, w[0, Nb-1])
       */
       // Note: rows are shifted inline
-      s0 =
-         (sub[t0 >>> 24] << 24) ^
-         (sub[order[0] >>> 16 & 0xFF] << 16) ^
-         (sub[t2 >>> 8 & 0xFF] << 8) ^
-         (sub[order[2] & 0xFF]) ^ w[i];
-      s1 =
-         (sub[t1 >>> 24] << 24) ^
-         (sub[order[1] >>> 16 & 0xFF] << 16) ^
-         (sub[t3 >>> 8 & 0xFF] << 8) ^
-         (sub[order[3] & 0xFF]) ^ w[i + 1];
-      s2 =
-         (sub[t2 >>> 24] << 24) ^
-         (sub[order[2] >>> 16 & 0xFF] << 16) ^
-         (sub[t0 >>> 8 & 0xFF] << 8) ^
-         (sub[order[0] & 0xFF]) ^ w[i + 2];
-      s3 =
-         (sub[t3 >>> 24] << 24) ^
-         (sub[order[3] >>> 16 & 0xFF] << 16) ^
-         (sub[t1 >>> 8 & 0xFF] << 8) ^
-         (sub[order[1] & 0xFF]) ^ w[i + 3];
-      output[0] = s0;
-      output[1] = s1;
-      output[2] = s2;
-      output[3] = s3;
+      i += delta;
+      t0 =
+         (sub[output[0] >>> 24] << 24) ^
+         (sub[output[order[0]] >>> 16 & 0xFF] << 16) ^
+         (sub[output[2] >>> 8 & 0xFF] << 8) ^
+         (sub[output[order[2]] & 0xFF]) ^ w[i];
+      t1 =
+         (sub[output[1] >>> 24] << 24) ^
+         (sub[output[order[1]] >>> 16 & 0xFF] << 16) ^
+         (sub[output[3] >>> 8 & 0xFF] << 8) ^
+         (sub[output[order[3]] & 0xFF]) ^ w[i + 1];
+      t2 =
+         (sub[output[2] >>> 24] << 24) ^
+         (sub[output[order[2]] >>> 16 & 0xFF] << 16) ^
+         (sub[output[0] >>> 8 & 0xFF] << 8) ^
+         (sub[output[order[0]] & 0xFF]) ^ w[i + 2];
+      t3 =
+         (sub[output[3] >>> 24] << 24) ^
+         (sub[output[order[3]] >>> 16 & 0xFF] << 16) ^
+         (sub[output[1] >>> 8 & 0xFF] << 8) ^
+         (sub[output[order[1]] & 0xFF]) ^ w[i + 3];
+      output[0] = t0;
+      output[1] = t1;
+      output[2] = t2;
+      output[3] = t3;
    };
    
    /**
-    * Creates an AES cipher object.
+    * Creates an AES cipher object. CBC (cipher-block-chaining) mode will be
+    * used.
     * 
-    * @param key the symmetric key to use, as an array of 32-bit words.
+    * @param key the symmetric key to use (array of 32-bit words).
+    * @param iv the initialization vector to use (array of Nb 32-bit words).
     * @param output the buffer to write to.
     * @param decrypt true for decryption, false for encryption.
     * 
     * @return the cipher.
     */
-   var createCipher = function(key, output, decrypt)
+   var createCipher = function(key, iv, output, decrypt)
    {
       var cipher = null;
       
@@ -784,50 +770,99 @@
          initialize();
       }
       
-      // FIXME: validate key, allow for other kinds of inputs
-      var w;
+      // FIXME: validate key, allow for other kinds of key inputs
       if(key.length == 4 || key.length == 6 || key.length == 8)
       {
-         w = expandKey(key, decrypt);
-         
+         // private vars for state
+         var _w = expandKey(key, decrypt);
+         var _input = window.krypto.utils.createBuffer();
+         var _output = output || window.krypto.utils.createBuffer();
+         var _block = iv.slice(0);
+         var _prev = null;
+         var _blockSize = Nb << 2;
+         var _finish = false;
          cipher =
          {
-            key: w,
-            output: output || window.krypto.utils.createBuffer(),
-            iv: new Array(Nb),
-            input: window.krypto.utils.createBuffer(),
-            blockSize: Nb << 2,
+            /**
+             * Output from AES (either encrypted or decrypted bytes).
+             */
+            output: _output,
             
             /**
-             * Updates the next block.
+             * Updates the next block using CBC mode.
              * 
              * @param input the buffer to read from.
              */
             update: function(input)
             {
-               // fill the cipher input buffer
-               cipher.input.putBuffer(input);
+               console.log('IN UPDATE');
                
-               // update full blocks
-               var block = new Array(Nb);
-               while(cipher.input.length() >= cipher.blockSize)
+               if(!_finish)
                {
-                  for(var i = 0; i < Nb; i++)
-                  {
-                     block[i] = cipher.input.getInt32();
-                  }
-                  
-                  // update block and overwrite previous block (IV)
-                  updateBlock(cipher.key, block, cipher.iv, decrypt);
-                  
-                  // write to output
-                  for(var i = 0; i < Nb; i++)
-                  {
-                     cipher.output.putInt32(cipher.iv[i]);
-                  }
-                  
-                  return;
+                  // not finishing, so fill the input buffer with more input
+                  _input.putBuffer(input);
                }
+               
+               /* In encrypt mode, the threshold for updating a block is the
+                  block size. As soon as enough input is available to update
+                  a block, encryption may occur. In decrypt mode, we wait for
+                  2 blocks to be available or for the finish flag to be set
+                  with only 1 block available. This is done so that the output
+                  buffer will not be populated with padding bytes at the end
+                  of the decryption -- they can be truncated before returning
+                  from finish().
+                */
+               var threshold = decrypt && !_finish ?
+                  _blockSize << 1 : _blockSize;
+               while(_input.length() >= threshold)
+               {
+                  console.log('BUILDING BLOCK', _input.length());
+                  
+                  // save previous block
+                  _prev = _block.slice(0);
+                  
+                  // get next block
+                  if(decrypt)
+                  {
+                     for(var i = 0; i < Nb; i++)
+                     {
+                        _block[i] = _input.getInt32();
+                     }
+                  }
+                  else
+                  {
+                     // CBC mode XOR's IV (or previous block) with plaintext
+                     for(var i = 0; i < Nb; i++)
+                     {
+                        _block[i] = _prev[i] ^ _input.getInt32();
+                     }
+                  }
+                  
+                  // update block
+                  console.log('UPDATING BLOCK', _input.length());
+                  updateBlock(_w, _block, _block, decrypt);
+                  console.log('block', _block);
+                  
+                  // write output
+                  if(decrypt)
+                  {
+                     // CBC mode XOR's IV (or previous block) with plaintext
+                     for(var i = 0; i < Nb; i++)
+                     {
+                        _output.putInt32(_prev[i] ^ _block[i]);
+                     }
+                  }
+                  else
+                  {
+                     for(var i = 0; i < Nb; i++)
+                     {
+                        _output.putInt32(_block[i]);
+                     }
+                     console.log('XXX ENCRYPTED', _output.data);
+                  }
+               }
+               
+               console.log('UPDATE DONE');            
             },
             
             /**
@@ -837,26 +872,40 @@
              */
             finish: function()
             {
-               // FIXME: add PKCS#7 padding to block (each pad byte is the
-               // value of the number of pad bytes)
+               console.log('FINISH');
+               var rval = true;
                
-               // FIXME:
-               /*
-               if(cipher.block.input.length() > 0)
+               if(!decrypt)
                {
-                  // FIXME: update last block(s)
-                  // update block and overwrite previous block (IV)
-                  updateBlock(
-                     cipher.key, cipher.block.getWords(), cipher.iv,
-                     decrypt);
-                  
-                  // write to output
-                  for(var i = 0; i < Nb; i++)
+                  // add PKCS#7 padding to block (each pad byte is the
+                  // value of the number of pad bytes)
+                  var padding = _blockSize - _input.length();
+                  var padChar = String.fromCharCode(padding);
+                  for(var i = 0; i < padding; i++)
                   {
-                     cipher.output.putWord(cipher.iv[i]);
+                     _input.putByte(padChar);
                   }
                }
-               */
+               
+               // do final update
+               _finish = true;
+               cipher.update();
+               
+               if(decrypt)
+               {
+                  // check for error: input data not a multiple of blockSize
+                  rval = (_input.length() == 0);
+                  if(rval)
+                  {
+                     // trim off padding bytes
+                     var len = _output.length();
+                     var count = _output.at(len - 1);
+                     console.log('finish', len, count, _output.data.slice(0));
+                     _output.truncate(count);
+                  }
+               }
+               console.log('FINISH DONE');
+               return rval;
             }
          };
       }
@@ -870,41 +919,62 @@
    window.krypto.aes =
    {
       /**
-       * Creates an AES cipher object to encrypt data using the given
-       * symmetric key. The output will be stored in the 'output' member
+       * Creates an AES cipher object to encrypt data in CBC mode using the
+       * given symmetric key. The output will be stored in the 'output' member
        * of the returned cipher.
        * 
-       * @param key the symmetric key to use, as an array of 32-bit words.
+       * @param key the symmetric key to use (array of 32-bit words).
+       * @param iv the initialization vector to use (array of Nb 32-bit words).
        * @param output the buffer to write to, null to create one.
        * 
        * @return the cipher.
        */
-      startEncrypting: function(key, output)
+      startEncrypting: function(key, iv, output)
       {
-         var cipher = createCipher(key, output, false);
-         
-         // FIXME: handle IV, padding, etc.
-         
-         return cipher;
+         return createCipher(key, iv, output, false);
       },
       
       /**
-       * Creates an AES cipher object to decrypt data using the given
-       * symmetric key. The output will be stored in the 'output' member
+       * Creates an AES cipher object to decrypt data in CBC mode using the
+       * given symmetric key. The output will be stored in the 'output' member
        * of the returned cipher.
        * 
-       * @param key the symmetric key to use, as an array of 32-bit words.
+       * @param key the symmetric key to use (array of 32-bit words).
+       * @param iv the initialization vector to use (array of Nb 32-bit words).
        * @param output the buffer to write to, null to create one.
        * 
        * @return the cipher.
        */
-      startDecrypting: function(key, output)
+      startDecrypting: function(key, iv, output)
       {
-         var cipher = createCipher(key, output, true);
-         
-         // FIXME: handle IV, padding, etc.
-         
-         return cipher;
-      }
+         return createCipher(key, iv, output, true);
+      },
+      
+      /**
+       * Expands a key. Typically only used for testing.
+       * 
+       * @param key the symmetric key to expand, as an array of 32-bit words.
+       * @param decrypt true to expand for decryption, false for encryption.
+       * 
+       * @return the expanded key.
+       */
+      _expandKey: function(key, decrypt)
+      {
+         if(!init)
+         {
+            initialize();
+         }
+         return expandKey(key, decrypt);
+      },
+      
+      /**
+       * Updates a single block. Typically only used for testing.
+       * 
+       * @param w the expanded key to use.
+       * @param input an array of block-size 32-bit words.
+       * @param output an array of block-size 32-bit words.
+       * @param decrypt true to decrypt, false to encrypt.
+       */
+      _updateBlock: updateBlock
    };
 })(jQuery);

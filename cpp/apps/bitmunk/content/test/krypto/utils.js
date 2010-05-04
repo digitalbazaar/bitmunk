@@ -74,8 +74,7 @@
              */
             putBuffer: function(buffer)
             {
-               buf.data += buffer.data;
-               buffer.clear();
+               buf.data += buffer.getBytes();
             },
             
             /**
@@ -130,6 +129,19 @@
             },
             
             /**
+             * Gets a byte at the given index without modifying the read
+             * pointer.
+             * 
+             * @param i the byte index.
+             * 
+             * @return the byte.
+             */
+            at: function(i)
+            {
+               return buf.data.charCodeAt(buf.read + i);
+            },
+            
+            /**
              * Creates a copy of this buffer.
              * 
              * @return the copy.
@@ -159,6 +171,21 @@
             clear: function()
             {
                buf.data = new String();
+               buf.read = 0;
+            },
+            
+            /**
+             * Shortens this buffer by triming bytes off of the end of this
+             * buffer.
+             * 
+             * @param count the number of bytes to trim off.
+             */
+            truncate: function(count)
+            {
+               console.log('count', count);
+               
+               var len = Math.max(0, buf.length() - count);
+               buf.data = buf.data.substr(buf.read, len);
                buf.read = 0;
             }
          };

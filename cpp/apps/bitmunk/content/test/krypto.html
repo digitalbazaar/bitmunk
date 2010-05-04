@@ -134,28 +134,51 @@
 
       // create aes IV
       var aesIvBytes = krypto.random.getBytes(16);
+      var aesIvWords = [];
       var aesIv = '';
       for(var i = 0; i < aesIvBytes.length; i++)
       {
          var hex = aesIvBytes[i].toString(16);
-         aesIv += (hex.length == 1) ? ('0' + hex) : hex; 
+         aesIv += (hex.length == 1) ? ('0' + hex) : hex;
+      }
+      for(var i = 0; i < aesIvBytes.length; i += 4)
+      {
+         aesIvWords.push(
+            aesIvBytes[i] << 24 ^
+            aesIvBytes[i + 1] << 16 ^
+            aesIvBytes[i + 2] << 8 ^
+            aesIvBytes[i + 3]);
       }
       console.log('aesIv', aesIv);
 
       // test data to encrypt
       var aesPlain =
-         'GET /my/url/index.html HTTP/1.1\r\n' +
-         'Accept: text/html,*/*\r\n' +
-         'Accept-Charset: UTF-8,*\r\n' +
-         'Accept-Encoding: gzip,deflate\r\n' +
-         'Accept-Language: en-us,en;q=0.5\r\n' +
-         'Cache-Control: max-age=0\r\n' +
-         'Connection: keep-alive\r\n' +
-         'Host: localhost:19300\r\n' +
-         'If-Modified-Since: Fri, 23 Apr 2010 16:40:05 GMT\r\n' +
-         'Keep-Alive: 115\r\n' +
-         'User-Agent: MyBrowser/1.0\r\n' +
-         '\r\n';
+         String.fromCharCode(0x00) +
+         String.fromCharCode(0x11) +
+         String.fromCharCode(0x22) +
+         String.fromCharCode(0x33) +
+         String.fromCharCode(0x44) +
+         String.fromCharCode(0x55) +
+         String.fromCharCode(0x66) +
+         String.fromCharCode(0x77) +
+         String.fromCharCode(0x88) +
+         String.fromCharCode(0x99) +
+         String.fromCharCode(0xaa) +
+         String.fromCharCode(0xbb) +
+         String.fromCharCode(0xcc) +
+         String.fromCharCode(0xdd) +
+         String.fromCharCode(0xee) +
+         String.fromCharCode(0xff);
+      var aesPlainWords = [
+         0x00112233,
+         0x44556677,
+         0x8899aabb,
+         0xccddeeff];
+      var aesPlainBytes = [
+         0x00, 0x11, 0x22, 0x33,
+         0x44, 0x55, 0x66, 0x77,
+         0x88, 0x99, 0xaa, 0xbb,
+         0xcc, 0xdd, 0xee, 0xff];
 
       var aes_test_tables = function()
       {
@@ -262,12 +285,12 @@
       {
          console.log('testing krypto AES-128 ...');
          
-         var block = krypto.utils.createBuffer();
-         block.putInt32(0x00112233);
-         block.putInt32(0x44556677);
-         block.putInt32(0x8899aabb);
-         block.putInt32(0xccddeeff);
-         var plain = block.copy();
+         var block = [];
+         block.push(0x00112233);
+         block.push(0x44556677);
+         block.push(0x8899aabb);
+         block.push(0xccddeeff);
+         var plain = block;
          
          var key = [];
          key.push(0x00010203);
@@ -280,24 +303,24 @@
          expect.push(0x6a7b0430);
          expect.push(0xd8cdb780);
          expect.push(0x70b4c55a);
-         
-         var cipher = krypto.aes.startEncrypting(key);
-         cipher.update(block);
-         cipher.finish();
-         console.log('ciphered', word_array_to_string(cipher.output));
+
+         var output = [];
+         var w = krypto.aes._expandKey(key, false);
+         krypto.aes._updateBlock(w, block, output, false);
+         console.log('ciphered', word_array_to_string(output));
          console.log('expect', word_array_to_string(expect));
          console.log('assert',
-            word_array_to_string(cipher.output) ==
+            word_array_to_string(output) ==
             word_array_to_string(expect));
 
-         var ct = cipher.output;
-         cipher = krypto.aes.startDecrypting(key);
-         cipher.update(ct);
-         cipher.finish();
-         console.log('plain', word_array_to_string(cipher.output));
+         block = output;
+         output = [];
+         w = krypto.aes._expandKey(key, true);
+         krypto.aes._updateBlock(w, block, output, true);
+         console.log('plain', word_array_to_string(output));
          console.log('expect', word_array_to_string(plain));
          console.log('assert',
-            word_array_to_string(cipher.output) ==
+            word_array_to_string(output) ==
             word_array_to_string(plain));
       };
 
@@ -305,12 +328,12 @@
       {
          console.log('testing krypto AES-192 ...');
          
-         var block = krypto.utils.createBuffer();
-         block.putInt32(0x00112233);
-         block.putInt32(0x44556677);
-         block.putInt32(0x8899aabb);
-         block.putInt32(0xccddeeff);
-         var plain = block.copy();
+         var block = [];
+         block.push(0x00112233);
+         block.push(0x44556677);
+         block.push(0x8899aabb);
+         block.push(0xccddeeff);
+         var plain = block;
          
          var key = [];
          key.push(0x00010203);
@@ -325,24 +348,24 @@
          expect.push(0x864cdfe0);
          expect.push(0x6eaf70a0);
          expect.push(0xec0d7191);
-         
-         var cipher = krypto.aes.startEncrypting(key);
-         cipher.update(block);
-         cipher.finish();
-         console.log('ciphered', word_array_to_string(cipher.output));
+
+         var output = [];
+         var w = krypto.aes._expandKey(key, false);
+         krypto.aes._updateBlock(w, block, output, false);
+         console.log('ciphered', word_array_to_string(output));
          console.log('expect', word_array_to_string(expect));
          console.log('assert',
-            word_array_to_string(cipher.output) ==
+            word_array_to_string(output) ==
             word_array_to_string(expect));
 
-         var ct = cipher.output;
-         cipher = krypto.aes.startDecrypting(key);
-         cipher.update(ct);
-         cipher.finish();
-         console.log('plain', word_array_to_string(cipher.output));
+         block = output;
+         output = [];
+         w = krypto.aes._expandKey(key, true);
+         krypto.aes._updateBlock(w, block, output, true);
+         console.log('plain', word_array_to_string(output));
          console.log('expect', word_array_to_string(plain));
          console.log('assert',
-            word_array_to_string(cipher.output) ==
+            word_array_to_string(output) ==
             word_array_to_string(plain));
       };
 
@@ -350,12 +373,12 @@
       {
          console.log('testing krypto AES-256 ...');
          
-         var block = krypto.utils.createBuffer();
-         block.putInt32(0x00112233);
-         block.putInt32(0x44556677);
-         block.putInt32(0x8899aabb);
-         block.putInt32(0xccddeeff);
-         var plain = block.copy();
+         var block = [];
+         block.push(0x00112233);
+         block.push(0x44556677);
+         block.push(0x8899aabb);
+         block.push(0xccddeeff);
+         var plain = block;
          
          var key = [];
          key.push(0x00010203);
@@ -372,24 +395,24 @@
          expect.push(0x516745bf);
          expect.push(0xeafc4990);
          expect.push(0x4b496089);
-         
-         var cipher = krypto.aes.startEncrypting(key);
-         cipher.update(block);
-         cipher.finish();
-         console.log('ciphered', word_array_to_string(cipher.output));
+
+         var output = [];
+         var w = krypto.aes._expandKey(key, false);
+         krypto.aes._updateBlock(w, block, output, false);
+         console.log('ciphered', word_array_to_string(output));
          console.log('expect', word_array_to_string(expect));
          console.log('assert',
-            word_array_to_string(cipher.output) ==
+            word_array_to_string(output) ==
             word_array_to_string(expect));
 
-         var ct = cipher.output;
-         cipher = krypto.aes.startDecrypting(key);
-         cipher.update(ct);
-         cipher.finish();
-         console.log('plain', word_array_to_string(cipher.output));
+         block = output;
+         output = [];
+         w = krypto.aes._expandKey(key, true);
+         krypto.aes._updateBlock(w, block, output, true);
+         console.log('plain', word_array_to_string(output));
          console.log('expect', word_array_to_string(plain));
          console.log('assert',
-            word_array_to_string(cipher.output) ==
+            word_array_to_string(output) ==
             word_array_to_string(plain));
       };
 
@@ -412,29 +435,104 @@
                key.push(parseInt(k.substr(8, 8), 16));
                key.push(parseInt(k.substr(16, 8), 16));
                key.push(parseInt(k.substr(24, 8), 16));
-   
-               var block = krypto.utils.createBuffer();
-               for(var x = 0; x < aesPlain.length; x++)
-               {
-                  block.putByte(aesPlain[x]);
-               }
-               // FIXME: remove this
-               block.putInt32(0x00);
-               block.putByte(0x00);
-               block.putByte(0x00);
-               // FIXME: remove above
-   
+               
+               var we = krypto.aes._expandKey(key, false);
+               var wd = krypto.aes._expandKey(key, true);
+               var block = aesPlainWords;
+               var output = [];
+               
                // encrypt
-               cipher = krypto.aes.startEncrypting(key);
                now = +new Date();
-               cipher.update(block);
+               krypto.aes._updateBlock(we, block, output, false);
                totalEncrypt += (+new Date()) - now;
-   
+               
+               // decrypt
+               block = output;
+               output = [];
+               now = +new Date();
+               krypto.aes._updateBlock(wd, block, output, false);
+               totalDecrypt += (+new Date()) - now;
+            }
+         }
+         
+         console.log('encrypt time: ' + (totalEncrypt / totalTimes) + ' ms');
+         console.log('decrypt time: ' + (totalDecrypt / totalTimes) + ' ms');
+         console.log('krypto aes test complete.');
+      };
+
+      var aes_krypto_cbc = function()
+      {
+         console.log('testing AES-CBC (krypto) ...');
+
+         for(var i = 0; i < 1; i++)//aesKeys.length; i++)
+         {
+            var k = aesKeys[i];
+            var key = [];
+            key.push(parseInt(k.substr(0, 8), 16));
+            key.push(parseInt(k.substr(8, 8), 16));
+            key.push(parseInt(k.substr(16, 8), 16));
+            key.push(parseInt(k.substr(24, 8), 16));
+            
+            var input = krypto.utils.createBuffer(aesPlain);
+            
+            // encrypt
+            console.log('ENCRYPT');
+            cipher = krypto.aes.startEncrypting(key, aesIvWords);
+            cipher.update(input);
+            cipher.finish();
+            console.log('ENCRYPT DONE');
+            
+            // decrypt
+            var ct = cipher.output;
+            console.log('DECRYPT');
+            cipher = krypto.aes.startDecrypting(key, aesIvWords);
+            cipher.update(ct);
+            cipher.finish();
+            console.log('DECRYPT DONE');
+            
+            console.log('plain', word_array_to_string(cipher.output));
+            console.log('expect', word_array_to_string(aesPlainWords));
+            console.log('assert',
+               word_array_to_string(cipher.output) ==
+               word_array_to_string(aesPlainWords));
+         }
+      };
+
+      var aes_krypto_cbc_speed = function()
+      {
+         console.log('testing AES-CBC (krypto) ...');
+
+         var now;
+         var totalEncrypt = 0;
+         var totalDecrypt = 0;
+         var count = 100;
+         var totalTimes = aesKeys.length * count;
+         for(var n = 0; n < count; n++)
+         {
+            for(var i = 0; i < aesKeys.length; i++)
+            {
+               var k = aesKeys[i];
+               var key = [];
+               key.push(parseInt(k.substr(0, 8), 16));
+               key.push(parseInt(k.substr(8, 8), 16));
+               key.push(parseInt(k.substr(16, 8), 16));
+               key.push(parseInt(k.substr(24, 8), 16));
+               
+               var input = krypto.utils.createBuffer(aesPlain);
+               
+               // encrypt
+               cipher = krypto.aes.startEncrypting(key, aesIvWords);
+               now = +new Date();
+               cipher.update(input);
+               cipher.finish();
+               totalEncrypt += (+new Date()) - now;
+               
                // decrypt
                var ct = cipher.output;
-               cipher = krypto.aes.startDecrypting(key);
+               cipher = krypto.aes.startDecrypting(key, aesIvWords);
                now = +new Date();
                cipher.update(ct);
+               cipher.finish();
                totalDecrypt += (+new Date()) - now;
             }
          }
@@ -541,7 +639,7 @@
          {
             var cipher = new pidCrypt.AES.CBC();
             var key = aesKeys[i];
-            var plainBytes = aesPlain.toByteArray();
+            var plainBytes = aesPlainBytes;
 
             // encrypt
             cipher.initByValues('', key, aesIv);
@@ -616,11 +714,13 @@
          <button id="aes3" onclick="javascript:return aes_krypto_256();">krypto 256</button>
          <br />
          <button id="aes4" onclick="javascript:return aes_krypto();">krypto</button>
-         <button id="aes5" onclick="javascript:return aes_jscrypto();">jscrypto</button>
-         <button id="aes6" onclick="javascript:return aes_pid_crypt();">pidcrypt</button>
-         <button id="aes7" onclick="javascript:return aes_as3crypto();">as3crypto</button>
-         <button id="aes8" onclick="javascript:return aes_flash_128();">flash 128</button>
-         <button id="aes8" onclick="javascript:return aes_flash_test();">flash test</button>
+         <button id="aes5" onclick="javascript:return aes_krypto_cbc();">krypto CBC</button>
+         <button id="aes6" onclick="javascript:return aes_krypto_cbc_speed();">krypto CBC speed</button>
+         <button id="aes7" onclick="javascript:return aes_jscrypto();">jscrypto</button>
+         <button id="aes8" onclick="javascript:return aes_pid_crypt();">pidcrypt</button>
+         <button id="aes9" onclick="javascript:return aes_as3crypto();">as3crypto</button>
+         <button id="aes10" onclick="javascript:return aes_flash_128();">flash 128</button>
+         <button id="aes11" onclick="javascript:return aes_flash_test();">flash test</button>
       </div>
    </body>
 </html>
