@@ -203,8 +203,11 @@ bool BtpAction::sendResult(InputStream* is)
       // set content source
       mOutMessage.setContentSource(is);
 
-      // set content encoding
-      setContentEncoding();
+      // set content encoding if not set
+      if(!mResponse->getHeader()->hasField("Content-Encoding"))
+      {
+         setContentEncoding();
+      }
 
       // send message
       rval = mOutMessage.send(mResponse);
@@ -252,8 +255,11 @@ bool BtpAction::sendResult(DynamicObject& dyno)
       // set content object
       mOutMessage.setDynamicObject(dyno, contentType.c_str());
 
-      // set content encoding
-      setContentEncoding();
+      // set content encoding if not set
+      if(!mResponse->getHeader()->hasField("Content-Encoding"))
+      {
+         setContentEncoding();
+      }
 
       // send message
       rval = mOutMessage.send(mResponse);
@@ -311,8 +317,11 @@ bool BtpAction::sendException(ExceptionRef& e, bool client)
       DynamicObject dyno = Exception::convertToDynamicObject(e);
       mOutMessage.setDynamicObject(dyno, contentType.c_str());
 
-      // set content encoding
-      setContentEncoding();
+      // set content encoding if not set
+      if(!mResponse->getHeader()->hasField("Content-Encoding"))
+      {
+         setContentEncoding();
+      }
 
       // log exception
       MO_CAT_DEBUG(BM_PROTOCOL_CAT,
