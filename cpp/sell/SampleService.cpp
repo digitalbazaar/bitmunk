@@ -48,12 +48,12 @@ bool SampleService::initialize()
    // configure sample semaphore
    mSampleSemaphore["max"] = 30;
    mSampleSemaphore["current"] = 0;
-   
+
    // FIXME: get number from config instead of just using "100"
    // configure sample range cache
    mSampleRangeCache["capacity"] = 100;
    mSampleRangeCache["cache"]->setType(Map);
-   
+
    // file
    {
       RestResourceHandlerRef file = new RestResourceHandler();
@@ -67,7 +67,7 @@ bool SampleService::initialize()
          file->addHandler(h, BtpMessage::Get, 2);
       }
    }
-   
+
    // media
    {
       RestResourceHandlerRef media = new RestResourceHandler();
@@ -81,7 +81,7 @@ bool SampleService::initialize()
          media->addHandler(h, BtpMessage::Get, 1);
       }
    }
-   
+
    // playlist
    {
       RestResourceHandlerRef playlist = new RestResourceHandler();
@@ -95,7 +95,7 @@ bool SampleService::initialize()
          playlist->addHandler(h, BtpMessage::Get, 1);
       }
    }
-   
+
    return true;
 }
 
@@ -112,10 +112,10 @@ bool SampleService::getSampleFileByIds(
    MediaId mediaId, FileId fileId)
 {
    bool rval;
-   
+
    // do not send dyno as response
    out.setNull();
-   
+
    // determine if too busy or not
    bool permit = false;
    mSampleSemaphoreLock.lock();
@@ -128,7 +128,7 @@ bool SampleService::getSampleFileByIds(
       }
    }
    mSampleSemaphoreLock.unlock();
-   
+
    // ensure permit was granted to stream sample
    if(!permit)
    {
@@ -142,7 +142,7 @@ bool SampleService::getSampleFileByIds(
       // get catalog interface
       CatalogInterface* ci = dynamic_cast<CatalogInterface*>(
          mNode->getModuleApiByType("bitmunk.catalog"));
-      
+
       // get targeted node user
       DynamicObject vars;
       action->getResourceQuery(vars);
@@ -150,11 +150,11 @@ bool SampleService::getSampleFileByIds(
       {
          BM_ID_SET(vars["nodeuser"], mNode->getDefaultUserId());
       }
-      
+
       // get resource parameters
       DynamicObject params;
       action->getResourceParams(params);
-      
+
       FileInfo fi;
       BM_ID_SET(fi["mediaId"], mediaId);
       BM_ID_SET(fi["id"], fileId);
@@ -163,7 +163,7 @@ bool SampleService::getSampleFileByIds(
          // send the sample
          rval = sendFile(action, fi);
       }
-      
+
       // release permit
       mSampleSemaphoreLock.lock();
       {
@@ -171,7 +171,7 @@ bool SampleService::getSampleFileByIds(
          mSampleSemaphore["current"] = current - 1;
       }
       mSampleSemaphoreLock.unlock();
-      
+
       if(!rval)
       {
          // sample not found
@@ -180,7 +180,7 @@ bool SampleService::getSampleFileByIds(
          rval = true;
       }
    }
-   
+
    return rval;
 }
 
@@ -192,11 +192,11 @@ bool SampleService::getFileInfos(
 
    // do not send dyno as response
    out.setNull();
-   
+
    // get catalog interface
    CatalogInterface* ci = dynamic_cast<CatalogInterface*>(
       mNode->getModuleApiByType("bitmunk.catalog"));
-   
+
    // get targeted node user
    DynamicObject vars;
    action->getResourceQuery(vars);
@@ -204,11 +204,11 @@ bool SampleService::getFileInfos(
    {
       BM_ID_SET(vars["nodeuser"], mNode->getDefaultUserId());
    }
-   
+
    // get resource parameters
    DynamicObject params;
    action->getResourceParams(params);
-   
+
    // populate ware bundle
    Ware ware;
    BM_ID_SET(ware["mediaId"], BM_MEDIA_ID(params[0]));
@@ -223,7 +223,7 @@ bool SampleService::getFileInfos(
       while(i->hasNext())
       {
          FileInfo& fi = i->next();
-         
+
          // FIXME: get content type for file info instead of "extension"
          const char* extension = fi["extension"]->getString();
          // FIXME: only support for mp3 audio at this time
@@ -240,7 +240,7 @@ bool SampleService::getFileInfos(
          }
       }
    }
-   
+
    return rval;
 }
 
@@ -250,7 +250,7 @@ bool SampleService::getSampleFile(
    // get resource parameters
    DynamicObject params;
    action->getResourceParams(params);
-   
+
    return getSampleFileByIds(
       action, in, out, BM_MEDIA_ID(params[0]), BM_FILE_ID(params[1]));
 }
@@ -259,7 +259,7 @@ bool SampleService::getSampleMedia(
    BtpAction* action, DynamicObject& in, DynamicObject& out)
 {
    bool rval;
-   
+
    DynamicObject fileInfos;
    rval = getFileInfos(action, in, out, fileInfos);
 
@@ -275,7 +275,7 @@ bool SampleService::getSampleMedia(
             BM_MEDIA_ID(fi["mediaId"]), BM_FILE_ID(fi["id"]));
       }
    }
-   
+
    return rval;
 }
 
@@ -292,7 +292,7 @@ bool SampleService::getSamplePlayList(
       // send the sample play list
       rval = sendPlayList(action, fileInfos);
    }
-   
+
    if(!rval)
    {
       // sample not found
@@ -300,18 +300,18 @@ bool SampleService::getSamplePlayList(
       action->sendResult();
       rval = true;
    }
-   
+
    return rval;
 }
 
 bool SampleService::getSampleRange(Media& media)
 {
    bool rval = false;
-   
+
    // FIXME: change cache to just store sample range array? not entire media?
    // keep in mind that the code currently uses other information from
    // the media like the performer and title for the sample id3v2 tags
-   
+
    // check with cache
    bool found = false;
    mSampleRangeCacheLock.lock();
@@ -323,13 +323,13 @@ bool SampleService::getSampleRange(Media& media)
       }
    }
    mSampleRangeCacheLock.unlock();
-   
+
    if(!found)
    {
       // get sample range for media from bitmunk
       Url url;
       url.format("/api/3.0/media/%" PRIu64, BM_MEDIA_ID(media["id"]));
-      
+
       StringTokenizer st;
       if((rval = mNode->getMessenger()->getFromBitmunk(&url, media)))
       {
@@ -342,18 +342,18 @@ bool SampleService::getSampleRange(Media& media)
                (uint32_t)strtoul(st.nextToken(), NULL, 10);
             media["sampleRange"][1] =
                (uint32_t)strtoul(st.nextToken(), NULL, 10);
-            
+
             // update media length to use sample length
             int sampleLength =
                media["sampleRange"][1]->getUInt32() -
                media["sampleRange"][0]->getUInt32();
             media["length"] = sampleLength;
-            
+
             // update media title to include "- Bitmunk Sample"
             string title = media["title"]->getString();
             title.append(" - Bitmunk Sample");
             media["title"] = title.c_str();
-            
+
             // update cache
             mSampleRangeCacheLock.lock();
             {
@@ -363,7 +363,7 @@ bool SampleService::getSampleRange(Media& media)
                   // clear cache, capacity reached
                   mSampleRangeCache->clear();
                }
-               
+
                mSampleRangeCache["cache"][media["id"]->getString()] = media;
             }
             mSampleRangeCacheLock.unlock();
@@ -374,23 +374,23 @@ bool SampleService::getSampleRange(Media& media)
             media["sampleRange"][0] = 0;
             media["sampleRange"][1] = 0;
          }
-         
+
          // clear any sample content-length
          media->removeMember("sampleContentLength");
       }
    }
-   
+
    return rval;
 }
 
 bool SampleService::sendm3u(BtpAction* action, DynamicObject& fileInfos)
 {
    bool rval = true;
-   
+
    // build m3u file
    string content;
    content.append("#EXTM3U\n");
-   
+
    // create play list
    char temp[22];
    FileInfoIterator i = fileInfos.getIterator();
@@ -402,7 +402,7 @@ bool SampleService::sendm3u(BtpAction* action, DynamicObject& fileInfos)
          media["sampleRange"][1]->getUInt32() -
          media["sampleRange"][0]->getUInt32();
       snprintf(temp, 22, "%u", (sampleLength < 0 ? 0 : sampleLength));
-      
+
       string artist;
       if(media["contributors"]->hasMember("Performer"))
       {
@@ -412,7 +412,7 @@ bool SampleService::sendm3u(BtpAction* action, DynamicObject& fileInfos)
       {
          artist = media["contributors"]["Artist"][0]["name"]->getString();
       }
-      
+
       content.append("#EXTINF:");
       content.append(temp);
       content.push_back(',');
@@ -420,7 +420,7 @@ bool SampleService::sendm3u(BtpAction* action, DynamicObject& fileInfos)
       content.append(" - ");
       content.append(media["title"]->getString());
       content.push_back('\n');
-      
+
       // FIXME: get host from configuration or something
       // needs to be public IP that remote side can access
       DynamicObject vars;
@@ -429,48 +429,46 @@ bool SampleService::sendm3u(BtpAction* action, DynamicObject& fileInfos)
       {
          BM_ID_SET(vars["nodeuser"], mNode->getDefaultUserId());
       }
-      
-      Config cfg = mNode->getConfigManager()->getModuleUserConfig(
-         "bitmunk.sell.Sell", BM_USER_ID(vars["nodeuser"]));
-      if(!cfg.isNull())
+
+      HttpRequestHeader* header = action->getRequest()->getHeader();
+      string host = header->getFieldValue("X-Forwarded-Host");
+      if(host.length() == 0)
       {
-         content.append(cfg["sampleUrl"]->getString());
-         content.append("/api/3.0/sales/samples/file/");
-         content.append(fi["mediaId"]->getString());
-         content.push_back('/');
-         content.append(fi["id"]->getString());
-         content.push_back('\n');
+         host = header->getFieldValue("Host");
       }
-      else
-      {
-         // FIXME: couldn't get the proper config, what to send?
-      }
+      content.append("http://");
+      content.append(host);
+      content.append("/api/3.0/sales/samples/file/");
+      content.append(fi["mediaId"]->getString());
+      content.push_back('/');
+      content.append(fi["id"]->getString());
+      content.push_back('\n');
    }
-   
+
    // set up response header
    HttpResponseHeader* header = action->getResponse()->getHeader();
    header->setField("Content-Type", "audio/x-mpegurl");
    header->setField(
       "Content-Disposition", "attachment; filename=bitmunk-sample.m3u");
-   
+
    // create content input stream
    ByteBuffer b(content.length());
    b.put(content.c_str(), content.length(), false);
    ByteArrayInputStream bais(&b);
-   
+
    // send sample
    action->getResponse()->getHeader()->setStatus(200, "OK");
    action->sendResult(&bais);
-   
+
    return rval;
 }
 
 bool SampleService::sendFile(BtpAction* action, FileInfo& fi)
 {
    bool rval = false;
-   
+
    // FIXME: only audio supported at this time
-   
+
    // FIXME: get content type for file info instead of "extension"
    const char* extension = fi["extension"]->getString();
    if((rval = (strcmp(extension, "mp3") == 0)))
@@ -486,7 +484,7 @@ bool SampleService::sendFile(BtpAction* action, FileInfo& fi)
          header->setField("Content-Type", "audio/mpeg");
          header->setField(
             "Content-Disposition", "attachment; filename=bitmunk-sample.mp3");
-         
+
          // calculate content length for sample for HTTP/1.0
          if(strcmp(
             action->getRequest()->getHeader()->getVersion(), "HTTP/1.0") == 0)
@@ -504,17 +502,17 @@ bool SampleService::sendFile(BtpAction* action, FileInfo& fi)
                matp.addTimeSet(
                   media["sampleRange"][0]->getUInt32(),
                   media["sampleRange"][1]->getUInt32());
-               
+
                // FIXME: build a method into the catalog that will return
                // the content-length for a sample
-               
+
                // read data, strip id3 tag, parse mp3 data, add new id3 tag
                // get content length
                Id3v2Tag tag(media);
                Id3v2TagWriter stripper(NULL);
                Id3v2TagWriter embedder(
                   &tag, false, tag.getFrameSource(), false);
-               
+
                FileInputStream fis(file);
                MutatorInputStream strip(&fis, false, &stripper, false);
                MutatorInputStream parse(&strip, false, &matp, false);
@@ -525,61 +523,61 @@ bool SampleService::sendFile(BtpAction* action, FileInfo& fi)
                   contentLength += numBytes;
                }
                embed.close();
-               
+
                if(numBytes != -1)
                {
                   // cache content length
                   media["sampleContentLength"] = contentLength;
                }
             }
-            
+
             // replace chunked encoding with content length
             header->setField("Connection", "close");
             header->removeField("Transfer-Encoding");
             header->removeField("TE");
             header->setField("Content-Length", contentLength);
          }
-         
+
          // create time parser to produce sample
          MpegAudioTimeParser matp;
          matp.addTimeSet(
             media["sampleRange"][0]->getUInt32(),
             media["sampleRange"][1]->getUInt32());
-         
+
          // read data, strip id3 tag, embed new id3 tag, produce sample
          Id3v2Tag tag(media);
          Id3v2TagWriter stripper(NULL);
          Id3v2TagWriter embedder(
             &tag, false, tag.getFrameSource(), false);
-         
+
          FileInputStream fis(file);
          MutatorInputStream strip(&fis, false, &stripper, false);
          MutatorInputStream parse(&strip, false, &matp, false);
          MutatorInputStream embed(&parse, false, &embedder, false);
-         
+
          // send sample, remove any special encoding to prevent compression
          action->getRequest()->getHeader()->removeField("Accept-Encoding");
          action->getResponse()->getHeader()->setStatus(200, "OK");
          action->sendResult(&embed);
-         
+
          // close stream
          embed.close();
       }
    }
-   
+
    return rval;
 }
 
 bool SampleService::sendPlayList(BtpAction* action, DynamicObject& fileInfos)
 {
    bool rval = false;
-   
+
    if(fileInfos->length() > 0)
    {
       // FIXME: only support for m3u play lists at this time
       // FIXME: use query param to select other playlist formats
       rval = sendm3u(action, fileInfos);
    }
-   
+
    return rval;
 }

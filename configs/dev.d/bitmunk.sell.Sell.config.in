@@ -4,7 +4,6 @@
    "_version_" : "Monarch Config 3.0",
    "_merge_" : {
       "bitmunk.sell.Sell" : {
-         "sampleUrl" : "http://localhost:@BITMUNK_SAMPLE_API_PORT@",
          "maxUploadRate": 0
       }
    }
