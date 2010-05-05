@@ -10,7 +10,7 @@
          "port" : @BITMUNK_LOCAL_API_PORT@,
          "bitmunkHomePath" : "{BITMUNK_HOME}",
          "modulePath" : [
-            "@BITMUNK_MODULES_DIR@",
+            "@BITMUNK_MODULES_DIR@"
          ],
          "profilePath" : "profiles",
          "usersPath" : "users",
