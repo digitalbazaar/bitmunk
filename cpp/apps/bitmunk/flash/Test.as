@@ -686,19 +686,9 @@ public class Test extends Sprite
          "A4A5A6A7A9AAABACAEAFB0B1B3B4B5B6"];
       
       // test data to encrypt
-      var data:String =
-         "GET /my/url/index.html HTTP/1.1\r\n" +
-         "Accept: text/html,*/*\r\n" +
-         "Accept-Charset: UTF-8,*\r\n" +
-         "Accept-Encoding: gzip,deflate\r\n" +
-         "Accept-Language: en-us,en;q=0.5\r\n" +
-         "Cache-Control: max-age=0\r\n" +
-         "Connection: keep-alive\r\n" +
-         "Host: localhost:19300\r\n" +
-         "If-Modified-Since: Fri, 23 Apr 2010 16:40:05 GMT\r\n" +
-         "Keep-Alive: 115\r\n" +
-         "User-Agent: MyBrowser/1.0\r\n" +
-         "\r\n";
+      var data:Array =
+         [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+          0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF];
       
       var now:uint;
       var totalEncrypt:Number = 0;
@@ -716,28 +706,15 @@ public class Test extends Sprite
             key.push(parseInt(k.substr(16, 8), 16));
             key.push(parseInt(k.substr(24, 8), 16));
             
-            var bytes:Array = new Array();
-            var x:uint;
-            for(x = 0; x < data.length; x++)
-            {
-               bytes.push(data.charCodeAt(x));
-            }
-            bytes.push(0x00);
-            bytes.push(0x00);
-            bytes.push(0x00);
-            bytes.push(0x00);
-            bytes.push(0x00);
-            bytes.push(0x00);
-            
             var block:Array = new Array();
             var word:uint;
-            for(x = 0; x < bytes.length; x += 4)
+            for(x = 0; x < data.length; x += 4)
             {
                word =
-                  bytes[x] << 24 |
-                  bytes[x + 1] << 16 |
-                  bytes[x + 2] << 8 |
-                  bytes[x + 3];
+                  data[x] << 24 ^
+                  data[x + 1] << 16 ^
+                  data[x + 2] << 8 ^
+                  data[x + 3];
                block.push(word);
             }
             
