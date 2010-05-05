@@ -464,7 +464,7 @@
       {
          console.log('testing AES-CBC (krypto) ...');
 
-         for(var i = 0; i < 1; i++)//aesKeys.length; i++)
+         for(var i = 0; i < aesKeys.length; i++)
          {
             var k = aesKeys[i];
             var key = [];
@@ -476,19 +476,15 @@
             var input = krypto.utils.createBuffer(aesPlain);
             
             // encrypt
-            console.log('ENCRYPT');
             cipher = krypto.aes.startEncrypting(key, aesIvWords);
             cipher.update(input);
             cipher.finish();
-            console.log('ENCRYPT DONE');
             
             // decrypt
             var ct = cipher.output;
-            console.log('DECRYPT');
             cipher = krypto.aes.startDecrypting(key, aesIvWords);
             cipher.update(ct);
             cipher.finish();
-            console.log('DECRYPT DONE');
             
             console.log('plain', word_array_to_string(cipher.output));
             console.log('expect', word_array_to_string(aesPlainWords));

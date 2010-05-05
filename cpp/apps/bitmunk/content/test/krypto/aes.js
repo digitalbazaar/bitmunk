@@ -613,7 +613,7 @@
          order of transformations applied when performing rounds. We also get
          key rounds in reverse order (relative to encryption).
       */
-      var t0, t1, t2, t3;
+      var s0, s1, s2, s3;
       for(var round = 1; round < Nr; round++)
       {
          /* As described above, we'll be using table lookups to perform the
@@ -685,30 +685,30 @@
             decrypt: c3,c0,c1,c2
          */
          i += delta;
-         t0 =
+         s0 =
             mx0[output[0] >>> 24] ^
             mx1[output[order[0]] >>> 16 & 0xFF] ^
             mx2[output[2] >>> 8 & 0xFF] ^
             mx3[output[order[2]] & 0xFF] ^ w[i];
-         t1 =
+         s1 =
             mx0[output[1] >>> 24] ^
             mx1[output[order[1]] >>> 16 & 0xFF] ^
             mx2[output[3] >>> 8 & 0xFF] ^
             mx3[output[order[3]] & 0xFF] ^ w[i + 1];
-         t2 =
+         s2 =
             mx0[output[2] >>> 24] ^
             mx1[output[order[2]] >>> 16 & 0xFF] ^
             mx2[output[0] >>> 8 & 0xFF] ^
             mx3[output[order[0]] & 0xFF] ^ w[i + 2];
-         t3 =
+         s3 =
             mx0[output[3] >>> 24] ^
             mx1[output[order[3]] >>> 16 & 0xFF] ^
             mx2[output[1] >>> 8 & 0xFF] ^
             mx3[output[order[1]] & 0xFF] ^ w[i + 3];
-         output[0] = t0;
-         output[1] = t1;
-         output[2] = t2;
-         output[3] = t3;
+         output[0] = s0;
+         output[1] = s1;
+         output[2] = s2;
+         output[3] = s3;
       }
       
       /*
@@ -724,30 +724,30 @@
       */
       // Note: rows are shifted inline
       i += delta;
-      t0 =
+      s0 =
          (sub[output[0] >>> 24] << 24) ^
          (sub[output[order[0]] >>> 16 & 0xFF] << 16) ^
          (sub[output[2] >>> 8 & 0xFF] << 8) ^
          (sub[output[order[2]] & 0xFF]) ^ w[i];
-      t1 =
+      s1 =
          (sub[output[1] >>> 24] << 24) ^
          (sub[output[order[1]] >>> 16 & 0xFF] << 16) ^
          (sub[output[3] >>> 8 & 0xFF] << 8) ^
          (sub[output[order[3]] & 0xFF]) ^ w[i + 1];
-      t2 =
+      s2 =
          (sub[output[2] >>> 24] << 24) ^
          (sub[output[order[2]] >>> 16 & 0xFF] << 16) ^
          (sub[output[0] >>> 8 & 0xFF] << 8) ^
          (sub[output[order[0]] & 0xFF]) ^ w[i + 2];
-      t3 =
+      s3 =
          (sub[output[3] >>> 24] << 24) ^
          (sub[output[order[3]] >>> 16 & 0xFF] << 16) ^
          (sub[output[1] >>> 8 & 0xFF] << 8) ^
          (sub[output[order[1]] & 0xFF]) ^ w[i + 3];
-      output[0] = t0;
-      output[1] = t1;
-      output[2] = t2;
-      output[3] = t3;
+      output[0] = s0;
+      output[1] = s1;
+      output[2] = s2;
+      output[3] = s3;
    };
    
    /**
@@ -769,16 +769,53 @@
       {
          initialize();
       }
+
+      /* Note: The key may be an array of bytes, a byte buffer,
+         or an array of 32-bit integers. If the key is in bytes,
+         then it must be 16, 24, or 32 bytes in length. If it is
+         in 32-bit integers, it must be 4, 6, or 8 integers long.
+      */
       
-      // FIXME: validate key, allow for other kinds of key inputs
-      if(key.length == 4 || key.length == 6 || key.length == 8)
+      // convert byte array into byte buffer
+      if(key.constructor == Array &&
+         (key.length == 16 || key.length == 24 || key.length == 32))
+      {
+         var tmp = window.krypto.utils.createBuffer();
+         for(var i = 0; i < key.length; i++)
+         {
+            tmp.putByte(key[i]);
+         }
+         key = tmp;
+      }
+      
+      // convert byte buffer into 32-bit integer array
+      if(key.constructor != Array)
+      {
+         var tmp = key;
+         key = [];
+         
+         // key lengths of 16, 24, 32 bytes allowed
+         var len = tmp.length();
+         if(len == 16 || len == 24 || len == 32)
+         {
+            while(tmp.length() > 0)
+            {
+               key.push(tmp.getInt32());
+            }
+         }
+      }
+      
+      // key must be an array of 32-bit integers by now
+      if(key.constructor == Array &&
+         (key.length == 4 || key.length == 6 || key.length == 8))
       {
          // private vars for state
          var _w = expandKey(key, decrypt);
          var _input = window.krypto.utils.createBuffer();
          var _output = output || window.krypto.utils.createBuffer();
-         var _block = iv.slice(0);
-         var _prev = null;
+         var _inBlock = new Array(Nb);
+         var _outBlock = new Array(Nb);
+         var _prev = iv.slice(0);
          var _blockSize = Nb << 2;
          var _finish = false;
          cipher =
@@ -795,8 +832,6 @@
              */
             update: function(input)
             {
-               console.log('IN UPDATE');
-               
                if(!_finish)
                {
                   // not finishing, so fill the input buffer with more input
@@ -816,17 +851,12 @@
                   _blockSize << 1 : _blockSize;
                while(_input.length() >= threshold)
                {
-                  console.log('BUILDING BLOCK', _input.length());
-                  
-                  // save previous block
-                  _prev = _block.slice(0);
-                  
                   // get next block
                   if(decrypt)
                   {
                      for(var i = 0; i < Nb; i++)
                      {
-                        _block[i] = _input.getInt32();
+                        _inBlock[i] = _input.getInt32();
                      }
                   }
                   else
@@ -834,35 +864,32 @@
                      // CBC mode XOR's IV (or previous block) with plaintext
                      for(var i = 0; i < Nb; i++)
                      {
-                        _block[i] = _prev[i] ^ _input.getInt32();
+                        _inBlock[i] = _prev[i] ^ _input.getInt32();
                      }
                   }
                   
                   // update block
-                  console.log('UPDATING BLOCK', _input.length());
-                  updateBlock(_w, _block, _block, decrypt);
-                  console.log('block', _block);
+                  updateBlock(_w, _inBlock, _outBlock, decrypt);
                   
-                  // write output
+                  // write output, save previous ciphered block
                   if(decrypt)
                   {
                      // CBC mode XOR's IV (or previous block) with plaintext
                      for(var i = 0; i < Nb; i++)
                      {
-                        _output.putInt32(_prev[i] ^ _block[i]);
+                        _output.putInt32(_prev[i] ^ _outBlock[i]);
                      }
+                     _prev = _inBlock.slice(0);
                   }
                   else
                   {
                      for(var i = 0; i < Nb; i++)
                      {
-                        _output.putInt32(_block[i]);
+                        _output.putInt32(_outBlock[i]);
                      }
-                     console.log('XXX ENCRYPTED', _output.data);
+                     _prev = _outBlock;
                   }
                }
-               
-               console.log('UPDATE DONE');            
             },
             
             /**
@@ -872,18 +899,17 @@
              */
             finish: function()
             {
-               console.log('FINISH');
                var rval = true;
                
                if(!decrypt)
                {
                   // add PKCS#7 padding to block (each pad byte is the
                   // value of the number of pad bytes)
-                  var padding = _blockSize - _input.length();
-                  var padChar = String.fromCharCode(padding);
+                  var padding = Math.max(
+                     _blockSize, _blockSize - _input.length());
                   for(var i = 0; i < padding; i++)
                   {
-                     _input.putByte(padChar);
+                     _input.putByte(padding);
                   }
                }
                
@@ -900,11 +926,10 @@
                      // trim off padding bytes
                      var len = _output.length();
                      var count = _output.at(len - 1);
-                     console.log('finish', len, count, _output.data.slice(0));
                      _output.truncate(count);
                   }
                }
-               console.log('FINISH DONE');
+               
                return rval;
             }
          };

@@ -111,18 +111,7 @@ public class Test extends Sprite
       
       // test data to encrypt
       var data:String =
-         "GET /my/url/index.html HTTP/1.1\r\n" +
-         "Accept: text/html,*/*\r\n" +
-         "Accept-Charset: UTF-8,*\r\n" +
-         "Accept-Encoding: gzip,deflate\r\n" +
-         "Accept-Language: en-us,en;q=0.5\r\n" +
-         "Cache-Control: max-age=0\r\n" +
-         "Connection: keep-alive\r\n" +
-         "Host: localhost:19300\r\n" +
-         "If-Modified-Since: Fri, 23 Apr 2010 16:40:05 GMT\r\n" +
-         "Keep-Alive: 115\r\n" +
-         "User-Agent: MyBrowser/1.0\r\n" +
-         "\r\n";
+         "00112233445566778899aabbccddeeff";
       
       var now:uint;
       var totalEncrypt:Number = 0;
@@ -455,13 +444,18 @@ public class Test extends Sprite
    }
    
    private function updateBlock(
-      w:Array, input:Array, idx:uint, output:Array, decrypt:Boolean):void
+      w:Array, input:Array, output:Array, decrypt:Boolean):void
    {
-      // get tables
+      // Encrypt: AddRoundKey(state, w[0, Nb-1])
+      // Decrypt: AddRoundKey(state, w[Nr*Nb, (Nr+1)*Nb-1])
+      var Nr:uint = w.length / 4 - 1;
+      var i:uint, delta:int, order:Array;
       var mx0:Array, mx1:Array, mx2:Array, mx3:Array, sub:Array;
       if(decrypt)
       {
-         // use inverted tables for decryption
+         i = Nr * Nb;
+         delta = -4;
+         order = [3, 0, 1, 2];
          mx0 = imix[0];
          mx1 = imix[1];
          mx2 = imix[2];
@@ -470,72 +464,48 @@ public class Test extends Sprite
       }
       else
       {
+         i = 0;
+         delta = 4;
+         order = [1, 2, 3, 0];
          mx0 = mix[0];
          mx1 = mix[1];
          mx2 = mix[2];
          mx3 = mix[3];
          sub = sbox;
       }
+      output[0] = input[0] ^ w[i];
+      output[1] = input[1] ^ w[i + 1];
+      output[2] = input[2] ^ w[i + 2];
+      output[3] = input[3] ^ w[i + 3];
       
-      // Encrypt: AddRoundKey(state, w[0, Nb-1])
-      // Decrypt: AddRoundKey(state, w[Nr*Nb, (Nr+1)*Nb-1])
-      var Nr:uint = w.length / 4 - 1;
-      var i:uint = decrypt ? Nr * Nb : 0;
-      var state:Array = input;
-      var s0:uint = state[idx] ^ w[i];
-      var s1:uint = state[idx + 1] ^ w[i + 1];
-      var s2:uint = state[idx + 2] ^ w[i + 2];
-      var s3:uint = state[idx + 3] ^ w[i + 3];
-      
-      var order:Array;
-      var t0:uint, t1:uint, t2:uint, t3:uint;
+      var s0:uint, s1:uint, s2:uint, s3:uint;
       for(var round:uint = 1; round < Nr; round++)
       {
-         if(decrypt)
-         {
-            i -= 4;
-            order = [s3, s0, s1, s2];
-         }
-         else
-         {
-            i += 4;
-            order = [s1, s2, s3, s0];
-         }
-         t0 =
-            mx0[s0 >>> 24] ^
-            mx1[order[0] >>> 16 & 0xFF] ^
-            mx2[s2 >>> 8 & 0xFF] ^
-            mx3[order[2] & 0xFF] ^ w[i];
-         t1 =
-            mx0[s1 >>> 24] ^
-            mx1[order[1] >>> 16 & 0xFF] ^
-            mx2[s3 >>> 8 & 0xFF] ^
-            mx3[order[3] & 0xFF] ^ w[i + 1];
-         t2 =
-            mx0[s2 >>> 24] ^
-            mx1[order[2] >>> 16 & 0xFF] ^
-            mx2[s0 >>> 8 & 0xFF] ^
-            mx3[order[0] & 0xFF] ^ w[i + 2];
-         t3 =
-            mx0[s3 >>> 24] ^
-            mx1[order[3] >>> 16 & 0xFF] ^
-            mx2[s1 >>> 8 & 0xFF] ^
-            mx3[order[1] & 0xFF] ^ w[i + 3];
-         s0 = t0;
-         s1 = t1;
-         s2 = t2;
-         s3 = t3;
-      }
-      
-      if(decrypt)
-      {
-         i -= 4;
-         order = [s3, s0, s1, s2];
-      }
-      else
-      {
-         i += 4;
-         order = [s1, s2, s3, s0];
+         i += delta;
+         s0 =
+            mx0[output[0] >>> 24] ^
+            mx1[output[order[0]] >>> 16 & 0xFF] ^
+            mx2[output[2] >>> 8 & 0xFF] ^
+            mx3[output[order[2]] & 0xFF] ^ w[i];
+         s1 =
+            mx0[output[1] >>> 24] ^
+            mx1[output[order[1]] >>> 16 & 0xFF] ^
+            mx2[output[3] >>> 8 & 0xFF] ^
+            mx3[output[order[3]] & 0xFF] ^ w[i + 1];
+         s2 =
+            mx0[output[2] >>> 24] ^
+            mx1[output[order[2]] >>> 16 & 0xFF] ^
+            mx2[output[0] >>> 8 & 0xFF] ^
+            mx3[output[order[0]] & 0xFF] ^ w[i + 2];
+         s3 =
+            mx0[output[3] >>> 24] ^
+            mx1[output[order[3]] >>> 16 & 0xFF] ^
+            mx2[output[1] >>> 8 & 0xFF] ^
+            mx3[output[order[1]] & 0xFF] ^ w[i + 3];
+         output[0] = s0;
+         output[1] = s1;
+         output[2] = s2;
+         output[3] = s3;
       }
       
       /*
@@ -550,30 +520,31 @@ public class Test extends Sprite
        AddRoundKey(state, w[0, Nb-1])
       */
       // Note: rows are shifted inline
+      i += delta;
       s0 =
-         (sub[t0 >>> 24] << 24) ^
-         (sub[order[0] >>> 16 & 0xFF] << 16) ^
-         (sub[t2 >>> 8 & 0xFF] << 8) ^
-         (sub[order[2] & 0xFF]) ^ w[i];
+         (sub[output[0] >>> 24] << 24) ^
+         (sub[output[order[0]] >>> 16 & 0xFF] << 16) ^
+         (sub[output[2] >>> 8 & 0xFF] << 8) ^
+         (sub[output[order[2]] & 0xFF]) ^ w[i];
       s1 =
-         (sub[t1 >>> 24] << 24) ^
-         (sub[order[1] >>> 16 & 0xFF] << 16) ^
-         (sub[t3 >>> 8 & 0xFF] << 8) ^
-         (sub[order[3] & 0xFF]) ^ w[i + 1];
+         (sub[output[1] >>> 24] << 24) ^
+         (sub[output[order[1]] >>> 16 & 0xFF] << 16) ^
+         (sub[output[3] >>> 8 & 0xFF] << 8) ^
+         (sub[output[order[3]] & 0xFF]) ^ w[i + 1];
       s2 =
-         (sub[t2 >>> 24] << 24) ^
-         (sub[order[2] >>> 16 & 0xFF] << 16) ^
-         (sub[t0 >>> 8 & 0xFF] << 8) ^
-         (sub[order[0] & 0xFF]) ^ w[i + 2];
+         (sub[output[2] >>> 24] << 24) ^
+         (sub[output[order[2]] >>> 16 & 0xFF] << 16) ^
+         (sub[output[0] >>> 8 & 0xFF] << 8) ^
+         (sub[output[order[0]] & 0xFF]) ^ w[i + 2];
       s3 =
-         (sub[t3 >>> 24] << 24) ^
-         (sub[order[3] >>> 16 & 0xFF] << 16) ^
-         (sub[t1 >>> 8 & 0xFF] << 8) ^
-         (sub[order[1] & 0xFF]) ^ w[i + 3];
-      output.push(s0);
-      output.push(s1);
-      output.push(s2);
-      output.push(s3);
+         (sub[output[3] >>> 24] << 24) ^
+         (sub[output[order[3]] >>> 16 & 0xFF] << 16) ^
+         (sub[output[1] >>> 8 & 0xFF] << 8) ^
+         (sub[output[order[1]] & 0xFF]) ^ w[i + 3];
+      output[0] = s0;
+      output[1] = s1;
+      output[2] = s2;
+      output[3] = s3;
    }
    
    private function createCipher(
@@ -595,9 +566,9 @@ public class Test extends Sprite
          cipher = new Object();
          cipher.key = w;
          cipher.output = output || new Array();
-         cipher.update = function(input:Array, idx:uint = 0):void
+         cipher.update = function(input:Array):void
          {
-            updateBlock(cipher.key, input, idx, cipher.output, decrypt);
+            updateBlock(cipher.key, input, cipher.output, decrypt);
          };
       }
       return cipher;
@@ -605,20 +576,12 @@ public class Test extends Sprite
    
    private function startEncrypting(key:Array, output:Array = null):Object
    {
-      var cipher:Object = createCipher(key, output, false);
-      
-      // FIXME: handle IV, padding, etc.
-      
-      return cipher;
+      return createCipher(key, output, false);
    }
    
    private function startDecrypting(key:Array, output:Array = null):Object
    {
-      var cipher:Object = createCipher(key, output, true);
-      
-      // FIXME: handle IV, padding, etc.
-      
-      return cipher;
+      return createCipher(key, output, true);
    }
    
    private function word_array_to_string(wa:Array):String

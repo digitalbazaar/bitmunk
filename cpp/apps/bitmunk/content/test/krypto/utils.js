@@ -182,8 +182,6 @@
              */
             truncate: function(count)
             {
-               console.log('count', count);
-               
                var len = Math.max(0, buf.length() - count);
                buf.data = buf.data.substr(buf.read, len);
                buf.read = 0;
