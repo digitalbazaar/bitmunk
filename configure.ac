@@ -183,8 +183,8 @@ dnl ------------- Bitmunk API port numbers -------------------
 BITMUNK_LOCAL_API_HOST="0.0.0.0"
 if test "x$BITMUNK_RELEASE_MODE" = xyes; then
    BITMUNK_API_HOST=bitmunk.com
-   BITMUNK_API_PORT=8100
-   BITMUNK_LOCAL_API_PORT=8100
+   BITMUNK_API_PORT=80
+   BITMUNK_LOCAL_API_PORT=80
    BITMUNK_FLASH_POLICY_PORT=8843
 else
    BITMUNK_API_HOST=dev.bitmunk.com
