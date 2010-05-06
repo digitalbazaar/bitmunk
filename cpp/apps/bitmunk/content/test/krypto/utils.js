@@ -94,15 +94,10 @@
              */
             getInt32: function()
             {
-               // Note: unexpected behavior here if you just return the
-               // result ... buf.read will not be incremented ... so we
-               // make a var here instead
-               var rval =
-                  buf.data.charCodeAt(buf.read++) << 24 ^
+               return buf.data.charCodeAt(buf.read++) << 24 ^
                   buf.data.charCodeAt(buf.read++) << 16 ^
                   buf.data.charCodeAt(buf.read++) << 8 ^
                   buf.data.charCodeAt(buf.read++);
-               return rval;
             },
             
             /**
