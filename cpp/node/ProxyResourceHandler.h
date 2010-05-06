@@ -76,6 +76,13 @@ protected:
    ProxyMap mProxyMap;
 
    /**
+    * A map of hosts to redirect permanently.
+    */
+   typedef std::map<const char*, const char*, monarch::util::StringComparator>
+      RedirectHosts;
+   RedirectHosts mRedirectHosts;
+
+   /**
     * A list of permitted hosts.
     */
    typedef std::vector<char*> PermittedHosts;
@@ -100,6 +107,23 @@ public:
     * Destructs this ProxyResourceHandler.
     */
    virtual ~ProxyResourceHandler();
+
+   /**
+    * Adds a redirect host. This is a host to have redirected to another
+    * host using the same URL path. For instance, requests with
+    * www.mywebsite.com could be permanently redirected to mywebsite.com.
+    *
+    * @param host the host to redirect.
+    * @param newHost the new host name.
+    *
+    * @return true if successful, false if not.
+    */
+   virtual bool addRedirectHost(const char* host, const char* newHost);
+
+   /**
+    * Clears all redirect hosts.
+    */
+   virtual void clearRedirectHosts();
 
    /**
     * Adds a permitted host. This method is for specifying hosts whose related

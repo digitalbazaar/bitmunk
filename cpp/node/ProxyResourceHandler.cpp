@@ -35,6 +35,7 @@ ProxyResourceHandler::ProxyResourceHandler(Node* node, const char* path) :
 
 ProxyResourceHandler::~ProxyResourceHandler()
 {
+   ProxyResourceHandler::clearRedirectHosts();
    ProxyResourceHandler::clearPermittedHosts();
    free(mPath);
    for(ProxyMap::iterator i = mProxyMap.begin(); i != mProxyMap.end(); i++)
@@ -47,6 +48,40 @@ ProxyResourceHandler::~ProxyResourceHandler()
       delete m;
       free((char*)i->first);
    }
+}
+
+bool ProxyResourceHandler::addRedirectHost(
+   const char* host, const char* newHost)
+{
+   bool rval = true;
+
+   RedirectHosts::iterator i = mRedirectHosts.find(host);
+   if(i != mRedirectHosts.end())
+   {
+      MO_CAT_INFO(BM_NODE_CAT,
+         "ProxyResourceHandler removed redirect host: %s", host);
+      free((char*)i->first);
+      free((char*)i->second);
+      mRedirectHosts.erase(i);
+   }
+
+   mRedirectHosts[strdup(host)] = strdup(newHost);
+   MO_CAT_INFO(BM_NODE_CAT,
+      "ProxyResourceHandler added redirect host %s => %s", host, newHost);
+
+   return rval;
+}
+
+void ProxyResourceHandler::clearRedirectHosts()
+{
+   for(RedirectHosts::iterator i = mRedirectHosts.begin();
+       i != mRedirectHosts.end(); i++)
+   {
+      free((char*)i->first);
+      free((char*)i->second);
+   }
+   mRedirectHosts.clear();
+   MO_CAT_INFO(BM_NODE_CAT, "ProxyResourceHandler cleared redirect hosts");
 }
 
 bool ProxyResourceHandler::addPermittedHost(const char* host)
@@ -275,191 +310,213 @@ void ProxyResourceHandler::operator()(BtpAction* action)
 {
    // get request host
    HttpRequestHeader* hrh = action->getRequest()->getHeader();
-   string host = hrh->getFieldValue("Host");
-   // FIXME: add support for using X-Forwarded-Host if provided?
-
-   // find a virtual host entry for the request host
-   ProxyMap::iterator i = mProxyMap.find(host.c_str());
-   if(i == mProxyMap.end())
+   string host = hrh->getFieldValue("X-Forwarded-Host");
+   if(host.length() == 0)
    {
-      // check for the any-host wildcard
-      i = mProxyMap.find("*");
+      host = hrh->getFieldValue("Host");
    }
 
-   // find a proxy mapping
-   MappingInfo info;
-   string resource;
-   bool wildcard = false;
-   if(i != mProxyMap.end())
+   // redirect host if applicable
+   RedirectHosts::iterator rhi = mRedirectHosts.find(host.c_str());
+   if(rhi != mRedirectHosts.end())
    {
-      PathToInfo* m = i->second;
+      // set response code
+      HttpResponse* response = action->getResponse();
+      HttpResponseHeader* header = response->getHeader();
+      header->setStatus(301, "Moved Permanently");
 
-      // try to find the URL to proxy to based on the incoming absolute path
-      string parent;
-      resource = action->getResource();
-      PathToInfo::iterator mi;
-      do
+      // build new location url
+      bool secure = response->getConnection()->isSecure();
+      header->setField("Location", StringTools::format("%s://%s%s",
+         secure ? "https" : "http",
+         rhi->second, hrh->getPath()));
+      action->sendResult();
+   }
+   else
+   {
+      // find a virtual host entry for the request host
+      ProxyMap::iterator i = mProxyMap.find(host.c_str());
+      if(i == mProxyMap.end())
       {
-         mi = m->find(resource.c_str());
-         if(mi == m->end())
+         // check for the any-host wildcard
+         i = mProxyMap.find("*");
+      }
+
+      // find a proxy mapping
+      MappingInfo info;
+      string resource;
+      bool wildcard = false;
+      if(i != mProxyMap.end())
+      {
+         PathToInfo* m = i->second;
+
+         // try to find the URL to proxy to based on the incoming absolute path
+         string parent;
+         resource = action->getResource();
+         PathToInfo::iterator mi;
+         do
          {
-            string parent = Url::getParentPath(resource.c_str());
-            if(strcmp(parent.c_str(), resource.c_str()) != 0)
+            mi = m->find(resource.c_str());
+            if(mi == m->end())
             {
-               // haven't hit root path yet, keep checking
-               resource = parent;
+               string parent = Url::getParentPath(resource.c_str());
+               if(strcmp(parent.c_str(), resource.c_str()) != 0)
+               {
+                  // haven't hit root path yet, keep checking
+                  resource = parent;
+               }
+               else
+               {
+                  // path not found, check for wildcard path
+                  wildcard = true;
+                  mi = m->find("*");
+               }
+            }
+         }
+         while(mi == m->end() && !wildcard);
+
+         if(mi != m->end())
+         {
+            // get MappingInfo
+            info = mi->second;
+         }
+      }
+
+      // if proxy mapping is a wildcard, try to get handler if host is permitted
+      HandlerMap::iterator hmi = mHandlers.end();
+      if(wildcard && isPermittedHost(host.c_str()))
+      {
+         // see if there is a resource handler for the action
+         hmi = findHandler(action);
+      }
+
+      // if a handler was found or there is no proxy mapping then delegate
+      // to rest resource handler
+      if(hmi != mHandlers.end() || info.url.isNull())
+      {
+         RestResourceHandler::handleAction(action, hmi);
+      }
+      // proxy mapping found, do proxy
+      else
+      {
+         // get URL to proxy to
+         UrlRef url = info.url;
+
+         // get client-side request and response
+         HttpRequest* req = action->getRequest();
+         HttpResponse* res = action->getResponse();
+
+         // add X-Forwarded headers
+         HttpRequestHeader* reqHeader = req->getHeader();
+         reqHeader->appendFieldValue("X-Forwarded-For",
+            req->getConnection()->getRemoteAddress()->toString(true).c_str());
+         reqHeader->appendFieldValue("X-Forwarded-Host",
+            req->getHeader()->getFieldValue("Host").c_str());
+         reqHeader->appendFieldValue("X-Forwarded-Server",
+            SocketTools::getHostname().c_str());
+
+         // rewrite host if mapping info specifies it
+         if(info.rewriteHost)
+         {
+            // handle 0.0.0.0 (any host)
+            string urlHost = url->getHost();
+            if(strcmp(urlHost.c_str(), "0.0.0.0") == 0)
+            {
+               urlHost = url->getHostAndPort().replace(
+                  0, 8, host.substr(0, host.find(':')).c_str());
             }
             else
             {
-               // path not found, check for wildcard path
-               wildcard = true;
-               mi = m->find("*");
+               urlHost = url->getHostAndPort();
             }
+            req->getHeader()->setField("Host", urlHost.c_str());
          }
-      }
-      while(mi == m->end() && !wildcard);
 
-      if(mi != m->end())
-      {
-         // get MappingInfo
-         info = mi->second;
-      }
-   }
-
-   // if proxy mapping is a wildcard, try to get handler if host is permitted
-   HandlerMap::iterator hmi = mHandlers.end();
-   if(wildcard && isPermittedHost(host.c_str()))
-   {
-      // see if there is a resource handler for the action
-      hmi = findHandler(action);
-   }
-
-   // if a handler was found or there is no proxy mapping then delegate
-   // to rest resource handler
-   if(hmi != mHandlers.end() || info.url.isNull())
-   {
-      RestResourceHandler::handleAction(action, hmi);
-   }
-   // proxy mapping found, do proxy
-   else
-   {
-      // get URL to proxy to
-      UrlRef url = info.url;
-
-      // get client-side request and response
-      HttpRequest* req = action->getRequest();
-      HttpResponse* res = action->getResponse();
-
-      // add X-Forwarded headers
-      HttpRequestHeader* reqHeader = req->getHeader();
-      reqHeader->appendFieldValue("X-Forwarded-For",
-         req->getConnection()->getRemoteAddress()->toString(true).c_str());
-      reqHeader->appendFieldValue("X-Forwarded-Host",
-         req->getHeader()->getFieldValue("Host").c_str());
-      reqHeader->appendFieldValue("X-Forwarded-Server",
-         SocketTools::getHostname().c_str());
-
-      // rewrite host if mapping info specifies it
-      if(info.rewriteHost)
-      {
-         // handle 0.0.0.0 (any host)
-         string urlHost = url->getHost();
-         if(strcmp(urlHost.c_str(), "0.0.0.0") == 0)
+         // rewrite the request path if it does not match the URL path to
+         // proxy to
+         string path = reqHeader->getPath();
+         if(strcmp(path.c_str(), url->getPath().c_str()) != 0)
          {
-            urlHost = url->getHostAndPort().replace(
-               0, 8, host.substr(0, host.find(':')).c_str());
-         }
-         else
-         {
-            urlHost = url->getHostAndPort();
-         }
-         req->getHeader()->setField("Host", urlHost.c_str());
-      }
-
-      // rewrite the request path if it does not match the URL path to
-      // proxy to
-      string path = reqHeader->getPath();
-      if(strcmp(path.c_str(), url->getPath().c_str()) != 0)
-      {
-         if(wildcard)
-         {
-            // since a wildcard is used, prepend the URL path to the
-            // resource (if the url path isn't '/')
-            string urlPath = url->getPath();
-            if(urlPath.length() > 1)
+            if(wildcard)
             {
-               path.insert(0, url->getPath().c_str());
+               // since a wildcard is used, prepend the URL path to the
+               // resource (if the url path isn't '/')
+               string urlPath = url->getPath();
+               if(urlPath.length() > 1)
+               {
+                  path.insert(0, url->getPath().c_str());
+               }
             }
+            else
+            {
+               // replace the part of the resource that matched the proxy
+               // mapping with the rewrite path from the proxy URL
+               path.replace(0, resource.length(), url->getPath().c_str());
+            }
+
+            // add query and do rewrite
+            DynamicObject query;
+            action->getResourceQuery(query, true);
+            path.append(Url::formEncode(query));
+            req->getHeader()->setPath(path.c_str());
+         }
+
+         // do proxy:
+         MO_CAT_INFO(BM_NODE_CAT,
+            "ProxyResourceHandler proxying %s%s => %s%s",
+            host.c_str(), action->getResource(),
+            url->getHostAndPort().c_str(), path.c_str());
+         MO_CAT_DEBUG(BM_NODE_CAT,
+            "ProxyResourceHandler request header for %s%s => %s%s:\n%s",
+            host.c_str(), action->getResource(),
+            url->getHostAndPort().c_str(), path.c_str(),
+            req->getHeader()->toString().c_str());
+
+         // get a connection
+         BtpClient* btpc = mNode->getMessenger()->getBtpClient();
+         HttpConnection* conn = btpc->createConnection(false, &(*url));
+         if(conn == NULL)
+         {
+            // send service unavailable
+            HttpResponseHeader* header = action->getResponse()->getHeader();
+            header->setStatus(503, "Service Unavailable");
+            string content =
+               "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
+               "<html><head>\n"
+               "<title>503 Service Unavailable</title>\n"
+               "</head><body>\n"
+               "<h1>Service Unavailable</h1>\n"
+               "<p>The service was not available.</p>\n"
+               "</body></html>";
+            ByteBuffer b(content.length());
+            b.put(content.c_str(), content.length(), false);
+            ByteArrayInputStream bais(&b);
+            action->sendResult(&bais);
          }
          else
          {
-            // replace the part of the resource that matched the proxy
-            // mapping with the rewrite path from the proxy URL
-            path.replace(0, resource.length(), url->getPath().c_str());
+            // proxy the client's request and receive server's header
+            if(_proxyHttp(req->getHeader(), req->getConnection(), conn) &&
+               conn->receiveHeader(res->getHeader()))
+            {
+               // proxy the server's response, consider result sent
+               _proxyHttp(res->getHeader(), conn, req->getConnection());
+               action->setResultSent(true);
+            }
+
+            // close connection
+            conn->close();
+
+            // clean up
+            delete conn;
          }
 
-         // add query and do rewrite
-         DynamicObject query;
-         action->getResourceQuery(query, true);
-         path.append(Url::formEncode(query));
-         req->getHeader()->setPath(path.c_str());
-      }
-
-      // do proxy:
-      MO_CAT_INFO(BM_NODE_CAT,
-         "ProxyResourceHandler proxying %s%s => %s%s",
-         host.c_str(), action->getResource(),
-         url->getHostAndPort().c_str(), path.c_str());
-      MO_CAT_DEBUG(BM_NODE_CAT,
-         "ProxyResourceHandler request header for %s%s => %s%s:\n%s",
-         host.c_str(), action->getResource(),
-         url->getHostAndPort().c_str(), path.c_str(),
-         req->getHeader()->toString().c_str());
-
-      // get a connection
-      BtpClient* btpc = mNode->getMessenger()->getBtpClient();
-      HttpConnection* conn = btpc->createConnection(false, &(*url));
-      if(conn == NULL)
-      {
-         // send service unavailable
-         HttpResponseHeader* header = action->getResponse()->getHeader();
-         header->setStatus(503, "Service Unavailable");
-         string content =
-            "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
-            "<html><head>\n"
-            "<title>503 Service Unavailable</title>\n"
-            "</head><body>\n"
-            "<h1>Service Unavailable</h1>\n"
-            "<p>The service was not available.</p>\n"
-            "</body></html>";
-         ByteBuffer b(content.length());
-         b.put(content.c_str(), content.length(), false);
-         ByteArrayInputStream bais(&b);
-         action->sendResult(&bais);
-      }
-      else
-      {
-         // proxy the client's request and receive server's header
-         if(_proxyHttp(req->getHeader(), req->getConnection(), conn) &&
-            conn->receiveHeader(res->getHeader()))
+         if(!action->isResultSent())
          {
-            // proxy the server's response, consider result sent
-            _proxyHttp(res->getHeader(), conn, req->getConnection());
-            action->setResultSent(true);
+            // send exception (client's fault if code < 500)
+            ExceptionRef e = Exception::get();
+            action->sendException(e, e->getCode() < 500);
          }
-
-         // close connection
-         conn->close();
-
-         // clean up
-         delete conn;
-      }
-
-      if(!action->isResultSent())
-      {
-         // send exception (client's fault if code < 500)
-         ExceptionRef e = Exception::get();
-         action->sendException(e, e->getCode() < 500);
       }
    }
 }
