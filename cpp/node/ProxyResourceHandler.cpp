@@ -380,11 +380,19 @@ void ProxyResourceHandler::operator()(BtpAction* action)
             // get MappingInfo
             info = mi->second;
          }
+         else
+         {
+            // no wildcard found
+            wildcard = false;
+         }
       }
 
-      // if proxy mapping is a wildcard, try to get handler if host is permitted
+      /* If the path to be proxied is not the wildcard path, then try to get
+         handler if the host is permitted (local path handlers take precedence
+         over wildcard proxies for permitted hosts, but they do not take
+         precendence over specific path proxies). */
       HandlerMap::iterator hmi = mHandlers.end();
-      if(wildcard && isPermittedHost(host.c_str()))
+      if(!wildcard && isPermittedHost(host.c_str()))
       {
          // see if there is a resource handler for the action
          hmi = findHandler(action);
