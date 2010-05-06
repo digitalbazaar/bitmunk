@@ -387,12 +387,12 @@ void ProxyResourceHandler::operator()(BtpAction* action)
          }
       }
 
-      /* If the path to be proxied is not the wildcard path, then try to get
-         handler if the host is permitted (local path handlers take precedence
-         over wildcard proxies for permitted hosts, but they do not take
-         precendence over specific path proxies). */
+      /* If the path to be proxied is the wildcard path or there is no specific
+         path proxy, then try to get handler if the host is permitted (resource
+         handlers take precedence over wildcard proxies for permitted hosts,
+         but they do not take precendence over specific path proxies). */
       HandlerMap::iterator hmi = mHandlers.end();
-      if(!wildcard && isPermittedHost(host.c_str()))
+      if((wildcard || info.url.isNull()) && isPermittedHost(host.c_str()))
       {
          // see if there is a resource handler for the action
          hmi = findHandler(action);
