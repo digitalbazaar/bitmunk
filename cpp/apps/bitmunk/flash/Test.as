@@ -13,6 +13,7 @@ public class Test extends Sprite
    import com.hurlant.crypto.cert.X509Certificate;
    import com.hurlant.crypto.cert.X509CertificateCollection;
    import com.hurlant.crypto.symmetric.AESKey;
+   import com.hurlant.crypto.symmetric.CBCMode;
    import com.hurlant.crypto.tls.TLSConfig;
    import com.hurlant.crypto.tls.TLSEngine;
    import com.hurlant.util.der.PEM;
@@ -49,6 +50,7 @@ public class Test extends Sprite
          {
             // set up javascript access:
             ExternalInterface.addCallback("aes", aes);
+            ExternalInterface.addCallback("aes_cbc", aes_cbc);
             ExternalInterface.addCallback("aes_flash_128", aes_flash_128);
             ExternalInterface.addCallback("aes_test", aes_test);
             ExternalInterface.addCallback("http", http);
@@ -84,7 +86,7 @@ public class Test extends Sprite
    
    private function aes():void
    {
-      log('flash running aes test...');
+      log('flash running as3crypto aes test...');
       
       // 128-bit test keys
       var keys:Array = [
@@ -140,7 +142,70 @@ public class Test extends Sprite
       
       log('encrypt time: ' + (totalEncrypt / totalTimes) + ' ms');
       log('decrypt time: ' + (totalDecrypt / totalTimes) + ' ms');
-      log('flash aes test complete.');
+      log('flash as3crypto aes test complete.');
+   }
+   
+   private function aes_cbc():void
+   {
+      log('flash running as3crypto aes-cbc test...');
+      
+      // 128-bit test keys
+      var keys:Array = [
+         "00010203050607080A0B0C0D0F101112",
+         "14151617191A1B1C1E1F202123242526",
+         "28292A2B2D2E2F30323334353738393A",
+         "3C3D3E3F41424344464748494B4C4D4E",
+         "50515253555657585A5B5C5D5F606162",
+         "64656667696A6B6C6E6F707173747576",
+         "78797A7B7D7E7F80828384858788898A",
+         "8C8D8E8F91929394969798999B9C9D9E",
+         "A0A1A2A3A5A6A7A8AAABACADAFB0B1B2",
+         "B4B5B6B7B9BABBBCBEBFC0C1C3C4C5C6",
+         "C8C9CACBCDCECFD0D2D3D4D5D7D8D9DA",
+         "DCDDDEDFE1E2E3E4E6E7E8E9EBECEDEE",
+         "F0F1F2F3F5F6F7F8FAFBFCFDFE010002",
+         "04050607090A0B0C0E0F101113141516",
+         "2C2D2E2F31323334363738393B3C3D3E",
+         "40414243454647484A4B4C4D4F505152",
+         "54555657595A5B5C5E5F606163646566",
+         "68696A6B6D6E6F70727374757778797A",
+         "7C7D7E7F81828384868788898B8C8D8E",
+         "A4A5A6A7A9AAABACAEAFB0B1B3B4B5B6"];
+      
+      // test data to encrypt
+      var data:String =
+         "00112233445566778899aabbccddeeff";
+      
+      var now:uint;
+      var totalEncrypt:Number = 0;
+      var totalDecrypt:Number = 0;
+      var count:uint = 100;
+      var totalTimes:uint = keys.length * count;
+      for(var n:uint = 0; n < count; n++)
+      {
+         for(var i:uint = 0; i < keys.length; i++)
+         {
+            var key:ByteArray = Hex.toArray(keys[i]);
+            var aes:AESKey = new AESKey(key);
+            var cipher:CBCMode = new CBCMode(aes);
+            cipher.IV = Hex.toArray("000102030405060708090a0b0c0d0e0f");
+            var ba:ByteArray = Hex.toArray(data);
+            
+            // encrypt
+            now = getTimer();
+            cipher.encrypt(ba);
+            totalEncrypt += getTimer() - now;
+            
+            // decrypt
+            now = getTimer();
+            cipher.decrypt(ba);
+            totalDecrypt += getTimer() - now;
+         }
+      }
+      
+      log('encrypt time: ' + (totalEncrypt / totalTimes) + ' ms');
+      log('decrypt time: ' + (totalDecrypt / totalTimes) + ' ms');
+      log('flash as3crypto aes-cbc test complete.');
    }
    
    private function http():void

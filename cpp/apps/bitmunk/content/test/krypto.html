@@ -676,6 +676,12 @@
          document.getElementById('flashTest').aes();
       };
 
+      var aes_as3crypto_cbc = function()
+      {
+         console.log('testing AES-CBC (as3crypto) ...');
+         document.getElementById('flashTest').aes_cbc();
+      };
+
       var aes_flash_128 = function()
       {
          console.log('testing AES (flash 128) ...');
@@ -715,8 +721,9 @@
          <button id="aes7" onclick="javascript:return aes_jscrypto();">jscrypto</button>
          <button id="aes8" onclick="javascript:return aes_pid_crypt();">pidcrypt</button>
          <button id="aes9" onclick="javascript:return aes_as3crypto();">as3crypto</button>
-         <button id="aes10" onclick="javascript:return aes_flash_128();">flash 128</button>
-         <button id="aes11" onclick="javascript:return aes_flash_test();">flash test</button>
+         <button id="aes10" onclick="javascript:return aes_as3crypto_cbc();">as3crypto CBC</button>
+         <button id="aes11" onclick="javascript:return aes_flash_128();">flash 128</button>
+         <button id="aes12" onclick="javascript:return aes_flash_test();">flash test</button>
       </div>
    </body>
 </html>
