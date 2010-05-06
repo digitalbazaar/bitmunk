@@ -378,8 +378,8 @@ void ProxyResourceHandler::operator()(BtpAction* action)
 
       // rewrite the request path if it does not match the URL path to
       // proxy to
-      string path = action->getResource();
-      if(strcmp(action->getResource(), url->getPath().c_str()) != 0)
+      string path = reqHeader->getPath();
+      if(strcmp(path.c_str(), url->getPath().c_str()) != 0)
       {
          if(wildcard)
          {
