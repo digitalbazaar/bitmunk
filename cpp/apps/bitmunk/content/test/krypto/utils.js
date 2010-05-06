@@ -94,10 +94,11 @@
              */
             getInt32: function()
             {
-               return buf.data.charCodeAt(buf.read++) << 24 ^
+               return (
+                  buf.data.charCodeAt(buf.read++) << 24 ^
                   buf.data.charCodeAt(buf.read++) << 16 ^
                   buf.data.charCodeAt(buf.read++) << 8 ^
-                  buf.data.charCodeAt(buf.read++);
+                  buf.data.charCodeAt(buf.read++));
             },
             
             /**
