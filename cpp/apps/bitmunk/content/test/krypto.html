@@ -450,7 +450,7 @@
                block = output;
                output = [];
                now = +new Date();
-               krypto.aes._updateBlock(wd, block, output, false);
+               krypto.aes._updateBlock(wd, block, output, true);
                totalDecrypt += (+new Date()) - now;
             }
          }
