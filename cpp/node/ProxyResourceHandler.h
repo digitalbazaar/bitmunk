@@ -18,18 +18,18 @@ namespace node
  *
  * An HTTP request (BTP action) is processed by this handler as follows:
  *
- * 1. Do proxy on specific paths.
+ * 1. Do proxy on specific hosts and/or specific paths.
  * 2. Do permitted hosts resource handling.
- * 3. Do proxy on wild-card paths.
+ * 3. Do proxy on wildcard paths.
  *
  * In pseudo-code:
  *
- * If there is a path-specific proxy mapping, do proxy.
+ * If there is a host- or path-specific proxy mapping, do proxy.
  *    Done.
  * Else if the request host is permitted, find a handler to the resource.
  *    If found, delegate to RestResourceHandler.
  *       Done.
- * If not Done and found a wild-card proxy mapping, do proxy.
+ * If not Done and found a wildcard proxy mapping, do proxy.
  *    Done.
  * Else delegate to RestResourceHandler.
  *    Done.
@@ -60,6 +60,8 @@ protected:
    {
       monarch::net::UrlRef url;
       bool rewriteHost;
+      bool redirect;
+      bool permanent;
    };
 
    /**
@@ -74,13 +76,6 @@ protected:
    typedef std::map<const char*, PathToInfo*, monarch::util::StringComparator>
       ProxyMap;
    ProxyMap mProxyMap;
-
-   /**
-    * A map of hosts to redirect permanently.
-    */
-   typedef std::map<const char*, const char*, monarch::util::StringComparator>
-      RedirectHosts;
-   RedirectHosts mRedirectHosts;
 
    /**
     * A list of permitted hosts.
@@ -107,23 +102,6 @@ public:
     * Destructs this ProxyResourceHandler.
     */
    virtual ~ProxyResourceHandler();
-
-   /**
-    * Adds a redirect host. This is a host to have redirected to another
-    * host using the same URL path. For instance, requests with
-    * www.mywebsite.com could be permanently redirected to mywebsite.com.
-    *
-    * @param host the host to redirect.
-    * @param newHost the new host name.
-    *
-    * @return true if successful, false if not.
-    */
-   virtual bool addRedirectHost(const char* host, const char* newHost);
-
-   /**
-    * Clears all redirect hosts.
-    */
-   virtual void clearRedirectHosts();
 
    /**
     * Adds a permitted host. This method is for specifying hosts whose related
@@ -153,13 +131,13 @@ public:
    virtual void clearPermittedHosts();
 
    /**
-    * Adds a proxy mapping. If the given host and path are received in an HTTP
-    * request, that request will be proxied to the given URL and the proceeding
-    * response will be proxied back to the client. A blank host value will
-    * assume relative urls and a path value of '*' will proxy all paths for
-    * the given host.
+    * Adds a proxy or redirection mapping. If the given host and path are
+    * received in an HTTP request, that request will be proxied (or responded
+    * to with a 30x redirect) to the given URL and the proceeding response will
+    * be proxied back to the client. A blank host value will assume relative
+    * urls and a path value of '*' will proxy all paths for the given host.
     *
-    * Any sub-path of the given path will also be proxied.
+    * Any sub-path of the given path will also be proxied/redirected.
     *
     * Note: The given path will be interpreted relative to the path of the
     * proxy handler. This means that if the proxy handler is for the resource:
@@ -174,11 +152,16 @@ public:
     *           proxy handler's resource path.
     * @param url the URL to map to, which may be relative or absolute and
     *           will, at proxy time, have any sub-paths appended to it.
-    * @param rewriteHost true to rewrite the host, false not to.
+    * @param rewriteHost only applicable to proxy, true to rewrite the host,
+    *           false not to.
+    * @param redirect true to redirect, false to proxy.
+    * @param permanent only applicable to redirects, true to send a permanent
+    *           redirect response, false to send a temporary one.
     */
    virtual void addMapping(
       const char* host, const char* path,
-      const char* url, bool rewriteHost = true);
+      const char* url, bool rewriteHost = true,
+      bool redirect = false, bool permanent = true);
 
    /**
     * Proxies incoming HTTP traffic to another server.
