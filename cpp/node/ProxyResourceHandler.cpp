@@ -367,13 +367,9 @@ void ProxyResourceHandler::operator()(BtpAction* action)
       {
          urlHost = host;
       }
-      // if URL has no port, only use URL host
-      else if(url->getPort() == 0)
-      {
-         urlHost = url->getHost();
-      }
-      // leave off port numbers for default ports
+      // if URL has no port or uses a default port number, only use URL host
       else if(
+         (url->getPort() == 0) ||
          (secure && url->getPort() == 443) ||
          (!secure && url->getPort() == 80))
       {
