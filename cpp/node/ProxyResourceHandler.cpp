@@ -159,6 +159,16 @@ void ProxyResourceHandler::addMapping(
    const char* host, const char* path, const char* url,
    bool rewriteHost, bool redirect, bool permanent)
 {
+   // prepend scheme to absolute URLs if needed
+   string tmpUrl;
+   if(url[0] != '/' &&
+      strncmp(url, "http://", 7) != 0 &&
+      strncmp(url, "https://", 8) != 0)
+   {
+      tmpUrl = "http://";
+   }
+   tmpUrl.append(url);
+
    /* Build the absolute path that will be searched for in an HTTP request so
       that it can be mapped to the given url. Only append the proxy service
       path if it isn't the root path and only add the given path if it isn't a
@@ -202,7 +212,8 @@ void ProxyResourceHandler::addMapping(
             "ProxyResourceHandler removed %s rule: %s%s/* => %s%s/*",
             mi->second.redirect ? "redirect" : "proxy",
             host, (wildcard || strlen(mi->first) == 0) ? "" : mi->first,
-            mi->second.url->getHostAndPort().c_str(),
+            (mi->second.url->getHost().length() == 0) ?
+               "" : mi->second.url->getHostAndPort().c_str(),
             (mi->second.url->getPath().length() == 1) ?
                "" : mi->second.url->getPath().c_str());
 
@@ -219,7 +230,7 @@ void ProxyResourceHandler::addMapping(
 
    // add new entry and log it
    MappingInfo info;
-   info.url = new Url(url);
+   info.url = new Url(tmpUrl.c_str());
    info.rewriteHost = rewriteHost;
    info.redirect = redirect;
    info.permanent = permanent;
@@ -228,7 +239,8 @@ void ProxyResourceHandler::addMapping(
       "ProxyResourceHandler added %s rule: %s%s/* => %s%s/*",
       redirect ? "redirect" : "proxy",
       host, (wildcard || absPath.length() == 0) ? "" : absPath.c_str(),
-      info.url->getHostAndPort().c_str(),
+      (info.url->getHost().length() == 0) ?
+         "" : info.url->getHostAndPort().c_str(),
       (info.url->getPath().length() == 1) ? "" : info.url->getPath().c_str());
 }
 
