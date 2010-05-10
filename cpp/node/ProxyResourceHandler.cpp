@@ -159,21 +159,8 @@ void ProxyResourceHandler::addMapping(
    const char* host, const char* path, const char* url,
    bool rewriteHost, bool redirect, bool permanent)
 {
-   // convert relative url into absolute url if needed
-   string absUrl;
-   if(url[0] == '/')
-   {
-      // build full url
-      absUrl = mNode->getMessenger()->getSelfUrl(false);
-   }
-   else if(strncmp(url, "http://", 7) != 0)
-   {
-      absUrl = "http://";
-   }
-   absUrl.append(url);
-
    /* Build the absolute path that will be searched for in an HTTP request so
-      that it can be mapped to the absolute url. Only append the proxy service
+      that it can be mapped to the given url. Only append the proxy service
       path if it isn't the root path and only add the given path if it isn't a
       wildcard. The end result will be either a wildcard or the proxy service
       path concatenated with the relative path without having a leading
@@ -232,7 +219,7 @@ void ProxyResourceHandler::addMapping(
 
    // add new entry and log it
    MappingInfo info;
-   info.url = new Url(absUrl);
+   info.url = new Url(url);
    info.rewriteHost = rewriteHost;
    info.redirect = redirect;
    info.permanent = permanent;
@@ -381,11 +368,12 @@ void ProxyResourceHandler::operator()(BtpAction* action)
       }
       else
       {
-         urlHost = url->getHostAndPort();
+         // if URL is relative, reuse incoming host
+         urlHost = url->isRelative() ? host : url->getHostAndPort();
       }
 
       // handle 0.0.0.0 (any host) by replacing it with the request host
-      if(strcmp(url->getHost().c_str(), "0.0.0.0") == 0)
+      if(strncmp(urlHost.c_str(), "0.0.0.0", 8) == 0)
       {
          // 0.0.0.0 is 8 chars long
          urlHost.replace(0, 8, host.substr(0, host.find(':')).c_str());
