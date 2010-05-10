@@ -357,19 +357,32 @@ void ProxyResourceHandler::operator()(BtpAction* action)
       // get URL to proxy or redirect to
       UrlRef url = info.url;
 
-      // get url host (leave off port numbers for default ports)
+      // get url host
       string urlHost;
       HttpResponse* res = action->getResponse();
       bool secure = res->getConnection()->isSecure();
-      if((secure && url->getPort() == 443) ||
+
+      // if URL has no host, reuse incoming host
+      if(url->getHost().length() == 0)
+      {
+         urlHost = host;
+      }
+      // if URL has no port, only use URL host
+      else if(url->getPort() == 0)
+      {
+         urlHost = url->getHost();
+      }
+      // leave off port numbers for default ports
+      else if(
+         (secure && url->getPort() == 443) ||
          (!secure && url->getPort() == 80))
       {
          urlHost = url->getHost();
       }
+      // use URL host and port
       else
       {
-         // if URL is relative, reuse incoming host
-         urlHost = url->isRelative() ? host : url->getHostAndPort();
+         urlHost = url->getHostAndPort();
       }
 
       // handle 0.0.0.0 (any host) by replacing it with the request host
