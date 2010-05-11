@@ -180,11 +180,13 @@ void BtpServer::stop()
  * @param bs the service to add.
  * @param ssl the ssl mode.
  * @param hcs the servicer to add the service to.
+ * @param domain the domain to add the service to.
  *
  * @return true if added, false if not.
  */
 static bool _addService(
-   BtpServiceRef& bs, Node::SslStatus ssl, HttpConnectionServicer* hcs)
+   BtpServiceRef& bs, Node::SslStatus ssl, HttpConnectionServicer* hcs,
+   const char* domain)
 {
    bool rval = true;
 
@@ -193,7 +195,7 @@ static bool _addService(
    if(ssl == Node::SslOn || ssl == Node::SslAny)
    {
       // try to add the service
-      rval = hcs->addRequestServicer(&(*bs), true);
+      rval = hcs->addRequestServicer(&(*bs), true, domain);
       added = true;
    }
 
@@ -202,12 +204,12 @@ static bool _addService(
    {
       // if non-secure service could not be added, remove the secure one
       // it was added
-      if(!hcs->addRequestServicer(&(*bs), false))
+      if(!hcs->addRequestServicer(&(*bs), false, domain))
       {
          rval = false;
          if(added)
          {
-            hcs->removeRequestServicer(&(*bs), true);
+            hcs->removeRequestServicer(&(*bs), true, domain);
          }
       }
    }
@@ -266,7 +268,7 @@ bool BtpServer::addService(
             }
 
             // try to add the service
-            rval = _addService(service, ssl, &mHttpConnectionServicer);
+            rval = _addService(service, ssl, &mHttpConnectionServicer, dom);
             if(rval)
             {
                // added to the given domain
