@@ -261,6 +261,7 @@ bool Catalog::mediaLibraryInitialized(
          {
             Event e;
             e["type"] = EVENT_SYNC_SELLER_LISTINGS;
+            e["parallel"] = true;
             e["details"]["userId"] = userId;
             mNode->getEventDaemon()->add(e, slInterval, -1);
          }
@@ -282,6 +283,7 @@ bool Catalog::mediaLibraryInitialized(
          {
             Event e;
             e["type"] = EVENT_TEST_NET_ACCESS;
+            e["parallel"] = true;
             e["details"]["userId"] = userId;
             mNode->getEventDaemon()->add(e, tnaInterval, -1);
          }

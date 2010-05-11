@@ -150,7 +150,7 @@
    };
    
    /**
-    * Start watching net access events.
+    * Get the current server status.
     * 
     * @param task the current task.
     */
