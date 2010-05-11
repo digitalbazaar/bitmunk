@@ -8,6 +8,9 @@
          "secureBitmunkUrl" : "https://@BITMUNK_API_HOST@:@BITMUNK_API_PORT@",
          "host" : "@BITMUNK_LOCAL_API_HOST@",
          "port" : @BITMUNK_LOCAL_API_PORT@,
+         "domains" : [
+            "bitmunk.com"
+         ],
          "bitmunkHomePath" : "{BITMUNK_HOME}",
          "modulePath" : [
             "@BITMUNK_MODULES_DIR@"

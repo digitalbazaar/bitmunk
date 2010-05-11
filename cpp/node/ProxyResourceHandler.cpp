@@ -35,213 +35,118 @@ ProxyResourceHandler::ProxyResourceHandler(Node* node, const char* path) :
 
 ProxyResourceHandler::~ProxyResourceHandler()
 {
-   ProxyResourceHandler::clearPermittedHosts();
    free(mPath);
-   for(ProxyMap::iterator i = mProxyMap.begin(); i != mProxyMap.end(); i++)
+   for(ProxyDomainList::iterator i = mDomains.begin(); i != mDomains.end(); i++)
    {
-      PathToInfo* m = i->second;
-      for(PathToInfo::iterator mi = m->begin(); mi != m->end(); mi++)
+      ProxyDomain* pd = *i;
+      PathToRule& rules = pd->rules;
+      for(PathToRule::iterator ri = rules.begin(); ri != rules.end(); ri++)
       {
-         free((char*)mi->first);
+         free((char*)ri->first);
       }
-      delete m;
-      free((char*)i->first);
+      free(pd->domain);
+      delete pd;
    }
 }
 
-bool ProxyResourceHandler::addPermittedHost(const char* host)
+static PatternRef _compileDomainRegex(const char* domain)
 {
-   bool rval = true;
+   PatternRef rval(NULL);
 
-   // see if the host contains a wildcard
-   if(strchr(host, '*') == NULL)
+   string regex = "^";
+   regex.append(domain);
+   regex.append("$");
+
+   // escape all periods
+   StringTools::replaceAll(regex, ".", "\\.");
+
+   // replace all wildcards with (.*)
+   StringTools::replaceAll(regex, "*", ".*");
+
+   // try to compile the pattern (match case, no-sub matches allowed)
+   rval = Pattern::compile(regex.c_str(), true, false);
+   if(rval.isNull())
    {
-      // not a wildcard
-      mPermittedHosts.push_back(strdup(host));
-      MO_CAT_INFO(BM_NODE_CAT,
-         "ProxyResourceHandler added permitted host: %s", host);
+      ExceptionRef e = new Exception(
+         "Could not add proxy domain. Invalid domain format.",
+         "bitmunk.node.ProxyResourceHandler.InvalidDomainFormat");
+      e->getDetails()["domain"] = domain;
+      e->getDetails()["regex"] = regex.c_str();
+      Exception::push(e);
    }
-   else
+
+   return rval;
+}
+
+static int _countWildcards(const char* domain)
+{
+   int rval = 0;
+   for(; *domain != '\0'; domain++)
    {
-      // build regex, tokenizing on wildcards
-      int paren = 0;
-      string regex;
-      StringTokenizer st(host, '*');
-      while(st.hasNextToken())
+      if(*domain == '*')
       {
-         // escape periods in token
-         string token = st.nextToken();
-         if(token.length() == 0 && regex.length() != 0)
-         {
-            regex.append(".*");
-         }
-         else if(token.length() > 0)
-         {
-            // handle ending without a colon or any port number
-            if(token.at(token.length() - 1) == ':')
-            {
-               token.replace(token.length() - 1, 1, "($|:");
-               paren++;
-            }
-
-            // start regex
-            if(regex.length() == 0)
-            {
-               // handle starting with no period or with text then a period
-               if(token.at(0) == '.')
-               {
-                  regex.append("(^|^.*\\.)");
-                  token.erase(0, 1);
-               }
-               else
-               {
-                  regex.append("^.*");
-               }
-            }
-            // continue regex
-            else
-            {
-               regex.append(".*");
-            }
-
-            StringTools::replaceAll(token, ".", "\\.");
-            regex.append(token);
-         }
+         rval++;
       }
-      if(regex.length() == 0)
+   }
+   return rval;
+}
+
+/**
+ * Sort function that roughly sorts domains by how specific they are. The
+ * fewer the wildcards, the "lesser" the value. If wildcard counts are the
+ * same, then the shorter string is used.
+ *
+ * @param a ProxyDomain 1.
+ * @param b ProxyDomain 2.
+ *
+ * @return true if a is less than b.
+ */
+bool ProxyResourceHandler::ProxyDomainSorter::operator()(
+   const ProxyDomain* a, const ProxyDomain* b)
+{
+   bool rval = false;
+
+   // the 'all' wildcard is never less, so skip it
+   if(strcmp(a->domain, "*") != 0)
+   {
+      // a is always less than the 'all' wildcard
+      if(strcmp(b->domain, "*") == 0)
       {
-         // handle the anything regex
-         regex.append("^.*$");
+         rval = true;
       }
       else
       {
-         // end regex
-         regex.push_back('$');
-         regex.append(paren, ')');
-      }
+         // count wildcards in the domains
+         int wc_a = _countWildcards(a->domain);
+         int wc_b = _countWildcards(b->domain);
 
-      PatternRef pattern = Pattern::compile(regex.c_str(), true, false);
-      if(pattern.isNull())
-      {
-         ExceptionRef e = new Exception(
-            "Invalid permitted host wildcard format.",
-            "bitmunk.node.ProxyResourceHandler.InvalidPermittedHost");
-         e->getDetails()["host"] = host;
-         e->getDetails()["regex"] = regex.c_str();
-         Exception::push(e);
-         rval = false;
-      }
-      else
-      {
-         mWildcardHosts.push_back(pattern);
-         MO_CAT_INFO(BM_NODE_CAT,
-            "ProxyResourceHandler added permitted host: %s (regex: '%s')",
-            host, regex.c_str());
+         // if wildcard counts are the same, the longer string is less specific
+         if(wc_a == wc_b)
+         {
+            // a is less than b if a is longer
+            rval = (strlen(a->domain) > strlen(b->domain));
+         }
+         // if a count is less than b count, a is less
+         else if(wc_a < wc_b)
+         {
+            rval = true;
+         }
       }
    }
 
    return rval;
 }
 
-void ProxyResourceHandler::clearPermittedHosts()
+bool ProxyResourceHandler::addProxyRule(
+   const char* domain, const char* path, const char* url, bool rewriteHost)
 {
-   for(PermittedHosts::iterator i = mPermittedHosts.begin();
-       i != mPermittedHosts.end(); i++)
-   {
-      free(*i);
-   }
-   mPermittedHosts.clear();
-   mWildcardHosts.clear();
-   MO_CAT_INFO(BM_NODE_CAT, "ProxyResourceHandler cleared permitted hosts");
+   return addRule(false, domain, path, url, rewriteHost, false);
 }
 
-void ProxyResourceHandler::addMapping(
-   const char* host, const char* path, const char* url,
-   bool rewriteHost, bool redirect, bool permanent)
+bool ProxyResourceHandler::addRedirectRule(
+   const char* domain, const char* path, const char* url, bool permanent)
 {
-   // prepend scheme to absolute URLs if needed
-   string tmpUrl;
-   if(url[0] != '/' &&
-      strncmp(url, "http://", 7) != 0 &&
-      strncmp(url, "https://", 8) != 0)
-   {
-      tmpUrl = "http://";
-   }
-   tmpUrl.append(url);
-
-   /* Build the absolute path that will be searched for in an HTTP request so
-      that it can be mapped to the given url. Only append the proxy service
-      path if it isn't the root path and only add the given path if it isn't a
-      wildcard. The end result will be either a wildcard or the proxy service
-      path concatenated with the relative path without having a leading
-      double-slash when the proxy service is the root service.
-
-      The code that looks for matches will first look for the given host, then
-      for a wildcard host if that fails, then for the absolute path within the
-      found host mapping (if any), and then for a path wildcard if that fails.
-   */
-   string absPath;
-   bool root = (strcmp(mPath, "/") == 0);
-   bool wildcard = (strcmp(path, "*") == 0);
-   if(wildcard)
-   {
-      absPath.push_back('*');
-   }
-   else
-   {
-      if(!root)
-      {
-         absPath.append(mPath);
-      }
-      absPath.append(path);
-   }
-
-   // find PathToInfo map to update
-   PathToInfo* m;
-   ProxyMap::iterator i = mProxyMap.find(host);
-   if(i != mProxyMap.end())
-   {
-      // get existing map
-      m = i->second;
-
-      // remove any duplicate entry
-      PathToInfo::iterator mi = m->find(absPath.c_str());
-      if(mi != m->end())
-      {
-         MO_CAT_INFO(BM_NODE_CAT,
-            "ProxyResourceHandler removed %s rule: %s%s/* => %s%s/*",
-            mi->second.redirect ? "redirect" : "proxy",
-            host, (wildcard || strlen(mi->first) == 0) ? "" : mi->first,
-            (mi->second.url->getHost().length() == 0) ?
-               "" : mi->second.url->getHostAndPort().c_str(),
-            (mi->second.url->getPath().length() == 1) ?
-               "" : mi->second.url->getPath().c_str());
-
-         free((char*)mi->first);
-         m->erase(mi);
-      }
-   }
-   else
-   {
-      // add new map
-      m = new PathToInfo;
-      mProxyMap[strdup(host)] = m;
-   }
-
-   // add new entry and log it
-   MappingInfo info;
-   info.url = new Url(tmpUrl.c_str());
-   info.rewriteHost = rewriteHost;
-   info.redirect = redirect;
-   info.permanent = permanent;
-   (*m)[strdup(absPath.c_str())] = info;
-   MO_CAT_INFO(BM_NODE_CAT,
-      "ProxyResourceHandler added %s rule: %s%s/* => %s%s/*",
-      redirect ? "redirect" : "proxy",
-      host, (wildcard || absPath.length() == 0) ? "" : absPath.c_str(),
-      (info.url->getHost().length() == 0) ?
-         "" : info.url->getHostAndPort().c_str(),
-      (info.url->getPath().length() == 1) ? "" : info.url->getPath().c_str());
+   return addRule(true, domain, path, url, false, permanent);
 }
 
 /**
@@ -285,89 +190,17 @@ void ProxyResourceHandler::operator()(BtpAction* action)
       host = hrh->getFieldValue("Host");
    }
 
-   // find a virtual host entry for the request host
-   bool hostWildcard = false;
-   ProxyMap::iterator i = mProxyMap.find(host.c_str());
-   if(i == mProxyMap.end())
+   // find a rule
+   Rule* rule = findRule(action, host);
+   if(rule == NULL)
    {
-      // check for the any-host wildcard
-      i = mProxyMap.find("*");
-      hostWildcard = true;
-   }
-
-   // find a proxy mapping
-   MappingInfo info;
-   string resource;
-   bool pathWildcard = false;
-   if(i == mProxyMap.end())
-   {
-      // no host proxy map found
-      hostWildcard = false;
-   }
-   else
-   {
-      PathToInfo* m = i->second;
-
-      // try to find the URL to proxy to based on the incoming absolute path
-      string parent;
-      resource = action->getResource();
-      PathToInfo::iterator mi;
-      do
-      {
-         mi = m->find(resource.c_str());
-         if(mi == m->end())
-         {
-            string parent = Url::getParentPath(resource.c_str());
-            if(strcmp(parent.c_str(), resource.c_str()) != 0)
-            {
-               // haven't hit root path yet, keep checking
-               resource = parent;
-            }
-            else
-            {
-               // path not found, check for wildcard path
-               pathWildcard = true;
-               mi = m->find("*");
-            }
-         }
-      }
-      while(mi == m->end() && !pathWildcard);
-
-      if(mi != m->end())
-      {
-         // get MappingInfo
-         info = mi->second;
-      }
-      else
-      {
-         // no wildcard found
-         pathWildcard = false;
-      }
-   }
-
-   /* If the path to be proxied is the wildcard path and for a wildcard host,
-      then we should check for a specific handler if the host is permitted. A
-      specific handler takes precendence over a double wildcard (host+path
-      mapping. If there is no proxy mapping at all, we must also check for a
-      specific handler, if the host is permitted. */
-   HandlerMap::iterator hmi = mHandlers.end();
-   bool wildcard = hostWildcard && pathWildcard;
-   if((wildcard || info.url.isNull()) && isPermittedHost(host.c_str()))
-   {
-      // see if there is a resource handler for the action
-      hmi = findHandler(action);
-   }
-
-   // if a handler was found or there is no proxy mapping then delegate
-   // to rest resource handler
-   if(hmi != mHandlers.end() || info.url.isNull())
-   {
-      RestResourceHandler::handleAction(action, hmi);
+      // delegate to rest resource handler
+      RestResourceHandler::operator()(action);
    }
    else
    {
       // get URL to proxy or redirect to
-      UrlRef url = info.url;
+      UrlRef url = rule->url;
 
       // get url host
       string urlHost;
@@ -404,7 +237,8 @@ void ProxyResourceHandler::operator()(BtpAction* action)
       string path = hrh->getPath();
       if(strcmp(path.c_str(), url->getPath().c_str()) != 0)
       {
-         if(pathWildcard)
+         // check for path wildcard
+         if(strcmp(rule->path, "*") == 0)
          {
             // since a wildcard is used, prepend the URL path to the
             // resource (if the url path isn't '/')
@@ -417,17 +251,17 @@ void ProxyResourceHandler::operator()(BtpAction* action)
          else
          {
             // replace the part of the resource that matched the proxy
-            // mapping with the rewrite path from the proxy URL
-            path.replace(0, resource.length(), url->getPath().c_str());
+            // rule with the rewrite path from the proxy URL
+            path.replace(0, strlen(rule->path), url->getPath().c_str());
          }
       }
 
-      // do redirect instead of proxy if appropriate
-      if(info.redirect)
+      // do redirect if appropriate
+      if(rule->redirect)
       {
          // set response code
          HttpResponseHeader* header = res->getHeader();
-         if(info.permanent)
+         if(rule->permanent)
          {
             header->setStatus(301, "Moved Permanently");
          }
@@ -442,7 +276,7 @@ void ProxyResourceHandler::operator()(BtpAction* action)
             secure ? "https" : "http", urlHost.c_str(), path.c_str()));
          action->sendResult();
       }
-      // proxy mapping found, do proxy
+      // do proxy
       else
       {
          // get client-side request
@@ -459,8 +293,8 @@ void ProxyResourceHandler::operator()(BtpAction* action)
          hrh->appendFieldValue("X-Forwarded-Server",
             SocketTools::getHostname().c_str());
 
-         // rewrite host if mapping info specifies it
-         if(info.rewriteHost)
+         // rewrite host if rule specifies it
+         if(rule->rewriteHost)
          {
             hrh->setField("Host", urlHost.c_str());
          }
@@ -526,37 +360,172 @@ void ProxyResourceHandler::operator()(BtpAction* action)
    }
 }
 
-bool ProxyResourceHandler::isPermittedHost(const char* host)
+bool ProxyResourceHandler::addRule(
+   bool redirect, const char* domain, const char* path, const char* url,
+   bool rewriteHost, bool permanent)
 {
    bool rval = false;
 
-   if(mPermittedHosts.empty() && mWildcardHosts.empty())
+   // try to compile domain regex first
+   PatternRef regex = _compileDomainRegex(domain);
+   rval = !regex.isNull();
+   if(rval)
    {
-      // all hosts are permitted
-      rval = true;
-   }
-   else
-   {
-      // look for the specific host
-      for(PermittedHosts::iterator i = mPermittedHosts.begin();
-          !rval && i != mPermittedHosts.end(); i++)
+      // prepend scheme to absolute URLs if needed
+      string tmpUrl;
+      if(url[0] != '/' &&
+         strncmp(url, "http://", 7) != 0 &&
+         strncmp(url, "https://", 8) != 0)
       {
-         if(strcasecmp(host, *i) == 0)
+         tmpUrl = "http://";
+      }
+      tmpUrl.append(url);
+
+      /* Build the absolute path that will be searched for in an HTTP request
+         so that it can be mapped to the given url. Only append the proxy
+         service path if it isn't the root path and only add the given path if
+         it isn't a wildcard. The end result will be either a wildcard or the
+         proxy service path concatenated with the relative path without having
+         a leading double-slash when the proxy service is the root service.
+
+         The code that looks for matches will first look for a domain match,
+         and then for the absolute path within that domain, and then for a
+         path wildcard if that fails.
+      */
+      string absPath;
+      bool root = (strcmp(mPath, "/") == 0);
+      bool pathWildcard = (strcmp(path, "*") == 0);
+      if(pathWildcard)
+      {
+         absPath.push_back('*');
+      }
+      else
+      {
+         if(!root)
          {
-            rval = true;
+            absPath.append(mPath);
+         }
+         absPath.append(path);
+      }
+
+      // try to find exact domain
+      ProxyDomain* pd = NULL;
+      for(ProxyDomainList::iterator i = mDomains.begin();
+          pd == NULL && i != mDomains.end(); i++)
+      {
+         if(strcmp((*i)->domain, domain) == 0)
+         {
+            pd = *i;
          }
       }
 
-      if(!rval)
+      // add a new domain if one wasn't found
+      if(pd == NULL)
       {
-         // check wildcards
-         for(WildcardHosts::iterator i = mWildcardHosts.begin();
-             !rval && i != mWildcardHosts.end(); i++)
+         // insert new domain
+         pd = new ProxyDomain;
+         pd->domain = strdup(domain);
+         pd->regex = regex;
+         mDomains.push_back(pd);
+
+         // sort domains
+         sort(mDomains.begin(), mDomains.end(), ProxyDomainSorter());
+      }
+
+      // remove any duplicate rule
+      PathToRule& rules = pd->rules;
+      PathToRule::iterator ri = rules.find(absPath.c_str());
+      if(ri != rules.end())
+      {
+         MO_CAT_INFO(BM_NODE_CAT,
+            "ProxyResourceHandler removed %s rule: %s%s/* => %s%s/*",
+            ri->second.redirect ? "redirect" : "proxy",
+            domain, (pathWildcard || strlen(ri->first) == 0) ? "" : ri->first,
+            (ri->second.url->getHost().length() == 0) ?
+               "" : ri->second.url->getHostAndPort().c_str(),
+            (ri->second.url->getPath().length() == 1) ?
+               "" : ri->second.url->getPath().c_str());
+
+         free((char*)ri->first);
+         rules.erase(ri);
+      }
+
+      // add new rule and log it
+      Rule rule;
+      rule.url = new Url(tmpUrl.c_str());
+      rule.redirect = redirect;
+      if(redirect)
+      {
+         rule.permanent = permanent;
+      }
+      else
+      {
+         rule.rewriteHost = rewriteHost;
+      }
+      rule.path = strdup(absPath.c_str());
+      rules[rule.path] = rule;
+      MO_CAT_INFO(BM_NODE_CAT,
+         "ProxyResourceHandler added %s rule: %s%s/* => %s%s/*",
+         redirect ? "redirect" : "proxy",
+         domain, (pathWildcard || absPath.length() == 0) ? "" : absPath.c_str(),
+         (rule.url->getHost().length() == 0) ?
+            "" : rule.url->getHostAndPort().c_str(),
+         (rule.url->getPath().length() == 1) ?
+            "" : rule.url->getPath().c_str());
+   }
+
+   return rval;
+}
+
+ProxyResourceHandler::Rule* ProxyResourceHandler::findRule(
+   BtpAction* action, string& host)
+{
+   ProxyResourceHandler::Rule* rval = NULL;
+
+   // strip port number, if any, from the host
+   size_t pos = host.find(':');
+   if(pos != string::npos)
+   {
+      host.erase(pos);
+   }
+
+   // try to find regex-matching domain
+   for(ProxyDomainList::iterator i = mDomains.begin();
+       rval == NULL && i != mDomains.end(); i++)
+   {
+      ProxyDomain* pd = *i;
+      if(pd->regex->match(host.c_str()))
+      {
+         // try to find the proxy URL based on the incoming absolute path
+         PathToRule& rules = pd->rules;
+         bool pathWildcard = false;
+         string parent;
+         string resource = action->getResource();
+         PathToRule::iterator ri;
+         do
          {
-            if((*i)->match(host))
+            ri = rules.find(resource.c_str());
+            if(ri == rules.end())
             {
-               rval = true;
+               string parent = Url::getParentPath(resource.c_str());
+               if(strcmp(parent.c_str(), resource.c_str()) != 0)
+               {
+                  // haven't hit root path yet, keep checking
+                  resource = parent;
+               }
+               else
+               {
+                  // path not found, check for wildcard path
+                  pathWildcard = true;
+                  ri = rules.find("*");
+               }
             }
+         }
+         while(ri == rules.end() && !pathWildcard);
+         if(ri != rules.end())
+         {
+            // get rule
+            rval = &ri->second;
          }
       }
    }

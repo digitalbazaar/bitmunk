@@ -14,29 +14,20 @@ namespace node
 {
 
 /**
- * A ProxyResourceHandler redirects HTTP traffic to another server.
+ * A ProxyResourceHandler redirects HTTP traffic to another URL. This may be
+ * done through HTTP redirects or through proxying.
  *
  * An HTTP request (BTP action) is processed by this handler as follows:
  *
- * 1. Do proxy on specific hosts and/or specific paths.
- * 2. Do permitted hosts resource handling.
- * 3. Do proxy on wildcard paths.
+ * 1. Do proxy or redirection rules.
+ * 2. Do local resource handling.
  *
  * In pseudo-code:
  *
- * If there is a host- or path-specific proxy mapping, do proxy.
- *    Done.
- * Else if the request host is permitted, find a handler to the resource.
- *    If found, delegate to RestResourceHandler.
- *       Done.
- * If not Done and found a wildcard proxy mapping, do proxy.
+ * If there is a proxy or redirect rule, do it.
  *    Done.
  * Else delegate to RestResourceHandler.
  *    Done.
- *
- * Note: A request host is "permitted" if its related request has been
- * authorized to be handled by local resource handlers. Otherwise it can only
- * be handled by proxy mappings.
  *
  * @author Dave Longley
  */
@@ -54,40 +45,49 @@ protected:
    char* mPath;
 
    /**
-    * Data for a proxy mapping.
+    * Data for a proxy or redirect rule.
     */
-   struct MappingInfo
+   struct Rule
    {
-      monarch::net::UrlRef url;
-      bool rewriteHost;
       bool redirect;
-      bool permanent;
+      monarch::net::UrlRef url;
+      union
+      {
+         bool rewriteHost;
+         bool permanent;
+      };
+      const char* path;
    };
 
    /**
-    * A map of incoming path to mapping info.
+    * A map of incoming path to rule.
     */
-   typedef std::map<const char*, MappingInfo, monarch::util::StringComparator>
-      PathToInfo;
+   typedef std::map<const char*, Rule, monarch::util::StringComparator>
+      PathToRule;
 
    /**
-    * A map of host to PathToInfo map.
+    * A list of domains with proxy rules.
     */
-   typedef std::map<const char*, PathToInfo*, monarch::util::StringComparator>
-      ProxyMap;
-   ProxyMap mProxyMap;
+   struct ProxyDomain
+   {
+      char* domain;
+      monarch::util::regex::PatternRef regex;
+      PathToRule rules;
+   };
 
    /**
-    * A list of permitted hosts.
+    * Sorts ProxyDomains.
     */
-   typedef std::vector<char*> PermittedHosts;
-   PermittedHosts mPermittedHosts;
+   struct ProxyDomainSorter
+   {
+      bool operator()(const ProxyDomain* a, const ProxyDomain* b);
+   };
 
    /**
-    * A list of wildcard permitted hosts.
+    * The ProxyDomains supported by this handler.
     */
-   typedef std::vector<monarch::util::regex::PatternRef> WildcardHosts;
-   WildcardHosts mWildcardHosts;
+   typedef std::vector<ProxyDomain*> ProxyDomainList;
+   ProxyDomainList mDomains;
 
 public:
    /**
@@ -104,40 +104,21 @@ public:
    virtual ~ProxyResourceHandler();
 
    /**
-    * Adds a permitted host. This method is for specifying hosts whose related
-    * requests can be handled by a local resource handler. Only if no local
-    * resource handler is found should the request be proxied. This provides
-    * an easy way to indicate that all non-permitted hosts should not use
-    * the local resource handlers and should instead be proxied immediately.
+    * Adds a proxy rule. If the given domain and path are received in an
+    * HTTP request, that request will be proxied to the given URL and the
+    * proceeding response will be proxied back to the client. The URLs may be
+    * relative or absolute and a path value of '*' will proxy all paths for
+    * the given domain.
     *
-    * If a request is made and its host matches the given host, then any added
-    * resource handlers may be used, if found. If the request host is not in
-    * this list, then only the proxy mappings will be used. If no hosts are
-    * added via this method or clearPermittedHosts() is called, then resource
-    * handlers may be used for any host.
+    * Any sub-path of the given path will also be proxied.
     *
-    * Wild cards like '*.mywebsite.com' or '*.mywebsite.com:*' are permitted.
+    * The domain parameter must be a valid host name (without a port) or a
+    * wildcard, for example:
     *
-    * @param host the host to add.
+    * *.mywebsite.com
+    * *.mywebsite.*
     *
-    * @return true if successful, false if not.
-    */
-   virtual bool addPermittedHost(const char* host);
-
-   /**
-    * Clears all permitted hosts. Unless addPermittedHost() is called again,
-    * local resource handlers will be used with any host name.
-    */
-   virtual void clearPermittedHosts();
-
-   /**
-    * Adds a proxy or redirection mapping. If the given host and path are
-    * received in an HTTP request, that request will be proxied (or responded
-    * to with a 30x redirect) to the given URL and the proceeding response will
-    * be proxied back to the client. A blank host value will assume relative
-    * urls and a path value of '*' will proxy all paths for the given host.
-    *
-    * Any sub-path of the given path will also be proxied/redirected.
+    * It will be matched against the 'Host' header in an incoming HTTP request.
     *
     * Note: The given path will be interpreted relative to the path of the
     * proxy handler. This means that if the proxy handler is for the resource:
@@ -145,23 +126,57 @@ public:
     * /path/to/handler
     *
     * Then a path of "/foo/bar" will look for "/path/to/handler/foo/bar" in
-    * the HTTP request, regardless of the host value.
+    * the HTTP request.
     *
-    * @param host the incoming host, "*" for any host.
+    * @param domain the incoming domain, "*" for any host.
     * @param path the incoming path to map to another URL, relative to the
     *           proxy handler's resource path.
     * @param url the URL to map to, which may be relative or absolute and
     *           will, at proxy time, have any sub-paths appended to it.
-    * @param rewriteHost only applicable to proxy, true to rewrite the host,
-    *           false not to.
-    * @param redirect true to redirect, false to proxy.
-    * @param permanent only applicable to redirects, true to send a permanent
-    *           redirect response, false to send a temporary one.
+    * @param rewriteHost true to rewrite the host header, false not to.
+    *
+    * @return true if successful, false if not.
     */
-   virtual void addMapping(
-      const char* host, const char* path,
-      const char* url, bool rewriteHost = true,
-      bool redirect = false, bool permanent = true);
+   virtual bool addProxyRule(
+      const char* domain, const char* path, const char* url, bool rewriteHost);
+
+   /**
+    * Adds a redirection rule. If the given domain and path are received in
+    * an HTTP request, that request will be responded to with a 30x redirect to
+    * the given URL. The URLs may be relative (the host in the request will be
+    * used) or absolute and a path value of '*' will redirect all paths for the
+    * given domain.
+    *
+    * Any sub-path of the given path will also be proxied/redirected.
+    *
+    * The domain parameter must be a valid host name (without a port) or a
+    * wildcard, for example:
+    *
+    * *.mywebsite.com
+    * *.mywebsite.*
+    *
+    * It will be matched against the 'Host' header in an incoming HTTP request.
+    *
+    * Note: The given path will be interpreted relative to the path of the
+    * proxy handler. This means that if the proxy handler is for the resource:
+    *
+    * /path/to/handler
+    *
+    * Then a path of "/foo/bar" will look for "/path/to/handler/foo/bar" in
+    * the HTTP request.
+    *
+    * @param domain the incoming domain, "*" for any host.
+    * @param path the incoming path to map to another URL, relative to the
+    *           proxy handler's resource path.
+    * @param url the URL to map to, which may be relative or absolute and
+    *           will, at redirect time, have any sub-paths appended to it.
+    * @param permanent true to send a permanent redirect response, false to
+    *           send a temporary one.
+    *
+    * @return true if successful, false if not.
+    */
+   virtual bool addRedirectRule(
+      const char* domain, const char* path, const char* url, bool permanent);
 
    /**
     * Proxies incoming HTTP traffic to another server.
@@ -174,15 +189,34 @@ public:
 
 protected:
    /**
-    * Returns true if the given host is in the list of permitted hosts, false
-    * if not.
+    * Adds a proxy or redirection rule.
     *
-    * @param host the host to look for.
+    * @param redirect true for a redirect rule, false for a proxy rule.
+    * @param domain the incoming domain, "*" for any host.
+    * @param path the incoming path to map to another URL, relative to the
+    *           proxy handler's resource path.
+    * @param url the URL to map to, which may be relative or absolute and
+    *           will, at redirect time, have any sub-paths appended to it.
+    * @param rewriteHost true to rewrite the host header, false not to.
+    * @param permanent true to send a permanent redirect response, false to
+    *           send a temporary one.
     *
-    * @return true if the given host is in the list of permitted hosts, false
-    *         if not.
+    * @return true if successful, false if not.
     */
-   virtual bool isPermittedHost(const char* host);
+   virtual bool addRule(
+      bool redirect, const char* domain, const char* path, const char* url,
+      bool rewriteHost, bool permanent);
+
+   /**
+    * Gets the Rule for the given action.
+    *
+    * @param action the action to get the Rule for.
+    * @param host the request host.
+    *
+    * @return the Rule or NULL if none was found.
+    */
+   virtual Rule* findRule(
+      bitmunk::protocol::BtpAction* action, std::string& host);
 };
 
 } // end namespace webui

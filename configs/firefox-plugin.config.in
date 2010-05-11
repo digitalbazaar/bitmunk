@@ -36,6 +36,9 @@
       "node" : {
          "host" : "@BITMUNK_LOCAL_API_HOST@",
          "port" : @BITMUNK_LOCAL_API_PORT@,
+         "domains" : [
+            "*"
+         ],
          "login" : {
             "auto" : false
          }

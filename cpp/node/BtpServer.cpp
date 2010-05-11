@@ -286,7 +286,7 @@ bool BtpServer::addService(
                {
                   bsm->nonSecure[path] = service;
                   MO_CAT_DEBUG(BM_NODE_CAT,
-                     "Added non-SSL BTP service: %s", path);
+                     "Added non-SSL BTP service: %s%s", dom, path);
                }
             }
          }
@@ -308,8 +308,11 @@ bool BtpServer::addService(
       // failed to add service
       if(!rval)
       {
-         // clean up service
-         service->cleanup();
+         if(initialize)
+         {
+            // clean up service
+            service->cleanup();
+         }
 
          // set exception
          ExceptionRef e = new Exception(
