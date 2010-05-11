@@ -10,12 +10,14 @@
 #include "bitmunk/common/Tools.h"
 #include "bitmunk/node/CertificateCreator.h"
 #include "monarch/crypto/AsymmetricKeyFactory.h"
+#include "monarch/data/json/JsonWriter.h"
 #include "monarch/net/NullSocketDataPresenter.h"
 #include "monarch/net/SslSocketDataPresenter.h"
 
 using namespace std;
 using namespace monarch::config;
 using namespace monarch::crypto;
+using namespace monarch::data::json;
 using namespace monarch::event;
 using namespace monarch::http;
 using namespace monarch::io;
@@ -127,6 +129,9 @@ bool BtpServer::initialize(Config& cfg)
          mDefaultDomains = DynamicObject();
          mDefaultDomains->append() = "*";
       }
+
+      MO_CAT_INFO(BM_NODE_CAT, "Running services on domains: %s",
+         JsonWriter::writeToString(mDefaultDomains, false, false).c_str());
    }
 
    return rval;
@@ -134,6 +139,13 @@ bool BtpServer::initialize(Config& cfg)
 
 void BtpServer::cleanup()
 {
+   // clean up services
+   for(DomainMap::iterator i = mServices.begin(); i != mServices.end(); i++)
+   {
+      free((char*)i->first);
+      delete i->second;
+   }
+
    // clean up
    mHostAddress.setNull();
    mSslContext.setNull();
@@ -259,7 +271,7 @@ bool BtpServer::addService(
             {
                // add a new maps entry
                bsm = new BtpServiceMaps;
-               mServices[dom] = bsm;
+               mServices[strdup(dom)] = bsm;
             }
             else
             {
