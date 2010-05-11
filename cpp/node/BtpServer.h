@@ -55,16 +55,36 @@ protected:
    monarch::net::Server::ServiceId mServiceId;
 
    /**
-    * The secure and non-secure BtpServices.
+    * The default list of domains to add BtpServices to.
+    */
+   monarch::rt::DynamicObject mDefaultDomains;
+
+   /**
+    * A map of path to BtpService.
     */
    typedef std::map<
       const char*, bitmunk::protocol::BtpServiceRef,
       monarch::util::StringComparator> BtpServiceMap;
-   BtpServiceMap mSecureServices;
-   BtpServiceMap mNonSecureServices;
 
    /**
-    * A lock for manipulating the BtpServiceLists.
+    * A set of secure and non-secure BtpServiceMaps.
+    */
+   struct BtpServiceMaps
+   {
+      BtpServiceMap secure;
+      BtpServiceMap nonSecure;
+   };
+
+   /**
+    * A map of domain to BtpServiceMaps.
+    */
+   typedef std::map<
+      const char*, BtpServiceMaps*, monarch::util::StringComparator>
+      DomainMap;
+   DomainMap mServices;
+
+   /**
+    * A lock for manipulating the BtpServices.
     */
    monarch::rt::ExclusiveLock mBtpServiceLock;
 
@@ -118,24 +138,14 @@ public:
     * @param service the BtpService to add.
     * @param ssl the type of SSL security to use with the service.
     * @param initialize true to initialize the service, false not to.
+    * @param domain the domain to add the service to, NULL for default.
     *
     * @return true if the service was added, false if not.
     */
    virtual bool addService(
       bitmunk::protocol::BtpServiceRef& service,
-      Node::SslStatus ssl, bool initialize = true);
-
-   /**
-    * Removes a BtpService.
-    *
-    * @param service the BtpService to remove.
-    * @param ssl to remove the service entirely, use SslAny, to remove it from
-    *            http or https, pass the appropriate SslStatus.
-    * @param cleanup true to call cleanup() on the service.
-    */
-   virtual void removeService(
-      bitmunk::protocol::BtpServiceRef& service,
-      Node::SslStatus ssl = Node::SslAny, bool cleanup = true);
+      Node::SslStatus ssl, bool initialize = true,
+      const char* domain = NULL);
 
    /**
     * Removes a BtpService by its path.
@@ -144,15 +154,11 @@ public:
     * @param ssl to remove the service entirely, use SslAny, to remove it from
     *            http or https, pass the appropriate SslStatus.
     * @param cleanup true to call cleanup() on the service.
-    *
-    * @return the BtpService that was removed, if there were two different
-    *         services removed via SslAny, only the non-SSL service will be
-    *         returned -- to avoid this, call this method twice, once with
-    *         SslOn and once with SslOff.
+    * @param domain the domain to remove the service from, NULL for default.
     */
-   virtual bitmunk::protocol::BtpServiceRef removeService(
+   virtual void removeService(
       const char* path, Node::SslStatus ssl = Node::SslAny,
-      bool cleanup = true);
+      bool cleanup = true, const char* domain = NULL);
 
    /**
     * Gets a BtpService by its path.
@@ -160,13 +166,15 @@ public:
     * @param path the path for the BtpService to get.
     * @param ssl to get a service regardless, use SslAny, to get a secure
     *            or non-secure one, pass the appropriate SslStatus.
+    * @param domain the domain to get the service from, NULL for default.
     *
     * @return the BtpService that was fetched, if there were two different
     *         services and SslAny was provided, only the non-SSL service will
     *         be returned.
     */
    virtual bitmunk::protocol::BtpServiceRef getService(
-      const char* path, Node::SslStatus ssl = Node::SslAny);
+      const char* path, Node::SslStatus ssl = Node::SslAny,
+      const char* domain = NULL);
 
    /**
     * Gets this node's main host address.

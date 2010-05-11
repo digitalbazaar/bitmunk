@@ -17,6 +17,7 @@ using namespace std;
 using namespace monarch::config;
 using namespace monarch::crypto;
 using namespace monarch::event;
+using namespace monarch::http;
 using namespace monarch::io;
 using namespace monarch::net;
 using namespace monarch::rt;
@@ -109,6 +110,23 @@ bool BtpServer::initialize(Config& cfg)
       NullSocketDataPresenter* nsdp = new NullSocketDataPresenter();
       mSocketDataPresenterList->add(ssdp);
       mSocketDataPresenterList->add(nsdp);
+
+      // get the list of default domains
+      if(cfg->hasMember("domains"))
+      {
+         mDefaultDomains = cfg["domains"].clone();
+         if(mDefaultDomains->length() == 0)
+         {
+            // add wildcard if no domains specified
+            mDefaultDomains->append() = "*";
+         }
+      }
+      else
+      {
+         // no specified default domains, so use "*"
+         mDefaultDomains = DynamicObject();
+         mDefaultDomains->append() = "*";
+      }
    }
 
    return rval;
@@ -116,20 +134,11 @@ bool BtpServer::initialize(Config& cfg)
 
 void BtpServer::cleanup()
 {
-   // remove any lingering services
-   while(!mSecureServices.empty())
-   {
-      removeService(mSecureServices.begin()->first);
-   }
-   while(!mNonSecureServices.empty())
-   {
-      removeService(mNonSecureServices.begin()->first);
-   }
-
    // clean up
    mHostAddress.setNull();
    mSslContext.setNull();
    mSocketDataPresenterList.setNull();
+   mDefaultDomains.setNull();
 }
 
 bool BtpServer::start()
@@ -164,8 +173,51 @@ void BtpServer::stop()
    }
 }
 
+/**
+ * Makes sure a btp service is added in both secure and non-secure mode (if
+ * specified) or it isn't added at all.
+ *
+ * @param bs the service to add.
+ * @param ssl the ssl mode.
+ * @param hcs the servicer to add the service to.
+ *
+ * @return true if added, false if not.
+ */
+static bool _addService(
+   BtpServiceRef& bs, Node::SslStatus ssl, HttpConnectionServicer* hcs)
+{
+   bool rval = true;
+
+   // try to add secure service if applicable
+   bool added = false;
+   if(ssl == Node::SslOn || ssl == Node::SslAny)
+   {
+      // try to add the service
+      rval = hcs->addRequestServicer(&(*bs), true);
+      added = true;
+   }
+
+   // if success, add non-secure service if applicable
+   if(rval && (ssl == Node::SslOff || ssl == Node::SslAny))
+   {
+      // if non-secure service could not be added, remove the secure one
+      // it was added
+      if(!hcs->addRequestServicer(&(*bs), false))
+      {
+         rval = false;
+         if(added)
+         {
+            hcs->removeRequestServicer(&(*bs), true);
+         }
+      }
+   }
+
+   return rval;
+}
+
 bool BtpServer::addService(
-   BtpServiceRef& service, Node::SslStatus ssl, bool initialize)
+   BtpServiceRef& service, Node::SslStatus ssl, bool initialize,
+   const char* domain)
 {
    bool rval = true;
 
@@ -176,38 +228,76 @@ bool BtpServer::addService(
 
    if(rval)
    {
+      // get the domain list
+      DynamicObject dl(NULL);
+      if(domain == NULL)
+      {
+         dl = mDefaultDomains;
+      }
+      else
+      {
+         dl = DynamicObject();
+         dl->append() = domain;
+      }
+
       mBtpServiceLock.lock();
       {
-         // ensure service can be added by setting this to true only
-         // after it has been added
-         rval = false;
+         // keep track of domains with added services
+         DynamicObject added;
+         added->setType(Array);
 
-         if(ssl == Node::SslOn || ssl == Node::SslAny)
+         // for each domain, add service
+         BtpServiceMaps* bsm = NULL;
+         DynamicObjectIterator dli = dl.getIterator();
+         while(rval && dli->hasNext())
          {
-            if(mHttpConnectionServicer.addRequestServicer(&(*service), true))
+            const char* dom = dli->next()->getString();
+            DomainMap::iterator di = mServices.find(dom);
+            if(di == mServices.end())
             {
-               mSecureServices[service->getPath()] = service;
-               rval = true;
-            }
-         }
-
-         if(ssl == Node::SslOff || ssl == Node::SslAny)
-         {
-            if(mHttpConnectionServicer.addRequestServicer(&(*service), false))
-            {
-               mNonSecureServices[service->getPath()] = service;
-               rval = true;
-            }
-            else if(rval)
-            {
-               // ensure secure servicer is removed
-               mHttpConnectionServicer.removeRequestServicer(&(*service), true);
-               mSecureServices.erase(service->getPath());
-               rval = false;
+               // add a new maps entry
+               bsm = new BtpServiceMaps;
+               mServices[dom] = bsm;
             }
             else
             {
-               rval = false;
+               // use existing maps entry
+               bsm = di->second;
+            }
+
+            // try to add the service
+            rval = _addService(service, ssl, &mHttpConnectionServicer);
+            if(rval)
+            {
+               // added to the given domain
+               added->append() = dom;
+
+               // save reference to service
+               const char* path = service->getPath();
+               if(ssl == Node::SslOn || ssl == Node::SslAny)
+               {
+                  bsm->secure[path] = service;
+                  MO_CAT_DEBUG(BM_NODE_CAT,
+                     "Added SSL BTP service: %s%s", dom, path);
+               }
+               if(ssl == Node::SslOff || ssl == Node::SslAny)
+               {
+                  bsm->nonSecure[path] = service;
+                  MO_CAT_DEBUG(BM_NODE_CAT,
+                     "Added non-SSL BTP service: %s", path);
+               }
+            }
+         }
+
+         // if service didn't add to a domain, remove it from all the
+         // ones it was added to
+         if(!rval)
+         {
+            dli = added.getIterator();
+            while(dli->hasNext())
+            {
+               const char* dom = dli->next()->getString();
+               removeService(service->getPath(), ssl, false, dom);
             }
          }
       }
@@ -225,159 +315,124 @@ bool BtpServer::addService(
             "bitmunk.node.AddBtpServiceFailure");
          Exception::push(e);
       }
-      else
-      {
-         if(ssl == Node::SslOn || ssl == Node::SslAny)
-         {
-            MO_CAT_DEBUG(BM_NODE_CAT,
-               "Added SSL BTP service: %s", service->getPath());
-         }
-
-         if(ssl == Node::SslOff || ssl == Node::SslAny)
-         {
-            MO_CAT_DEBUG(BM_NODE_CAT,
-               "Added non-SSL BTP service: %s", service->getPath());
-         }
-      }
    }
 
    return rval;
 }
 
 void BtpServer::removeService(
-   BtpServiceRef& service, Node::SslStatus ssl, bool cleanup)
+   const char* path, Node::SslStatus ssl, bool cleanup,
+   const char* domain)
 {
+   // get the domain list
+   DynamicObject dl(NULL);
+   if(domain == NULL)
+   {
+      dl = mDefaultDomains;
+   }
+   else
+   {
+      dl = DynamicObject();
+      dl->append() = domain;
+   }
+
+   // build a unique list of services to cleanup
+   UniqueList<BtpServiceRef> cleanupList;
+
    mBtpServiceLock.lock();
    {
-      if(ssl == Node::SslOn || ssl == Node::SslAny)
+      // for each domain, remove service and store it in cleanup list
+      DynamicObjectIterator dli = dl.getIterator();
+      while(dli->hasNext())
       {
-         mHttpConnectionServicer.removeRequestServicer(&(*service), true);
-         mSecureServices.erase(service->getPath());
-      }
+         const char* dom = dli->next()->getString();
+         DomainMap::iterator di = mServices.find(dom);
+         if(di != mServices.end())
+         {
+            if(ssl == Node::SslOn || ssl == Node::SslAny)
+            {
+               BtpServiceMap::iterator i = di->second->secure.find(path);
+               if(i != di->second->secure.end())
+               {
+                  cleanupList.add(i->second);
+                  mHttpConnectionServicer.removeRequestServicer(
+                     path, true, dom);
+                  di->second->secure.erase(i);
+                  MO_CAT_DEBUG(BM_NODE_CAT,
+                     "Removed SSL BTP service: %s%s", dom, path);
+               }
+            }
 
-      if(ssl == Node::SslOff || ssl == Node::SslAny)
-      {
-         mHttpConnectionServicer.removeRequestServicer(&(*service), false);
-         mNonSecureServices.erase(service->getPath());
+            if(ssl == Node::SslOff || ssl == Node::SslAny)
+            {
+               BtpServiceMap::iterator i = di->second->nonSecure.find(path);
+               if(i != di->second->nonSecure.end())
+               {
+                  cleanupList.add(i->second);
+                  mHttpConnectionServicer.removeRequestServicer(
+                     path, false, dom);
+                  di->second->nonSecure.erase(i);
+                  MO_CAT_DEBUG(BM_NODE_CAT,
+                     "Removed non-SSL BTP service: %s%s", dom, path);
+               }
+            }
+         }
       }
    }
    mBtpServiceLock.unlock();
 
-   if(ssl == Node::SslOn || ssl == Node::SslAny)
-   {
-      MO_CAT_DEBUG(BM_NODE_CAT,
-         "Removed SSL BTP service: %s", service->getPath());
-   }
-
-   if(ssl == Node::SslOff || ssl == Node::SslAny)
-   {
-      MO_CAT_DEBUG(BM_NODE_CAT,
-         "Removed non-SSL BTP service: %s", service->getPath());
-   }
-
+   // clean up services
    if(cleanup)
    {
-      service->cleanup();
+      IteratorRef<BtpServiceRef> i = cleanupList.getIterator();
+      while(i->hasNext())
+      {
+         BtpServiceRef& bs = i->next();
+         bs->cleanup();
+      }
    }
 }
 
-BtpServiceRef BtpServer::removeService(
-   const char* path, Node::SslStatus ssl, bool cleanup)
+BtpServiceRef BtpServer::getService(
+   const char* path, Node::SslStatus ssl, const char* domain)
 {
    BtpServiceRef rval;
 
-   BtpServiceRef sslOn;
-   BtpServiceRef sslOff;
+   // get the domain list
+   DynamicObject dl(NULL);
+   if(domain == NULL)
+   {
+      dl = mDefaultDomains;
+   }
+   else
+   {
+      dl = DynamicObject();
+      dl->append() = domain;
+   }
+   domain = dl.first()->getString();
 
+   // look in services map for service
    mBtpServiceLock.lock();
    {
-      if(ssl == Node::SslOn || ssl == Node::SslAny)
+      DomainMap::iterator di = mServices.find(domain);
+      if(di != mServices.end())
       {
-         BtpServiceMap::iterator i = mSecureServices.find(path);
-         if(i != mSecureServices.end())
+         if(ssl == Node::SslOff || ssl == Node::SslAny)
          {
-            sslOn = i->second;
-            mHttpConnectionServicer.removeRequestServicer(path, true);
-            mSecureServices.erase(i);
-         }
-      }
-
-      if(ssl == Node::SslOff || ssl == Node::SslAny)
-      {
-         BtpServiceMap::iterator i = mNonSecureServices.find(path);
-         if(i != mNonSecureServices.end())
-         {
-            sslOff = i->second;
-            mHttpConnectionServicer.removeRequestServicer(path, false);
-            mNonSecureServices.erase(i);
-         }
-      }
-   }
-   mBtpServiceLock.unlock();
-
-   if(!sslOn.isNull())
-   {
-      MO_CAT_DEBUG(BM_NODE_CAT, "Removed SSL BTP service: %s", path);
-      if(sslOff.isNull())
-      {
-         rval = sslOn;
-      }
-   }
-
-   if(!sslOff.isNull())
-   {
-      MO_CAT_DEBUG(BM_NODE_CAT, "Removed non-SSL BTP service: %s", path);
-      if(rval.isNull())
-      {
-         rval = sslOff;
-      }
-   }
-
-   if(cleanup && !rval.isNull())
-   {
-      // ensure cleanup is not double-called for the same service
-      if(sslOn == sslOff)
-      {
-         rval->cleanup();
-      }
-      else
-      {
-         if(!sslOn.isNull())
-         {
-            sslOn->cleanup();
+            BtpServiceMap::iterator i = di->second->nonSecure.find(path);
+            if(i != di->second->nonSecure.end())
+            {
+               rval = i->second;
+            }
          }
 
-         if(!sslOff.isNull())
+         if(rval.isNull() && ssl != Node::SslOff)
          {
-            sslOff->cleanup();
-         }
-      }
-   }
-
-   return rval;
-}
-
-BtpServiceRef BtpServer::getService(const char* path, Node::SslStatus ssl)
-{
-   BtpServiceRef rval;
-
-   mBtpServiceLock.lock();
-   {
-      if(ssl == Node::SslOff || ssl == Node::SslAny)
-      {
-         BtpServiceMap::iterator i = mNonSecureServices.find(path);
-         if(i != mNonSecureServices.end())
-         {
-            rval = i->second;
-         }
-      }
-
-      if(rval.isNull() && ssl != Node::SslOff)
-      {
-         BtpServiceMap::iterator i = mSecureServices.find(path);
-         if(i != mSecureServices.end())
-         {
-            rval = i->second;
+            BtpServiceMap::iterator i = di->second->secure.find(path);
+            if(i != di->second->secure.end())
+            {
+               rval = i->second;
+            }
          }
       }
    }
