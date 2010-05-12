@@ -353,6 +353,7 @@ bool DownloadManager::handleMessages()
    {
       Event e;
       e["type"] = EVENT_CHECK_COMPLETION;
+      e["parallel"] = true;
       e["details"]["fiberId"] = getId();
       getNode()->getEventDaemon()->add(e, CHECK_COMPLETION_INTERVAL, -1);
    }
@@ -1243,6 +1244,7 @@ bool DownloadManager::poolUpdate(DynamicObject& msg)
    {
       Event e;
       e["type"] = EVENT_POOL_TIMEOUT;
+      e["parallel"] = true;
       e["details"]["fiberId"] = getId();
       getNode()->getEventDaemon()->add(e, timeout, 1);
    }
