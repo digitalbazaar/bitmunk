@@ -282,6 +282,7 @@ void DownloadManager::registerEventHandlers(monarch::event::ObserverList* list)
       // schedule event to indicate seller pool timeout
       Event e;
       e["type"] = EVENT_POOL_TIMEOUT;
+      e["parallel"] = true;
       e["details"]["fiberId"] = getId();
       getNode()->getEventDaemon()->add(e, timeout, 1);
    }
