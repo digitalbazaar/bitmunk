@@ -4,17 +4,12 @@
    "_group_": "after defaults",
    "_append_": {
       "monarch.app.Kernel": {
-         "modulePath": [
-            "@BITMUNK_DIR@/dist/modules/apps/@LIB_PREFIX@bitmunk.@DYNAMIC_LIB_EXT@",
-            "@BITMUNK_DIR@/dist/lib/@LIB_PREFIX@bmapp.@DYNAMIC_LIB_EXT@"
-         ]
+         "appPath": "@BITMUNK_DIR@/dist/modules/apps/@LIB_PREFIX@bitmunk.@DYNAMIC_LIB_EXT@"
       },
-      "bitmunk.apps.Bitmunk": {
-         "configs": {
-            "extra": [
-               "@BITMUNK_DIR@/configs/dev-bpe.config"
-	    ]
-         }
+      "monarch.app.Config": {
+         "appConfigs": [
+            "@BITMUNK_DIR@/configs/dev-bpe.config"
+         ]
       }
    },
    "_merge_": {

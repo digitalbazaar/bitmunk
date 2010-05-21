@@ -874,6 +874,7 @@ fi
 if test "x$BUILD_FIREFOX_PLUGIN" = "xyes"; then
 AC_CONFIG_FILES([
     configs/firefox-plugin.config
+    configs/firefox-plugin.app.config
 ])
 fi
 

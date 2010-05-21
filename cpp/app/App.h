@@ -4,7 +4,7 @@
 #ifndef bitmunk_app_App_H
 #define bitmunk_app_App_H
 
-#include "monarch/app/AppPlugin.h"
+#include "monarch/app/App.h"
 
 namespace bitmunk
 {
@@ -12,11 +12,11 @@ namespace app
 {
 
 /**
- * monarch::app::AppPlugin with Bitmunk specific features.
+ * monarch::app::App with Bitmunk specific features.
  *
  * Author: David I. Lehn
  */
-class App : public monarch::app::AppPlugin
+class App : public monarch::app::App
 {
 public:
    /**
