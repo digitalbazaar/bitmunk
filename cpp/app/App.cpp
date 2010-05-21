@@ -43,6 +43,10 @@ bool App::initConfigs(Config& defaults)
 {
    bool rval = true;
 
+   // set BITMUNK_HOME keyword
+   Config& appCfg = getApp()->getConfig()["monarch.app.App"];
+   m->setKeyword("BITMUNK_HOME", appCfg["home"]->getString());
+
    // insert Bitmunk specific config groups
    ConfigManager* cm = getApp()->getConfigManager();
    ConfigManager::ConfigId cmdLineParent = cm->getConfig(

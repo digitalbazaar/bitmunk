@@ -11,8 +11,8 @@
 #include "monarch/modest/Module.h"
 #include "monarch/util/Macros.h"
 #include "monarch/rt/DynamicObject.h"
-#include "bitmunk/common/Logging.h"
 #include "bitmunk/app/App.h"
+#include "bitmunk/common/Logging.h"
 #include "bitmunk/node/Node.h"
 
 #include "config.h"
@@ -50,91 +50,94 @@ Bitmunk::~Bitmunk()
 
 bool Bitmunk::initialize()
 {
-   getApp()->setName(BITMUNK_NAME);
-   getApp()->setVersion(BITMUNK_VERSION);
-   return true;
+   bool rval = bitmunk::app::App::initialize();
+   if(rval)
+   {
+      getApp()->setName(BITMUNK_NAME);
+      getApp()->setVersion(BITMUNK_VERSION);
+   }
+   return rval;
 }
 
 bool Bitmunk::initConfigs(Config& defaults)
 {
-   ConfigManager* m = getApp()->getConfigManager();
-
-   // set BITMUNK_HOME keyword
-   Config& appCfg = getApp()->getConfig()["monarch.app.App"];
-   m->setKeyword("BITMUNK_HOME", appCfg["home"]->getString());
-
-   // set defaults
-   Config& cm = defaults[ConfigManager::MERGE];
-   Config& cmp = defaults[ConfigManager::MERGE][PLUGIN_NAME];
-   cm["node"]["handlers"]->setType(Map);
-   cm["node"]["events"]->setType(Map);
-
-   // all config info in one map
-   Config& configs = cmp["configs"];
-   configs->setType(Map);
-
-   // setup package config loading
+   bool rval = bitmunk::app::App::initConfigs(defaults);
+   if(rval)
    {
-      Config& cfg = configs["package"];
-      cfg["id"] = PLUGIN_NAME ".configs.package";
-      if(getenv("BITMUNK_PACKAGE_CONFIG") != NULL)
+      ConfigManager* m = getApp()->getConfigManager();
+
+      // set defaults
+      Config& cm = defaults[ConfigManager::MERGE];
+      Config& cmp = defaults[ConfigManager::MERGE][PLUGIN_NAME];
+      cm["node"]["handlers"]->setType(Map);
+      cm["node"]["events"]->setType(Map);
+
+      // all config info in one map
+      Config& configs = cmp["configs"];
+      configs->setType(Map);
+
+      // setup package config loading
       {
-         // use environment var and require
-         cfg["path"] = getenv("BITMUNK_PACKAGE_CONFIG");
-         cfg["optional"] = false;
+         Config& cfg = configs["package"];
+         cfg["id"] = PLUGIN_NAME ".configs.package";
+         if(getenv("BITMUNK_PACKAGE_CONFIG") != NULL)
+         {
+            // use environment var and require
+            cfg["path"] = getenv("BITMUNK_PACKAGE_CONFIG");
+            cfg["optional"] = false;
+         }
+         else
+         {
+            // try to load optional default
+            cfg["path"] = BITMUNK_PACKAGE_CONFIG;
+            cfg["optional"] = true;
+         }
+         cfg["load"] = (cfg["path"]->length() > 0);
       }
-      else
+
+      // setup system config loading
       {
-         // try to load optional default
-         cfg["path"] = BITMUNK_PACKAGE_CONFIG;
-         cfg["optional"] = true;
+         Config& cfg = configs["system"];
+         cfg["id"] = PLUGIN_NAME ".configs.system";
+         if(getenv("BITMUNK_SYSTEM_CONFIG") != NULL)
+         {
+            // use environment var and require
+            cfg["path"] = getenv("BITMUNK_SYSTEM_CONFIG");
+            cfg["optional"] = false;
+         }
+         else
+         {
+            // try to load optional default
+            cfg["path"] = BITMUNK_SYSTEM_CONFIG;
+            cfg["optional"] = true;
+         }
+         cfg["load"] = (cfg["path"]->length() > 0);
       }
-      cfg["load"] = (cfg["path"]->length() > 0);
+
+      // setup system user config loading
+      {
+         Config& cfg = configs["systemUser"];
+         cfg["id"] = PLUGIN_NAME ".configs.systemUser";
+         if(getenv("BITMUNK_SYSTEM_USER_CONFIG") != NULL)
+         {
+            // use environment var and require
+            cfg["path"] = getenv("BITMUNK_SYSTEM_USER_CONFIG");
+            cfg["optional"] = false;
+         }
+         else
+         {
+            // try to load optional default
+            cfg["path"] = BITMUNK_SYSTEM_USER_CONFIG;
+            cfg["optional"] = true;
+         }
+         cfg["load"] = (cfg["path"]->length() > 0);
+      }
+
+      // add to config manager
+      return m->addConfig(defaults);
    }
 
-   // setup system config loading
-   {
-      Config& cfg = configs["system"];
-      cfg["id"] = PLUGIN_NAME ".configs.system";
-      if(getenv("BITMUNK_SYSTEM_CONFIG") != NULL)
-      {
-         // use environment var and require
-         cfg["path"] = getenv("BITMUNK_SYSTEM_CONFIG");
-         cfg["optional"] = false;
-      }
-      else
-      {
-         // try to load optional default
-         cfg["path"] = BITMUNK_SYSTEM_CONFIG;
-         cfg["optional"] = true;
-      }
-      cfg["load"] = (cfg["path"]->length() > 0);
-   }
-
-   // FIXME: figure out this lehn madness
-   // setup system user config loading
-   // Note: see didLoadConfigs() for special code that tries to find this
-   // config and may prepend {BITMUNK_HOME} automatically.
-   {
-      Config& cfg = configs["systemUser"];
-      cfg["id"] = PLUGIN_NAME ".configs.systemUser";
-      if(getenv("BITMUNK_SYSTEM_USER_CONFIG") != NULL)
-      {
-         // use environment var and require
-         cfg["path"] = getenv("BITMUNK_SYSTEM_USER_CONFIG");
-         cfg["optional"] = false;
-      }
-      else
-      {
-         // try to load optional default
-         cfg["path"] = BITMUNK_SYSTEM_USER_CONFIG;
-         cfg["optional"] = true;
-      }
-      cfg["load"] = (cfg["path"]->length() > 0);
-   }
-
-   // add to config manager
-   return m->addConfig(defaults);
+   return rval;
 }
 
 DynamicObject Bitmunk::getCommandLineSpec(Config& cfg)

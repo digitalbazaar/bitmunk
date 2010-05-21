@@ -459,6 +459,9 @@ static PRInt32 _startBitmunk(
    */
    string nodePortFileKey = "bitmunk\\.system\\.System.nodePortFile";
 
+   // prepend keyword to resource path
+   resourcePath.insert(0, "RESOURCE_PATH=");
+
 // linux/apple specific implementation
 #if defined(__linux__) || defined(__APPLE__)
    pid_t pid = fork();
@@ -487,13 +490,11 @@ static PRInt32 _startBitmunk(
       char* argv[] =
       {
          (char*)BITMUNK_BIN,
-         (char*)"--resource-path", (char*)resourcePath.c_str(),
-         (char*)"--config", (char*)packageConfigFile.c_str(),
+         (char*)"--config-keyword", (char*)resourcePath.c_str(),
+         (char*)"--config-include", (char*)packageConfigFile.c_str(),
          (char*)"--option", (char*)nodePortFileKey.c_str(),
          (char*)nodePortFile.c_str(),
-         // delayed open so {BITMUNK_HOME} can be used in log filename
-         (char*)"--log-delay-open",
-         (char*)"--log", (char*)logFile.c_str(),
+         (char*)"--log-home", (char*)logFile.c_str(),
          (NULL)
       };
 
