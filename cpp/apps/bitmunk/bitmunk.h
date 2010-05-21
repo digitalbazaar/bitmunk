@@ -51,11 +51,6 @@ public:
    /**
     * {@inheritDoc}
     */
-   virtual void cleanup();
-
-   /**
-    * {@inheritDoc}
-    */
    virtual bool initConfigs(monarch::config::Config& defaults);
 
    /**

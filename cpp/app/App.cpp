@@ -44,12 +44,13 @@ bool App::initConfigs(Config& defaults)
 
    // set BITMUNK_HOME keyword
    ConfigManager* cm = getConfigManager();
-   Config& appCfg = getConfig()["monarch.app.Core"];
-   cm->setKeyword("BITMUNK_HOME", appCfg["home"]->getString());
+   Config cfg = getConfig()["monarch.app.Core"];
+   cm->setKeyword("BITMUNK_HOME", cfg["home"]->getString());
 
    // insert Bitmunk specific config groups
-   ConfigManager::ConfigId cmdLineParent = cm->getConfig(
-      "command line", true, false)[ConfigManager::PARENT]->getString();
+   cfg = cm->getConfig("command line", true, false);
+   ConfigManager::ConfigId cmdLineParent =
+      cfg[ConfigManager::PARENT]->getString();
    rval =
       // insert configs before command line
       cm->addConfig(makeConfig(
