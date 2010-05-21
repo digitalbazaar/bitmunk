@@ -96,18 +96,13 @@ Config NodeConfigManager::getNodeConfig(bool raw)
    return rval;
 }
 
-// FIXME: This is a quick hack that uses knowledge of where the Bitmunk app is
-// FIXME: storing meta information and how the configs are layered. The
-// FIXME: bitmunk config code should be refactored into this class.
-//
 // FIXME: This code has an issue if the config file has a changed id or
-// FIXME: changed contents since it was first loaded.  Just assuming this code
+// FIXME: changed contents since it was first loaded. Just assuming this code
 // FIXME: is the only code that manages the file for now.
 bool NodeConfigManager::saveSystemUserConfig()
 {
-
    bool rval;
-   Config cfg = getModuleConfig("bitmunk.apps.Bitmunk");
+   Config cfg = getNodeConfig();
    const char* suPath;
    string path;
 
@@ -115,8 +110,8 @@ bool NodeConfigManager::saveSystemUserConfig()
 
    if(rval)
    {
-      // get initial value
-      suPath = cfg["configs"]["systemUser"]["path"]->getString();
+      // get system user config and expand any home path
+      suPath = cfg["systemUserConfig"]->getString();
       rval = expandBitmunkHomePath(suPath, path);
    }
 
@@ -183,8 +178,6 @@ bool NodeConfigManager::saveSystemUserConfig()
    }
 
    return rval;
-
-
 }
 
 Config NodeConfigManager::getModuleConfig(const char* moduleName, bool raw)

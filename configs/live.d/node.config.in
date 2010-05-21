@@ -17,6 +17,7 @@
          ],
          "profilePath" : "profiles",
          "usersPath" : "users",
+         "systemUserConfig" : "@BITMUNK_SYSTEM_USER_CONFIG@",
          "sslGenerate" : @NODE_SSL_GENERATE@,
          "sslCertificate" : "@NODE_SSL_CERTIFICATE@",
          "sslPrivateKey" : "@NODE_SSL_KEY@",
