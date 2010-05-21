@@ -85,7 +85,7 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr)
    // load node module
    assert(cfg["test"]->hasMember("nodeModule"));
    const char* nodeModule = cfg["test"]["nodeModule"]->getString();
-   MicroKernel* k = tr.getMicroKernel();
+   MicroKernel* k = tr.getApp()->getKernel();
    MicroKernelModule* mod = k->loadMicroKernelModule(nodeModule);
    if(mod != NULL)
    {
@@ -107,6 +107,6 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr)
 
 bool Tester::unloadNode(monarch::test::TestRunner& tr)
 {
-   MicroKernel* k = tr.getMicroKernel();
+   MicroKernel* k = tr.getApp()->getKernel();
    return k->unloadModule("bitmunk.node.Node");
 }

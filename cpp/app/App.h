@@ -5,7 +5,6 @@
 #define bitmunk_app_App_H
 
 #include "monarch/app/AppPlugin.h"
-#include "monarch/app/AppPluginFactory.h"
 
 namespace bitmunk
 {
@@ -19,49 +18,6 @@ namespace app
  */
 class App : public monarch::app::AppPlugin
 {
-protected:
-   /**
-    * Provide same functionality as monarch::app::App::makeMetaConfig() except
-    * use the default Bitmunk version.
-    *
-    * @param meta the meta config.
-    * @param id the config id.
-    * @param groupId the group id.
-    *
-    * @return true on success, false and exception on failure.
-    */
-   static monarch::config::Config makeMetaConfig(
-      monarch::config::Config& meta,
-      const char* id = NULL,
-      const char* groupId = NULL);
-
-   /**
-    * {@inheritDoc}
-    */
-   virtual bool initConfigManager();
-
-   /**
-    * Prepare to initialize Bitmunk meta config.
-    *
-    * Subclasses should call the superclass method.
-    *
-    * @param meta the meta config.
-    *
-    * @return true on success, false and exception on failure.
-    */
-
-   virtual bool willInitMetaConfig(monarch::config::Config& meta);
-   /**
-    * Initialize Bitmunk meta config.
-    *
-    * Subclasses should call the superclass method.
-    *
-    * @param meta the meta config.
-    *
-    * @return true on success, false and exception on failure.
-    */
-   virtual bool initMetaConfig(monarch::config::Config& meta);
-
 public:
    /**
     * Create an App instance.
@@ -76,12 +32,17 @@ public:
    /**
     * {@inheritDoc}
     */
-   virtual bool initializeLogging();
+   virtual bool initialize();
 
    /**
     * {@inheritDoc}
     */
-   virtual bool cleanupLogging();
+   virtual void cleanup();
+
+   /**
+    * {@inheritDoc}
+    */
+   virtual bool initConfigs(monarch::config::Config& defaults);
 };
 
 } // end namespace app

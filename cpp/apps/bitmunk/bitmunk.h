@@ -4,11 +4,9 @@
 #ifndef bitmunk_apps_Bitmunk_h
 #define bitmunk_apps_Bitmunk_h
 
-#include "monarch/app/AppPlugin.h"
+#include "bitmunk/app/App.h"
 #include "monarch/event/ObserverDelegate.h"
-#include "monarch/kernel/MicroKernel.h"
-
-#include <vector>
+#include "monarch/io/File.h"
 
 namespace bitmunk
 {
@@ -16,40 +14,14 @@ namespace apps
 {
 
 /**
- * Top-level Bitmunk AppPlugin.
+ * Top-level Bitmunk App.
  *
- * Author: David I. Lehn
+ * @author David I. Lehn
+ * @author Dave Longley
  */
-class Bitmunk : public monarch::app::AppPlugin
+class Bitmunk : public bitmunk::app::App
 {
 protected:
-   /**
-    * The app state types.
-    */
-   enum State
-   {
-      // Node is stopped.
-      Stopped,
-      // In the process of starting the node.
-      Starting,
-      // Node has been started and is running.
-      Running,
-      // In the process of restarting the node.
-      Restarting,
-      // In the process of stopping the node.
-      Stopping
-   };
-
-   /**
-    * Current app state.
-    */
-   State mState;
-
-   /**
-    * Main application MicroKernel.
-    */
-   monarch::kernel::MicroKernel* mMicroKernel;
-
    /**
     * Observer for Node restart event.
     */
@@ -63,10 +35,8 @@ protected:
 public:
    /**
     * Create a Bitmunk instance.
-    *
-    * @param k MicroKernel that started this AppPlugin.
     */
-   Bitmunk(monarch::kernel::MicroKernel* k);
+   Bitmunk();
 
    /**
     * Deconstruct this Bitmunk instance.
@@ -76,7 +46,23 @@ public:
    /**
     * {@inheritDoc}
     */
-   virtual bool didAddToApp(monarch::app::App* app);
+   virtual bool initialize();
+
+   /**
+    * {@inheritDoc}
+    */
+   virtual void cleanup();
+
+   /**
+    * {@inheritDoc}
+    */
+   virtual bool initConfigs(monarch::config::Config& defaults);
+
+   /**
+    * {@inheritDoc}
+    */
+   virtual monarch::rt::DynamicObject getCommandLineSpec(
+      monarch::config::Config& cfg);
 
    /**
     * {@inheritDoc}
@@ -84,33 +70,11 @@ public:
    virtual monarch::rt::DynamicObject getWaitEvents();
 
    /**
-    * Setup command line option config.
-    *
-    * @return true on success, false on failure and exception set.
+    * Runs the main application.
     */
-   virtual bool initMetaConfig(monarch::config::Config& meta);
+   virtual bool run();
 
-   /**
-    * Get a specification of the command line paramters.
-    *
-    * @return the command line spec.
-    */
-   virtual monarch::rt::DynamicObject getCommandLineSpecs();
-
-   /**
-    * Setup for config loading.
-    *
-    * @return true on success, false on failure and exception set.
-    */
-   virtual bool willLoadConfigs();
-
-   /**
-    * Load Bitmunk specific configs.
-    *
-    * @return true on success, false on failure and exception set.
-    */
-   virtual bool didLoadConfigs();
-
+protected:
    /**
     * Get a list of module path the kernel should load to start a node.
     *
@@ -150,11 +114,6 @@ public:
     * Event handler for shutdown events.
     */
    virtual void shutdownNodeHandler(monarch::event::Event& e);
-
-   /**
-    * Run main application.
-    */
-   virtual bool run();
 };
 
 } // end namespace apps
