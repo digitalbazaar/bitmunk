@@ -132,7 +132,7 @@ bool Bitmunk::initConfigs(Config& defaults)
       }
 
       // add to config manager
-      return getConfigManager()->addConfig(defaults);
+      rval = getConfigManager()->addConfig(defaults);
    }
 
    return rval;
@@ -177,9 +177,8 @@ DynamicObject Bitmunk::getCommandLineSpec(Config& cfg)
 
    DynamicObject opt;
    Config& op = options[APP_NAME];
-   op->setType(Map);
 
-   opt = spec->append();
+   opt = spec["options"]->append();
    opt["long"] = "--package-config";
    opt["include"]["config"] = getMetaConfig()["appOptions"];
    opt["include"]["params"] = op["configs"]["package"];
@@ -189,7 +188,7 @@ DynamicObject Bitmunk::getCommandLineSpec(Config& cfg)
    opt["setFalse"]["path"] = "configs.package.optional";
    opt["argError"] = "No package config file specified.";
 
-   opt = spec->append();
+   opt = spec["options"]->append();
    opt["long"] = "--system-config";
    opt["include"]["config"] = getMetaConfig()["appOptions"];
    opt["include"]["params"] = op["configs"]["system"];
@@ -199,7 +198,7 @@ DynamicObject Bitmunk::getCommandLineSpec(Config& cfg)
    opt["setFalse"]["path"] = "configs.system.optional";
    opt["argError"] = "No system config file specified.";
 
-   opt = spec->append();
+   opt = spec["options"]->append();
    opt["long"] = "--system-user-config";
    opt["include"]["config"] = getMetaConfig()["appOptions"];
    opt["include"]["params"] = op["configs"]["systemUser"];
@@ -209,28 +208,28 @@ DynamicObject Bitmunk::getCommandLineSpec(Config& cfg)
    opt["setFalse"]["path"] = "configs.systemUser.optional";
    opt["argError"] = "No system user config file specified.";
 
-   opt = spec->append();
+   opt = spec["options"]->append();
    opt["long"] = "--no-package-config";
    opt["setFalse"]["root"] = op;
    opt["setFalse"]["path"] = "configs.package.load";
 
-   opt = spec->append();
+   opt = spec["options"]->append();
    opt["long"] = "--no-system-config";
    opt["setFalse"]["root"] = op;
    opt["setFalse"]["path"] = "configs.system.load";
 
-   opt = spec->append();
+   opt = spec["options"]->append();
    opt["long"] = "--no-system-user-config";
    opt["setFalse"]["root"] = op;
    opt["setFalse"]["path"] = "configs.systemUser.load";
 
-   opt = spec->append();
+   opt = spec["options"]->append();
    opt["short"] = "-a";
    opt["long"] = "--auto-login";
    opt["setTrue"]["root"] = options;
    opt["setTrue"]["path"] = "node.login.auto";
 
-   opt = spec->append();
+   opt = spec["options"]->append();
    opt["short"] = "-p";
    opt["long"] = "--port";
    opt["arg"]["root"] = options;
@@ -238,26 +237,26 @@ DynamicObject Bitmunk::getCommandLineSpec(Config& cfg)
    opt["arg"]["type"] = (uint64_t)0;
    opt["argError"] = "No port specified.";
 
-   opt = spec->append();
+   opt = spec["options"]->append();
    opt["long"] = "--bitmunk-module-path";
    opt["append"]["root"] = options;
    opt["append"]["path"] = "node.modulePath";
    opt["argError"] = "No node module path specified.";
 
-   opt = spec->append();
+   opt = spec["options"]->append();
    opt["long"] = "--profile-dir";
    opt["arg"]["root"] = options;
    opt["arg"]["path"] = "node.profilePath";
    opt["argError"] = "No path specified.";
 
-   opt = spec->append();
+   opt = spec["options"]->append();
    opt["short"] = "-U";
    opt["long"] = "--user";
    opt["arg"]["root"] = options;
    opt["arg"]["path"] = "node.login.username";
    opt["argError"] = "No user specified.";
 
-   opt = spec->append();
+   opt = spec["options"]->append();
    opt["short"] = "-P";
    opt["long"] = "--password";
    opt["arg"]["root"] = options;
