@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008 Digital Bazaar, Inc.  All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #ifndef bitmunk_config_H
 #define bitmunk_config_H
@@ -8,9 +8,5 @@
 // These variables can be overridden via configure options
 
 #define BITMUNK_VERSION "@FULL_DOTTED_VERSION@"
-#define BITMUNK_HOME "@BITMUNK_HOME_DIR@"
-#define BITMUNK_PACKAGE_CONFIG "@BITMUNK_PACKAGE_CONFIG@"
-#define BITMUNK_SYSTEM_CONFIG "@BITMUNK_SYSTEM_CONFIG@"
-#define BITMUNK_SYSTEM_USER_CONFIG "@BITMUNK_SYSTEM_USER_CONFIG@"
 
 #endif

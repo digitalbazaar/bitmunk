@@ -3,7 +3,8 @@
    "_group_" : "before system user",
    "_version_" : "Monarch Config 3.0",
    "_include_" : [
-      "dev.config"
+      "dev.config",
+      "@BITMUNK_SYSTEM_USER_CONFIG@"
    ],
    "_merge_" : {
       "bitmunk.webui.WebUi" : {

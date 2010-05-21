@@ -66,70 +66,8 @@ bool Bitmunk::initConfigs(Config& defaults)
    {
       // set defaults
       Config& cm = defaults[ConfigManager::MERGE];
-      Config& cmp = defaults[ConfigManager::MERGE][APP_NAME];
       cm["node"]["handlers"]->setType(Map);
       cm["node"]["events"]->setType(Map);
-
-      // all config info in one map
-      Config& configs = cmp["configs"];
-      configs->setType(Map);
-
-      // setup package config loading
-      {
-         Config& cfg = configs["package"];
-         cfg["id"] = APP_NAME ".configs.package";
-         if(getenv("BITMUNK_PACKAGE_CONFIG") != NULL)
-         {
-            // use environment var and require
-            cfg["path"] = getenv("BITMUNK_PACKAGE_CONFIG");
-            cfg["optional"] = false;
-         }
-         else
-         {
-            // try to load optional default
-            cfg["path"] = BITMUNK_PACKAGE_CONFIG;
-            cfg["optional"] = true;
-         }
-         cfg["load"] = (cfg["path"]->length() > 0);
-      }
-
-      // setup system config loading
-      {
-         Config& cfg = configs["system"];
-         cfg["id"] = APP_NAME ".configs.system";
-         if(getenv("BITMUNK_SYSTEM_CONFIG") != NULL)
-         {
-            // use environment var and require
-            cfg["path"] = getenv("BITMUNK_SYSTEM_CONFIG");
-            cfg["optional"] = false;
-         }
-         else
-         {
-            // try to load optional default
-            cfg["path"] = BITMUNK_SYSTEM_CONFIG;
-            cfg["optional"] = true;
-         }
-         cfg["load"] = (cfg["path"]->length() > 0);
-      }
-
-      // setup system user config loading
-      {
-         Config& cfg = configs["systemUser"];
-         cfg["id"] = APP_NAME ".configs.systemUser";
-         if(getenv("BITMUNK_SYSTEM_USER_CONFIG") != NULL)
-         {
-            // use environment var and require
-            cfg["path"] = getenv("BITMUNK_SYSTEM_USER_CONFIG");
-            cfg["optional"] = false;
-         }
-         else
-         {
-            // try to load optional default
-            cfg["path"] = BITMUNK_SYSTEM_USER_CONFIG;
-            cfg["optional"] = true;
-         }
-         cfg["load"] = (cfg["path"]->length() > 0);
-      }
 
       // add to config manager
       rval = getConfigManager()->addConfig(defaults);
@@ -142,26 +80,11 @@ DynamicObject Bitmunk::getCommandLineSpec(Config& cfg)
 {
    // initialize config
    Config& options = cfg[ConfigManager::MERGE];
-   options[APP_NAME]->setType(Map);
+   options->setType(Map);
 
    DynamicObject spec;
    spec["help"] =
 "Bitmunk options\n"
-"      --package-config FILE\n"
-"                      The package configuration file to load.\n"
-"                      Overrides default and BITMUNK_PACKAGE_CONFIG.\n"
-"      --system-config FILE\n"
-"                      The system configuration file to load.\n"
-"                      Overrides default and BITMUNK_SYSTEM_CONFIG.\n"
-"      --system-user-config FILE\n"
-"                      The system user configuration file to load.\n"
-"                      Overrides default and BITMUNK_SYSTEM_USER_CONFIG.\n"
-"      --no-package-config\n"
-"                      Do not load default package configuration file.\n"
-"      --no-system-config\n"
-"                      Do not load default system configuration file.\n"
-"      --no-system-user-config\n"
-"                      Do not load default system user configuration file.\n"
 "      --bitmunk-module-path PATH\n"
 "                      A colon separated list of Node modules or directories\n"
 "                      where Node modules are stored. May be specified multiple\n"
@@ -176,52 +99,6 @@ DynamicObject Bitmunk::getCommandLineSpec(Config& cfg)
 "\n";
 
    DynamicObject opt;
-   Config& op = options[APP_NAME];
-
-   opt = spec["options"]->append();
-   opt["long"] = "--package-config";
-   opt["include"]["config"] = getMetaConfig()["appOptions"];
-   opt["include"]["params"] = op["configs"]["package"];
-   opt["setTrue"]["root"] = op;
-   opt["setTrue"]["path"] = "configs.package.load";
-   opt["setFalse"]["root"] = op;
-   opt["setFalse"]["path"] = "configs.package.optional";
-   opt["argError"] = "No package config file specified.";
-
-   opt = spec["options"]->append();
-   opt["long"] = "--system-config";
-   opt["include"]["config"] = getMetaConfig()["appOptions"];
-   opt["include"]["params"] = op["configs"]["system"];
-   opt["setTrue"]["root"] = op;
-   opt["setTrue"]["path"] = "configs.system.load";
-   opt["setFalse"]["root"] = op;
-   opt["setFalse"]["path"] = "configs.system.optional";
-   opt["argError"] = "No system config file specified.";
-
-   opt = spec["options"]->append();
-   opt["long"] = "--system-user-config";
-   opt["include"]["config"] = getMetaConfig()["appOptions"];
-   opt["include"]["params"] = op["configs"]["systemUser"];
-   opt["setTrue"]["root"] = op;
-   opt["setTrue"]["path"] = "configs.systemUser.load";
-   opt["setFalse"]["root"] = op;
-   opt["setFalse"]["path"] = "configs.systemUser.optional";
-   opt["argError"] = "No system user config file specified.";
-
-   opt = spec["options"]->append();
-   opt["long"] = "--no-package-config";
-   opt["setFalse"]["root"] = op;
-   opt["setFalse"]["path"] = "configs.package.load";
-
-   opt = spec["options"]->append();
-   opt["long"] = "--no-system-config";
-   opt["setFalse"]["root"] = op;
-   opt["setFalse"]["path"] = "configs.system.load";
-
-   opt = spec["options"]->append();
-   opt["long"] = "--no-system-user-config";
-   opt["setFalse"]["root"] = op;
-   opt["setFalse"]["path"] = "configs.systemUser.load";
 
    opt = spec["options"]->append();
    opt["short"] = "-a";

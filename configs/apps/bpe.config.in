@@ -13,6 +13,9 @@
       }
    },
    "_merge_": {
+      "monarch.app.Core": {
+         "home": "@BITMUNK_HOME_DIR@"
+      },
       "monarch.app.Logging": {
          "color": true,
          "level": "max"
