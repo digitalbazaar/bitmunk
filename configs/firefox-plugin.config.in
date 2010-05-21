@@ -8,15 +8,35 @@
       },
       "monarch.app.Config": {
          "appConfigs": [
-            "{RESOURCE_PATH}/configs/conf.d",
-            "{RESOURCE_PATH}/configs/firefox-plugin.app.config"
+            "{RESOURCE_PATH}/configs/conf.d"
          ]
+      },
+      "node" : {
+         "modulePath" : ["@BITMUNK_MODULES_DIR@"]
       }
    },
    "_merge_": {
       "monarch.app.Logging": {
          "color": false,
          "level": "max"
+      },
+      "bitmunk.webui.WebUi" : {
+         "flash" : {
+            "policyServer" : {
+               "host" : "@BITMUNK_LOCAL_API_HOST@",
+               "port" : @BITMUNK_FLASH_POLICY_PORT@
+            }
+         }
+      },
+      "node" : {
+         "host" : "@BITMUNK_LOCAL_API_HOST@",
+         "port" : @BITMUNK_LOCAL_API_PORT@,
+         "domains" : [
+            "*"
+         ],
+         "login" : {
+            "auto" : false
+         }
       }
    }
 }
