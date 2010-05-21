@@ -3,7 +3,7 @@
 # Author: Manu Sporny
 
 AC_PREREQ([2.60])
-AC_INIT([bitmunk],[3.2.2],[support@digitalbazaar.com])
+AC_INIT([bitmunk],[3.2.3],[support@digitalbazaar.com])
 AC_CONFIG_AUX_DIR(setup)
 
 # Versioning
