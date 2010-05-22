@@ -4,7 +4,10 @@
    "_version_" : "Monarch Config 3.0",
    "_include_" : [
       "dev.config",
-      "@BITMUNK_SYSTEM_USER_CONFIG@"
+      {
+         "path" : "@BITMUNK_SYSTEM_USER_CONFIG@",
+         "optional" : true
+      }
    ],
    "_merge_" : {
       "bitmunk.webui.WebUi" : {
