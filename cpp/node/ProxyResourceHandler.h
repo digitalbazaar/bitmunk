@@ -49,7 +49,15 @@ protected:
     */
    struct Rule
    {
-      bool redirect;
+      /**
+       * Types for rules.
+       */
+      enum RuleType
+      {
+         Proxy,
+         Redirect,
+         Rewrite
+      } type;
       monarch::net::UrlRef url;
       union
       {
@@ -191,7 +199,7 @@ protected:
    /**
     * Adds a proxy or redirection rule.
     *
-    * @param redirect true for a redirect rule, false for a proxy rule.
+    * @param rt the rule type.
     * @param domain the incoming domain, "*" for any host.
     * @param path the incoming path to map to another URL, relative to the
     *           proxy handler's resource path.
@@ -204,7 +212,8 @@ protected:
     * @return true if successful, false if not.
     */
    virtual bool addRule(
-      bool redirect, const char* domain, const char* path, const char* url,
+      Rule::RuleType rt,
+      const char* domain, const char* path, const char* url,
       bool rewriteHost, bool permanent);
 
    /**
@@ -217,6 +226,15 @@ protected:
     */
    virtual Rule* findRule(
       bitmunk::protocol::BtpAction* action, std::string& host);
+
+   /**
+    * Gets the string representation for the given rule type.
+    *
+    * @param rt the RuleType.
+    *
+    * @return the string representation.
+    */
+   static const char* ruleTypeToString(Rule::RuleType rt);
 };
 
 } // end namespace webui

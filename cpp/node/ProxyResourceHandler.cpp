@@ -140,13 +140,13 @@ bool ProxyResourceHandler::ProxyDomainSorter::operator()(
 bool ProxyResourceHandler::addProxyRule(
    const char* domain, const char* path, const char* url, bool rewriteHost)
 {
-   return addRule(false, domain, path, url, rewriteHost, false);
+   return addRule(Rule::Proxy, domain, path, url, rewriteHost, false);
 }
 
 bool ProxyResourceHandler::addRedirectRule(
    const char* domain, const char* path, const char* url, bool permanent)
 {
-   return addRule(true, domain, path, url, false, permanent);
+   return addRule(Rule::Redirect, domain, path, url, false, permanent);
 }
 
 /**
@@ -257,7 +257,7 @@ void ProxyResourceHandler::operator()(BtpAction* action)
       }
 
       // do redirect if appropriate
-      if(rule->redirect)
+      if(rule->type == Rule::Redirect)
       {
          // set response code
          HttpResponseHeader* header = res->getHeader();
@@ -277,7 +277,7 @@ void ProxyResourceHandler::operator()(BtpAction* action)
          action->sendResult();
       }
       // do proxy
-      else
+      else if(rule->type == Rule::Proxy)
       {
          // get client-side request
          HttpRequest* req = action->getRequest();
@@ -361,7 +361,7 @@ void ProxyResourceHandler::operator()(BtpAction* action)
 }
 
 bool ProxyResourceHandler::addRule(
-   bool redirect, const char* domain, const char* path, const char* url,
+   Rule::RuleType rt, const char* domain, const char* path, const char* url,
    bool rewriteHost, bool permanent)
 {
    bool rval = false;
@@ -439,7 +439,7 @@ bool ProxyResourceHandler::addRule(
       {
          MO_CAT_INFO(BM_NODE_CAT,
             "ProxyResourceHandler removed %s rule: %s%s/* => %s%s/*",
-            ri->second.redirect ? "redirect" : "proxy",
+            ruleTypeToString(ri->second.type),
             domain, (pathWildcard || strlen(ri->first) == 0) ? "" : ri->first,
             (ri->second.url->getHost().length() == 0) ?
                "" : ri->second.url->getHostAndPort().c_str(),
@@ -453,12 +453,12 @@ bool ProxyResourceHandler::addRule(
       // add new rule and log it
       Rule rule;
       rule.url = new Url(tmpUrl.c_str());
-      rule.redirect = redirect;
-      if(redirect)
+      rule.type = rt;
+      if(rule.type == Rule::Redirect)
       {
          rule.permanent = permanent;
       }
-      else
+      else if(rule.type == Rule::Proxy)
       {
          rule.rewriteHost = rewriteHost;
       }
@@ -466,7 +466,7 @@ bool ProxyResourceHandler::addRule(
       rules[rule.path] = rule;
       MO_CAT_INFO(BM_NODE_CAT,
          "ProxyResourceHandler added %s rule: %s%s/* => %s%s/*",
-         redirect ? "redirect" : "proxy",
+         ruleTypeToString(rt),
          domain, (pathWildcard || absPath.length() == 0) ? "" : absPath.c_str(),
          (rule.url->getHost().length() == 0) ?
             "" : rule.url->getHostAndPort().c_str(),
@@ -528,6 +528,26 @@ ProxyResourceHandler::Rule* ProxyResourceHandler::findRule(
             rval = &ri->second;
          }
       }
+   }
+
+   return rval;
+}
+
+const char* ProxyResourceHandler::ruleTypeToString(Rule::RuleType rt)
+{
+   const char* rval = NULL;
+
+   switch(rt)
+   {
+      case Rule::Proxy:
+         rval = "proxy";
+         break;
+      case Rule::Redirect:
+         rval = "redirect";
+         break;
+      case Rule::Rewrite:
+         rval = "rewrite";
+         break;
    }
 
    return rval;
