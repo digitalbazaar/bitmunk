@@ -20,7 +20,6 @@ using namespace monarch::io;
 using namespace monarch::net;
 using namespace monarch::rt;
 using namespace monarch::util;
-using namespace monarch::util::regex;
 using namespace bitmunk::protocol;
 using namespace bitmunk::node;
 
@@ -544,9 +543,6 @@ const char* ProxyResourceHandler::ruleTypeToString(Rule::RuleType rt)
          break;
       case Rule::Redirect:
          rval = "redirect";
-         break;
-      case Rule::Rewrite:
-         rval = "rewrite";
          break;
    }
 

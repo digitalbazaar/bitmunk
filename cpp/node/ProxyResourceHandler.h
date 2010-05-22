@@ -6,7 +6,7 @@
 
 #include "bitmunk/node/Node.h"
 #include "bitmunk/node/RestResourceHandler.h"
-#include "monarch/util/regex/Pattern.h"
+#include "monarch/util/Pattern.h"
 
 namespace bitmunk
 {
@@ -55,8 +55,7 @@ protected:
       enum RuleType
       {
          Proxy,
-         Redirect,
-         Rewrite
+         Redirect
       } type;
       monarch::net::UrlRef url;
       union
@@ -79,7 +78,7 @@ protected:
    struct ProxyDomain
    {
       char* domain;
-      monarch::util::regex::PatternRef regex;
+      monarch::util::PatternRef regex;
       PathToRule rules;
    };
 

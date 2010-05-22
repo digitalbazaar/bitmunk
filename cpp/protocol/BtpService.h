@@ -6,6 +6,7 @@
 
 #include "monarch/rt/SharedLock.h"
 #include "monarch/util/StringTools.h"
+#include "monarch/http/HttpRequestModifier.h"
 #include "monarch/http/HttpRequestServicer.h"
 #include "bitmunk/common/PublicKeySource.h"
 #include "bitmunk/protocol/BtpActionHandler.h"
@@ -34,6 +35,11 @@ namespace protocol
 class BtpService : public monarch::http::HttpRequestServicer
 {
 protected:
+   /**
+    * A request modifier to use.
+    */
+   monarch::http::HttpRequestModifier* mRequestModifier;
+
    /**
     * A map of action names to BtpActionHandlerRefs.
     */
@@ -99,6 +105,25 @@ public:
     * Must be called after initialize() regardless of its return value.
     */
    virtual void cleanup() = 0;
+
+   /**
+    * Sets the request modifier for this service. Should be set before the
+    * service starts servicing requests.
+    *
+    * The given request modifier will be passed incoming HttpRequests after
+    * their headers have been read. Changes can be made to the request header
+    * such as rewriting the incoming path.
+    *
+    * @param hrm the HttpRequestModifier to use, NULL for none.
+    */
+   virtual void setRequestModifier(monarch::http::HttpRequestModifier* hrm);
+
+   /**
+    * Gets the request modifier for this service.
+    *
+    * @return the HttpRequestModifier, NULL for none.
+    */
+   virtual monarch::http::HttpRequestModifier* getRequestModifier();
 
    /**
     * Adds a resource to this service. The resource name will be normalized

@@ -18,6 +18,7 @@ using namespace monarch::util;
 
 BtpService::BtpService(const char* path, bool dynamicResources) :
    HttpRequestServicer(path),
+   mRequestModifier(NULL),
    mReadThrottler(NULL),
    mWriteThrottler(NULL),
    mDynamicResources(dynamicResources),
@@ -33,6 +34,16 @@ BtpService::~BtpService()
    {
       free((char*)i->first);
    }
+}
+
+void BtpService::setRequestModifier(HttpRequestModifier* hrm)
+{
+   mRequestModifier = hrm;
+}
+
+HttpRequestModifier* BtpService::getRequestModifier()
+{
+   return mRequestModifier;
 }
 
 void BtpService::addResource(const char* resource, BtpActionHandlerRef& handler)
@@ -180,6 +191,12 @@ void BtpService::serviceRequest(
    // set response server and connection fields
    response->getHeader()->setField("Server", "BtpServer/1.0");
    response->getHeader()->setField("Connection", "close");
+
+   // do request modification
+   if(mRequestModifier != NULL)
+   {
+      mRequestModifier->modifyRequest(request);
+   }
 
    // check version (HTTP/1.1 or HTTP/1.0 if allowed)
    if(strcmp(request->getHeader()->getVersion(), "HTTP/1.1") == 0 ||
