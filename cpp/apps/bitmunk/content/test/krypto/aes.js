@@ -895,21 +895,31 @@
             /**
              * Finishes encrypting or decrypting.
              * 
+             * @param pad a padding function to use, null for default,
+             *           signature(blockSize, buffer, decrypt).
+             * 
              * @return true if successful, false on error.
              */
-            finish: function()
+            finish: function(pad)
             {
                var rval = true;
                
                if(!decrypt)
                {
-                  // add PKCS#7 padding to block (each pad byte is the
-                  // value of the number of pad bytes)
-                  var padding = Math.max(
-                     _blockSize, _blockSize - _input.length());
-                  for(var i = 0; i < padding; i++)
+                  if(pad)
                   {
-                     _input.putByte(padding);
+                     pad(_blockSize, _input, decrypt);
+                  }
+                  else
+                  {
+                     // add PKCS#7 padding to block (each pad byte is the
+                     // value of the number of pad bytes)
+                     var padding = Math.max(
+                        _blockSize, _blockSize - _input.length());
+                     for(var i = 0; i < padding; i++)
+                     {
+                        _input.putByte(padding);
+                     }
                   }
                }
                
@@ -923,14 +933,41 @@
                   rval = (_input.length() == 0);
                   if(rval)
                   {
-                     // trim off padding bytes
-                     var len = _output.length();
-                     var count = _output.at(len - 1);
-                     _output.truncate(count);
+                     if(pad)
+                     {
+                        pad(_blockSize, _output, decrypt);
+                     }
+                     else
+                     {
+                        // trim off padding bytes
+                        var len = _output.length();
+                        var count = _output.at(len - 1);
+                        _output.truncate(count);
+                     }
                   }
                }
                
                return rval;
+            },
+            
+            /**
+             * Restarts the encryption or decryption process, whichever was
+             * previously configured.
+             * 
+             * @param iv the initialization vector to use
+             *           (array of Nb 32-bit words).
+             * @param output the output the buffer to write to.
+             */
+            restart: function(iv, output)
+            {
+               _input = window.krypto.utils.createBuffer();
+               _output = output || window.krypto.utils.createBuffer();
+               _prev = iv ? iv.slice(0) :
+                  (decrypt ? _inBlock.slice(0) : _outBlock.slice(0));
+               _blockSize = Nb << 2;
+               _inBlock = new Array(Nb);
+               _outBlock = new Array(Nb);
+               _finish = false;
             }
          };
       }
