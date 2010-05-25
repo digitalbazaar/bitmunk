@@ -917,7 +917,7 @@
                {
                   if(pad)
                   {
-                     pad(_blockSize, _input, decrypt);
+                     rval = pad(_blockSize, _input, decrypt);
                   }
                   else
                   {
@@ -932,9 +932,12 @@
                   }
                }
                
-               // do final update
-               _finish = true;
-               cipher.update();
+               if(rval)
+               {
+                  // do final update
+                  _finish = true;
+                  cipher.update();
+               }
                
                if(decrypt)
                {
@@ -944,7 +947,7 @@
                   {
                      if(pad)
                      {
-                        pad(_blockSize, _output, decrypt);
+                        rval = pad(_blockSize, _output, decrypt);
                      }
                      else
                      {

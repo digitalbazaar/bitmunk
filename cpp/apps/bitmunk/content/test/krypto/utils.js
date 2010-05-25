@@ -53,18 +53,39 @@
             },
             
             /**
+             * Puts bytes in this buffer.
+             * 
+             * @param bytes the bytes (as a string) to put.
+             */
+            putBytes: function(bytes)
+            {
+               buf.data += bytes;
+            },
+            
+            /**
+             * Puts a 16-bit integer in this buffer.
+             * 
+             * @param s the 16-bit integer (short).
+             */
+            putInt16: function(s)
+            {
+               buf.data +=
+                  String.fromCharCode(s >> 8 & 0xFF) +
+                  String.fromCharCode(s & 0xFF);
+            },
+            
+            /**
              * Puts a 32-bit integer in this buffer.
              * 
              * @param w the 32-bit integer (word).
              */
             putInt32: function(w)
             {
-               var str =
+               buf.data +=
                   String.fromCharCode(w >> 24 & 0xFF) +
                   String.fromCharCode(w >> 16 & 0xFF) +
                   String.fromCharCode(w >> 8 & 0xFF) +
                   String.fromCharCode(w & 0xFF);
-               buf.data += str;
             },
             
             /**
@@ -88,6 +109,19 @@
             },
             
             /**
+             * Gets a uint16 from this buffer and advances the read pointer
+             * by 2.
+             * 
+             * @return the uint16.
+             */
+            getInt16: function()
+            {
+               return (
+                  buf.data.charCodeAt(buf.read++) << 8 ^
+                  buf.data.charCodeAt(buf.read++));
+            },
+            
+            /**
              * Gets a word from this buffer and advances the read pointer by 4.
              * 
              * @return the word.
@@ -102,14 +136,28 @@
             },
             
             /**
-             * Reads all bytes out into a string and clears the buffer.
+             * Reads bytes out into a string and clears them from the buffer.
+             * 
+             * @param count the number of bytes to read, undefined, null or 0
+             *           for all.
              * 
              * @return a string of bytes.
              */
-            getBytes: function()
+            getBytes: function(count)
             {
-               var rval = buf.data.slice(buf.read);
-               buf.clear();
+               var rval;
+               if(count)
+               {
+                  // read count bytes
+                  rval = buf.data.slice(buf.read, buf.read + count);
+                  buf.read += count;
+               }
+               else
+               {
+                  // read all bytes
+                  rval = buf.data.slice(buf.read);
+                  buf.clear();
+               }
                return rval;
             },
             
@@ -135,6 +183,16 @@
             at: function(i)
             {
                return buf.data.charCodeAt(buf.read + i);
+            },
+            
+            /**
+             * Gets the last byte without modifying the read pointer.
+             * 
+             * @return the last byte.
+             */
+            last: function()
+            {
+               return buf.data.charCodeAt(buf.data.length - 1);
             },
             
             /**
