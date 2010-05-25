@@ -299,7 +299,7 @@
    var SH: 1;  // rcv server hello
    var SC: 2;  // rcv server certificate
    var SK: 3;  // rcv server key exchange
-   var CR: 4;  // rcv certificate request
+   var SR: 4;  // rcv certificate request
    var SD: 5;  // rcv server hello done
    var CC: 6;  // send client certificate
    var CK: 7;  // send client key exchange
@@ -308,8 +308,8 @@
    var CF: 10; // send finished
    var SS: 11; // rcv change cipher spec
    var SF: 12; // rcv finished
-   var SR: 13; // rcv resume server messages
-   var CR: 14; // send resume client messages
+   var SM: 13; // rcv resume server messages
+   var CM: 14; // send resume client messages
    var AD: 15; // send/rcv application data
    var SA: 16; // rcv alert
    var CA: 17; // send alert
@@ -381,13 +381,13 @@
     * Finished                      -------->
     * Application Data              <------->     Application Data   
     */
-   var gStateTable = [
-   //     CH SH SC SK CR SD CC CK CV CS CF SS SF SR CR AD SA CA HR
+   var _stateTable = [
+   //     CH SH SC SK SR SD CC CK CV CS CF SS SF SM CM AD SA CA HR
    /*CH*/[SH,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,IG],
    /*SH*/[__,SC,CA,CA,CA,CA,__,__,__,__,__,CA,CA,CA,__,CA,__,__,IG],
-   /*SC*/[__,__,SK,CR,SD,CC,__,__,__,__,__,SR,CA,CA,__,CA,__,__,IG],
-   /*SK*/[__,__,__,CR,SD,CC,__,__,__,__,__,CA,CA,CA,__,CA,__,__,IG],
-   /*CR*/[__,__,__,__,SD,CC,__,__,__,__,__,CA,CA,CA,__,CA,__,__,IG],
+   /*SC*/[__,__,SK,SR,SD,CC,__,__,__,__,__,SR,CA,CA,__,CA,__,__,IG],
+   /*SK*/[__,__,__,SR,SD,CC,__,__,__,__,__,CA,CA,CA,__,CA,__,__,IG],
+   /*SR*/[__,__,__,__,SD,CC,__,__,__,__,__,CA,CA,CA,__,CA,__,__,IG],
    /*SD*/[__,__,__,__,__,CC,__,__,__,__,__,CA,CA,CA,__,CA,__,__,IG],
    /*CC*/[__,__,__,__,__,__,CK,__,__,__,__,__,__,__,__,__,__,__,IG],
    /*CK*/[__,__,__,__,__,__,__,CV,__,__,__,__,__,__,__,__,__,__,IG],
@@ -396,12 +396,12 @@
    /*CF*/[__,__,__,__,__,__,__,__,__,__,SS,__,__,__,__,__,__,__,IG],
    /*SS*/[__,__,__,__,__,__,__,__,__,__,__,SF,CA,CA,__,CA,__,__,IG],
    /*SF*/[__,__,__,__,__,__,__,__,__,__,__,CA,AD,CA,__,CA,__,__,IG],
-   /*SR*/[__,__,__,__,__,__,__,__,__,__,__,CA,CA,CR,__,CA,__,__,IG],
-   /*CR*/[__,__,__,__,__,__,__,__,__,__,__,__,__,__,AD,__,__,__,IG],
+   /*SM*/[__,__,__,__,__,__,__,__,__,__,__,CA,CA,SR,__,CA,__,__,IG],
+   /*CM*/[__,__,__,__,__,__,__,__,__,__,__,__,__,__,AD,__,__,__,IG],
    /*AD*/[__,__,__,__,__,__,__,__,__,__,__,CA,CA,CA,__,AD,__,__,CH],
    /*CA*/[__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,IG]
    ];
-
+   
    /**
     * The tls implementation.
     */
@@ -591,111 +591,6 @@
             }
          };
          return array;
-      },
-      
-      // FIXME: add state flag to current connection state that is used
-      // to do look ups for what to do next in the transistional state
-      // table above
-      
-      // FIXME: move this function to an appropriate location ... call from
-      // send/received record/whatever else
-      /**
-       * Updates the given state based on the given action taken.
-       * 
-       * @param state the state to update.
-       * @param action the action that was taken.
-       */
-      // FIXME: make private
-      updateState: function(state, action)
-      {
-         // get the next state from the table
-         var next = gStateTable[state.current][action];
-         
-         // only process next state if not ignoring
-         if(next != IGR)
-         {
-            // update current state
-            state.current = next;
-         }
-      },
-      
-      /**
-       * Performs the next action based on the current state.
-       * 
-       * @param state the state.
-       */
-      // FIXME: make private
-      doAction: function(state)
-      {
-         // FIXME: need stacks/queues for popping off previous errors and
-         // TLS records
-         
-         switch(state.current)
-         {
-            // send client hello
-            case CH:
-               break;
-            // rcv server hello
-            case SH:
-               break;
-            // rcv server certificate
-            case SC:
-               break;
-            // rcv server key exchange
-            case SK:
-               break;
-            // rcv server certificate request
-            case CR:
-               break;
-            // rcv server hello done
-            case SD:
-               break;
-            // send client certificate
-            case CC:
-               break;
-            // send client key exchange
-            case CK:
-               break;
-            // send client certificate verify
-            case CV:
-               break;
-            // send client change cipher spec
-            case CS:
-               break;
-            // send client finished
-            case CF:
-               break;
-            // rcv server change cipher spec
-            case SS:
-               break;
-            // rcv server finished
-            case SF:
-               break;
-            // rcv server resume messages
-            case SR:
-               break;
-            // send client resume messages
-            case CR:
-               break;
-            // send/rcv application data
-            case AD:
-               break;
-            // rcv server alert
-            case SA:
-               break;
-            // send client alert
-            case CA:
-               break;
-            // rcv server HelloRequest
-            case HR:
-               break;
-            // ignore, keep current state
-            case IG:
-               break;
-            // raise an error
-            case __:
-               break;
-         }
       },
       
       /**
@@ -1070,7 +965,7 @@
        * struct {
        *    HandshakeType msg_type;    // handshake type
        *    uint24 length;             // bytes in message
-       *    select (HandshakeType) {
+       *    select(HandshakeType) {
        *       case hello_request:       HelloRequest;
        *       case client_hello:        ClientHello;
        *       case server_hello:        ServerHello;
@@ -1380,11 +1275,277 @@
        *       been parsed from a TLS record and should be consumed by the
        *       application.
        *    closed: function(conn) called when the connection has been closed.
+       *    error: function(conn) called when there was an error.
        * 
        * @return the new TLS connection.
        */
       createConnection: function(options)
       {
+         // private TLS engine state for a TLS connection
+         var _state = CH;
+         
+         /**
+          * Gets the action to take based on the given record.
+          * 
+          * @param record the record.
+          * @param client true if the record is from client, false server.
+          * 
+          * @return the action to take.
+          */
+         var _getAction = function(record, client)
+         {
+            var action;
+            switch(record.type)
+            {
+               case tls.ContentType.change_cipher_spec:
+                  action = client ? CS : SS;
+                  break;
+               case tls.ContentType.alert:
+                  action = client ? CA : SA;
+                  break;
+               case tls.ContentType.handshake:
+               {
+                  var type = record.fragment.at(0);
+                  switch(type)
+                  {
+                     case tls.HandshakeType.hello_request:
+                        action = client ? __ : HR;
+                        break;
+                     case tls.HandshakeType.client_hello:
+                        action = client ? CH : __;
+                        break;
+                     case tls.HandshakeType.server_hello:
+                        action = client ? __ : SH;
+                        break;
+                     case tls.HandshakeType.certificate:
+                        action = client ? CC : SC;
+                        break;
+                     case tls.HandshakeType.server_key_exchange:
+                        action = client ? __ : SK;
+                        break;
+                     case tls.HandshakeType.certificate_request:
+                        action = client ? CR : SR;
+                        break;
+                     case tls.HandshakeType.server_hello_done:
+                        action = client ? CD : SD;
+                        break;
+                     case tls.HandshakeType.certificate_verify:
+                        action = client ? CV : SV;
+                        break;
+                     case tls.HandshakeType.client_key_exchange:
+                        action = client ? CK : __;
+                        break;
+                     case tls.HandshakeType.finished:
+                        action = client ? CF : SF;
+                        break;
+                     default:
+                        action = __;
+                        break;
+                  }
+                  break;
+               }
+               case tls.ContentType.application_data:
+                  action = AD;
+                  break;
+               default:
+                  action = __;
+                  break;
+            }
+            return action;
+         };
+         
+         /**
+          * Handles a client record.
+          * 
+          * @param action the action to perform.
+          */
+         var _handleClientRecord = function(action)
+         {
+            // compress and encrypt the record
+            if(c.current.compress(record, c.state.current) &&
+               c.current.encrypt(record, c.state.current))
+            {
+               switch(action)
+               {
+                  // client hello
+                  case CH:
+                     // FIXME: make appropriate state changes... start
+                     // new pending state?
+                     break;
+                  // client certificate
+                  case CC:
+                     break;
+                  // client key exchange
+                  case CK:
+                     break;
+                  // client certificate verify
+                  case CV:
+                     break;
+                  // client change cipher spec
+                  case CS:
+                     // FIXME: switch pending state to current state?
+                     break;
+                  // client finished
+                  case CF:
+                     break;
+                  // client resume messages
+                  case CM:
+                     break;
+                  // application data
+                  case AD:
+                     break;
+                  // client alert
+                  case CA:
+                     break;
+               }
+               
+               // FIXME: convert to byte string?
+               // record is ready
+               c.recordReady(c, record);
+            }
+            // fatal error
+            else
+            {
+               // FIXME: better errors
+               c.error(c, 'Could not prepare record.');
+            }            
+         };
+         
+         /**
+          * Handles a server record.
+          * 
+          * @param action the action to perform.
+          */
+         var _handleServerRecord = function(action)
+         {
+            switch(action)
+            {
+               // server hello
+               case SH:
+                  break;
+               // server certificate
+               case SC:
+                  // FIXME: do cert things
+                  break;
+               // server key exchange
+               case SK:
+                  break;
+               // server certificate request
+               case SR:
+                  // FIXME: take note server wants a client cert
+                  break;
+               // server hello done
+               case SD:
+                  // FIXME: determine what records to send to server
+                  break;
+               // server change cipher spec
+               case SS:
+                  break;
+               // server finished
+               case SF:
+                  break;
+               // server resume messages
+               case SR:
+                  break;
+               // application data
+               case AD:
+                  // FIXME: do app data ready or whatever
+                  break;
+               // server alert
+               case SA:
+                  break;
+               // server HelloRequest
+               case HR:
+                  break;
+            }            
+            
+            // compress and encrypt the record
+            if(c.current.compress(record, c.state.current) &&
+               c.current.encrypt(record, c.state.current))
+            {
+               switch(action)
+               {
+                  // client hello
+                  case CH:
+                     // FIXME: make appropriate state changes... start
+                     // new pending state?
+                     break;
+                  // client certificate
+                  case CC:
+                     break;
+                  // client key exchange
+                  case CK:
+                     break;
+                  // client certificate verify
+                  case CV:
+                     break;
+                  // client change cipher spec
+                  case CS:
+                     // FIXME: switch pending state to current state?
+                     break;
+                  // client finished
+                  case CF:
+                     break;
+                  // client resume messages
+                  case CR:
+                     break;
+                  // application data
+                  case AD:
+                     break;
+                  // client alert
+                  case CA:
+                     break;
+               }
+               
+               // FIXME: convert to byte string?
+               // record is ready
+               c.recordReady(c, record);
+            }
+            // fatal error
+            else
+            {
+               // FIXME: better errors
+               c.error(c, 'Could not prepare record.');
+            }
+         };
+         
+         /**
+          * Updates the current TLS engine state based on the given record.
+          * 
+          * @param c the TLS connection.
+          * @param record the TLS record to act on.
+          * @param client true if the record is from client, false server.
+          */
+         var _update = function(c, record, client)
+         {
+            // get the next state based on the action for the record
+            var action = _getAction(record, client);
+            var next = _stateTable[_state][action];
+            
+            if(next === __)
+            {
+               // error case
+               c.error(c, 'Invalid TLS state.');
+            }
+            // only update state if not ignoring action
+            else if(next !== IG)
+            {
+               if(_doAction(action))
+               {
+                  // update state
+                  _state = next;
+               }
+            }
+            
+            
+            // only update state if not ignoring
+            if(next != IG)
+            {
+               _state = next;
+            }
+         },
+         
+         // create TLS connection
          var connection =
          {
             sessionId: options.sessionId,
@@ -1401,9 +1562,14 @@
                   write: null
                }
             },
+            // FIXME: change this to 2 different buffers ... and just dataReady
+            // calls ... one buffer is for TLS control messages, the other is
+            // for application data, then only fire them when as much data as
+            // possible has been written to the buffers to minimize data copies
             recordReady: options.recordReady,
             dataReady: options.dataReady,
             closed: options.closed,
+            error: options.error,
             
             /**
              * Performs a handshake using the TLS Handshake Protocol.
@@ -1467,12 +1633,12 @@
              */
             handshake: function(sessionId)
             {
-               // create ClientHello message
-               recordReady(tls.createRecord(
+               var record = tls.createRecord(
                {
                   type: tls.ContentType.handshake,
                   data: createClientHello(sessionId)
-               }));
+               };
+               _update(connection, record, true);
             },
             
             /**
@@ -1483,24 +1649,14 @@
              */
             process: function(data)
             {
+               // minimum record length is 5 bytes
                var record = null;
-               
-               // minimum record length is 5
                if(data.length >= 5)
                {
                   var b = window.krypto.utils.createBuffer(data);
                   record = tls.parseRecord(connection, b);
                }
-               
-               if(record === null)
-               {
-                  // FIXME: send alert, invalid packet?
-               }
-               else
-               {
-                  // FIXME: determine if packet is appropriate for state,
-                  // if not, send alert, if it is, handle it
-               }
+               _update(connection, record, false);
             },
             
             /**
@@ -1512,7 +1668,12 @@
              */
             prepare: function(data)
             {
-               // FIXME:
+               var record = tls.createRecord(
+               {
+                  type: tls.ContentType.application_data,
+                  data: data
+               };
+               _update(connection, record, true);
             }
          };
          return connection;
