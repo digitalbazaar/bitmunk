@@ -11,6 +11,7 @@
       <script type="text/javascript" src="/bitmunk/test/krypto/random.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/utils.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/aes.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/tls.js"></script>
       <script type="text/javascript" src="/bitmunk/test/pidcrypt/string_extend.js"></script>
       <script type="text/javascript" src="/bitmunk/test/pidcrypt/pidcrypt.js"></script>
       <script type="text/javascript" src="/bitmunk/test/pidcrypt/pidcrypt_util.js"></script>
@@ -53,7 +54,12 @@
                ba[count - 1] = 0;
                var sr = new SecureRandom();
                sr.nextBytes(ba);
-               return ba;
+               var b = '';
+               for(var i = 0; i < count; i++)
+               {
+                  b += String.fromCharCode(ba[i]);
+               }
+               return b;
             }
          });
       };
@@ -76,10 +82,10 @@
                var idx = (x + y * imgData.width) * 4;
 
                // set values
-               imgData.data[idx + 0] = bytes[n++]; // Red channel
-               imgData.data[idx + 1] = bytes[n++]; // Green channel
-               imgData.data[idx + 2] = bytes[n++]; // Blue channel
-               imgData.data[idx + 3] = 255;        // Alpha channel
+               imgData.data[idx + 0] = bytes.charCodeAt(n++); // Red
+               imgData.data[idx + 1] = bytes.charCodeAt(n++); // Green
+               imgData.data[idx + 2] = bytes.charCodeAt(n++); // Blue
+               imgData.data[idx + 3] = 255;        // Alpha
             }
          }
 
@@ -138,16 +144,16 @@
       var aesIv = '';
       for(var i = 0; i < aesIvBytes.length; i++)
       {
-         var hex = aesIvBytes[i].toString(16);
+         var hex = aesIvBytes.charCodeAt(i).toString(16);
          aesIv += (hex.length == 1) ? ('0' + hex) : hex;
       }
       for(var i = 0; i < aesIvBytes.length; i += 4)
       {
          aesIvWords.push(
-            aesIvBytes[i] << 24 ^
-            aesIvBytes[i + 1] << 16 ^
-            aesIvBytes[i + 2] << 8 ^
-            aesIvBytes[i + 3]);
+            aesIvBytes.charCodeAt(i) << 24 ^
+            aesIvBytes.charCodeAt(i + 1) << 16 ^
+            aesIvBytes.charCodeAt(i + 2) << 8 ^
+            aesIvBytes.charCodeAt(i + 3));
       }
       console.log('aesIv', aesIv);
 
@@ -694,6 +700,24 @@
          document.getElementById('flashTest').aes_test();
       };
 
+      var tls_handshake = function()
+      {
+         console.log('testing TLS handshake ...');
+
+         // FIXME: implement calls to create each type of client message
+         // FIXME: implement calls to parse each type of server message
+         // FIXME: test those
+         // FIXME: implement state changes
+
+         // FIXME: get byte array stuff in order for data in tls records.
+         // FIXME: need to be able to write a TLS vector into a byte array, etc.
+         // FIXME: run regression tests for aes
+
+         // FIXME: update socket pool in flash to be able to set conditional
+         // event handlers ... ie: js sets a handler for when X number of
+         // bytes are received so js only gets the event once that has happened
+      };
+
       </script>
    </head>
    <body>
@@ -724,6 +748,8 @@
          <button id="aes10" onclick="javascript:return aes_as3crypto_cbc();">as3crypto CBC</button>
          <button id="aes11" onclick="javascript:return aes_flash_128();">flash 128</button>
          <button id="aes12" onclick="javascript:return aes_flash_test();">flash test</button>
+         <br />
+         <button id="tls1" onclick="javascript:return tls_handshake();">tls handshake</button>
       </div>
    </body>
 </html>

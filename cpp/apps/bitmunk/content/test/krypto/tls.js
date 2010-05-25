@@ -29,6 +29,16 @@
    };
    
    /**
+    * Private MAC functions.
+    * 
+    * @return the sha-1 hash (20 bytes) for the given data.
+    */
+   var hmac_sha1 = function(data)
+   {
+      // FIXME:
+   };
+   
+   /**
     * Private encryption functions.
     */
    // FIXME: put encrypt/decrypt functions here, point to them using states
@@ -146,31 +156,73 @@
     * @param record the TLSCompressed record to encrypt.
     * @param state the ConnectionState to use.
     * 
-    * @return the TLSCipherText record.
+    * @return the TLSCipherText record on success, null on failure.
     */
    var encrypt_aes_128_cbc_sha1 = function(record, state)
    {
-      // FIXME: implement me
+      var rval = null;
       
-      // FIXME: padding byte is the padding length
-      // ie padding data: 0x030303
-      // padding length: 3
+      // append sha-1 hash to fragment
+      record.fragment.putBytes(hmac_sha1(record.fragment.bytes()));
       
-      /* The encrypted data length (TLSCiphertext.length) is one more than
+      // generate a new IV
+      var iv = window.krypto.random.getBytes(16);
+      
+      // restart cipher
+      var cipher = state.cipherState.cipher;
+      cipher.restart(iv);
+      
+      // write IV into output
+      cipher.output.putBytes(iv);
+      
+      // do encryption (default padding is appropriate)
+      if(cipher.update(record.fragment) && cipher.finish())
+      {
+         /* The encrypted data length (TLSCiphertext.length) is one more than
          the sum of SecurityParameters.block_length, TLSCompressed.length,
          SecurityParameters.mac_length, and padding_length. */
+         
+         // add padding length to output (there are always padding bytes and
+         // their value is the length of the padding, so the last byte's value
+         // will be the padding length)
+         cipher.output.putByte(cipher.output.last());
+         
+         // set record fragment to encrypted output
+         record.fragment = cipher.output;
+         rval = record;
+      }
       
-      var genericBlockCipher =
+      return rval;
+   };
+   
+   /**
+    * Handles padding for aes_128_cbc_sha1 in decrypt mode.
+    * 
+    * @param blockSize the block size.
+    * @param output the output buffer.
+    * @param decrypt true in decrypt mode, false in encrypt mode.
+    */
+   var decrypt_aes_128_cbc_sha1_padding: function(blockSize, output, decrypt)
+   {
+      var rval = true;
+      if(decrypt)
       {
-         IV: [],
-         block:
+         // ensure padding bytes are valid, additional (last) padding byte
+         // specifies the length of the padding exclusive of itself, keep
+         // checking all bytes even if one is bad to keep time consistent
+         var len = output.length();
+         var count = output.at(len - 1) + 1;
+         for(var i = len - count; i < len; i++)
          {
-            content: [],
-            MAC: [],
-            padding: [],
-            padding_length: 0
+            rval = rval && (output.at(i) == count);
          }
-      };
+         if(rval)
+         {
+            // trim off padding bytes
+            output.truncate(count);
+         }
+      }
+      return rval;
    };
    
    /**
@@ -179,20 +231,57 @@
     * @param record the TLSCipherText record to decrypt.
     * @param state the ConnectionState to use.
     * 
-    * @return the TLSCompressed record.
+    * @return the TLSCompressed record on success, null on failure.
     */
    var decrypt_aes_128_cbc_sha1 = function(record, state)
    {
-      // FIXME: implement me
-   };
-   
-   /**
-    * Private MAC functions.
-    */
-   // FIXME: put MAC functions here, point to them using states
-   var hmac_sha1 = function()
-   {
-      // FIXME:
+      var rval = null;
+      
+      // get IV from beginning of fragment
+      if(record.fragment.length() >= 16)
+      {
+         var iv = record.fragment.getBytes(16);
+         
+         // restart cipher
+         var cipher = state.cipherState.cipher;
+         cipher.restart(iv);
+         
+         // do decryption
+         if(cipher.update(record.fragment) &&
+            cipher.finish(decrypt_aes_128_cbc_sha1_padding))
+         {
+            // decrypted data:
+            // first (len - 20) bytes = application data
+            // last 20 bytes          = MAC
+            var mac = null;
+            var len = cipher.output.length();
+            if(len >= 20)
+            {
+               record.fragment = cipher.output.getBytes(len - 20);
+               mac = cipher.output.getBytes(20);
+            }
+            // bad data, but process anyway to keep timing consistent
+            else
+            {
+               // get all bytes as fragment
+               record.fragment = cipher.output.getBytes();
+               // create a zero'd out mac
+               mac = '';
+               for(var i = 0; i < 20; i++)
+               {
+                  mac[i] = String.fromCharCode(0);
+               }
+            }
+            
+            // see if data integrity checks out
+            if(hmac_sha1(record.fragment) == mac)
+            {
+               rval = record;
+            }
+         }
+      }
+      
+      return rval;
    };
    
    /**
@@ -492,17 +581,10 @@
                // encode length at the start of the vector, where the number
                // of bytes for the length is the maximum number of bytes it
                // would take to encode the vector's ceiling (= sizeBytes)
-               var length = v.length;
-               var bits = sizeBytes * 8;
-               do
-               {
-                  bits -= 8;
-                  bytes.push((length >> bits) & 0xFF);
-               }
-               while(bits > 0);
+               array.pushInt(v.length, sizeBytes * 8);
                
                // encode the vector
-               for(var i = 0; i < length; i++)
+               for(var i = 0; i < v.length; i++)
                {
                   func(v[i]);
                }
@@ -815,11 +897,14 @@
          // FIXME: determine how this should be done
          if(sp)
          {
+            // FIXME: start encrypting/decrypting
+            
             switch(sp.bulk_cipher_algorithm)
             {
                case tls.BulkCipherAlgorithm.aes:
                   cipherState =
                   {
+                     cipher: null,
                      key: keys.encryptionKey;
                   };
                   state.encrypt = encrypt_aes_128_cbc_sha1;
@@ -1157,9 +1242,112 @@
       {
          // FIXME: might not even need this method ... just something
          // to handle the byte array
-      }
+      },
       
       // FIXME: next up, process server certificate message
+      
+      /**
+       * Parses a change_cipher_spec record.
+       * 
+       * @param c the current connection.
+       * @param record the record to update.
+       * @param b the byte buffer with the record.
+       * 
+       * @return true on success, false on failure.
+       */
+      parseRecordChangeCipherSpec: function(c, record, b)
+      {
+      },
+      
+      /**
+       * Parses an alert record.
+       * 
+       * @param c the current connection.
+       * @param record the record to update.
+       * @param b the byte buffer with the record.
+       * 
+       * @return true on success, false on failure.
+       */
+      parseRecordAlert: function(c, record, b)
+      {
+      },
+      
+      /**
+       * Parses a handshake record.
+       * 
+       * @param c the current connection.
+       * @param record the record to update.
+       * @param b the byte buffer with the record.
+       * 
+       * @return true on success, false on failure.
+       */
+      parseRecordHandshake: function(c, record, b)
+      {
+      },
+      
+      /**
+       * Parses an application data record.
+       * 
+       * @param c the current connection.
+       * @param record the record to update.
+       * @param b the byte buffer with the record.
+       * 
+       * @return true on success, false on failure.
+       */
+      parseRecordApplicationData: function(c, record, b)
+      {
+      },
+      
+      /**
+       * Parses an incoming record.
+       * 
+       * @param c the current connection.
+       * @param b the byte buffer with the record.
+       * 
+       * @return the parsed record, null on failure.
+       */
+      parseRecord: function(c, b)
+      {
+         // parse basic record
+         var record =
+         {
+            type: b.getByte(),
+            version:
+            {
+               major: b.getByte(),
+               minor: b.getByte()
+            },
+            length: b.getInt16(),
+            fragment: null
+         };
+         
+         // FIXME: use current state to decrypt/decompress fragment
+         var out = window.krypto.utils.createBuffer();
+         c.state
+         
+         // FIXME: parse plain text fragment
+         var success = false;
+         switch(record.type)
+         {
+            case tls.ContentType.change_cipher_spec:
+               success = tls.parseRecordChangeCipherSpec(b);
+               break;
+            case tls.ContentType.alert:
+               success = tls.parseRecordAlert(b);
+               break;
+            case tls.ContentType.handshake:
+               success = tls.parseRecordHandshake(b);
+               break;
+            case tls.ContentType.application_data:
+               success = tls.parseRecordApplicationData(b);
+               break;
+            default:
+               // FIXME: handle error case
+               break;
+         }
+         
+         return success ? record : null;
+      }
    };
    
    /**
@@ -1291,11 +1479,28 @@
              * Called when a TLS record has been received from somewhere and
              * should be processed by the TLS engine.
              * 
-             * @param record the TLS record to process.
+             * @param data the TLS record, as a string, to process.
              */
-            process: function(record)
+            process: function(data)
             {
-               // FIXME:
+               var record = null;
+               
+               // minimum record length is 5
+               if(data.length >= 5)
+               {
+                  var b = window.krypto.utils.createBuffer(data);
+                  record = tls.parseRecord(connection, b);
+               }
+               
+               if(record === null)
+               {
+                  // FIXME: send alert, invalid packet?
+               }
+               else
+               {
+                  // FIXME: determine if packet is appropriate for state,
+                  // if not, send alert, if it is, handle it
+               }
             },
             
             /**
@@ -1303,7 +1508,7 @@
              * The recordReady handler will be called when a TLS record has
              * been prepared.
              * 
-             * @param data the application data to be sent.
+             * @param data the application data, as a string, to be sent.
              */
             prepare: function(data)
             {

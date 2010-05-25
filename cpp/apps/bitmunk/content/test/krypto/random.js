@@ -49,11 +49,11 @@
        * 
        * @param count the number of random bytes to get.
        * 
-       * @return the random bytes.
+       * @return the random bytes in a string.
        */
       getBytes: function(count)
       {
-         var b = [];
+         var b = '';
          
          // consume random bytes from pool
          var pb = state.pool.splice(0, count);
@@ -78,7 +78,7 @@
                var byte = state.seed >> (i << 3) & 0xFF;
                byte ^= (b.length < pb.length) ?
                   pb[b.length] : Math.random() * 0xFF;
-               b.push(byte & 0xFF);
+               b += String.fromCharCode(byte & 0xFF);
             }
          }
          
