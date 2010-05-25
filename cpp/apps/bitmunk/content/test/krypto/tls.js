@@ -295,27 +295,27 @@
     * client is sending/has sent a message. An underscore afterwards indicates
     * the client is to receive/has received a message.
     */
-   var CH_: 0;  // send client hello
-   var _SH: 1;  // rcv server hello
-   var _SC: 2;  // rcv server certificate
-   var _SK: 3;  // rcv server key exchange
-   var _CR: 4;  // rcv certificate request
-   var _HD: 5;  // rcv server hello done
-   var CC_: 6;  // send client certificate
-   var CK_: 7;  // send client key exchange
-   var CV_: 8;  // send certificate verify
-   var CS_: 9;  // send change cipher spec
-   var FN_: 10; // send finished
-   var _CS: 11; // rcv change cipher spec
-   var _FN: 12; // rcv finished
-   var _RS: 13; // rcv resume server messages
-   var RC_: 14; // send resume client messages
-   var _A_: 15; // send/rcv application data
-   var _AT: 16; // rcv alert
-   var AT_: 17; // send alert
-   var _HR: 18; // rcv HelloRequest
-   var IGR: 19; // ignore, keep current state
-   var ERR: 20; // raise an error
+   var CH: 0;  // send client hello
+   var SH: 1;  // rcv server hello
+   var SC: 2;  // rcv server certificate
+   var SK: 3;  // rcv server key exchange
+   var CR: 4;  // rcv certificate request
+   var SD: 5;  // rcv server hello done
+   var CC: 6;  // send client certificate
+   var CK: 7;  // send client key exchange
+   var CV: 8;  // send certificate verify
+   var CS: 9;  // send change cipher spec
+   var CF: 10; // send finished
+   var SS: 11; // rcv change cipher spec
+   var SF: 12; // rcv finished
+   var SR: 13; // rcv resume server messages
+   var CR: 14; // send resume client messages
+   var AD: 15; // send/rcv application data
+   var SE: 16; // rcv alert
+   var CE: 17; // send alert
+   var HR: 18; // rcv HelloRequest
+   var IG: 19; // ignore, keep current state
+   var __: 20; // raise an error
    
    /**
     * The transistional state table for receiving TLS records. It maps
@@ -323,30 +323,29 @@
     * taken. The states and actions that can be taken are in the same
     * namespace.
     * 
-    * For instance, if the current state is CH_, then the TLS engine needs
+    * For instance, if the current state is CH, then the TLS engine needs
     * to send a ClientHello. Once that is done, to get the next state, this
-    * table is queried using CH_ for the current state and CH_ for the action
-    * taken. The result is _SH which indicates that a ServerHello needs to be
-    * received next. Once it is, then the current state _SH and the action _SH
-    * are looked up in this table which indicate that _SC (a server Certificate
+    * table is queried using CH for the current state and CH for the action
+    * taken. The result is SH which indicates that a ServerHello needs to be
+    * received next. Once it is, then the current state SH and the action SH
+    * are looked up in this table which indicate that SC (a server Certificate
     * message needs to be received) is the next state, and so forth.
     * 
-    * There are three actions that are never states: _AT, _HR, and IGR. The
+    * There are three actions that are never states: SE, HR, and IG. The
     * client is never specifically waiting to receive a HelloRequest or an
-    * alert from the server. These messages may occur at any time. The IGR
+    * alert from the server. These messages may occur at any time. The IG
     * action may occur when a HelloRequest message is received in the middle
-    * of a handshake. In that case, the IGR action is taken, which causes the
+    * of a handshake. In that case, the IG action is taken, which causes the
     * current state to remain unchanged an no action to be taken at all. This
     * also means it does not have an entry in the state table as an action.
     * 
-    * There is no need to list the ERR state as an action or an error in the
+    * There is no need to list the __ state as an action or an error in the
     * state table. If this state is ever detected, the TLS engine quits.
     * 
     * No state where the client is to send a message can raise an alert,
     * it can only raise an error. Alerts are only issued when a client has
     * received a message that has caused a problem that it must notify
-    * the server about. (States ending with an underscore should have no
-    * AT_ entries).
+    * the server about. (States beginning with a C should have no CE entries).
     * 
     * Current states are listed on the Y axis and actions taken on the X axis.
     * Next states/actions are the entries in the table.
@@ -383,24 +382,24 @@
     * Application Data              <------->     Application Data   
     */
    var gStateTable = [
-   /*      CH_ _SH _SC _SK _CR _HD CC_ CK_ CV_ CS_ FN_ _CS _FN _RS RC_ _A_ _AT AT_ _HR*/
-   /*CH_*/[_SH,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,IGR],
-   /*_SH*/[ERR,_SC,AT_,AT_,AT_,AT_,ERR,ERR,ERR,ERR,ERR,AT_,AT_,AT_,ERR,AT_,ERR,ERR,IGR],
-   /*_SC*/[ERR,ERR,_SK,_CR,_HD,CC_,ERR,ERR,ERR,ERR,ERR,_RS,AT_,AT_,ERR,AT_,ERR,ERR,IGR],
-   /*_SK*/[ERR,ERR,ERR,_CR,_HD,CC_,ERR,ERR,ERR,ERR,ERR,AT_,AT_,AT_,ERR,AT_,ERR,ERR,IGR],
-   /*_CR*/[ERR,ERR,ERR,ERR,_HD,CC_,ERR,ERR,ERR,ERR,ERR,AT_,AT_,AT_,ERR,AT_,ERR,ERR,IGR],
-   /*_HD*/[ERR,ERR,ERR,ERR,ERR,CC_,ERR,ERR,ERR,ERR,ERR,AT_,AT_,AT_,ERR,AT_,ERR,ERR,IGR],
-   /*CC_*/[ERR,ERR,ERR,ERR,ERR,ERR,CK_,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,IGR],
-   /*CK_*/[ERR,ERR,ERR,ERR,ERR,ERR,ERR,CV_,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,IGR],
-   /*CV_*/[ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,CS_,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,IGR],
-   /*CS_*/[ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,FN_,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,IGR],
-   /*FN_*/[ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,_CS,ERR,ERR,ERR,ERR,ERR,ERR,ERR,IGR],
-   /*_CS*/[ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,_FN,AT_,AT_,ERR,AT_,ERR,ERR,IGR],
-   /*_FN*/[ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,AT_,_A_,AT_,ERR,AT_,ERR,ERR,IGR],
-   /*_RS*/[ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,AT_,AT_,RC_,ERR,AT_,ERR,ERR,IGR],
-   /*RC_*/[ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,_A_,ERR,ERR,ERR,IGR],
-   /*_A_*/[ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,AT_,AT_,AT_,ERR,_A_,ERR,ERR,CH_],
-   /*AT_*/[ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,ERR,IGR],
+   //     CH SH SC SK CR SD CC CK CV CS CF SS SF SR CR AD SE CE HR
+   /*CH*/[SH,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,IG],
+   /*SH*/[__,SC,CE,CE,CE,CE,__,__,__,__,__,CE,CE,CE,__,CE,__,__,IG],
+   /*SC*/[__,__,SK,CR,SD,CC,__,__,__,__,__,SR,CE,CE,__,CE,__,__,IG],
+   /*SK*/[__,__,__,CR,SD,CC,__,__,__,__,__,CE,CE,CE,__,CE,__,__,IG],
+   /*CR*/[__,__,__,__,SD,CC,__,__,__,__,__,CE,CE,CE,__,CE,__,__,IG],
+   /*SD*/[__,__,__,__,__,CC,__,__,__,__,__,CE,CE,CE,__,CE,__,__,IG],
+   /*CC*/[__,__,__,__,__,__,CK,__,__,__,__,__,__,__,__,__,__,__,IG],
+   /*CK*/[__,__,__,__,__,__,__,CV,__,__,__,__,__,__,__,__,__,__,IG],
+   /*CV*/[__,__,__,__,__,__,__,__,CS,__,__,__,__,__,__,__,__,__,IG],
+   /*CS*/[__,__,__,__,__,__,__,__,__,CF,__,__,__,__,__,__,__,__,IG],
+   /*CF*/[__,__,__,__,__,__,__,__,__,__,SS,__,__,__,__,__,__,__,IG],
+   /*SS*/[__,__,__,__,__,__,__,__,__,__,__,SF,CE,CE,__,CE,__,__,IG],
+   /*SF*/[__,__,__,__,__,__,__,__,__,__,__,CE,AD,CE,__,CE,__,__,IG],
+   /*SR*/[__,__,__,__,__,__,__,__,__,__,__,CE,CE,CR,__,CE,__,__,IG],
+   /*CR*/[__,__,__,__,__,__,__,__,__,__,__,__,__,__,AD,__,__,__,IG],
+   /*AD*/[__,__,__,__,__,__,__,__,__,__,__,CE,CE,CE,__,AD,__,__,CH],
+   /*CE*/[__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,IG]
    ];
 
    /**
@@ -634,67 +633,67 @@
          switch(state.current)
          {
             // send client hello
-            case CH_:
+            case CH:
                break;
             // rcv server hello
-            case _SH:
+            case SH:
                break;
             // rcv server certificate
-            case _SC:
+            case SC:
                break;
             // rcv server key exchange
-            case _SK:
+            case SK:
                break;
             // rcv certificate request
-            case _CR:
+            case CR:
                break;
             // rcv server hello done
-            case _HD:
+            case SD:
                break;
             // send client certificate
-            case CC_:
+            case CC:
                break;
             // send client key exchange
-            case CK_:
+            case CK:
                break;
             // send certificate verify
-            case CV_:
+            case CV:
                break;
             // send change cipher spec
-            case CS_:
+            case CS:
                break;
             // send finished
-            case FN_:
+            case CF:
                break;
             // rcv change cipher spec
-            case _CS:
+            case SS:
                break;
             // rcv finished
-            case _FN:
+            case SF:
                break;
             // rcv resume server messages
-            case _RS:
+            case SR:
                break;
             // send resume client messages
-            case RC_:
+            case CR:
                break;
             // send/rcv application data
-            case _A_:
+            case AD:
                break;
             // rcv alert
-            case _AT:
+            case SE:
                break;
             // send alert
-            case AT_:
+            case CE:
                break;
             // rcv HelloRequest
-            case _HR:
+            case HR:
                break;
             // ignore, keep current state
-            case IGR:
+            case IG:
                break;
             // raise an error
-            case ERR:
+            case __:
                break;
          }
       },
