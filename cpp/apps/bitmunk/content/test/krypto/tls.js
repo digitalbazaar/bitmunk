@@ -253,24 +253,25 @@
             // decrypted data:
             // first (len - 20) bytes = application data
             // last 20 bytes          = MAC
-            var mac = null;
+            
+            // create a zero'd out mac
+            var mac = '';
+            for(var i = 0; i < 20; i++)
+            {
+               mac[i] = String.fromCharCode(0);
+            }
+            
+            // get fragment and mac
             var len = cipher.output.length();
             if(len >= 20)
             {
                record.fragment = cipher.output.getBytes(len - 20);
                mac = cipher.output.getBytes(20);
             }
-            // bad data, but process anyway to keep timing consistent
+            // bad data, but get bytes anyway to try to keep timing consistent
             else
             {
-               // get all bytes as fragment
                record.fragment = cipher.output.getBytes();
-               // create a zero'd out mac
-               mac = '';
-               for(var i = 0; i < 20; i++)
-               {
-                  mac[i] = String.fromCharCode(0);
-               }
             }
             
             // see if data integrity checks out
