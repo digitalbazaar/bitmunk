@@ -754,8 +754,11 @@
     * Creates an AES cipher object. CBC (cipher-block-chaining) mode will be
     * used.
     * 
-    * @param key the symmetric key to use (array of 32-bit words).
-    * @param iv the initialization vector to use (array of Nb 32-bit words).
+    * The key and iv may be given as a string of bytes, an array of bytes, a
+    * byte buffer, or an array of 32-bit words.
+    * 
+    * @param key the symmetric key to use.
+    * @param iv the initialization vector to use.
     * @param output the buffer to write to.
     * @param decrypt true for decryption, false for encryption.
     * 
@@ -769,26 +772,32 @@
       {
          initialize();
       }
-
-      /* Note: The key may be an array of bytes, a byte buffer,
-         or an array of 32-bit integers. If the key is in bytes,
-         then it must be 16, 24, or 32 bytes in length. If it is
-         in 32-bit integers, it must be 4, 6, or 8 integers long.
+      
+      /* Note: The key may be a string of bytes, an array of bytes, a byte
+         buffer, or an array of 32-bit integers. If the key is in bytes, then
+         it must be 16, 24, or 32 bytes in length. If it is in 32-bit
+         integers, it must be 4, 6, or 8 integers long.
       */
       
-      // convert byte array into byte buffer
-      if(key.constructor == Array &&
+      // convert iv string into byte buffer
+      if(key.constructor == String &&
          (key.length == 16 || key.length == 24 || key.length == 32))
       {
-         var tmp = window.krypto.utils.createBuffer();
-         for(var i = 0; i < key.length; i++)
+         var tmp = key;
+         var key = window.krypto.utils.createBuffer();
+         for(var i = 0; i < tmp.length; i++)
          {
-            tmp.putByte(key[i]);
+            key.putByte(tmp[i]);
          }
-         key = tmp;
+      }
+      // convert key byte array into byte buffer
+      else if(key.constructor == Array &&
+         (key.length == 16 || key.length == 24 || key.length == 32))
+      {
+         key = window.krypto.utils.createBuffer(key);
       }
       
-      // convert byte buffer into 32-bit integer array
+      // convert key byte buffer into 32-bit integer array
       if(key.constructor != Array)
       {
          var tmp = key;
@@ -811,19 +820,19 @@
       {
          // private vars for state
          var _w = expandKey(key, decrypt);
-         var _input = window.krypto.utils.createBuffer();
-         var _output = output || window.krypto.utils.createBuffer();
-         var _inBlock = new Array(Nb);
-         var _outBlock = new Array(Nb);
-         var _prev = iv.slice(0);
          var _blockSize = Nb << 2;
-         var _finish = false;
+         var _input;
+         var _output;
+         var _inBlock;
+         var _outBlock;
+         var _prev;
+         var _finish;
          cipher =
          {
             /**
              * Output from AES (either encrypted or decrypted bytes).
              */
-            output: _output,
+            output: null,
             
             /**
              * Updates the next block using CBC mode.
@@ -962,22 +971,58 @@
              * Restarts the encryption or decryption process, whichever was
              * previously configured.
              * 
-             * @param iv the initialization vector to use
-             *           (array of Nb 32-bit words).
+             * The iv may be given as a string of bytes, an array of bytes, a
+             * byte buffer, or an array of 32-bit words.
+             * 
+             * @param iv the initialization vector to use.
              * @param output the output the buffer to write to.
              */
             restart: function(iv, output)
             {
+               /* Note: The IV may be a string of bytes, an array of bytes, a
+                  byte buffer, or an array of 32-bit integers. If the IV is in
+                  bytes, then it must be Nb (16) bytes in length. If it is in
+                  32-bit integers, then it must be 4 integers long.
+                */
+               
+               // convert iv string into byte buffer
+               if(iv.constructor == String && iv.length == 16)
+               {
+                  iv = window.krypto.utils.createBuffer(iv);
+               }
+               // convert iv byte array into byte buffer
+               else if(iv.constructor == Array && iv.length == 16)
+               {
+                  var tmp = iv;
+                  var iv = window.krypto.utils.createBuffer();
+                  for(var i = 0; i < 16; i++)
+                  {
+                     iv.putByte(tmp[i]);
+                  }
+               }
+               
+               // convert iv byte buffer into 32-bit integer array
+               if(iv.constructor != Array)
+               {
+                  var tmp = iv;
+                  iv = new Array(4);
+                  iv[0] = tmp.getInt32();
+                  iv[1] = tmp.getInt32();
+                  iv[2] = tmp.getInt32();
+                  iv[3] = tmp.getInt32();
+               }
+               
+               // set private vars
                _input = window.krypto.utils.createBuffer();
                _output = output || window.krypto.utils.createBuffer();
-               _prev = iv ? iv.slice(0) :
-                  (decrypt ? _inBlock.slice(0) : _outBlock.slice(0));
-               _blockSize = Nb << 2;
+               _prev = iv.slice(0);
                _inBlock = new Array(Nb);
                _outBlock = new Array(Nb);
                _finish = false;
+               cipher.output = _output;
             }
          };
+         cipher.restart(iv, output);
       }
       return cipher;
    };
@@ -993,8 +1038,11 @@
        * given symmetric key. The output will be stored in the 'output' member
        * of the returned cipher.
        * 
-       * @param key the symmetric key to use (array of 32-bit words).
-       * @param iv the initialization vector to use (array of Nb 32-bit words).
+       * The key and iv may be given as a string of bytes, an array of bytes,
+       * a byte buffer, or an array of 32-bit words.
+       * 
+       * @param key the symmetric key to use.
+       * @param iv the initialization vector to use.
        * @param output the buffer to write to, null to create one.
        * 
        * @return the cipher.
@@ -1009,8 +1057,11 @@
        * given symmetric key. The output will be stored in the 'output' member
        * of the returned cipher.
        * 
-       * @param key the symmetric key to use (array of 32-bit words).
-       * @param iv the initialization vector to use (array of Nb 32-bit words).
+       * The key and iv may be given as a string of bytes, an array of bytes,
+       * a byte buffer, or an array of 32-bit words.
+       * 
+       * @param key the symmetric key to use.
+       * @param iv the initialization vector to use.
        * @param output the buffer to write to, null to create one.
        * 
        * @return the cipher.
