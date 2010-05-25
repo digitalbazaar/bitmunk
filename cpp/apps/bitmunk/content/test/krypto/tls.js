@@ -311,8 +311,8 @@
    var SR: 13; // rcv resume server messages
    var CR: 14; // send resume client messages
    var AD: 15; // send/rcv application data
-   var SE: 16; // rcv alert
-   var CE: 17; // send alert
+   var SA: 16; // rcv alert
+   var CA: 17; // send alert
    var HR: 18; // rcv HelloRequest
    var IG: 19; // ignore, keep current state
    var __: 20; // raise an error
@@ -382,24 +382,24 @@
     * Application Data              <------->     Application Data   
     */
    var gStateTable = [
-   //     CH SH SC SK CR SD CC CK CV CS CF SS SF SR CR AD SE CE HR
+   //     CH SH SC SK CR SD CC CK CV CS CF SS SF SR CR AD SA CA HR
    /*CH*/[SH,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,IG],
-   /*SH*/[__,SC,CE,CE,CE,CE,__,__,__,__,__,CE,CE,CE,__,CE,__,__,IG],
-   /*SC*/[__,__,SK,CR,SD,CC,__,__,__,__,__,SR,CE,CE,__,CE,__,__,IG],
-   /*SK*/[__,__,__,CR,SD,CC,__,__,__,__,__,CE,CE,CE,__,CE,__,__,IG],
-   /*CR*/[__,__,__,__,SD,CC,__,__,__,__,__,CE,CE,CE,__,CE,__,__,IG],
-   /*SD*/[__,__,__,__,__,CC,__,__,__,__,__,CE,CE,CE,__,CE,__,__,IG],
+   /*SH*/[__,SC,CA,CA,CA,CA,__,__,__,__,__,CA,CA,CA,__,CA,__,__,IG],
+   /*SC*/[__,__,SK,CR,SD,CC,__,__,__,__,__,SR,CA,CA,__,CA,__,__,IG],
+   /*SK*/[__,__,__,CR,SD,CC,__,__,__,__,__,CA,CA,CA,__,CA,__,__,IG],
+   /*CR*/[__,__,__,__,SD,CC,__,__,__,__,__,CA,CA,CA,__,CA,__,__,IG],
+   /*SD*/[__,__,__,__,__,CC,__,__,__,__,__,CA,CA,CA,__,CA,__,__,IG],
    /*CC*/[__,__,__,__,__,__,CK,__,__,__,__,__,__,__,__,__,__,__,IG],
    /*CK*/[__,__,__,__,__,__,__,CV,__,__,__,__,__,__,__,__,__,__,IG],
    /*CV*/[__,__,__,__,__,__,__,__,CS,__,__,__,__,__,__,__,__,__,IG],
    /*CS*/[__,__,__,__,__,__,__,__,__,CF,__,__,__,__,__,__,__,__,IG],
    /*CF*/[__,__,__,__,__,__,__,__,__,__,SS,__,__,__,__,__,__,__,IG],
-   /*SS*/[__,__,__,__,__,__,__,__,__,__,__,SF,CE,CE,__,CE,__,__,IG],
-   /*SF*/[__,__,__,__,__,__,__,__,__,__,__,CE,AD,CE,__,CE,__,__,IG],
-   /*SR*/[__,__,__,__,__,__,__,__,__,__,__,CE,CE,CR,__,CE,__,__,IG],
+   /*SS*/[__,__,__,__,__,__,__,__,__,__,__,SF,CA,CA,__,CA,__,__,IG],
+   /*SF*/[__,__,__,__,__,__,__,__,__,__,__,CA,AD,CA,__,CA,__,__,IG],
+   /*SR*/[__,__,__,__,__,__,__,__,__,__,__,CA,CA,CR,__,CA,__,__,IG],
    /*CR*/[__,__,__,__,__,__,__,__,__,__,__,__,__,__,AD,__,__,__,IG],
-   /*AD*/[__,__,__,__,__,__,__,__,__,__,__,CE,CE,CE,__,AD,__,__,CH],
-   /*CE*/[__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,IG]
+   /*AD*/[__,__,__,__,__,__,__,__,__,__,__,CA,CA,CA,__,AD,__,__,CH],
+   /*CA*/[__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,IG]
    ];
 
    /**
@@ -644,7 +644,7 @@
             // rcv server key exchange
             case SK:
                break;
-            // rcv certificate request
+            // rcv server certificate request
             case CR:
                break;
             // rcv server hello done
@@ -656,37 +656,37 @@
             // send client key exchange
             case CK:
                break;
-            // send certificate verify
+            // send client certificate verify
             case CV:
                break;
-            // send change cipher spec
+            // send client change cipher spec
             case CS:
                break;
-            // send finished
+            // send client finished
             case CF:
                break;
-            // rcv change cipher spec
+            // rcv server change cipher spec
             case SS:
                break;
-            // rcv finished
+            // rcv server finished
             case SF:
                break;
-            // rcv resume server messages
+            // rcv server resume messages
             case SR:
                break;
-            // send resume client messages
+            // send client resume messages
             case CR:
                break;
             // send/rcv application data
             case AD:
                break;
-            // rcv alert
-            case SE:
+            // rcv server alert
+            case SA:
                break;
-            // send alert
-            case CE:
+            // send client alert
+            case CA:
                break;
-            // rcv HelloRequest
+            // rcv server HelloRequest
             case HR:
                break;
             // ignore, keep current state
