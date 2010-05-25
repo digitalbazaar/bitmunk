@@ -939,10 +939,18 @@
                      }
                      else
                      {
-                        // trim off padding bytes
+                        // ensure padding bytes are valid
                         var len = _output.length();
                         var count = _output.at(len - 1);
-                        _output.truncate(count);
+                        for(var i = len - count; rval && i < len; i++)
+                        {
+                           rval = (_output.at(i) == count);
+                        }
+                        if(rval)
+                        {
+                           // trim off padding bytes
+                           _output.truncate(count);
+                        }
                      }
                   }
                }
