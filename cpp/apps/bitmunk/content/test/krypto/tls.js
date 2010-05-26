@@ -1566,6 +1566,10 @@
             // calls ... one buffer is for TLS control messages, the other is
             // for application data, then only fire them when as much data as
             // possible has been written to the buffers to minimize data copies
+            // FIXME: tlsDataReady, appDataReady
+            // sendAppData()?
+            // receiveTlsData()?
+            // FIXME: or send() (takes app data) receive() (takes TLS data)
             recordReady: options.recordReady,
             dataReady: options.dataReady,
             closed: options.closed,
