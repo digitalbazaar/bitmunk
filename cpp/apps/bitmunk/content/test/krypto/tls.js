@@ -8,13 +8,258 @@
  * An API for using TLS.
  * 
  * FIXME: more docs here
+ * 
+ * The TLS Handshake Protocol involves the following steps:
+ *
+ * - Exchange hello messages to agree on algorithms, exchange
+ * random values, and check for session resumption.
+ * 
+ * - Exchange the necessary cryptographic parameters to allow the
+ * client and server to agree on a premaster secret.
+ * 
+ * - Exchange certificates and cryptographic information to allow
+ * the client and server to authenticate themselves.
+ * 
+ * - Generate a master secret from the premaster secret and
+ * exchanged random values.
+ * 
+ * - Provide security parameters to the record layer.
+ * 
+ * - Allow the client and server to verify that their peer has
+ * calculated the same security parameters and that the handshake
+ * occurred without tampering by an attacker.
+ * 
+ * Up to 4 different messages may be sent during a key exchange.
+ * The server certificate, the server key exchange, the client
+ * certificate, and the client key exchange.
+ * 
+ * A typical handshake (from the client's perspective).
+ * 
+ * 1. Client sends ClientHello.
+ * 2. Client receives ServerHello.
+ * 3. Client receives optional Certificate.
+ * 4. Client receives optional ServerKeyExchange.
+ * 5. Client receives ServerHelloDone.
+ * 6. Client sends optional Certificate.
+ * 7. Client sends ClientKeyExchange.
+ * 8. Client sends optional CertificateVerify.
+ * 9. Client sends ChangeCipherSpec.
+ * 10. Client sends Finished.
+ * 11. Client receives ChangeCipherSpec.
+ * 12. Client receives Finished.
+ * 13. Client sends/receives application data.
+ *
+ * To reuse an existing session:
+ * 
+ * 1. Client sends ClientHello with session ID for reuse.
+ * 2. Client receives ServerHello with same session ID if reusing.
+ * 3. Client receives ChangeCipherSpec message if reusing.
+ * 4. Client receives Finished.
+ * 5. Client sends ChangeCipherSpec.
+ * 6. Client sends Finished.
+ * 
+ * Note: Client ignores HelloRequest if in the middle of a
+ * handshake.
+ * 
+ * FIXME: title this doc section
+ * 
+ * The record layer fragments information blocks into TLSPlaintext
+ * records carrying data in chunks of 2^14 bytes or less. Client message
+ * boundaries are not preserved in the record layer (i.e., multiple
+ * client messages of the same ContentType MAY be coalesced into a single
+ * TLSPlaintext record, or a single message MAY be fragmented across
+ * several records).
+ * 
+ * struct {
+ *    uint8 major;
+ *    uint8 minor;
+ * } ProtocolVersion;
+ * 
+ * struct {
+ *    ContentType type;
+ *    ProtocolVersion version;
+ *    uint16 length;
+ *    opaque fragment[TLSPlaintext.length];
+ * } TLSPlaintext;
+ * 
+ * type:
+ *    The higher-level protocol used to process the enclosed fragment.
+ * 
+ * version:
+ *    The version of the protocol being employed. TLS Version 1.2
+ *    uses version {3, 3}. TLS Version 1.0 uses version {3, 1}. Note
+ *    that a client that supports multiple versions of TLS may not know
+ *    what version will be employed before it receives the ServerHello.
+ * 
+ * length:
+ *    The length (in bytes) of the following TLSPlaintext.fragment. The
+ *    length MUST NOT exceed 2^14 = 16384 bytes.
+ * 
+ * fragment:
+ *    The application data. This data is transparent and treated as an
+ *    independent block to be dealt with by the higher-level protocol
+ *    specified by the type field.
+ * 
+ * Implementations MUST NOT send zero-length fragments of Handshake,
+ * Alert, or ChangeCipherSpec content types. Zero-length fragments of
+ * Application data MAY be sent as they are potentially useful as a
+ * traffic analysis countermeasure.
+ * 
+ * Note: Data of different TLS record layer content types MAY be
+ * interleaved. Application data is generally of lower precedence for
+ * transmission than other content types. However, records MUST be
+ * delivered to the network in the same order as they are protected by
+ * the record layer. Recipients MUST receive and process interleaved
+ * application layer traffic during handshakes subsequent to the first
+ * one on a connection.
+ * 
+ * FIXME: Might to need to stuff received TLS records into a queue
+ * according to sequence number ... and process them accordingly, without
+ * doing evil, slow, gross setTimeout() business.
+ * 
+ * struct {
+ *    ContentType type;       // same as TLSPlaintext.type
+ *    ProtocolVersion version;// same as TLSPlaintext.version
+ *    uint16 length;
+ *    opaque fragment[TLSCompressed.length];
+ * } TLSCompressed;
+ * 
+ * length:
+ *    The length (in bytes) of the following TLSCompressed.fragment.
+ *    The length MUST NOT exceed 2^14 + 1024.
+ * 
+ * fragment:
+ *    The compressed form of TLSPlaintext.fragment.
+ * 
+ * Note: A CompressionMethod.null operation is an identity operation;
+ * no fields are altered. In this implementation, since no compression
+ * is supported, uncompressed records are always the same as compressed
+ * records.
+ * 
+ * FIXME: title encryption section
+ * 
+ * The encryption and MAC functions translate a TLSCompressed structure
+ * into a TLSCiphertext. The decryption functions reverse the process. 
+ * The MAC of the record also includes a sequence number so that missing,
+ * extra, or repeated messages are detectable.
+ * 
+ * struct {
+ *    ContentType type;
+ *    ProtocolVersion version;
+ *    uint16 length;
+ *    select (SecurityParameters.cipher_type) {
+ *       case stream: GenericStreamCipher;
+ *       case block:  GenericBlockCipher;
+ *       case aead:   GenericAEADCipher;
+ *    } fragment;
+ * } TLSCiphertext;
+ * 
+ * type:
+ *    The type field is identical to TLSCompressed.type.
+ * 
+ * version:
+ *    The version field is identical to TLSCompressed.version.
+ * 
+ * length:
+ *    The length (in bytes) of the following TLSCiphertext.fragment.
+ *    The length MUST NOT exceed 2^14 + 2048.
+ * 
+ * fragment:
+ *    The encrypted form of TLSCompressed.fragment, with the MAC.
+ * 
+ * Note: Only CBC Block Ciphers are supported by this implementation.
+ * 
+ * The TLSCompressed.fragment structures are converted to/from block
+ * TLSCiphertext.fragment structures.
+ * 
+ * struct {
+ *    opaque IV[SecurityParameters.record_iv_length];
+ *    block-ciphered struct {
+ *        opaque content[TLSCompressed.length];
+ *        opaque MAC[SecurityParameters.mac_length];
+ *        uint8 padding[GenericBlockCipher.padding_length];
+ *        uint8 padding_length;
+ *    };
+ * } GenericBlockCipher;
+ * 
+ * The MAC is generated as described in Section 6.2.3.1.
+ * FIXME: grab that text and put it here
+ * 
+ * IV:
+ *    The Initialization Vector (IV) SHOULD be chosen at random, and
+ *    MUST be unpredictable. Note that in versions of TLS prior to 1.1,
+ *    there was no IV field, and the last ciphertext block of the
+ *    previous record (the "CBC residue") was used as the IV. This was
+ *    changed to prevent the attacks described in [CBCATT]. For block
+ *    ciphers, the IV length is of length
+ *    SecurityParameters.record_iv_length, which is equal to the
+ *    SecurityParameters.block_size.
+ * 
+ * padding:
+ *    Padding that is added to force the length of the plaintext to be
+ *    an integral multiple of the block cipher's block length. The
+ *    padding MAY be any length up to 255 bytes, as long as it results
+ *    in the TLSCiphertext.length being an integral multiple of the
+ *    block length. Lengths longer than necessary might be desirable to
+ *    frustrate attacks on a protocol that are based on analysis of the
+ *    lengths of exchanged messages. Each uint8 in the padding data
+ *    vector MUST be filled with the padding length value. The receiver
+ *    MUST check this padding and MUST use the bad_record_mac alert to
+ *    indicate padding errors.
+ *
+ * padding_length:
+ *    The padding length MUST be such that the total size of the
+ *    GenericBlockCipher structure is a multiple of the cipher's block
+ *    length. Legal values range from zero to 255, inclusive. This
+ *    length specifies the length of the padding field exclusive of the
+ *    padding_length field itself.
+ *
+ * The encrypted data length (TLSCiphertext.length) is one more than the
+ * sum of SecurityParameters.block_length, TLSCompressed.length,
+ * SecurityParameters.mac_length, and padding_length.
+ *
+ * Example: If the block length is 8 bytes, the content length
+ * (TLSCompressed.length) is 61 bytes, and the MAC length is 20 bytes,
+ * then the length before padding is 82 bytes (this does not include the
+ * IV. Thus, the padding length modulo 8 must be equal to 6 in order to
+ * make the total length an even multiple of 8 bytes (the block length).
+ * The padding length can be 6, 14, 22, and so on, through 254. If the
+ * padding length were the minimum necessary, 6, the padding would be 6
+ * bytes, each containing the value 6. Thus, the last 8 octets of the
+ * GenericBlockCipher before block encryption would be xx 06 06 06 06 06
+ * 06 06, where xx is the last octet of the MAC.
+ *
+ * Note: With block ciphers in CBC mode (Cipher Block Chaining), it is
+ * critical that the entire plaintext of the record be known before any
+ * ciphertext is transmitted. Otherwise, it is possible for the
+ * attacker to mount the attack described in [CBCATT].
+ *
+ * Implementation note: Canvel et al. [CBCTIME] have demonstrated a
+ * timing attack on CBC padding based on the time required to compute
+ * the MAC. In order to defend against this attack, implementations
+ * MUST ensure that record processing time is essentially the same
+ * whether or not the padding is correct. In general, the best way to
+ * do this is to compute the MAC even if the padding is incorrect, and
+ * only then reject the packet. For instance, if the pad appears to be
+ * incorrect, the implementation might assume a zero-length pad and then
+ * compute the MAC. This leaves a small timing channel, since MAC
+ * performance depends, to some extent, on the size of the data fragment,
+ * but it is not believed to be large enough to be exploitable, due to
+ * the large block size of existing MACs and the small size of the
+ * timing signal.
+ * 
+ * FIXME: title data types
+ * 
+ * Variable-length vectors are defined by specifying a subrange of legal
+ * lengths, inclusively, using the notation <floor..ceiling>. When these are
+ * encoded, the actual length precedes the vector's contents in the byte
+ * stream. The length will be in the form of a number consuming as many bytes
+ * as required to hold the vector's specified maximum (ceiling) length. A
+ * variable-length vector with an actual length field of zero is referred to
+ * as an empty vector.
  */
-(function($)
+(function()
 {
-   /**
-    * Private Pseudo Random Functions (PRF).
-    */
-   
    /**
     * Generates pseudo random bytes using a SHA256 algorithm.
     * 
@@ -29,7 +274,7 @@
    };
    
    /**
-    * Private MAC functions.
+    * Gets the SHA-1 hash for the given data.
     * 
     * @return the sha-1 hash (20 bytes) for the given data.
     */
@@ -39,119 +284,8 @@
    };
    
    /**
-    * Private encryption functions.
-    */
-   // FIXME: put encrypt/decrypt functions here, point to them using states
-   /**
-    * The encryption and MAC functions translate a TLSCompressed structure
-    * into a TLSCiphertext. The decryption functions reverse the process. 
-    * The MAC of the record also includes a sequence number so that missing,
-    * extra, or repeated messages are detectable.
-    * 
-    * struct {
-    *    ContentType type;
-    *    ProtocolVersion version;
-    *    uint16 length;
-    *    select (SecurityParameters.cipher_type) {
-    *       case stream: GenericStreamCipher;
-    *       case block:  GenericBlockCipher;
-    *       case aead:   GenericAEADCipher;
-    *    } fragment;
-    * } TLSCiphertext;
-    * 
-    * type:
-    *    The type field is identical to TLSCompressed.type.
-    * 
-    * version:
-    *    The version field is identical to TLSCompressed.version.
-    * 
-    * length:
-    *    The length (in bytes) of the following TLSCiphertext.fragment.
-    *    The length MUST NOT exceed 2^14 + 2048.
-    * 
-    * fragment:
-    *    The encrypted form of TLSCompressed.fragment, with the MAC.
-    * 
-    * Note: Only CBC Block Ciphers are supported by this implementation.
-    * 
-    * The TLSCompressed.fragment structures are converted to/from block
-    * TLSCiphertext.fragment structures.
-    * 
-    * struct {
-    *    opaque IV[SecurityParameters.record_iv_length];
-    *    block-ciphered struct {
-    *        opaque content[TLSCompressed.length];
-    *        opaque MAC[SecurityParameters.mac_length];
-    *        uint8 padding[GenericBlockCipher.padding_length];
-    *        uint8 padding_length;
-    *    };
-    * } GenericBlockCipher;
-    * 
-    * The MAC is generated as described in Section 6.2.3.1.
-    * FIXME: grab that text and put it here
-    * 
-    * IV:
-    *    The Initialization Vector (IV) SHOULD be chosen at random, and
-    *    MUST be unpredictable. Note that in versions of TLS prior to 1.1,
-    *    there was no IV field, and the last ciphertext block of the
-    *    previous record (the "CBC residue") was used as the IV. This was
-    *    changed to prevent the attacks described in [CBCATT]. For block
-    *    ciphers, the IV length is of length
-    *    SecurityParameters.record_iv_length, which is equal to the
-    *    SecurityParameters.block_size.
-    * 
-    * padding:
-    *    Padding that is added to force the length of the plaintext to be
-    *    an integral multiple of the block cipher's block length. The
-    *    padding MAY be any length up to 255 bytes, as long as it results
-    *    in the TLSCiphertext.length being an integral multiple of the
-    *    block length. Lengths longer than necessary might be desirable to
-    *    frustrate attacks on a protocol that are based on analysis of the
-    *    lengths of exchanged messages. Each uint8 in the padding data
-    *    vector MUST be filled with the padding length value. The receiver
-    *    MUST check this padding and MUST use the bad_record_mac alert to
-    *    indicate padding errors.
-    *
-    * padding_length:
-    *    The padding length MUST be such that the total size of the
-    *    GenericBlockCipher structure is a multiple of the cipher's block
-    *    length. Legal values range from zero to 255, inclusive. This
-    *    length specifies the length of the padding field exclusive of the
-    *    padding_length field itself.
-    *
-    * The encrypted data length (TLSCiphertext.length) is one more than the
-    * sum of SecurityParameters.block_length, TLSCompressed.length,
-    * SecurityParameters.mac_length, and padding_length.
-    *
-    * Example: If the block length is 8 bytes, the content length
-    * (TLSCompressed.length) is 61 bytes, and the MAC length is 20 bytes,
-    * then the length before padding is 82 bytes (this does not include the
-    * IV. Thus, the padding length modulo 8 must be equal to 6 in order to
-    * make the total length an even multiple of 8 bytes (the block length).
-    * The padding length can be 6, 14, 22, and so on, through 254. If the
-    * padding length were the minimum necessary, 6, the padding would be 6
-    * bytes, each containing the value 6. Thus, the last 8 octets of the
-    * GenericBlockCipher before block encryption would be xx 06 06 06 06 06
-    * 06 06, where xx is the last octet of the MAC.
-    *
-    * Note: With block ciphers in CBC mode (Cipher Block Chaining), it is
-    * critical that the entire plaintext of the record be known before any
-    * ciphertext is transmitted. Otherwise, it is possible for the
-    * attacker to mount the attack described in [CBCATT].
-    *
-    * Implementation note: Canvel et al. [CBCTIME] have demonstrated a
-    * timing attack on CBC padding based on the time required to compute
-    * the MAC. In order to defend against this attack, implementations
-    * MUST ensure that record processing time is essentially the same
-    * whether or not the padding is correct. In general, the best way to
-    * do this is to compute the MAC even if the padding is incorrect, and
-    * only then reject the packet. For instance, if the pad appears to be
-    * incorrect, the implementation might assume a zero-length pad and then
-    * compute the MAC. This leaves a small timing channel, since MAC
-    * performance depends, to some extent, on the size of the data fragment,
-    * but it is not believed to be large enough to be exploitable, due to
-    * the large block size of existing MACs and the small size of the
-    * timing signal.
+    * Encrypts the TLSCompressed record into a TLSCipherText record using
+    * AES-128 in CBC mode.
     * 
     * @param record the TLSCompressed record to encrypt.
     * @param state the ConnectionState to use.
@@ -201,6 +335,8 @@
     * @param blockSize the block size.
     * @param output the output buffer.
     * @param decrypt true in decrypt mode, false in encrypt mode.
+    * 
+    * @return true on success, false on failure.
     */
    var decrypt_aes_128_cbc_sha1_padding: function(blockSize, output, decrypt)
    {
@@ -226,7 +362,8 @@
    };
    
    /**
-    * Decrypts a TLSCipherText record into a TLSCompressed record.
+    * Decrypts a TLSCipherText record into a TLSCompressed record using
+    * AES-128 in CBC mode.
     * 
     * @param record the TLSCipherText record to decrypt.
     * @param state the ConnectionState to use.
@@ -286,14 +423,8 @@
    };
    
    /**
-    * Possible actions and states for the client TLS engine to be in.
-    * FIXME: mix actions and states together? We'll need to map received
-    * record types (ints) anyway ... since 20 and 20 mean different things
-    * finished vs. change cipher spec... etc.
-    * 
-    * An underscore following the state/action abbreviation indicates that the
-    * client is sending/has sent a message. An underscore afterwards indicates
-    * the client is to receive/has received a message.
+    * Possible states for the client TLS engine to be in (also actions to take
+    * to move to the next state).
     */
    var CH: 0;  // send client hello
    var SH: 1;  // rcv server hello
@@ -401,6 +532,54 @@
    /*AD*/[__,__,__,__,__,__,__,__,__,__,__,CA,CA,CA,__,AD,__,__,CH],
    /*CA*/[__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,IG]
    ];
+   
+   /**
+    * Reads a TLS variable-length vector from a byte buffer.
+    * 
+    * @param b the byte buffer.
+    * @param lenBytes the number of bytes required to store the length.
+    * 
+    * @return the resulting byte buffer.
+    */
+   var readVector = function(b, lenBytes)
+   {
+      var len = 0;
+      switch(lenBytes)
+      {
+         case 1:
+            len = b.getByte();
+            break;
+         case 2:
+            len = b.getInt16();
+            break;
+         case 3:
+            len = b.getInt24();
+            break;
+         case 4:
+            len = b.getInt32();
+            break;
+      }
+      
+      // read vector bytes into a new buffer
+      return window.krypto.utils.createBuffer(b.getBytes(len));
+   };
+   
+   /**
+    * Writes a TLS variable-length vector to a byte buffer.
+    * 
+    * @param b the byte buffer.
+    * @param lenBytes the number of bytes required to store the length.
+    * @param bits the size of each element in bits.
+    * @param v the byte buffer vector.
+    */
+   var writeVector = function(b, lenBytes, bits, v)
+   {
+      // encode length at the start of the vector, where the number
+      // of bytes for the length is the maximum number of bytes it
+      // would take to encode the vector's ceiling
+      b.putInt(v.length(), lenBytes * 8);
+      b.putBuffer(v);
+   };
    
    /**
     * The tls implementation.
@@ -513,85 +692,347 @@
          finished: 20
       },
       
+      // handshake table
+      var hsTable = [];
+      
       /**
-       * A TlsArray contains contents that have been encoded according to
-       * the TLS specification. Its raw bytes can be accessed via the bytes
-       * property.
+       * Called when the client receives a ServerHello record.
+       * 
+       * uint24 length;
+       * struct {
+       *    ProtocolVersion server_version;
+       *    Random random;
+       *    SessionID session_id;
+       *    CipherSuite cipher_suite;
+       *    CompressionMethod compression_method;
+       *    select(extensions_present) {
+       *       case false:
+       *          struct {};
+       *       case true:
+       *          Extension extensions<0..2^16-1>;
+       *   };
+       * } ServerHello;
+       * 
+       * @param c the connection.
+       * @param record the record.
        */
-      createArray: function()
+      hsTable[tls.HandshakeType.server_hello] = function(c, record)
       {
-         var array =
-         {
-            bytes: [],
-            
-            /**
-             * Pushes a byte.
-             * 
-             * @param b the byte to push.
-             */
-            pushByte: function(b)
-            {
-               bytes.push(b & 0xFF);
-            },
-            
-            /**
-             * Pushes bytes.
-             * 
-             * @param b the bytes to push.
-             */
-            pushBytes: function(b)
-            {
-               bytes = bytes.concat(b);
-            },
-            
-            /**
-             * Pushes an integer value.
-             * 
-             * @param i the integer value.
-             * @param bits the size of the integer in bits.
-             */
-            pushInt: function(i, bits)
-            {
-               do
-               {
-                  bits -= 8;
-                  bytes.push((i >> bits) & 0xFF);
-               }
-               while(bits > 0);
-            }
+         // get the length of the message
+         var b = record.fragment;
+         var len = b.getInt24();
          
-            /**
-             * Pushes a vector value.
-             * 
-             * @param v the vector.
-             * @param sizeBytes the number of bytes for the size.
-             * @param func the function to call to encode each element.
-             */
-            pushVector: function(v, sizeBytes, func)
+         // minimum of 38 bytes in message
+         if(len < 38)
+         {
+            // FIXME: error
+         }
+         else
+         {
+            var msg =
             {
-               /* Variable-length vectors are defined by specifying a subrange
-                  of legal lengths, inclusively, using the notation
-                  <floor..ceiling>. When these are encoded, the actual length
-                  precedes the vector's contents in the byte stream. The length
-                  will be in the form of a number consuming as many bytes as
-                  required to hold the vector's specified maximum (ceiling)
-                  length. A variable-length vector with an actual length field
-                  of zero is referred to as an empty vector. */
-               
-               // encode length at the start of the vector, where the number
-               // of bytes for the length is the maximum number of bytes it
-               // would take to encode the vector's ceiling (= sizeBytes)
-               array.pushInt(v.length, sizeBytes * 8);
-               
-               // encode the vector
-               for(var i = 0; i < v.length; i++)
+               version:
                {
-                  func(v[i]);
-               }
+                  major: b.getByte(),
+                  minor: b.getByte()
+               },
+               random:
+               {
+                  gmt_unix_time: b.getInt32(),
+                  random_bytes: b.getBytes(28)
+               },
+               session_id: readVector(b, 1),
+               cipher_suite: b.getBytes(2),
+               compression_methods: b.getByte(),
+               extensions: []
+            };
+            
+            // read extensions if there are any
+            if(b.length() > 0)
+            {
+               msg.extensions = readVector(b, 2); 
             }
-         };
-         return array;
-      },
+            
+            // FIXME: do stuff
+         }
+      };
+      
+      /**
+       * Called when the client receives a Certificate record.
+       * 
+       * opaque ASN.1Cert<1..2^24-1>;
+       * struct {
+       *    ASN.1Cert certificate_list<0..2^24-1>;
+       * } Certificate;
+       * 
+       * @param c the connection.
+       * @param record the record.
+       */
+      hsTable[tls.HandshakeType.certificate] = function(c, record)
+      {
+         // get the length of the message
+         var b = record.fragment;
+         var len = b.getInt24();
+         
+         // minimum of 3 bytes in message
+         if(len < 3)
+         {
+            // FIXME: error
+         }
+         else
+         {
+            var msg =
+            {
+               certificate_list: readVector(b, 3)
+            };
+            
+            // FIXME: check server certificate
+         }
+      };
+      
+      /**
+       * Called when the client receives a ServerKeyExchange record.
+       * 
+       * enum {
+       *    dhe_dss, dhe_rsa, dh_anon, rsa, dh_dss, dh_rsa
+       * } KeyExchangeAlgorithm;
+       * 
+       * struct {
+       *    opaque dh_p<1..2^16-1>;
+       *    opaque dh_g<1..2^16-1>;
+       *    opaque dh_Ys<1..2^16-1>;
+       * } ServerDHParams;
+       *
+       * struct {
+       *    select(KeyExchangeAlgorithm) {
+       *       case dh_anon:
+       *          ServerDHParams params;
+       *       case dhe_dss:
+       *       case dhe_rsa:
+       *          ServerDHParams params;
+       *          digitally-signed struct {
+       *             opaque client_random[32];
+       *             opaque server_random[32];
+       *             ServerDHParams params;
+       *          } signed_params;
+       *       case rsa:
+       *       case dh_dss:
+       *       case dh_rsa:
+       *          struct {};
+       *    };
+       * } ServerKeyExchange;
+       * 
+       * @param c the connection.
+       * @param record the record.
+       */
+      hsTable[tls.HandshakeType.server_key_exchange] = function(c, record)
+      {
+         // get the length of the message
+         var b = record.fragment;
+         var len = b.getInt24();
+         
+         // this implementation only supports RSA, no Diffie-Hellman support
+         // so any length > 0 is invalid
+         if(len > 0)
+         {
+            // FIXME: error
+         }
+         else
+         {
+            // FIXME: nothing to do?
+         }
+      };
+      
+      /**
+       * Called when the client receives a CertificateRequest record.
+       * 
+       * enum {
+       *    rsa_sign(1), dss_sign(2), rsa_fixed_dh(3), dss_fixed_dh(4),
+       *    rsa_ephemeral_dh_RESERVED(5), dss_ephemeral_dh_RESERVED(6),
+       *    fortezza_dms_RESERVED(20), (255)
+       * } ClientCertificateType;
+       * 
+       * opaque DistinguishedName<1..2^16-1>;
+       * 
+       * struct {
+       *    ClientCertificateType certificate_types<1..2^8-1>;
+       *    SignatureAndHashAlgorithm supported_signature_algorithms<2^16-1>;
+       *    DistinguishedName certificate_authorities<0..2^16-1>;
+       * } CertificateRequest;
+       * 
+       * @param c the connection.
+       * @param record the record.
+       */
+      hsTable[tls.HandshakeType.certificate_request] = function(c, record)
+      {
+         // get the length of the message
+         var b = record.fragment;
+         var len = b.getInt24();
+         
+         // minimum of 5 bytes in message
+         if(len < 5)
+         {
+            // FIXME: error
+         }
+         else
+         {
+            var msg =
+            {
+               certificate_types: readVector(b, 1),
+               supported_signature_algorithms: readVector(b, 2),
+               certificate_authorities: readVector(b, 2)
+            };
+            
+            // FIXME: this implementation doesn't support client certs
+            // FIXME: prepare a client certificate/indicate there isn't one
+         }
+      };
+      
+      /**
+       * Called when the client receives a Finished record.
+       * 
+       * struct {
+       *    opaque verify_data[verify_data_length];
+       * } Finished;
+       * 
+       * verify_data
+       *    PRF(master_secret, finished_label, Hash(handshake_messages))
+       *       [0..verify_data_length-1];
+       * 
+       * finished_label
+       *    For Finished messages sent by the client, the string
+       *    "client finished". For Finished messages sent by the server, the
+       *    string "server finished".
+       * 
+       * verify_data_length depends on the cipher suite. If it is not specified
+       * by the cipher suite, then it is 12. Versions of TLS < 1.2 always used
+       * 12 bytes.
+       * 
+       * @param c the connection.
+       * @param record the record.
+       */
+      hsTable[tls.HandshakeType.finished] = function(c, record)
+      {
+         // get the length of the message
+         var b = record.fragment;
+         var len = b.getInt24();
+         
+         // FIXME: check length against expected verify_data_length
+         var vdl = 12;
+         if(len == 12)
+         {
+            var msg =
+            {
+               verify_data: b.getBytes(len);
+            };
+            
+            // FIXME: ensure verify data is correct
+            // FIXME: create client change cipher spec record and
+            // finished record
+         }
+      };
+      
+      /**
+       * Called when the client receives a ServerHelloDone record.
+       * 
+       * struct {} ServerHelloDone;
+       * 
+       * @param c the connection.
+       * @param record the record.
+       */
+      hsTable[tls.HandshakeType.server_hello_done] = function(c, record)
+      {
+         // get the length of the message
+         var b = record.fragment;
+         var len = b.getInt24();
+         
+         // len must be 0 bytes
+         if(len != 0)
+         {
+            // FIXME: error
+         }
+         else
+         {
+            // FIXME: create all of the client response records
+            // client certificate
+            // client key exchange
+            // certificate verify
+            // change cipher spec
+            // finished
+         }
+      };
+      
+      /**
+       * Called when the client receives a HelloRequest record.
+       * 
+       * @param c the connection.
+       * @param record the record.
+       */
+      hsTable[tls.HandshakeType.hello_request] = function(c, record)
+      {
+         // FIXME: determine whether or not to ignore request based on state
+      };
+      
+      // content type table
+      var ctTable = [];
+      
+      /**
+       * Called when the client receives a ChangeCipherSpec record.
+       * 
+       * @param c the connection.
+       * @param record the record.
+       */
+      ctTable[tls.ContentType.change_cipher_spec] = function(c, record)
+      {
+         // FIXME: handle server has changed their cipher spec, change read
+         // pending state to current, get ready for finished record
+      };
+      
+      /**
+       * Called when the client receives an Alert record.
+       * 
+       * @param c the connection.
+       * @param record the record.
+       */
+      ctTable[tls.ContentType.alert] = function(c, record)
+      {
+         // FIXME: handle alert, determine if connection must end
+      };
+      
+      /**
+       * Called when the client receives a Handshake record.
+       * 
+       * @param c the connection.
+       * @param record the record.
+       */
+      ctTable[tls.ContentType.handshake] = function(c, record)
+      {
+         // get the handshake type
+         var type = record.fragment.getByte();
+         var f = hsTable[type];
+         if(f)
+         {
+            // handle specific handshake type record
+            f(c, record);
+         }
+         else
+         {
+            // invalid handshake type
+            // FIXME: handle
+         }
+      };
+      
+      /**
+       * Called when the client receives an ApplicationData record.
+       * 
+       * @param c the connection.
+       * @param record the record.
+       */
+      ctTable[tls.ContentType.application_data] = function(c, record)
+      {
+         // notify that data is ready
+         c.dataReady(record.fragment.bytes());
+      };
       
       /**
        * Creates new initialized SecurityParameters. No compression, encryption,
@@ -859,82 +1300,6 @@
       /**
        * Creates an empty TLS record.
        * 
-       * The record layer fragments information blocks into TLSPlaintext
-       * records carrying data in chunks of 2^14 bytes or less. Client message
-       * boundaries are not preserved in the record layer (i.e., multiple
-       * client messages of the same ContentType MAY be coalesced into a single
-       * TLSPlaintext record, or a single message MAY be fragmented across
-       * several records).
-       * 
-       * struct {
-       *    uint8 major;
-       *    uint8 minor;
-       * } ProtocolVersion;
-       * 
-       * struct {
-       *    ContentType type;
-       *    ProtocolVersion version;
-       *    uint16 length;
-       *    opaque fragment[TLSPlaintext.length];
-       * } TLSPlaintext;
-       * 
-       * type:
-       *    The higher-level protocol used to process the enclosed fragment.
-       * 
-       * version:
-       *    The version of the protocol being employed. TLS Version 1.2
-       *    uses version {3, 3}. TLS Version 1.0 uses version {3, 1}. Note
-       *    that a client that supports multiple versions of TLS may not know
-       *    what version will be employed before it receives the ServerHello.
-       * 
-       * length:
-       *    The length (in bytes) of the following TLSPlaintext.fragment. The
-       *    length MUST NOT exceed 2^14 = 16384 bytes.
-       * 
-       * fragment:
-       *    The application data. This data is transparent and treated as an
-       *    independent block to be dealt with by the higher-level protocol
-       *    specified by the type field.
-       * 
-       * Implementations MUST NOT send zero-length fragments of Handshake,
-       * Alert, or ChangeCipherSpec content types. Zero-length fragments of
-       * Application data MAY be sent as they are potentially useful as a
-       * traffic analysis countermeasure.
-       * 
-       * Note: Data of different TLS record layer content types MAY be
-       * interleaved. Application data is generally of lower precedence for
-       * transmission than other content types. However, records MUST be
-       * delivered to the network in the same order as they are protected by
-       * the record layer. Recipients MUST receive and process interleaved
-       * application layer traffic during handshakes subsequent to the first
-       * one on a connection.
-       * 
-       * FIXME: Might to need to stuff received TLS records into a queue
-       * according to sequence number ... and process them accordingly, without
-       * doing evil, slow, gross setTimeout() business.
-       * 
-       * struct {
-       *    ContentType type;       // same as TLSPlaintext.type
-       *    ProtocolVersion version;// same as TLSPlaintext.version
-       *    uint16 length;
-       *    opaque fragment[TLSCompressed.length];
-       * } TLSCompressed;
-       * 
-       * length:
-       *    The length (in bytes) of the following TLSCompressed.fragment.
-       *    The length MUST NOT exceed 2^14 + 1024.
-       * 
-       * fragment:
-       *    The compressed form of TLSPlaintext.fragment.
-       * 
-       * Note: A CompressionMethod.null operation is an identity operation;
-       * no fields are altered. In this implementation, since no compression
-       * is supported, uncompressed records are always the same as compressed
-       * records.
-       * 
-       * // FIXME: write a comment about making a call to compress the record
-       * // before sending it out
-       * 
        * @param options:
        *    type: the record type
        *    data: the plain text data
@@ -1113,35 +1478,6 @@
       },
       
       /**
-       * Parses a ServerHello body.
-       * 
-       * struct {
-       *    ProtocolVersion server_version;
-       *    Random random;
-       *    SessionID session_id;
-       *    CipherSuite cipher_suite;
-       *    CompressionMethod compression_method;
-       *    select (extensions_present) {
-       *        case false:
-       *            struct {};
-       *        case true:
-       *            Extension extensions<0..2^16-1>;
-       *    };
-       * } ServerHello;
-       * 
-       * @param bytes the ServerHello bytes.
-       * 
-       * @return the ServerHello body.
-       */
-      parseServerHello: function(bytes)
-      {
-         // FIXME: might not even need this method ... just something
-         // to handle the byte array
-      },
-      
-      // FIXME: next up, process server certificate message
-      
-      /**
        * Parses a change_cipher_spec record.
        * 
        * @param c the current connection.
@@ -1242,40 +1578,14 @@
          }
          
          return success ? record : null;
-      }
-   };
-   
-   /**
-    * The crypto namespace and tls API.
-    */
-   window.krypto = window.krypto || {};
-   window.krypto.tls = 
-   {
+      },
+      
       /**
-       * Creates a new TLS connection. This does not make any assumptions about
-       * the transport layer that TLS is working on top of, ie it does not
-       * assume there is a TCP/IP connection or establish one. A TLS connection
-       * is totally abstracted away from the layer is runs on top of, it merely
-       * establishes a secure channel between two "peers".
+       * Creates a new TLS connection.
        * 
-       * A TLS connection contains 4 connection states: pending read and write,
-       * and current read and write.
+       * See public createConnection() docs for more details.
        * 
-       * At initialization, the current read and write states will be null.
-       * Only once the security parameters have been set and the keys have
-       * been generated can the pending states be converted into current
-       * states. Current states will be updated for each record processed.
-       * 
-       * @param options the options for this connection:
-       *    sessionId: a session ID to reuse, null for a new connection.
-       *    recordReady: function(conn, record) called when a TLS record has
-       *       been prepared and is ready to be used (typically sent over a
-       *       socket connection to its destination).
-       *    dataReady: function(conn, data) called when application data has
-       *       been parsed from a TLS record and should be consumed by the
-       *       application.
-       *    closed: function(conn) called when the connection has been closed.
-       *    error: function(conn) called when there was an error.
+       * @param options the options for this connection.
        * 
        * @return the new TLS connection.
        */
@@ -1399,9 +1709,8 @@
                      break;
                }
                
-               // FIXME: convert to byte string?
-               // record is ready
-               c.recordReady(c, record);
+               // store record
+               c.records.push(record);
             }
             // fatal error
             else
@@ -1458,55 +1767,6 @@
                case HR:
                   break;
             }            
-            
-            // compress and encrypt the record
-            if(c.current.compress(record, c.state.current) &&
-               c.current.encrypt(record, c.state.current))
-            {
-               switch(action)
-               {
-                  // client hello
-                  case CH:
-                     // FIXME: make appropriate state changes... start
-                     // new pending state?
-                     break;
-                  // client certificate
-                  case CC:
-                     break;
-                  // client key exchange
-                  case CK:
-                     break;
-                  // client certificate verify
-                  case CV:
-                     break;
-                  // client change cipher spec
-                  case CS:
-                     // FIXME: switch pending state to current state?
-                     break;
-                  // client finished
-                  case CF:
-                     break;
-                  // client resume messages
-                  case CR:
-                     break;
-                  // application data
-                  case AD:
-                     break;
-                  // client alert
-                  case CA:
-                     break;
-               }
-               
-               // FIXME: convert to byte string?
-               // record is ready
-               c.recordReady(c, record);
-            }
-            // fatal error
-            else
-            {
-               // FIXME: better errors
-               c.error(c, 'Could not prepare record.');
-            }
          };
          
          /**
@@ -1530,20 +1790,25 @@
             // only update state if not ignoring action
             else if(next !== IG)
             {
+               // do action
                if(_doAction(action))
                {
+                  // handle output
+                  if((next === CF || next === AD) && c.records.length > 0)
+                  {
+                     // FIXME: write pending records into bytes
+                     // c.output...
+                     c.tlsDataReady(c, data);
+                  }
+                  
                   // update state
                   _state = next;
                }
             }
-            
-            
-            // only update state if not ignoring
-            if(next != IG)
-            {
-               _state = next;
-            }
-         },
+         };
+         
+         // pending input record
+         var _record = null;
          
          // create TLS connection
          var connection =
@@ -1562,15 +1827,10 @@
                   write: null
                }
             },
-            // FIXME: change this to 2 different buffers ... and just dataReady
-            // calls ... one buffer is for TLS control messages, the other is
-            // for application data, then only fire them when as much data as
-            // possible has been written to the buffers to minimize data copies
-            // FIXME: tlsDataReady, appDataReady
-            // sendAppData()?
-            // receiveTlsData()?
-            // FIXME: or send() (takes app data) receive() (takes TLS data)
-            recordReady: options.recordReady,
+            records: [],
+            input: window.krypto.utils.createBuffer(),
+            output: window.krypto.utils.createBuffer(),
+            tlsDataReady: options.tlsDataReady,
             dataReady: options.dataReady,
             closed: options.closed,
             error: options.error,
@@ -1578,65 +1838,13 @@
             /**
              * Performs a handshake using the TLS Handshake Protocol.
              * 
-             * The TLS Handshake Protocol involves the following steps:
-             *
-             * - Exchange hello messages to agree on algorithms, exchange
-             * random values, and check for session resumption.
-             * 
-             * - Exchange the necessary cryptographic parameters to allow the
-             * client and server to agree on a premaster secret.
-             * 
-             * - Exchange certificates and cryptographic information to allow
-             * the client and server to authenticate themselves.
-             * 
-             * - Generate a master secret from the premaster secret and
-             * exchanged random values.
-             * 
-             * - Provide security parameters to the record layer.
-             * 
-             * - Allow the client and server to verify that their peer has
-             * calculated the same security parameters and that the handshake
-             * occurred without tampering by an attacker.
-             * 
-             * Up to 4 different messages may be sent during a key exchange.
-             * The server certificate, the server key exchange, the client
-             * certificate, and the client key exchange.
-             * 
-             * A typical handshake (from the client's perspective).
-             * 
-             * 1. Client sends ClientHello.
-             * 2. Client receives ServerHello.
-             * 3. Client receives optional Certificate.
-             * 4. Client receives optional ServerKeyExchange.
-             * 5. Client receives ServerHelloDone.
-             * 6. Client sends optional Certificate.
-             * 7. Client sends ClientKeyExchange.
-             * 8. Client sends optional CertificateVerify.
-             * 9. Client sends ChangeCipherSpec.
-             * 10. Client sends Finished.
-             * 11. Client receives ChangeCipherSpec.
-             * 12. Client receives Finished.
-             * 13. Client sends/receives application data.
-             *
-             * To reuse an existing session:
-             * 
-             * 1. Client sends ClientHello with session ID for reuse.
-             * 2. Client receives ServerHello with same session ID if reusing.
-             * 3. Client receives ChangeCipherSpec message if reusing.
-             * 4. Client receives Finished.
-             * 5. Client sends ChangeCipherSpec.
-             * 6. Client sends Finished.
-             * 
-             * Note: Client ignores HelloRequest if in the middle of a
-             * handshake.
-             * 
-             * The recordReady handler will be called when a TLS record has
-             * been prepared.
-             * 
              * @param sessionId the session ID to use, null to start a new one.
              */
             handshake: function(sessionId)
             {
+               // FIXME: after sending a client hello message, any message
+               // other than a server hello (or ignored hello request) is
+               // considered a fatal error
                var record = tls.createRecord(
                {
                   type: tls.ContentType.handshake,
@@ -1646,21 +1854,42 @@
             },
             
             /**
-             * Called when a TLS record has been received from somewhere and
-             * should be processed by the TLS engine.
+             * Called when a TLS protocol data has been received from somewhere
+             * and should be processed by the TLS engine.
              * 
-             * @param data the TLS record, as a string, to process.
+             * @param data the TLS protocol data, as a string, to process.
              */
             process: function(data)
             {
-               // minimum record length is 5 bytes
-               var record = null;
-               if(data.length >= 5)
+               // buffer data, get input length
+               var b = connection.input;
+               b.putBytes(data);
+               var len = b.length();
+               
+               // if there is no pending record and there are at least 5 bytes
+               // for the record, parse the basic record info
+               if(_record === null && len >= 5)
                {
-                  var b = window.krypto.utils.createBuffer(data);
-                  record = tls.parseRecord(connection, b);
+                  _record =
+                  {
+                     type: b.getByte(),
+                     version:
+                     {
+                        major: b.getByte(),
+                        minor: b.getByte()
+                     },
+                     length: b.getInt16(),
+                     fragment: null
+                  };
+                  len -= 5;
                }
-               _update(connection, record, false);
+               
+               // see if there is enough data to parse the pending record
+               if(_record !== null && len >= _record.length)
+               {
+                  tls.parseRecord(connection, record);
+                  _update(connection, record, false);
+               }
             },
             
             /**
@@ -1683,4 +1912,124 @@
          return connection;
       }
    };
-})(jQuery);
+   
+   /**
+    * The crypto namespace and tls API.
+    */
+   window.krypto = window.krypto || {};
+   window.krypto.tls = 
+   {
+      /**
+       * Creates a new TLS connection. This does not make any assumptions about
+       * the transport layer that TLS is working on top of, ie: it does not
+       * assume there is a TCP/IP connection or establish one. A TLS connection
+       * is totally abstracted away from the layer is runs on top of, it merely
+       * establishes a secure channel between a client" and a "server".
+       * 
+       * A TLS connection contains 4 connection states: pending read and write,
+       * and current read and write.
+       * 
+       * At initialization, the current read and write states will be null.
+       * Only once the security parameters have been set and the keys have
+       * been generated can the pending states be converted into current
+       * states. Current states will be updated for each record processed.
+       * 
+       * @param options the options for this connection:
+       *    sessionId: a session ID to reuse, null for a new connection.
+       *    tlsDataReady: function(conn, data) called when TLS protocol data
+       *       has been prepared and is ready to be used (typically sent over a
+       *       socket connection to its destination).
+       *    dataReady: function(conn, data) called when application data has
+       *       been parsed from a TLS record and should be consumed by the
+       *       application.
+       *    closed: function(conn) called when the connection has been closed.
+       *    error: function(conn) called when there was an error.
+       * 
+       * @return the new TLS connection.
+       */
+      createConnection: function(options)
+      {
+         return tls.createConnection(options);
+      }
+   };
+   
+   /**
+    * A TlsArray contains contents that have been encoded according to
+    * the TLS specification. Its raw bytes can be accessed via the bytes
+    * property.
+    */
+//   createArray: function()
+//   {
+//      var array =
+//      {
+//         bytes: [],
+//         
+//         /**
+//          * Pushes a byte.
+//          * 
+//          * @param b the byte to push.
+//          */
+//         pushByte: function(b)
+//         {
+//            bytes.push(b & 0xFF);
+//         },
+//         
+//         /**
+//          * Pushes bytes.
+//          * 
+//          * @param b the bytes to push.
+//          */
+//         pushBytes: function(b)
+//         {
+//            bytes = bytes.concat(b);
+//         },
+//         
+//         /**
+//          * Pushes an integer value.
+//          * 
+//          * @param i the integer value.
+//          * @param bits the size of the integer in bits.
+//          */
+//         pushInt: function(i, bits)
+//         {
+//            do
+//            {
+//               bits -= 8;
+//               bytes.push((i >> bits) & 0xFF);
+//            }
+//            while(bits > 0);
+//         }
+//      
+//         /**
+//          * Pushes a vector value.
+//          * 
+//          * @param v the vector.
+//          * @param sizeBytes the number of bytes for the size.
+//          * @param func the function to call to encode each element.
+//          */
+//         pushVector: function(v, sizeBytes, func)
+//         {
+//            /* Variable-length vectors are defined by specifying a subrange
+//               of legal lengths, inclusively, using the notation
+//               <floor..ceiling>. When these are encoded, the actual length
+//               precedes the vector's contents in the byte stream. The length
+//               will be in the form of a number consuming as many bytes as
+//               required to hold the vector's specified maximum (ceiling)
+//               length. A variable-length vector with an actual length field
+//               of zero is referred to as an empty vector. */
+//            
+//            // encode length at the start of the vector, where the number
+//            // of bytes for the length is the maximum number of bytes it
+//            // would take to encode the vector's ceiling (= sizeBytes)
+//            array.pushInt(v.length, sizeBytes * 8);
+//            
+//            // encode the vector
+//            for(var i = 0; i < v.length; i++)
+//            {
+//               func(v[i]);
+//            }
+//         }
+//      };
+//      return array;
+//   }
+})();

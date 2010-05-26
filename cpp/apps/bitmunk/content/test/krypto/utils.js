@@ -65,9 +65,9 @@
             /**
              * Puts a 16-bit integer in this buffer.
              * 
-             * @param s the 16-bit integer (short).
+             * @param i the 16-bit integer.
              */
-            putInt16: function(s)
+            putInt16: function(i)
             {
                buf.data +=
                   String.fromCharCode(s >> 8 & 0xFF) +
@@ -75,17 +75,46 @@
             },
             
             /**
-             * Puts a 32-bit integer in this buffer.
+             * Puts a 24-bit integer in this buffer.
              * 
-             * @param w the 32-bit integer (word).
+             * @param i the 24-bit integer.
              */
-            putInt32: function(w)
+            putInt24: function(s)
             {
                buf.data +=
-                  String.fromCharCode(w >> 24 & 0xFF) +
-                  String.fromCharCode(w >> 16 & 0xFF) +
-                  String.fromCharCode(w >> 8 & 0xFF) +
-                  String.fromCharCode(w & 0xFF);
+                  String.fromCharCode(s >> 16 & 0xFF) +
+                  String.fromCharCode(s >> 8 & 0xFF) +
+                  String.fromCharCode(s & 0xFF);
+            },
+            
+            /**
+             * Puts a 32-bit integer in this buffer.
+             * 
+             * @param i the 32-bit integer.
+             */
+            putInt32: function(i)
+            {
+               buf.data +=
+                  String.fromCharCode(i >> 24 & 0xFF) +
+                  String.fromCharCode(i >> 16 & 0xFF) +
+                  String.fromCharCode(i >> 8 & 0xFF) +
+                  String.fromCharCode(i & 0xFF);
+            },
+            
+            /**
+             * Puts an n-bit integer in this buffer.
+             * 
+             * @param i the n-bit integer.
+             * @param n the number of bits in the integer.
+             */
+            putInt: function(i, n)
+            {
+               do
+               {
+                  n -= 8;
+                  buf.data += String.fromCharCode((i >> n) & 0xFF);
+               }
+               while(bits > 0);
             },
             
             /**
@@ -122,7 +151,22 @@
             },
             
             /**
-             * Gets a word from this buffer and advances the read pointer by 4.
+             * Gets a uint24 from this buffer and advances the read pointer
+             * by 3.
+             * 
+             * @return the uint24.
+             */
+            getInt24: function()
+            {
+               return (
+                  buf.data.charCodeAt(buf.read++) << 16 ^
+                  buf.data.charCodeAt(buf.read++) << 8 ^
+                  buf.data.charCodeAt(buf.read++));
+            },
+            
+            /**
+             * Gets a uint32 from this buffer and advances the read pointer
+             * by 4.
              * 
              * @return the word.
              */
