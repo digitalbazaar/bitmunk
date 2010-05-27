@@ -1478,109 +1478,6 @@
    };
    
    /**
-    * Parses a change_cipher_spec record.
-    * 
-    * @param c the current connection.
-    * @param record the record to update.
-    * @param b the byte buffer with the record.
-    * 
-    * @return true on success, false on failure.
-    */
-   tls.parseRecordChangeCipherSpec: function(c, record, b)
-   {
-   };
-   
-   /**
-    * Parses an alert record.
-    * 
-    * @param c the current connection.
-    * @param record the record to update.
-    * @param b the byte buffer with the record.
-    * 
-    * @return true on success, false on failure.
-    */
-   tls.parseRecordAlert: function(c, record, b)
-   {
-   };
-   
-   /**
-    * Parses a handshake record.
-    * 
-    * @param c the current connection.
-    * @param record the record to update.
-    * @param b the byte buffer with the record.
-    * 
-    * @return true on success, false on failure.
-    */
-   tls.parseRecordHandshake: function(c, record, b)
-   {
-   };
-   
-   /**
-    * Parses an application data record.
-    * 
-    * @param c the current connection.
-    * @param record the record to update.
-    * @param b the byte buffer with the record.
-    * 
-    * @return true on success, false on failure.
-    */
-   tls.parseRecordApplicationData: function(c, record, b)
-   {
-   };
-   
-   /**
-    * Parses an incoming record.
-    * 
-    * @param c the current connection.
-    * @param b the byte buffer with the record.
-    * 
-    * @return the parsed record, null on failure.
-    */
-   tls.parseRecord: function(c, b)
-   {
-      // parse basic record
-      var record =
-      {
-         type: b.getByte(),
-         version:
-         {
-            major: b.getByte(),
-            minor: b.getByte()
-         },
-         length: b.getInt16(),
-         fragment: null
-      };
-      
-      // FIXME: use current state to decrypt/decompress fragment
-      var out = window.krypto.utils.createBuffer();
-      c.state
-      
-      // FIXME: parse plain text fragment
-      var success = false;
-      switch(record.type)
-      {
-         case tls.ContentType.change_cipher_spec:
-            success = tls.parseRecordChangeCipherSpec(b);
-            break;
-         case tls.ContentType.alert:
-            success = tls.parseRecordAlert(b);
-            break;
-         case tls.ContentType.handshake:
-            success = tls.parseRecordHandshake(b);
-            break;
-         case tls.ContentType.application_data:
-            success = tls.parseRecordApplicationData(b);
-            break;
-         default:
-            // FIXME: handle error case
-            break;
-      }
-      
-      return success ? record : null;
-   };
-   
-   /**
     * Creates a new TLS connection.
     * 
     * See public createConnection() docs for more details.
@@ -1671,9 +1568,10 @@
        */
       var _handleClientRecord = function(action)
       {
-         // compress and encrypt the record
-         if(c.current.compress(record, c.state.current) &&
-            c.current.encrypt(record, c.state.current))
+         // compress and encrypt the record using current write state
+         var ws = c.current.write;
+         if(ws === null ||
+            (ws.compress(record, ws) && ws.encrypt(record, ws)))
          {
             switch(action)
             {
@@ -1778,6 +1676,10 @@
        */
       var _update = function(c, record, client)
       {
+         // 
+         
+         
+         
          // get the next state based on the action for the record
          var action = _getAction(record, client);
          var next = _stateTable[_state][action];
@@ -1811,7 +1713,7 @@
       var _record = null;
       
       // create TLS connection
-      var connection =
+      var c =
       {
          sessionId: options.sessionId,
          state:
@@ -1850,7 +1752,7 @@
                type: tls.ContentType.handshake,
                data: createClientHello(sessionId)
             };
-            _update(connection, record, true);
+            _update(c, record, true);
          },
          
          /**
@@ -1862,7 +1764,7 @@
          process: function(data)
          {
             // buffer data, get input length
-            var b = connection.input;
+            var b = c.input;
             b.putBytes(data);
             var len = b.length();
             
@@ -1887,8 +1789,18 @@
             // see if there is enough data to parse the pending record
             if(_record !== null && len >= _record.length)
             {
-               tls.parseRecord(connection, record);
-               _update(connection, record, false);
+               // decrypt and decompress record using current read state
+               var rs = c.state.current.read;
+               if(rs === null ||
+                  (rs.decrypt(record, rs) && rs.encrypt(record, rs)))
+               {
+                  // update engine state
+                  _update(c, record, false);
+               }
+               else
+               {
+                  // FIXME: error
+               }
             }
          },
          
@@ -1906,7 +1818,7 @@
                type: tls.ContentType.application_data,
                data: data
             };
-            _update(connection, record, true);
+            _update(c, record, true);
          }
       };
       return connection;
@@ -1951,84 +1863,4 @@
          return tls.createConnection(options);
       }
    };
-   
-   /**
-    * A TlsArray contains contents that have been encoded according to
-    * the TLS specification. Its raw bytes can be accessed via the bytes
-    * property.
-    */
-//   createArray: function()
-//   {
-//      var array =
-//      {
-//         bytes: [],
-//         
-//         /**
-//          * Pushes a byte.
-//          * 
-//          * @param b the byte to push.
-//          */
-//         pushByte: function(b)
-//         {
-//            bytes.push(b & 0xFF);
-//         },
-//         
-//         /**
-//          * Pushes bytes.
-//          * 
-//          * @param b the bytes to push.
-//          */
-//         pushBytes: function(b)
-//         {
-//            bytes = bytes.concat(b);
-//         },
-//         
-//         /**
-//          * Pushes an integer value.
-//          * 
-//          * @param i the integer value.
-//          * @param bits the size of the integer in bits.
-//          */
-//         pushInt: function(i, bits)
-//         {
-//            do
-//            {
-//               bits -= 8;
-//               bytes.push((i >> bits) & 0xFF);
-//            }
-//            while(bits > 0);
-//         }
-//      
-//         /**
-//          * Pushes a vector value.
-//          * 
-//          * @param v the vector.
-//          * @param sizeBytes the number of bytes for the size.
-//          * @param func the function to call to encode each element.
-//          */
-//         pushVector: function(v, sizeBytes, func)
-//         {
-//            /* Variable-length vectors are defined by specifying a subrange
-//               of legal lengths, inclusively, using the notation
-//               <floor..ceiling>. When these are encoded, the actual length
-//               precedes the vector's contents in the byte stream. The length
-//               will be in the form of a number consuming as many bytes as
-//               required to hold the vector's specified maximum (ceiling)
-//               length. A variable-length vector with an actual length field
-//               of zero is referred to as an empty vector. */
-//            
-//            // encode length at the start of the vector, where the number
-//            // of bytes for the length is the maximum number of bytes it
-//            // would take to encode the vector's ceiling (= sizeBytes)
-//            array.pushInt(v.length, sizeBytes * 8);
-//            
-//            // encode the vector
-//            for(var i = 0; i < v.length; i++)
-//            {
-//               func(v[i]);
-//            }
-//         }
-//      };
-//      return array;
-//   }
 })();
