@@ -832,198 +832,197 @@
             /**
              * Output from AES (either encrypted or decrypted bytes).
              */
-            output: null,
-            
-            /**
-             * Updates the next block using CBC mode.
-             * 
-             * @param input the buffer to read from.
-             */
-            update: function(input)
+            output: null
+         };
+         
+         /**
+          * Updates the next block using CBC mode.
+          * 
+          * @param input the buffer to read from.
+          */
+         cipher.update = function(input)
+         {
+            if(!_finish)
             {
-               if(!_finish)
+               // not finishing, so fill the input buffer with more input
+               _input.putBuffer(input);
+            }
+            
+            /* In encrypt mode, the threshold for updating a block is the
+               block size. As soon as enough input is available to update
+               a block, encryption may occur. In decrypt mode, we wait for
+               2 blocks to be available or for the finish flag to be set
+               with only 1 block available. This is done so that the output
+               buffer will not be populated with padding bytes at the end
+               of the decryption -- they can be truncated before returning
+               from finish().
+             */
+            var threshold = decrypt && !_finish ?
+               _blockSize << 1 : _blockSize;
+            while(_input.length() >= threshold)
+            {
+               // get next block
+               if(decrypt)
                {
-                  // not finishing, so fill the input buffer with more input
-                  _input.putBuffer(input);
-               }
-               
-               /* In encrypt mode, the threshold for updating a block is the
-                  block size. As soon as enough input is available to update
-                  a block, encryption may occur. In decrypt mode, we wait for
-                  2 blocks to be available or for the finish flag to be set
-                  with only 1 block available. This is done so that the output
-                  buffer will not be populated with padding bytes at the end
-                  of the decryption -- they can be truncated before returning
-                  from finish().
-                */
-               var threshold = decrypt && !_finish ?
-                  _blockSize << 1 : _blockSize;
-               while(_input.length() >= threshold)
-               {
-                  // get next block
-                  if(decrypt)
+                  for(var i = 0; i < Nb; i++)
                   {
-                     for(var i = 0; i < Nb; i++)
-                     {
-                        _inBlock[i] = _input.getInt32();
-                     }
-                  }
-                  else
-                  {
-                     // CBC mode XOR's IV (or previous block) with plaintext
-                     for(var i = 0; i < Nb; i++)
-                     {
-                        _inBlock[i] = _prev[i] ^ _input.getInt32();
-                     }
-                  }
-                  
-                  // update block
-                  updateBlock(_w, _inBlock, _outBlock, decrypt);
-                  
-                  // write output, save previous ciphered block
-                  if(decrypt)
-                  {
-                     // CBC mode XOR's IV (or previous block) with plaintext
-                     for(var i = 0; i < Nb; i++)
-                     {
-                        _output.putInt32(_prev[i] ^ _outBlock[i]);
-                     }
-                     _prev = _inBlock.slice(0);
-                  }
-                  else
-                  {
-                     for(var i = 0; i < Nb; i++)
-                     {
-                        _output.putInt32(_outBlock[i]);
-                     }
-                     _prev = _outBlock;
+                     _inBlock[i] = _input.getInt32();
                   }
                }
-            },
-            
-            /**
-             * Finishes encrypting or decrypting.
-             * 
-             * @param pad a padding function to use, null for default,
-             *           signature(blockSize, buffer, decrypt).
-             * 
-             * @return true if successful, false on error.
-             */
-            finish: function(pad)
-            {
-               var rval = true;
+               else
+               {
+                  // CBC mode XOR's IV (or previous block) with plaintext
+                  for(var i = 0; i < Nb; i++)
+                  {
+                     _inBlock[i] = _prev[i] ^ _input.getInt32();
+                  }
+               }
                
-               if(!decrypt)
+               // update block
+               updateBlock(_w, _inBlock, _outBlock, decrypt);
+               
+               // write output, save previous ciphered block
+               if(decrypt)
+               {
+                  // CBC mode XOR's IV (or previous block) with plaintext
+                  for(var i = 0; i < Nb; i++)
+                  {
+                     _output.putInt32(_prev[i] ^ _outBlock[i]);
+                  }
+                  _prev = _inBlock.slice(0);
+               }
+               else
+               {
+                  for(var i = 0; i < Nb; i++)
+                  {
+                     _output.putInt32(_outBlock[i]);
+                  }
+                  _prev = _outBlock;
+               }
+            }
+         };
+         
+         /**
+          * Finishes encrypting or decrypting.
+          * 
+          * @param pad a padding function to use, null for default,
+          *           signature(blockSize, buffer, decrypt).
+          * 
+          * @return true if successful, false on error.
+          */
+         cipher.finish = function(pad)
+         {
+            var rval = true;
+            
+            if(!decrypt)
+            {
+               if(pad)
+               {
+                  rval = pad(_blockSize, _input, decrypt);
+               }
+               else
+               {
+                  // add PKCS#7 padding to block (each pad byte is the
+                  // value of the number of pad bytes)
+                  var padding = Math.max(
+                     _blockSize, _blockSize - _input.length());
+                  for(var i = 0; i < padding; i++)
+                  {
+                     _input.putByte(padding);
+                  }
+               }
+            }
+            
+            if(rval)
+            {
+               // do final update
+               _finish = true;
+               cipher.update();
+            }
+            
+            if(decrypt)
+            {
+               // check for error: input data not a multiple of blockSize
+               rval = (_input.length() == 0);
+               if(rval)
                {
                   if(pad)
                   {
-                     rval = pad(_blockSize, _input, decrypt);
+                     rval = pad(_blockSize, _output, decrypt);
                   }
                   else
                   {
-                     // add PKCS#7 padding to block (each pad byte is the
-                     // value of the number of pad bytes)
-                     var padding = Math.max(
-                        _blockSize, _blockSize - _input.length());
-                     for(var i = 0; i < padding; i++)
+                     // ensure padding bytes are valid
+                     var len = _output.length();
+                     var count = _output.at(len - 1);
+                     for(var i = len - count; rval && i < len; i++)
                      {
-                        _input.putByte(padding);
+                        rval = (_output.at(i) == count);
+                     }
+                     if(rval)
+                     {
+                        // trim off padding bytes
+                        _output.truncate(count);
                      }
                   }
                }
-               
-               if(rval)
-               {
-                  // do final update
-                  _finish = true;
-                  cipher.update();
-               }
-               
-               if(decrypt)
-               {
-                  // check for error: input data not a multiple of blockSize
-                  rval = (_input.length() == 0);
-                  if(rval)
-                  {
-                     if(pad)
-                     {
-                        rval = pad(_blockSize, _output, decrypt);
-                     }
-                     else
-                     {
-                        // ensure padding bytes are valid
-                        var len = _output.length();
-                        var count = _output.at(len - 1);
-                        for(var i = len - count; rval && i < len; i++)
-                        {
-                           rval = (_output.at(i) == count);
-                        }
-                        if(rval)
-                        {
-                           // trim off padding bytes
-                           _output.truncate(count);
-                        }
-                     }
-                  }
-               }
-               
-               return rval;
-            },
-            
-            /**
-             * Restarts the encryption or decryption process, whichever was
-             * previously configured.
-             * 
-             * The iv may be given as a string of bytes, an array of bytes, a
-             * byte buffer, or an array of 32-bit words.
-             * 
-             * @param iv the initialization vector to use.
-             * @param output the output the buffer to write to.
-             */
-            restart: function(iv, output)
-            {
-               /* Note: The IV may be a string of bytes, an array of bytes, a
-                  byte buffer, or an array of 32-bit integers. If the IV is in
-                  bytes, then it must be Nb (16) bytes in length. If it is in
-                  32-bit integers, then it must be 4 integers long.
-                */
-               
-               // convert iv string into byte buffer
-               if(iv.constructor == String && iv.length == 16)
-               {
-                  iv = window.krypto.utils.createBuffer(iv);
-               }
-               // convert iv byte array into byte buffer
-               else if(iv.constructor == Array && iv.length == 16)
-               {
-                  var tmp = iv;
-                  var iv = window.krypto.utils.createBuffer();
-                  for(var i = 0; i < 16; i++)
-                  {
-                     iv.putByte(tmp[i]);
-                  }
-               }
-               
-               // convert iv byte buffer into 32-bit integer array
-               if(iv.constructor != Array)
-               {
-                  var tmp = iv;
-                  iv = new Array(4);
-                  iv[0] = tmp.getInt32();
-                  iv[1] = tmp.getInt32();
-                  iv[2] = tmp.getInt32();
-                  iv[3] = tmp.getInt32();
-               }
-               
-               // set private vars
-               _input = window.krypto.utils.createBuffer();
-               _output = output || window.krypto.utils.createBuffer();
-               _prev = iv.slice(0);
-               _inBlock = new Array(Nb);
-               _outBlock = new Array(Nb);
-               _finish = false;
-               cipher.output = _output;
             }
+            
+            return rval;
+         };
+         
+         /**
+          * Restarts the encryption or decryption process, whichever was
+          * previously configured.
+          * 
+          * The iv may be given as a string of bytes, an array of bytes, a
+          * byte buffer, or an array of 32-bit words.
+          * 
+          * @param iv the initialization vector to use.
+          * @param output the output the buffer to write to.
+          */
+         cipher.restart = function(iv, output)
+         {
+            /* Note: The IV may be a string of bytes, an array of bytes, a
+               byte buffer, or an array of 32-bit integers. If the IV is in
+               bytes, then it must be Nb (16) bytes in length. If it is in
+               32-bit integers, then it must be 4 integers long. */
+            
+            // convert iv string into byte buffer
+            if(iv.constructor == String && iv.length == 16)
+            {
+               iv = window.krypto.utils.createBuffer(iv);
+            }
+            // convert iv byte array into byte buffer
+            else if(iv.constructor == Array && iv.length == 16)
+            {
+               var tmp = iv;
+               var iv = window.krypto.utils.createBuffer();
+               for(var i = 0; i < 16; i++)
+               {
+                  iv.putByte(tmp[i]);
+               }
+            }
+            
+            // convert iv byte buffer into 32-bit integer array
+            if(iv.constructor != Array)
+            {
+               var tmp = iv;
+               iv = new Array(4);
+               iv[0] = tmp.getInt32();
+               iv[1] = tmp.getInt32();
+               iv[2] = tmp.getInt32();
+               iv[3] = tmp.getInt32();
+            }
+            
+            // set private vars
+            _input = window.krypto.utils.createBuffer();
+            _output = output || window.krypto.utils.createBuffer();
+            _prev = iv.slice(0);
+            _inBlock = new Array(Nb);
+            _outBlock = new Array(Nb);
+            _finish = false;
+            cipher.output = _output;
          };
          cipher.restart(iv, output);
       }
