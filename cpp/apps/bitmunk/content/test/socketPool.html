@@ -62,12 +62,7 @@
       function sp_send()
       {
          var req = "GET /bitmunk HTTP/1.0\r\n\r\n";
-         var bytes = [];
-         for(var i = 0; i < req.length; i++)
-         {
-            bytes.push(req.charCodeAt(i));
-         }
-         document.getElementById('socketPool').send(socketId, bytes);
+         document.getElementById('socketPool').send(socketId, req);
       }
 
       function sp_close()
@@ -80,15 +75,10 @@
          console.log('connected', e);
       }
       
-      function dataReceived(bytes)
+      function dataReceived(e)
       {
-         console.log('data received', bytes);
-         var str = '';
-         for(var i = 0; i < bytes.length; i++)
-         {
-            str += String.fromCharCode(bytes[i]);
-         }
-         console.log(str);
+         console.log('data received', e);
+         console.log(e.bytes);
       }
       
       function ioError(e)

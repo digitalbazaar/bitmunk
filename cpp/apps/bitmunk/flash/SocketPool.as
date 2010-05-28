@@ -295,24 +295,17 @@ package
        * Writes an array of bytes to a Socket.
        *
        * @param id the ID of the Socket.
-       * @param bytes the array of bytes to write.
+       * @param bytes the string of bytes to write.
        */
-      private function send(id:String, bytes:Array):void
+      private function send(id:String, bytes:String):void
       {
          log("send(" + id + ")");
          
          if(id in mSocketMap)
          {
+         	// write bytes to socket
             var s:PooledSocket = mSocketMap[id];
-            
-            // FIXME: figure out quickest way to convert to/from bytes
-            var b:ByteArray = new ByteArray();
-            for(var i:int = 0; i < bytes.length; i++)
-            {
-               b.writeByte(bytes[i] & 0xFF);
-            }
-            b.position = 0;
-            s.writeBytes(b);
+            s.writeUTFBytes(bytes);
             s.flush();
          }
          else
@@ -367,20 +360,21 @@ package
                   
                   try
                   {
-                     // FIXME: might need a buffer here ... and the ability to
-                     // understand how to read the size from an SSL record
+                  	// FIXME: need a system where socket owner can tell
+                  	// a socket to buffer X number of bytes before reporting
+                  	// that the data has been received (else do timeout)
+                  	// FIXME: this will require a buffer to be stored along
+                  	// with the socket ... or maybe use the internal buffer
+                  	// and wait for bytesAvailable to be enough?
                      
-                     // read bytes
-                     var b:ByteArray = new ByteArray();
-                     event.socket.readBytes(b, 0, event.socket.bytesAvailable);
-                     var bytes:Array = new Array();
-                     for(var i:int = 0; i < b.length; i++)
-                     {
-                        bytes.push(b[i] & 0xFF);
-                     }
+                     // read all available bytes
+                     var e:Object = new Object();
+                     e.id = event.socket.id;
+                     e.bytes = event.socket.readUTFBytes(
+                        event.socket.bytesAvailable);
                      
                      // send to javascript
-                     ExternalInterface.call(callback, bytes);
+                     ExternalInterface.call(callback, e);
                   }
                   catch(e:IOError)
                   {

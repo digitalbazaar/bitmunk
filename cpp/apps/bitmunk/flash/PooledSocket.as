@@ -13,8 +13,5 @@ package
    public class PooledSocket extends Socket
    {
       public var id:String;
-      // FIXME: might need to include a flag to specify SSL socket and
-      // a buffer to store bytes
    }
 }
-
