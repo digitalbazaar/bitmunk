@@ -1603,13 +1603,18 @@
       var _record = null;
       
       /**
-       * Called when a TLS protocol data has been received from somewhere
+       * Called when TLS protocol data has been received from somewhere
        * and should be processed by the TLS engine.
        * 
        * @param data the TLS protocol data, as a string, to process.
+       * 
+       * @return 0 if the data could be processed, otherwise the number of
+       *         bytes required for data to be processed.
        */
       c.process: function(data)
       {
+         var rval = 0;
+         
          // buffer data, get input length
          var b = c.input;
          b.putBytes(data);
@@ -1669,6 +1674,18 @@
                }
             }
          }
+         else if(_record === null)
+         {
+            // need at least 5 bytes
+            rval = 5 - len;
+         }
+         else
+         {
+            // need remainder of record
+            rval = _record.length - len;
+         }
+         
+         return rval;
       };
       
       /**

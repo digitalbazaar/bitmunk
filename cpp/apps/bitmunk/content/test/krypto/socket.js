@@ -138,7 +138,8 @@
     *           flashId: the dom ID for the flash object element.
     *           connected: function(event) called when the socket connects.
     *           closed: function(event) called when the socket closes.
-    *           data: function(event) called when socket data arrives.
+    *           data: function(event) called when socket data has arrived, it
+    *              can be read from the socket using receive().
     *           error: function(event) called when a socket error occurs.
     */
    net.createSocket = function(options)
@@ -184,6 +185,16 @@
       };
       
       /**
+       * Determines if the socket is connected or not.
+       * 
+       * @return true if connected, false if not.
+       */
+      socket.isConnected = function()
+      {
+         return api.isConnected(id);
+      };
+      
+      /**
        * Writes bytes to this socket.
        * 
        * @param bytes the bytes (as a string) to write.
@@ -191,6 +202,23 @@
       socket.send = function(bytes)
       {
          api.send(id, bytes);
+      };
+      
+      /**
+       * Reads bytes from this socket (non-blocking). Fewer than the number
+       * of bytes requested may be read if enough bytes are not available.
+       * 
+       * This method should be called from the data handler if there are
+       * enough bytes available. To see how many bytes are available, check
+       * the 'bytesAvailable' property of the event passed to the data handler.
+       * 
+       * @param count the maximum number of bytes to read.
+       * 
+       * @return the bytes read (as a string) or null on error.
+       */
+      socket.receive = function(count)
+      {
+         return api.receive(id, count);
       };
       
       /**

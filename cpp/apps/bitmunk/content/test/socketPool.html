@@ -45,7 +45,7 @@
             'SocketPool cleaned up';
          return false;
       }
-      
+
       function sp_create()
       {
          socket = net.createSocket({
@@ -61,7 +61,8 @@
             data: function(e)
             {
                console.log('data received', e);
-               console.log(e.bytes);
+               var bytes = socket.receive(e.bytesAvailable);
+               console.log(bytes);
             },
             error: function(e)
             {
@@ -87,6 +88,13 @@
             host: 'localhost',
             port: 19300
          });
+      }
+
+      function sp_isConnected()
+      {
+         var connected = socket.isConnected();
+         document.getElementById('feedback').innerHTML = 
+            'Socket connected: ' + connected;
       }
 
       function sp_send()
@@ -117,6 +125,7 @@
          <button id="create" onclick="javascript:return sp_create();">create socket</button>
          <button id="destroy" onclick="javascript:return sp_destroy();">destroy socket</button>
          <button id="connect" onclick="javascript:return sp_connect();">connect</button>
+         <button id="isConnected" onclick="javascript:return sp_isConnected();">is connected</button>
          <button id="send" onclick="javascript:return sp_send();">send</button>
          <button id="close" onclick="javascript:return sp_close();">close</button>
       </div>

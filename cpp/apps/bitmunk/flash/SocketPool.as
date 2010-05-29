@@ -8,7 +8,7 @@ package
    import flash.display.Sprite;
    
    /**
-    * A SocketPool is a flash object that can be embedded in a webpage to
+    * A SocketPool is a flash object that can be embedded in a web page to
     * allow javascript access to pools of Sockets.
     * 
     * Javascript can create a pool and then as many Sockets as it desires. Each
@@ -71,8 +71,12 @@ package
                ExternalInterface.addCallback("connect", connect);
                ExternalInterface.addCallback("close", close);
                
-               // sends data over the socket
+               // checks for a connection
+               ExternalInterface.addCallback("isConnected", isConnected);
+               
+               // sends/receives data over the socket
                ExternalInterface.addCallback("send", send);
+               ExternalInterface.addCallback("receive", receive);
                
                // add a callback for subscribing to socket events
                ExternalInterface.addCallback("subscribe", subscribe);
@@ -289,6 +293,34 @@ package
       }
       
       /**
+       * Determines if the Socket with the given ID is connected or not.
+       *
+       * @param id the ID of the Socket.
+       *
+       * @return true if the socket is connected, false if not.
+       */
+      private function isConnected(id:String):Boolean
+      {
+         var rval:Boolean = false;
+         log("isConnected(" + id + ")");
+         
+         if(id in mSocketMap)
+         {
+            // check the Socket
+            var s:PooledSocket = mSocketMap[id];
+            rval = s.connected;
+         }
+         else
+         {
+            // no such socket
+            log("socket " + id + " does not exist");
+         }
+         
+         log("isConnected(" + id + ") done");
+         return rval;
+      }
+      
+      /**
        * Writes bytes to a Socket.
        *
        * @param id the ID of the Socket.
@@ -302,8 +334,24 @@ package
          {
          	// write bytes to socket
             var s:PooledSocket = mSocketMap[id];
-            s.writeUTFBytes(bytes);
-            s.flush();
+            try
+            {
+               s.writeUTFBytes(bytes);
+               s.flush();
+            }
+            catch(e:IOError)
+            {
+               log(e);
+               
+               // dispatch IO error event
+               mEventDispatcher.dispatchEvent(new IOErrorEvent(
+                  IOErrorEvent.IO_ERROR,
+                  false, false, e.message));
+               if(s.connected)
+               {
+                  s.close();
+               }
+            }
          }
          else
          {
@@ -315,9 +363,60 @@ package
       }
       
       /**
+       * Receives bytes from a Socket.
+       *
+       * @param id the ID of the Socket.
+       * @param count the maximum number of bytes to receive.
+       *
+       * @return the received bytes, null on error.
+       */
+      private function receive(id:String, count:uint):String
+      {
+      	 var rval:String = null;
+         log("receive(" + id + "," + count + ")");
+         
+         if(id in mSocketMap)
+         {
+         	// only read what is available
+            var s:PooledSocket = mSocketMap[id];
+            if(count > s.bytesAvailable)
+            {
+               count = s.bytesAvailable;
+            }
+            
+            try
+            {
+               // read bytes from socket
+               rval = s.readUTFBytes(count);
+            }
+            catch(e:IOError)
+            {
+               log(e);
+               
+               // dispatch IO error event
+               mEventDispatcher.dispatchEvent(new IOErrorEvent(
+                  IOErrorEvent.IO_ERROR,
+                  false, false, e.message));
+               if(s.connected)
+               {
+                  s.close();
+               }
+            }
+         }
+         else
+         {
+            // no such socket
+            log("socket " + id + " does not exist");
+         }
+         
+         log("receive(" + id + "," + count + ") done");
+         return rval;
+      }
+      
+      /**
        * Registers a javascript function as a callback for an event.
        * 
-       * @param eventType the type of event (HttpConnectionEvent types).
+       * @param eventType the type of event (socket event types).
        * @param callback the name of the callback function.
        */
       private function subscribe(eventType:String, callback:String):void
@@ -330,6 +429,7 @@ package
             case Event.CLOSE:
             case IOErrorEvent.IO_ERROR:
             case SecurityErrorEvent.SECURITY_ERROR:
+            case ProgressEvent.SOCKET_DATA:
             {
                log(eventType + " => " + callback);
                mEventDispatcher.addEventListener(
@@ -341,52 +441,10 @@ package
                   var e:Object = new Object();
                   e.id = event.socket.id;
                   e.type = eventType;
+                  e.bytesAvailable = event.socket.bytesAvailable;
                   
                   // send event to javascript
                   ExternalInterface.call(callback, e);
-               });
-               break;
-            }
-            case ProgressEvent.SOCKET_DATA:
-            {
-               log(eventType + " => " + callback);
-               mEventDispatcher.addEventListener(
-                  eventType, function(event:SocketEvent):void
-               {
-                  log("event dispatched: " + eventType);
-                  
-                  try
-                  {
-                  	// FIXME: need a system where socket owner can tell
-                  	// a socket to buffer X number of bytes before reporting
-                  	// that the data has been received (else do timeout)
-                  	// FIXME: this will require a buffer to be stored along
-                  	// with the socket ... or maybe use the internal buffer
-                  	// and wait for bytesAvailable to be enough?
-                     
-                     // read all available bytes
-                     var e:Object = new Object();
-                     e.id = event.socket.id;
-                     e.type = eventType;
-                     e.bytes = event.socket.readUTFBytes(
-                        event.socket.bytesAvailable);
-                     
-                     // send to javascript
-                     ExternalInterface.call(callback, e);
-                  }
-                  catch(e:IOError)
-                  {
-                     log(e);
-                     
-                     // dispatch IO error event
-                     mEventDispatcher.dispatchEvent(new IOErrorEvent(
-                        IOErrorEvent.IO_ERROR,
-                        false, false, e.message));
-                     if(event.socket.connected)
-                     {
-                        event.socket.close();
-                     }
-                  }
                });
                break;
             }

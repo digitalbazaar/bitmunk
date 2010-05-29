@@ -12,6 +12,7 @@ package
     */
    public class PooledSocket extends Socket
    {
+      // the ID in the related socket pool
       public var id:String;
    }
 }
