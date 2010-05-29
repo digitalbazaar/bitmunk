@@ -190,9 +190,6 @@ package
       {
          log("create()");
          
-         // FIXME: might need to specify that the Socket receives SSL records
-         // to better handle buffering
-         
          // create a Socket
          var id:String = "" + mNextId++;
          var s:PooledSocket = new PooledSocket();
@@ -292,7 +289,7 @@ package
       }
       
       /**
-       * Writes an array of bytes to a Socket.
+       * Writes bytes to a Socket.
        *
        * @param id the ID of the Socket.
        * @param bytes the string of bytes to write.
@@ -343,7 +340,7 @@ package
                   // build event for javascript
                   var e:Object = new Object();
                   e.id = event.socket.id;
-                  e.type = event.type;
+                  e.type = eventType;
                   
                   // send event to javascript
                   ExternalInterface.call(callback, e);
@@ -370,6 +367,7 @@ package
                      // read all available bytes
                      var e:Object = new Object();
                      e.id = event.socket.id;
+                     e.type = eventType;
                      e.bytes = event.socket.readUTFBytes(
                         event.socket.bytesAvailable);
                      

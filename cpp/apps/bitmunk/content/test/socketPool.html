@@ -6,6 +6,7 @@
       }
       </style> 
       <script type="text/javascript" src="/bitmunk/js/swfobject/swfobject.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/socket.js"></script>
       
       <script type="text/javascript">
       var flashvars = {};
@@ -18,12 +19,20 @@
          "/bitmunk/SocketPool.swf", "socketPool", "400", "224", "9.0.0",
          "/bitmunk/js/swfobject/expressInstall.swf",
          flashvars, params, attributes);
+      
+      // local alias
+      var net = window.krypto.net;
 
-      var socketId = '0';
+      // socket to use
+      var socket;
       
       function sp_init()
       {
-         document.getElementById('socketPool').init();
+         net.init({
+            flashId: 'socketPool',
+            policyPort: 19845,
+            msie: false
+         });
          document.getElementById('feedback').innerHTML =
             'SocketPool initialized';
          return false;
@@ -31,7 +40,7 @@
       
       function sp_cleanup()
       {
-         document.getElementById('socketPool').cleanup();
+         net.cleanup();
          document.getElementById('feedback').innerHTML =
             'SocketPool cleaned up';
          return false;
@@ -39,68 +48,59 @@
       
       function sp_create()
       {
-         socketId = document.getElementById('socketPool').create();
+         socket = net.createSocket({
+            connected: function(e)
+            {
+               console.log('connected', e);
+            },
+            closed: function(e)
+            {
+               console.log('closed', e);
+            },
+            data: function(e)
+            {
+               console.log('data received', e);
+               console.log(e.bytes);
+            },
+            error: function(e)
+            {
+               console.log('error', e);
+            }
+         });
          document.getElementById('feedback').innerHTML =
-            'Socket ID: ' + socketId;
+            'Socket created';
          return false;
       }
       
       function sp_destroy()
       {
-         document.getElementById('socketPool').destroy(socketId);
+         socket.destroy();
          document.getElementById('feedback').innerHTML = 
-            'Socket ' + socketId + ' destroyed';
+            'Socket destroyed';
          return false;
       }
 
       function sp_connect()
       {
-         document.getElementById('socketPool').connect(
-            socketId, 'localhost', 19300, 19845);
+         socket.connect({
+            host: 'localhost',
+            port: 19300
+         });
       }
 
       function sp_send()
       {
-         var req = "GET /bitmunk HTTP/1.0\r\n\r\n";
-         document.getElementById('socketPool').send(socketId, req);
+         socket.send('GET /bitmunk HTTP/1.0\r\n\r\n');
       }
 
       function sp_close()
       {
-         document.getElementById('socketPool').close(socketId);
+         socket.close();
       }
       
-      function connected(e)
+      function error(e)
       {
-         console.log('connected', e);
-      }
-      
-      function dataReceived(e)
-      {
-         console.log('data received', e);
-         console.log(e.bytes);
-      }
-      
-      function ioError(e)
-      {
-         console.log('ioError', e);
-      }
-
-      function ioError(e)
-      {
-         console.log('securityError', e);
-      }
-      
-      function sp_subscribe()
-      {
-         var sp = document.getElementById('socketPool');
-         var fb = document.getElementById('feedback');
-         sp.subscribe('connect', 'connected');
-         sp.subscribe('socketData', 'dataReceived');
-         sp.subscribe('ioError', 'ioError');
-         sp.subscribe('securityError', 'securityError');
-         fb.innerHTML = 'Subscribed to events'
-         return false;
+         console.log('error', e);
       }
 
       </script>
@@ -115,7 +115,6 @@
          <button id="cleanup" onclick="javascript:return sp_cleanup();">cleanup</button>
          <button id="create" onclick="javascript:return sp_create();">create socket</button>
          <button id="destroy" onclick="javascript:return sp_destroy();">destroy socket</button>
-         <button id="subscribe" onclick="javascript:return sp_subscribe();">subscribe</button>
          <button id="connect" onclick="javascript:return sp_connect();">connect</button>
          <button id="send" onclick="javascript:return sp_send();">send</button>
          <button id="close" onclick="javascript:return sp_close();">close</button>
