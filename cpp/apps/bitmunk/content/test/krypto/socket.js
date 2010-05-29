@@ -7,19 +7,11 @@
  */
 (function()
 {
-   // Note: Current implementation supports 1 flash socket pool per page. This
-   // can be changed by storing net information in a map using flash IDs. It
-   // also requires specifying the flash ID when creating sockets, etc.
-   
-   // private flash socket pool vars
-   var _sp = null;
-   var _defaultPolicyPort;
-   
    // define net namespace
    var net =
    {
-      // map of socket ID to sockets
-      sockets: {}
+      // map of flash ID to socket pool
+      socketPools: {}
    };
    
    /**
@@ -32,20 +24,32 @@
     */
    net.init = function(options)
    {
-      // defaults
-      _defaultPolicyPort = options.policyPort || 19845;
+      // set default
       options.msie = options.msie || false;
       
       // initialize the flash interface
-      _sp = document.getElementById(options.flashId);
-      _sp.init({marshallExceptions: !options.msie});
+      var id = options.flashId;
+      var api = document.getElementById(id);
+      api.init({marshallExceptions: !options.msie});
+      
+      // create socket pool entry
+      var sp =
+      {
+         // flash interface
+         flashApi: api,
+         // map of socket ID to sockets
+         sockets: {},
+         // default policy port
+         policyPort: options.policyPort || 19845
+      };
+      net.socketPools[id] = sp;
       
       // create event handler, subscribe to flash events
       if(options.msie === true)
       {
-         net.handler = function(e)
+         sp.handler = function(e)
          {
-            if(e.id in net.sockets)
+            if(e.id in sp.sockets)
             {
                // get handler function
                var f;
@@ -70,15 +74,15 @@
                   running javascript in the middle of its execution (BAD!) ...
                   calling setTimeout() will schedule the javascript to run on
                   the javascript thread and solve this EVIL problem. */
-               setTimeout(function(){net.sockets[e.id][f](e)}, 0);
+               setTimeout(function(){sp.sockets[e.id][f](e)}, 0);
             }
          };
       }
       else
       {
-         net.handler = function(e)
+         sp.handler = function(e)
          {
-            if(e.id in net.sockets)
+            if(e.id in sp.sockets)
             {
                console.log('event type', e.type);
                // get handler function
@@ -98,34 +102,40 @@
                      f = 'error';
                      break;
                }
-               net.sockets[e.id][f](e);
+               sp.sockets[e.id][f](e);
             }
          };
       }
-      var handler = 'window.krypto.net.handler';
-      _sp.subscribe('connect', handler);
-      _sp.subscribe('close', handler);
-      _sp.subscribe('socketData', handler);
-      _sp.subscribe('ioError', handler);
-      _sp.subscribe('securityError', handler);
+      var handler = 'window.krypto.net.socketPools[\'' + id + '\'].handler';
+      api.subscribe('connect', handler);
+      api.subscribe('close', handler);
+      api.subscribe('socketData', handler);
+      api.subscribe('ioError', handler);
+      api.subscribe('securityError', handler);
    };
    
    /**
     * Cleans up flash socket support.
+    * 
+    * @param options:
+    *           flashId: the dom ID for the flash object element.
     */
-   net.cleanup = function()
+   net.cleanup = function(options)
    {
-      for(var id in net.sockets)
+      var sp = net.socketPools[options.flashId];
+      delete net.socketPools[options.flashId];
+      for(var id in sp.sockets)
       {
-         net.sockets[id].destroy();
+         sp.sockets[id].destroy();
       }
-      _sp.cleanup();
+      sp.flashApi.cleanup();
    };
 
    /**
     * Creates a new socket.
     * 
     * @param options:
+    *           flashId: the dom ID for the flash object element.
     *           connected: function(event) called when the socket connects.
     *           closed: function(event) called when the socket closes.
     *           data: function(event) called when socket data arrives.
@@ -133,8 +143,12 @@
     */
    net.createSocket = function(options)
    {
+      // get related socket pool and flash API
+      var sp = net.socketPools[options.flashId];
+      var api = sp.flashApi;
+      
       // create flash socket 
-      var id = _sp.create();
+      var id = api.create();
       
       // create javascript socket wrapper
       var socket =
@@ -156,11 +170,9 @@
        */
       socket.connect = function(options)
       {
-         _sp.connect(
-            id,
-            options.host,
-            options.port,
-            options.policyPort || _defaultPolicyPort);
+         api.connect(
+            id, options.host, options.port,
+            options.policyPort || sp.policyPort);
       };
       
       /**
@@ -168,7 +180,7 @@
        */
       socket.close = function()
       {
-         _sp.close(id);
+         api.close(id);
       };
       
       /**
@@ -178,7 +190,7 @@
        */
       socket.send = function(bytes)
       {
-         _sp.send(id, bytes);
+         api.send(id, bytes);
       };
       
       /**
@@ -186,12 +198,12 @@
        */
       socket.destroy = function()
       {
-         _sp.destroy(id);
-         delete net.sockets[id];
+         api.destroy(id);
+         delete sp.sockets[id];
       };
       
       // store and return socket
-      net.sockets[id] = socket;
+      sp.sockets[id] = socket;
       return socket;
    };
    
