@@ -17,6 +17,20 @@
          function(a){return a.toUpperCase();});
    };
    
+   // private var for flash with inflate/deflate calls
+   var _api = null;
+   
+   /**
+    * Initializes flash support for inflate and deflate.
+    * 
+    * @param flashId the dom ID of the flash element with an api with inflate
+    *           and deflate calls.
+    */
+   http.initFlashDeflateSupport = function(flashId)
+   {
+      _api = document.getElementById(flashId);
+   };
+   
    /**
     * Creates an http header object.
     * 
@@ -66,6 +80,8 @@
     *           method: the method.
     *           path: the path.
     *           body: the body.
+    *           headers: custom header fields to add,
+    *              ie: [{'Content-Length': 0}].
     * 
     * @return the http request.
     */
@@ -77,6 +93,86 @@
       request.method = options.method || null;
       request.path = options.path || null;
       request.body = options.body || null;
+      request.bodyDeflated = false;
+      
+      // add custom headers
+      var headers = options.headers || [];
+      for(var i = 0; i < headers.length; i++)
+      {
+         for(var name in headers[i])
+         {
+            request.appendField(name, headers[i][name]);
+         }
+      }
+      
+      // set default headers
+      if(request.getField('User-Agent') === null)
+      {
+         request.setField('User-Agent', 'javascript krypto.http 1.0');
+      }
+      if(request.getField('Accept') === null)
+      {
+         request.setField('Accept', '*/*');
+      }
+      if(_api !== null && request.getField('Accept-Encoding' === null))
+      {
+         request.setField('Accept-Encoding', 'deflate');
+      }
+      
+      /**
+       * Converts an http request into a string that can be sent as a
+       * HTTP request. Does not include any data.
+       * 
+       * @return the string representation of the request.
+       */
+      request.toString = function()
+      {
+         /* Sample request header:
+          GET /some/path/?query HTTP/1.1
+          Host: www.someurl.com
+          Connection: close
+          Accept-Encoding: deflate
+          Accept: image/gif, text/html
+          User-Agent: Mozilla 4.0
+          */
+         
+         // if the body isn't null, deflate it by default
+         if(_api !== null && request.body !== null &&
+            request.getField('Content-Encoding') === null &&
+            !request.bodyDeflated)
+         {
+            // use flash to compress data
+            request.setField('Content-Encoding', 'deflate');
+            request.body = api.deflate(request.body);
+            request.bodyDeflated = true;
+            request.setField('Content-Length', request.body.length);
+         }
+         else if(request.body !== null)
+         {
+            // set content length for body
+            request.setField('Content-Length', request.body.length);
+         }
+         
+         // build start line
+         var rval =
+            request.method.toUpperCase() + ' ' + request.path + ' ' +
+            request.version + '\r\n';
+         
+         // add each header
+         for(var name in request.fields)
+         {
+            var fields = request.fields[name];
+            for(var i = 0; i < fields.length; i++)
+            {
+               rval += name + ': ' + fields[i] + '\r\n';
+            }
+         }
+         // final terminating CRLF
+         rval += '\r\n';
+         
+         return rval;
+      };
+      
       return request;
    };
    
@@ -342,6 +438,14 @@
             // no body
             response.body = null;
             response.bodyReceived = true;
+         }
+         
+         if(_api !== null &&
+            response.bodyReceived && response.body !== null &&
+            response.getField('Content-Encoding') === 'deflate')
+         {
+            // inflate using flash api
+            response.body = _api.inflate(response.body);
          }
          
          return response.bodyReceived;

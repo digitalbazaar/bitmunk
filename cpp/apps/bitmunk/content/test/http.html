@@ -117,8 +117,11 @@
 
       function sp_send()
       {
-         //var request = http.createRequest();
-         socket.send('GET /bitmunk HTTP/1.0\r\n\r\n');
+         var request = http.createRequest({
+            method: 'GET',
+            path: '/api/3.0/system/test/echo'
+         });
+         socket.send(request.toString());
       }
 
       function sp_close()
