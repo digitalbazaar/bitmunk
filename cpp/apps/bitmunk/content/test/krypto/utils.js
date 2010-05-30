@@ -193,6 +193,7 @@
                if(count)
                {
                   // read count bytes
+                  count = Math.min(buf.length(), count);
                   rval = buf.data.slice(buf.read, buf.read + count);
                   buf.read += count;
                }
