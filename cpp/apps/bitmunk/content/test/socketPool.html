@@ -61,6 +61,7 @@
             data: function(e)
             {
                console.log('data received', e);
+               console.log('bytes available', socket.bytesAvailable());
                var bytes = socket.receive(e.bytesAvailable);
                console.log(bytes);
             },

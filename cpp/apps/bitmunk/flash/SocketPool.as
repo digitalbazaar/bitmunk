@@ -78,6 +78,10 @@ package
                ExternalInterface.addCallback("send", send);
                ExternalInterface.addCallback("receive", receive);
                
+               // gets the number of bytes available on a socket
+               ExternalInterface.addCallback(
+                  "getBytesAvailable", getBytesAvailable);
+               
                // add a callback for subscribing to socket events
                ExternalInterface.addCallback("subscribe", subscribe);
                
@@ -412,6 +416,33 @@ package
          log("receive(" + id + "," + count + ") done");
          return rval;
       }
+      
+      /**
+       * Gets the number of bytes available from a Socket.
+       *
+       * @param id the ID of the Socket.
+       *
+       * @return the number of available bytes.
+       */
+      private function getBytesAvailable(id:String):uint
+      {
+         var rval:uint = 0;
+         log("getBytesAvailable(" + id + ")");
+         
+         if(id in mSocketMap)
+         {
+            var s:PooledSocket = mSocketMap[id];
+            rval = s.bytesAvailable;
+         }
+         else
+         {
+            // no such socket
+            log("socket " + id + " does not exist");
+         }
+         
+         log("getBytesAvailable(" + id +") done");
+         return rval;
+      }      
       
       /**
        * Registers a javascript function as a callback for an event.

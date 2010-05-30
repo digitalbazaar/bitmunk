@@ -162,6 +162,15 @@
       };
       
       /**
+       * Destroys this socket.
+       */
+      socket.destroy = function()
+      {
+         api.destroy(id);
+         delete sp.sockets[id];
+      };
+      
+      /**
        * Connects this socket.
        * 
        * @param options:
@@ -210,7 +219,11 @@
        * 
        * This method should be called from the data handler if there are
        * enough bytes available. To see how many bytes are available, check
-       * the 'bytesAvailable' property of the event passed to the data handler.
+       * the 'bytesAvailable' property on the event in the data handler or
+       * call the bytesAvailable() function on the socket. If the browser is
+       * msie, then the bytesAvailable() function should be used to avoid
+       * race conditions. Otherwise, using the property on the data handler's
+       * event may be quicker.
        * 
        * @param count the maximum number of bytes to read.
        * 
@@ -222,12 +235,13 @@
       };
       
       /**
-       * Destroys this socket.
+       * Gets the number of bytes available for receiving on the socket.
+       * 
+       * @return the number of bytes available for receiving.
        */
-      socket.destroy = function()
+      socket.bytesAvailable = function()
       {
-         api.destroy(id);
-         delete sp.sockets[id];
+         return api.getBytesAvailable(id);
       };
       
       // store and return socket
