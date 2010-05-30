@@ -27,14 +27,14 @@
       var http = window.krypto.http;
       var util = window.krypto.util;
 
-      // socket to use
+      var sp;
       var socket;
       var response = http.createResponse();
       response.buffer = util.createBuffer();
       
       function sp_init()
       {
-         net.init({
+         sp = net.createSocketPool({
             flashId: 'socketPool',
             policyPort: 19845,
             msie: false
@@ -46,7 +46,7 @@
       
       function sp_cleanup()
       {
-         net.cleanup({flashId: 'socketPool'});
+         sp.destroy();
          document.getElementById('feedback').innerHTML =
             'SocketPool cleaned up';
          return false;
@@ -54,8 +54,7 @@
 
       function sp_create()
       {
-         socket = net.createSocket({
-            flashId: 'socketPool',
+         socket = sp.createSocket({
             connected: function(e)
             {
                console.log('connected', e);

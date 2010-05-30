@@ -17,8 +17,41 @@
          function(a){return a.toUpperCase();});
    };
    
+   // FIXME: move to member of http client
    // private var for flash with inflate/deflate calls
    var _api = null;
+   
+   /**
+    * Creates an http client that uses krypto.net sockets as a backend and
+    * krypto.tls for security.
+    * 
+    * @param options:
+    *           flashId: the dom ID of the flash socket pool element to use.
+    *           connections: number of connections to use to handle requests.
+    *           init: true to initialize the flash, false not to (default).
+    *           policyPort: the default flash policy port to use.
+    *           msie: true if the browser is IE, false if not.
+    */
+   http.createClient = function(options)
+   {
+      // local alias for net
+      var net = window.krypto.net;
+      
+      // initialize socket pool if appropriate
+      if(options.init === true)
+      {
+         net.init(options);
+      }
+      
+      // create client
+      var client =
+      {
+         flashId: options.flashId,
+         api: net.socketPools[options.flashId].api
+      };
+      
+      // create sockets for connections
+   };
    
    /**
     * Initializes flash support for inflate and deflate.

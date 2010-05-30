@@ -28,7 +28,7 @@
       
       function sp_init()
       {
-         net.init({
+         net.createSocketPool({
             flashId: 'socketPool',
             policyPort: 19845,
             msie: false
@@ -40,7 +40,7 @@
       
       function sp_cleanup()
       {
-         net.cleanup({flashId: 'socketPool'});
+         net.destroySocketPool({flashId: 'socketPool'});
          document.getElementById('feedback').innerHTML =
             'SocketPool cleaned up';
          return false;

@@ -15,21 +15,23 @@
    };
    
    /**
-    * Initializes flash socket support.
+    * Creates a flash socket pool.
     * 
     * @param options:
     *           flashId: the dom ID for the flash object element.
     *           policyPort: the default policy port for sockets.
     *           msie: true if the browser is msie, false if not.
+    * 
+    * @return the created socket pool.
     */
-   net.init = function(options)
+   net.createSocketPool = function(options)
    {
       // set default
       options.msie = options.msie || false;
       
       // initialize the flash interface
-      var id = options.flashId;
-      var api = document.getElementById(id);
+      var spId = options.flashId;
+      var api = document.getElementById(spId);
       api.init({marshallExceptions: !options.msie});
       
       // create socket pool entry
@@ -42,7 +44,7 @@
          // default policy port
          policyPort: options.policyPort || 19845
       };
-      net.socketPools[id] = sp;
+      net.socketPools[spId] = sp;
       
       // create event handler, subscribe to flash events
       if(options.msie === true)
@@ -106,29 +108,157 @@
             }
          };
       }
-      var handler = 'window.krypto.net.socketPools[\'' + id + '\'].handler';
+      var handler = 'window.krypto.net.socketPools[\'' + spId + '\'].handler';
       api.subscribe('connect', handler);
       api.subscribe('close', handler);
       api.subscribe('socketData', handler);
       api.subscribe('ioError', handler);
       api.subscribe('securityError', handler);
+      
+      /**
+       * Destroys a socket pool. The socket pool still needs to be cleaned
+       * up via net.cleanup().
+       */
+      sp.destroy = function()
+      {
+         delete net.socketPools[options.flashId];
+         for(var id in sp.sockets)
+         {
+            sp.sockets[id].destroy();
+         }
+         sp.sockets = {};
+         api.cleanup();
+      };
+      
+      /**
+       * Creates a new socket.
+       * 
+       * @param options:
+       *           connected: function(event) called when the socket connects.
+       *           closed: function(event) called when the socket closes.
+       *           data: function(event) called when socket data has arrived,
+       *              it can be read from the socket using receive().
+       *           error: function(event) called when a socket error occurs.
+       */
+      sp.createSocket = function(options)
+      {
+         // create flash socket 
+         var id = api.create();
+         
+         // create javascript socket wrapper
+         var socket =
+         {
+            // set handlers
+            connected: options.connected || function(e){},
+            closed: options.closed || function(e){},
+            data: options.data || function(e){},
+            error: options.error || function(e){}
+         };
+         
+         /**
+          * Destroys this socket.
+          */
+         socket.destroy = function()
+         {
+            api.destroy(id);
+            delete sp.sockets[id];
+         };
+         
+         /**
+          * Connects this socket.
+          * 
+          * @param options:
+          *           host: the host to connect to.
+          *           port: the port to connec to.
+          *           policyPort: the policy port to use (if non-default). 
+          */
+         socket.connect = function(options)
+         {
+            api.connect(
+               id, options.host, options.port,
+               options.policyPort || sp.policyPort);
+         };
+         
+         /**
+          * Closes this socket.
+          */
+         socket.close = function()
+         {
+            api.close(id);
+         };
+         
+         /**
+          * Determines if the socket is connected or not.
+          * 
+          * @return true if connected, false if not.
+          */
+         socket.isConnected = function()
+         {
+            return api.isConnected(id);
+         };
+         
+         /**
+          * Writes bytes to this socket.
+          * 
+          * @param bytes the bytes (as a string) to write.
+          */
+         socket.send = function(bytes)
+         {
+            api.send(id, bytes);
+         };
+         
+         /**
+          * Reads bytes from this socket (non-blocking). Fewer than the number
+          * of bytes requested may be read if enough bytes are not available.
+          * 
+          * This method should be called from the data handler if there are
+          * enough bytes available. To see how many bytes are available, check
+          * the 'bytesAvailable' property on the event in the data handler or
+          * call the bytesAvailable() function on the socket. If the browser is
+          * msie, then the bytesAvailable() function should be used to avoid
+          * race conditions. Otherwise, using the property on the data handler's
+          * event may be quicker.
+          * 
+          * @param count the maximum number of bytes to read.
+          * 
+          * @return the bytes read (as a string) or null on error.
+          */
+         socket.receive = function(count)
+         {
+            return api.receive(id, count);
+         };
+         
+         /**
+          * Gets the number of bytes available for receiving on the socket.
+          * 
+          * @return the number of bytes available for receiving.
+          */
+         socket.bytesAvailable = function()
+         {
+            return api.getBytesAvailable(id);
+         };
+         
+         // store and return socket
+         sp.sockets[id] = socket;
+         return socket;
+      };
+      
+      return sp;
    };
    
    /**
-    * Cleans up flash socket support.
+    * Destroys a flash socket pool.
     * 
     * @param options:
     *           flashId: the dom ID for the flash object element.
     */
-   net.cleanup = function(options)
+   net.destroySocketPool = function(options)
    {
-      var sp = net.socketPools[options.flashId];
-      delete net.socketPools[options.flashId];
-      for(var id in sp.sockets)
+      if(options.flashId in net.socketPools)
       {
-         sp.sockets[id].destroy();
+         var sp = net.socketPools[options.flashId];
+         sp.destroy();
       }
-      sp.flashApi.cleanup();
    };
 
    /**
@@ -141,111 +271,18 @@
     *           data: function(event) called when socket data has arrived, it
     *              can be read from the socket using receive().
     *           error: function(event) called when a socket error occurs.
+    * 
+    * @return the created socket.
     */
    net.createSocket = function(options)
    {
-      // get related socket pool and flash API
-      var sp = net.socketPools[options.flashId];
-      var api = sp.flashApi;
-      
-      // create flash socket 
-      var id = api.create();
-      
-      // create javascript socket wrapper
-      var socket =
+      var socket = null;
+      if(options.flashId in net.socketPools)
       {
-         // set handlers
-         connected: options.connected || function(e){},
-         closed: options.closed || function(e){},
-         data: options.data || function(e){},
-         error: options.error || function(e){}
-      };
-      
-      /**
-       * Destroys this socket.
-       */
-      socket.destroy = function()
-      {
-         api.destroy(id);
-         delete sp.sockets[id];
-      };
-      
-      /**
-       * Connects this socket.
-       * 
-       * @param options:
-       *           host: the host to connect to.
-       *           port: the port to connec to.
-       *           policyPort: the policy port to use (if non-default). 
-       */
-      socket.connect = function(options)
-      {
-         api.connect(
-            id, options.host, options.port,
-            options.policyPort || sp.policyPort);
-      };
-      
-      /**
-       * Closes this socket.
-       */
-      socket.close = function()
-      {
-         api.close(id);
-      };
-      
-      /**
-       * Determines if the socket is connected or not.
-       * 
-       * @return true if connected, false if not.
-       */
-      socket.isConnected = function()
-      {
-         return api.isConnected(id);
-      };
-      
-      /**
-       * Writes bytes to this socket.
-       * 
-       * @param bytes the bytes (as a string) to write.
-       */
-      socket.send = function(bytes)
-      {
-         api.send(id, bytes);
-      };
-      
-      /**
-       * Reads bytes from this socket (non-blocking). Fewer than the number
-       * of bytes requested may be read if enough bytes are not available.
-       * 
-       * This method should be called from the data handler if there are
-       * enough bytes available. To see how many bytes are available, check
-       * the 'bytesAvailable' property on the event in the data handler or
-       * call the bytesAvailable() function on the socket. If the browser is
-       * msie, then the bytesAvailable() function should be used to avoid
-       * race conditions. Otherwise, using the property on the data handler's
-       * event may be quicker.
-       * 
-       * @param count the maximum number of bytes to read.
-       * 
-       * @return the bytes read (as a string) or null on error.
-       */
-      socket.receive = function(count)
-      {
-         return api.receive(id, count);
-      };
-      
-      /**
-       * Gets the number of bytes available for receiving on the socket.
-       * 
-       * @return the number of bytes available for receiving.
-       */
-      socket.bytesAvailable = function()
-      {
-         return api.getBytesAvailable(id);
-      };
-      
-      // store and return socket
-      sp.sockets[id] = socket;
+         // get related socket pool
+         var sp = net.socketPools[options.flashId];
+         socket = sp.createSocket(options);
+      }
       return socket;
    };
    
