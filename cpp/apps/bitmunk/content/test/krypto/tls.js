@@ -453,7 +453,7 @@
       }
       
       // read vector bytes into a new buffer
-      return krypto.utils.createBuffer(b.getBytes(len));
+      return krypto.util.createBuffer(b.getBytes(len));
    };
    
    /**
@@ -1556,8 +1556,8 @@
          expect: SHE,
          fragmented: null,
          records: [],
-         input: krypto.utils.createBuffer(),
-         output: krypto.utils.createBuffer(),
+         input: krypto.util.createBuffer(),
+         output: krypto.util.createBuffer(),
          tlsDataReady: options.tlsDataReady,
          dataReady: options.dataReady,
          closed: options.closed,
@@ -1633,7 +1633,7 @@
                   minor: b.getByte()
                },
                length: b.getInt16(),
-               fragment: krypto.utils.createBuffer()
+               fragment: krypto.util.createBuffer()
             };
             len -= 5;
          }

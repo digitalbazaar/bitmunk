@@ -30,30 +30,32 @@
          setField: function(name, value)
          {
             // normalize field name, trim value
-            fields[_normalize(name)] =
+            header.fields[_normalize(name)] =
                [value.replace(/^\s*/, '').replace(/\s*$/, '')];
          },
          appendField: function(name, value)
          {
             name = _normalize(name);
-            if(!(name in fields))
+            if(!(name in header.fields))
             {
-               fields[name] = [];
+               header.fields[name] = [];
             }
-            fields[name].push(value.replace(/^\s*/, '').replace(/\s*$/, ''));
-         }
+            header.fields[name].push(
+               value.replace(/^\s*/, '').replace(/\s*$/, ''));
+         },
          getField: function(name, index)
          {
             var rval = null;
             name = _normalize(name);
-            if(name in fields)
+            if(name in header.fields)
             {
                index = index || 0;
-               rval = fields[name][index];
+               rval = header.fields[name][index];
             }
             return rval;
          }
       };
+      return header;
    };
    
    /**
@@ -69,6 +71,7 @@
     */
    http.createRequest = function(options)
    {
+      options = options || {};
       var request = _createHeader();
       request.version = options.version || 'HTTP/1.1';
       request.method = options.method || null;
@@ -86,7 +89,6 @@
    {
       // private vars
       var _first = true;
-      var _done = false;
       var _chunkSize = 0;
       var _chunksFinished = false;
       
@@ -96,6 +98,8 @@
       response.code = 0;
       response.message = null;
       response.body = null;
+      response.headerReceived = false;
+      response.bodyReceived = false;
       
       /**
        * Reads a line that ends in CRLF from a byte buffer.
@@ -110,7 +114,7 @@
          var i = b.data.indexOf('\r\n', b.read);
          if(i != -1)
          {
-            // read line, CRLF
+            // read line, skip CRLF
             line = b.getBytes(i - b.read);
             b.getBytes(2);
          }
@@ -122,7 +126,7 @@
        * 
        * @param line the header field line.
        */
-      var _parseHeader = function(line, h)
+      var _parseHeader = function(line)
       {
          var tmp = line.indexOf(':');
          var name = line.substring(0, tmp++);
@@ -141,7 +145,7 @@
       {
          // read header lines (each ends in CRLF)
          var line = '';
-         while(!_done && line !== null)
+         while(!response.headerReceived && line !== null)
          {
             line = _readCrlf(b);
             if(line !== null)
@@ -172,7 +176,7 @@
                else if(line.length == 0)
                {
                   // end of header
-                  _done = true;
+                  response.headerReceived = true;
                }
                // parse header
                else
@@ -182,7 +186,7 @@
             }
          }
          
-         return _done;
+         return response.headerReceived;
       };
       
       /**
@@ -195,8 +199,6 @@
        */
       var _readChunkedBody = function(b)
       {
-         var rval = false;
-         
          /*
          Chunked transfer-encoding sends data in a series of chunks,
          followed by a set of 0-N http trailers.
@@ -282,14 +284,14 @@
                   else
                   {
                      // body received
-                     rval = true;
+                     response.bodyReceived = true;
                      line = null;
                   }
                }
             }
          }
          
-         return rval;
+         return response.bodyReceived;
       };
       
       /**
@@ -301,31 +303,48 @@
        */
       response.readBody = function(b)
       {
-         var rval = false;
-         
-         response.body = response.body || '';
          var contentLength = response.getField('Content-Length');
          var transferEncoding = response.getField('Transfer-Encoding');
          
          // read specified length
          if(contentLength !== null && contentLength >= 0)
          {
+            response.body = response.body || '';
             response.body += b.getBytes(contentLength);
-            rval = (response.body.length == contentLength);
+            response.bodyReceived = (response.body.length == contentLength);
          }
          // read chunked encoding
-         else if(transferEncoding !== null &&
-                 transferEncoding.indexOf('chunked') != -1)
+         else if(transferEncoding !== null)
          {
-            rval = _readChunkedBody(b);
+            if(transferEncoding.indexOf('chunked') != -1)
+            {
+               response.body = response.body || '';
+               _readChunkedBody(b);
+            }
+            else
+            {
+               throw {
+                  message: 'Unknown Transfer-Encoding.',
+                  details: {
+                     'transferEncoding' : transferEncoding
+                  }
+               };
+            }
          }
          // read all data in the buffer
-         else
+         else if(contentLength !== null && contentLength < 0)
          {
+            response.body = response.body || '';
             response.body += b.getBytes();
          }
+         else
+         {
+            // no body
+            response.body = null;
+            response.bodyReceived = true;
+         }
          
-         return rval;
+         return response.bodyReceived;
       };
            
       return response;

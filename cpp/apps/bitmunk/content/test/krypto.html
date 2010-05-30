@@ -9,7 +9,7 @@
       <script type="text/javascript" src="/bitmunk/js/jquery.js"></script>
       <script type="text/javascript" src="/bitmunk/test/jscrypto/jscrypto.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/random.js"></script>
-      <script type="text/javascript" src="/bitmunk/test/krypto/utils.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/util.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/aes.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/tls.js"></script>
       <script type="text/javascript" src="/bitmunk/test/pidcrypt/string_extend.js"></script>
@@ -95,7 +95,7 @@
 
       var test_buffer = function()
       {
-         ba = krypto.utils.createBuffer();
+         ba = krypto.util.createBuffer();
          ba.putByte(1);
          ba.putByte(2);
          ba.putByte(3);
@@ -479,7 +479,7 @@
             key.push(parseInt(k.substr(16, 8), 16));
             key.push(parseInt(k.substr(24, 8), 16));
             
-            var input = krypto.utils.createBuffer(aesPlain);
+            var input = krypto.util.createBuffer(aesPlain);
             
             // encrypt
             cipher = krypto.aes.startEncrypting(key, aesIvWords);
@@ -520,7 +520,7 @@
                key.push(parseInt(k.substr(16, 8), 16));
                key.push(parseInt(k.substr(24, 8), 16));
                
-               var input = krypto.utils.createBuffer(aesPlain);
+               var input = krypto.util.createBuffer(aesPlain);
                
                // encrypt
                cipher = krypto.aes.startEncrypting(key, aesIvWords);

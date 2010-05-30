@@ -784,7 +784,7 @@
          (key.length == 16 || key.length == 24 || key.length == 32))
       {
          var tmp = key;
-         var key = window.krypto.utils.createBuffer();
+         var key = window.krypto.util.createBuffer();
          for(var i = 0; i < tmp.length; i++)
          {
             key.putByte(tmp[i]);
@@ -794,7 +794,7 @@
       else if(key.constructor == Array &&
          (key.length == 16 || key.length == 24 || key.length == 32))
       {
-         key = window.krypto.utils.createBuffer(key);
+         key = window.krypto.util.createBuffer(key);
       }
       
       // convert key byte buffer into 32-bit integer array
@@ -991,13 +991,13 @@
             // convert iv string into byte buffer
             if(iv.constructor == String && iv.length == 16)
             {
-               iv = window.krypto.utils.createBuffer(iv);
+               iv = window.krypto.util.createBuffer(iv);
             }
             // convert iv byte array into byte buffer
             else if(iv.constructor == Array && iv.length == 16)
             {
                var tmp = iv;
-               var iv = window.krypto.utils.createBuffer();
+               var iv = window.krypto.util.createBuffer();
                for(var i = 0; i < 16; i++)
                {
                   iv.putByte(tmp[i]);
@@ -1016,8 +1016,8 @@
             }
             
             // set private vars
-            _input = window.krypto.utils.createBuffer();
-            _output = output || window.krypto.utils.createBuffer();
+            _input = window.krypto.util.createBuffer();
+            _output = output || window.krypto.util.createBuffer();
             _prev = iv.slice(0);
             _inBlock = new Array(Nb);
             _outBlock = new Array(Nb);
