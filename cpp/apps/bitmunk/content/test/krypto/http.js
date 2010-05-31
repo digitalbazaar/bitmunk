@@ -55,6 +55,9 @@
          };
       }
       
+      // default to 1 connection
+      options.connections = options.connections || 1;
+      
       // local aliases
       var net = window.krypto.net;
       var util = window.krypto.util;
@@ -70,9 +73,7 @@
          // queue of requests to service
          requests: [],
          // idle sockets
-         idle: [],
-         // busy sockets
-         busy: []
+         idle: []
       };
       
       // create sockets
@@ -109,7 +110,7 @@
                      {
                         socket.options.headerReady({
                            request: socket.options.request,
-                           response: socket.options.response
+                           response: response
                         });
                      }
                   }
@@ -121,8 +122,15 @@
                   {
                      socket.options.bodyReady({
                         request: socket.options.request,
-                        response: socket.options.response
+                        response: response
                      });
+                     var value = response.getField('Connection') || '';
+                     if(value.indexOf('close') != -1)
+                     {
+                        // close socket
+                        socket.close();
+                     }
+                     client.idle.push(socket);
                   }
                }
             },
@@ -135,6 +143,8 @@
                   request: socket.options.request,
                   response: socket.options.response
                });
+               socket.close();
+               client.idle.push(socket);
             }
          });
          client.idle.push(socket);
@@ -176,9 +186,9 @@
       {
          // set default dummy handlers
          options.connected = options.connected || function(){};
-         options.headerReady = options.connected || function(){};
-         options.bodyReady = options.connected || function(){};
-         options.error = options.connected || function(){};
+         options.headerReady = options.headerReady || function(){};
+         options.bodyReady = options.bodyReady || function(){};
+         options.error = options.error || function(){};
          
          // create response
          options.response = http.createResponse();
