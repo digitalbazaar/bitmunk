@@ -358,6 +358,10 @@
       {
          request.setField('Accept', '*/*');
       }
+      if(request.getField('Connection') === null)
+      {
+         request.setField('Connection', 'close');
+      }
       
       /**
        * Converts an http request into a string that can be sent as a
