@@ -18,7 +18,7 @@
    };
    
    // parses the scheme, host, and port from a url
-   var _parseUrl = function(url)
+   var _parseUrl = function(str)
    {
       var url = {};
       var regex = /^(https?):\/\/([^:&^\/]*):?(\d*)(.*)$/g;
@@ -28,6 +28,55 @@
          url.port = port || (scheme === 'https' ? 443 : 80);
       });
       return url;
+   };
+   
+   /**
+    * Connects and sends a request.
+    *
+    * @param socket the socket to use.
+    */
+   var _doRequest = function(socket)
+   {
+      // FIXME: handle https scheme
+      // if(client.url.scheme === 'https')
+      
+      if(socket.isConnected())
+      {
+         // already connected
+         socket.connected({
+            type: 'connect',
+            id: socket.id
+         });
+      }
+      else
+      {
+         // connect
+         socket.connect(client.url);
+      }
+   };
+   
+   /**
+    * Handles the next request or marks a socket as idle.
+    * 
+    * @param client the http client.
+    * @param socket the socket.
+    */
+   var _handleNextRequest = function(client, socket)
+   {
+      // clear buffer
+      socket.buffer.clear();
+      
+      // mark socket idle if no pending requests
+      if(client.requests.length == 0)
+      {
+         client.idle.push(socket);
+      }
+      // handle pending request
+      else
+      {
+         socket.options = client.requests.shift();
+         _doRequest(socket);
+      }
    };
    
    /**
@@ -72,23 +121,26 @@
          socketPool: sp,
          // queue of requests to service
          requests: [],
+         // all sockets
+         sockets: [],
          // idle sockets
          idle: []
       };
       
       // create sockets
-      for(var i = 0; i < connections; i++)
+      for(var i = 0; i < options.connections; i++)
       {
          // FIXME: wrap socket for TLS?
          var socket = sp.createSocket({
             connected: function(e)
             {
                socket.options.connected(e);
-               if(socket.send(socket.options.request.toString()))
+               var request = socket.options.request;
+               if(socket.send(request.toString()))
                {
-                  if(socket.options.request.body)
+                  if(request.body)
                   {
-                     socket.send(socket.options.request.body);
+                     socket.send(request.body);
                   }
                }
             },
@@ -98,14 +150,16 @@
             },
             data: function(e)
             {
+               // receive all bytes available
                var response = socket.options.response;
                var bytes = socket.receive(e.bytesAvailable);
-               if(bytes)
+               if(bytes !== null)
                {
-                  response.buffer.putBytes(bytes);
+                  // receive header and then body
+                  socket.buffer.putBytes(bytes);
                   if(!response.headerReceived)
                   {
-                     response.readHeader(response.buffer);
+                     response.readHeader(socket.buffer);
                      if(response.headerReceived)
                      {
                         socket.options.headerReady({
@@ -116,7 +170,7 @@
                   }
                   if(response.headerReceived && !response.bodyReceived)
                   {
-                     response.readBody(response.buffer);
+                     response.readBody(socket.buffer);
                   }
                   if(response.bodyReceived)
                   {
@@ -130,7 +184,7 @@
                         // close socket
                         socket.close();
                      }
-                     client.idle.push(socket);
+                     _handleNextRequest(client, socket);
                   }
                }
             },
@@ -144,33 +198,13 @@
                   response: socket.options.response
                });
                socket.close();
-               client.idle.push(socket);
+               _handleNextRequest(client, socket);               
             }
          });
+         socket.buffer = util.createBuffer();
+         client.sockets.push(socket);
          client.idle.push(socket);
       }
-      
-      /**
-       * Connects and sends a request.
-       *
-       * @param socket the socket to use.
-       */
-      var _doRequest = function(socket)
-      {
-         // FIXME: handle https scheme
-         // if(client.url.scheme === 'https')
-         
-         if(socket.isConnected)
-         {
-            // already connected
-            socket.connected();
-         }
-         else
-         {
-            // connect
-            socket.connect(client.url);
-         }
-      };
       
       /**
        * Sends a request.
@@ -178,6 +212,7 @@
        * @param options:
        *           request: the request to send.
        *           connected: a callback for when the connection is open.
+       *           closed: a callback for when the connection is closed.
        *           headerReady: a callback for when the response header arrives.
        *           bodyReady: a callback for when the response body arrives.
        *           error: a callback for if an error occurs.
@@ -186,6 +221,7 @@
       {
          // set default dummy handlers
          options.connected = options.connected || function(){};
+         options.closed = options.close || function(){};
          options.headerReady = options.headerReady || function(){};
          options.bodyReady = options.bodyReady || function(){};
          options.error = options.error || function(){};
@@ -193,22 +229,40 @@
          // create response
          options.response = http.createResponse();
          //options.response.flashApi = client.socketPool.flashApi;
-         options.response.buffer = util.createBuffer();
          //options.request.flashApi = client.socketPool.flashApi;
          
          // queue request options if there are no idle sockets
-         if(idle.length == 0)
+         if(client.idle.length == 0)
          {
             client.requests.push(options);
          }
          // use an idle socket
          else
          {
-            var socket = idle.pop();
+            var socket = client.idle.pop();
             socket.options = options;
             _doRequest(socket);
          }
       };
+      
+      /**
+       * Destroys this client.
+       */
+      client.destroy = function()
+      {
+         // clear pending requests, close and destroy sockets
+         client.requests = [];
+         for(var i = 0; i < client.sockets.length; i++)
+         {
+            client.sockets[i].close();
+            client.sockets[i].destroy();
+         }
+         client.socketPool = null;
+         client.sockets = [];
+         client.idle = [];
+      };
+      
+      return client;
    };
    
    /**
@@ -295,11 +349,6 @@
       {
          request.setField('Accept', '*/*');
       }
-      if(request.flashApi !== null &&
-         request.getField('Accept-Encoding' === null))
-      {
-         request.setField('Accept-Encoding', 'deflate');
-      }
       
       /**
        * Converts an http request into a string that can be sent as a
@@ -317,6 +366,13 @@
           Accept: image/gif, text/html
           User-Agent: Mozilla 4.0
           */
+         
+         // add Accept-Encoding if not specified
+         if(request.flashApi !== null &&
+            request.getField('Accept-Encoding') === null)
+         {
+            request.setField('Accept-Encoding', 'deflate');
+         }
          
          // if the body isn't null, deflate it by default
          if(request.flashApi !== null && request.body !== null &&

@@ -86,7 +86,6 @@
          {
             if(e.id in sp.sockets)
             {
-               console.log('event type', e.type);
                // get handler function
                var f;
                switch(e.type)
@@ -148,6 +147,7 @@
          // create javascript socket wrapper
          var socket =
          {
+            id: id,
             // set handlers
             connected: options.connected || function(e){},
             closed: options.closed || function(e){},

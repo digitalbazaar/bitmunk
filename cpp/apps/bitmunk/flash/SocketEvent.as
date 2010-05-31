@@ -29,6 +29,7 @@ package
       {
          super(type, false, false);
          this.socket = socket;
+         this.message = message;
       }
    }
 }

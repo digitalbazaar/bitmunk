@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * @author Dave Longley
  */
@@ -18,12 +18,13 @@ package
     */
    public class SocketPool extends Sprite
    {
-      import flash.errors.IOError;
       import flash.events.Event;
+      import flash.events.EventDispatcher;
+	  import flash.errors.IOError;
       import flash.events.IOErrorEvent;
       import flash.events.ProgressEvent;
       import flash.events.SecurityErrorEvent;
-      import flash.events.EventDispatcher;
+      import flash.events.TextEvent;
       import flash.external.ExternalInterface;
       import flash.system.Security;
       import flash.utils.ByteArray;
@@ -189,8 +190,9 @@ package
       private function handleEvent(e:Event):void
       {
          // dispatch socket event
+         var message:String = (e is TextEvent) ? (e as TextEvent).text : null;
          mEventDispatcher.dispatchEvent(
-            new SocketEvent(e.type, e.target as PooledSocket));
+            new SocketEvent(e.type, e.target as PooledSocket, message));
       }
       
       /**
@@ -479,8 +481,18 @@ package
                   var e:Object = new Object();
                   e.id = event.socket ? event.socket.id : 0;
                   e.type = eventType;
-                  e.bytesAvailable = event.socket ?
-                     event.socket.bytesAvailable : 0;
+                  if(event.socket && event.socket.connected)
+                  {
+                     e.bytesAvailable = event.socket.bytesAvailable;
+                  }
+                  else
+                  {
+                     e.bytesAvailable = 0;
+                  }
+                  if(event.message)
+                  {
+                     e.message = event.message;
+                  }
                   
                   // send event to javascript
                   ExternalInterface.call(callback, e);
