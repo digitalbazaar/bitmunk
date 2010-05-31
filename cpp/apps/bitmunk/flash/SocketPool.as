@@ -382,11 +382,11 @@ package
        * @param id the ID of the Socket.
        * @param count the maximum number of bytes to receive.
        *
-       * @return the received bytes, null on error.
+       * @return the received bytes 'bytes' in an object, set to null on error.
        */
-      private function receive(id:String, count:uint):String
+      private function receive(id:String, count:uint):Object
       {
-      	 var rval:String = null;
+      	 var rval:Object = {bytes: null};
          log("receive(" + id + "," + count + ")");
          
          if(id in mSocketMap)
@@ -401,7 +401,7 @@ package
             try
             {
                // read bytes from socket
-               rval = s.readUTFBytes(count);
+               rval.bytes = s.readUTFBytes(count);
             }
             catch(e:IOError)
             {
@@ -513,15 +513,16 @@ package
        * 
        * @param data the data to deflate.
        * 
-       * @return the deflated data.
+       * @return the deflated data 'bytes' in an object.
        */
-      private function deflate(data:String):String
+      private function deflate(data:String):Object
       {
          var b:ByteArray = new ByteArray();
          b.writeUTFBytes(data);
          b.compress();
          b.position = 0;
-         return b.readUTFBytes(b.length);
+         var obj:Object = new Object();
+         return {bytes: b.readUTFBytes(b.length)};
       }
       
       /**
@@ -529,15 +530,15 @@ package
        * 
        * @param data the data to inflate.
        * 
-       * @return the inflated data.
+       * @return the inflated data 'bytes' in an object.
        */
-      private function inflate(data:String):String
+      private function inflate(data:String):Object
       {
          var b:ByteArray = new ByteArray();
          b.writeUTFBytes(data);
          b.uncompress();
          b.position = 0;
-         return b.readUTFBytes(b.length);
+         return {bytes: b.readUTFBytes(b.length)};
       }
    }
 }

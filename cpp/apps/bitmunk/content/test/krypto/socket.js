@@ -204,7 +204,7 @@
           */
          socket.send = function(bytes)
          {
-            api.send(id, bytes);
+            return api.send(id, bytes);
          };
          
          /**
@@ -225,7 +225,7 @@
           */
          socket.receive = function(count)
          {
-            return api.receive(id, count);
+            return api.receive(id, count).bytes;
          };
          
          /**

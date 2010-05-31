@@ -59,8 +59,10 @@
       function client_send()
       {
          var request = http.createRequest({
-            method: 'GET',
-            path: '/api/3.0/system/test/echo'
+            method: 'POST',
+            path: '/api/3.0/system/test/echo',
+            body: 'echo=foo',
+            headers: [{'Content-Type': 'application/x-www-form-urlencoded'}]
          });
          
          client.send({

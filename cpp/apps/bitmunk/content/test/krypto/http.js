@@ -40,6 +40,9 @@
       // FIXME: handle https scheme
       // if(client.url.scheme === 'https')
       
+      // socket no longer idle
+      socket.idle = false;
+      
       if(socket.isConnected())
       {
          // already connected
@@ -63,19 +66,23 @@
     */
    var _handleNextRequest = function(client, socket)
    {
-      // clear buffer
-      socket.buffer.clear();
-      
-      // mark socket idle if no pending requests
-      if(client.requests.length == 0)
+      if(!socket.idle)
       {
-         client.idle.push(socket);
-      }
-      // handle pending request
-      else
-      {
-         socket.options = client.requests.shift();
-         _doRequest(socket);
+         // clear buffer
+         socket.buffer.clear();
+         
+         // mark socket idle if no pending requests
+         if(client.requests.length == 0)
+         {
+            socket.idle = true;
+            client.idle.push(socket);
+         }
+         // handle pending request
+         else
+         {
+            socket.options = client.requests.shift();
+            _doRequest(socket);
+         }
       }
    };
    
@@ -147,6 +154,7 @@
             closed: function(e)
             {
                socket.options.closed(e);
+               _handleNextRequest(client, socket);
             },
             data: function(e)
             {
@@ -201,6 +209,7 @@
                _handleNextRequest(client, socket);               
             }
          });
+         socket.idle = true;
          socket.buffer = util.createBuffer();
          client.sockets.push(socket);
          client.idle.push(socket);
@@ -228,8 +237,8 @@
          
          // create response
          options.response = http.createResponse();
-         //options.response.flashApi = client.socketPool.flashApi;
-         //options.request.flashApi = client.socketPool.flashApi;
+         options.response.flashApi = client.socketPool.flashApi;
+         options.request.flashApi = client.socketPool.flashApi;
          
          // queue request options if there are no idle sockets
          if(client.idle.length == 0)
@@ -279,7 +288,7 @@
          {
             // normalize field name, trim value
             header.fields[_normalize(name)] =
-               [value.replace(/^\s*/, '').replace(/\s*$/, '')];
+               [('' + value).replace(/^\s*/, '').replace(/\s*$/, '')];
          },
          appendField: function(name, value)
          {
@@ -289,7 +298,7 @@
                header.fields[name] = [];
             }
             header.fields[name].push(
-               value.replace(/^\s*/, '').replace(/\s*$/, ''));
+               ('' + value).replace(/^\s*/, '').replace(/\s*$/, ''));
          },
          getField: function(name, index)
          {
@@ -371,7 +380,8 @@
          if(request.flashApi !== null &&
             request.getField('Accept-Encoding') === null)
          {
-            request.setField('Accept-Encoding', 'deflate');
+            // FIXME: disabled due to unexplained flash security error
+            //request.setField('Accept-Encoding', 'deflate');
          }
          
          // if the body isn't null, deflate it by default
@@ -381,7 +391,7 @@
          {
             // use flash to compress data
             request.setField('Content-Encoding', 'deflate');
-            request.body = request.flashApi.deflate(request.body);
+            request.body = request.flashApi.deflate(request.body).bytes;
             request.bodyDeflated = true;
             request.setField('Content-Length', request.body.length);
          }
@@ -684,7 +694,7 @@
             response.getField('Content-Encoding') === 'deflate')
          {
             // inflate using flash api
-            response.body = response.flashApi.inflate(response.body);
+            response.body = response.flashApi.inflate(response.body).bytes;
          }
          
          return response.bodyReceived;
