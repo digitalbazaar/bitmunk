@@ -14,14 +14,18 @@ package
    {
       // the associated socket
       public var socket:PooledSocket;
+      // an associated message
+      public var message:String;
       
       /**
        * Creates a new SocketEvent.
        * 
        * @param type the type of event.
        * @param socket the associated PooledSocket.
+       * @param message an associated message.
        */
-      public function SocketEvent(type:String, socket:PooledSocket)
+      public function SocketEvent(
+         type:String, socket:PooledSocket, message:String = null)
       {
          super(type, false, false);
          this.socket = socket;

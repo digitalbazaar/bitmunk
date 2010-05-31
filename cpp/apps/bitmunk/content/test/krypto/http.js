@@ -17,51 +17,188 @@
          function(a){return a.toUpperCase();});
    };
    
-   // FIXME: move to member of http client
-   // private var for flash with inflate/deflate calls
-   var _api = null;
+   // parses the scheme, host, and port from a url
+   var _parseUrl = function(url)
+   {
+      var url = {};
+      var regex = /^(https?):\/\/([^:&^\/]*):?(\d*)(.*)$/g;
+      str.replace(regex, function(full, scheme, host, port) {
+         url.scheme = scheme;
+         url.host = host;
+         url.port = port || (scheme === 'https' ? 443 : 80);
+      });
+      return url;
+   };
    
    /**
     * Creates an http client that uses krypto.net sockets as a backend and
     * krypto.tls for security.
     * 
     * @param options:
-    *           flashId: the dom ID of the flash socket pool element to use.
+    *           url: the url to connect to (scheme://host:port).
+    *           socketPool: the flash socket pool to use.
     *           connections: number of connections to use to handle requests.
-    *           init: true to initialize the flash, false not to (default).
-    *           policyPort: the default flash policy port to use.
-    *           msie: true if the browser is IE, false if not.
+    * 
+    * @return the client.
     */
    http.createClient = function(options)
    {
-      // local alias for net
-      var net = window.krypto.net;
-      
-      // initialize socket pool if appropriate
-      if(options.init === true)
+      // get scheme, host, and port from url
+      var url = _parseUrl(options.url);
+      if(!url.scheme || !url.host || !url.port)
       {
-         net.init(options);
+         throw {
+            message: 'Invalid url.',
+            details: {
+               url: options.url
+            }
+         };
       }
       
+      // local aliases
+      var net = window.krypto.net;
+      var util = window.krypto.util;
+      
       // create client
+      var sp = options.socketPool;
       var client =
       {
-         flashId: options.flashId,
-         api: net.socketPools[options.flashId].api
+         // url
+         url: url,
+         // socket pool
+         socketPool: sp,
+         // queue of requests to service
+         requests: [],
+         // idle sockets
+         idle: [],
+         // busy sockets
+         busy: []
       };
       
-      // create sockets for connections
-   };
-   
-   /**
-    * Initializes flash support for inflate and deflate.
-    * 
-    * @param flashId the dom ID of the flash element with an api with inflate
-    *           and deflate calls.
-    */
-   http.initFlashDeflateSupport = function(flashId)
-   {
-      _api = document.getElementById(flashId);
+      // create sockets
+      for(var i = 0; i < connections; i++)
+      {
+         // FIXME: wrap socket for TLS?
+         var socket = sp.createSocket({
+            connected: function(e)
+            {
+               socket.options.connected(e);
+               if(socket.send(socket.options.request.toString()))
+               {
+                  if(socket.options.request.body)
+                  {
+                     socket.send(socket.options.request.body);
+                  }
+               }
+            },
+            closed: function(e)
+            {
+               socket.options.closed(e);
+            },
+            data: function(e)
+            {
+               var response = socket.options.response;
+               var bytes = socket.receive(e.bytesAvailable);
+               if(bytes)
+               {
+                  response.buffer.putBytes(bytes);
+                  if(!response.headerReceived)
+                  {
+                     response.readHeader(response.buffer);
+                     if(response.headerReceived)
+                     {
+                        socket.options.headerReady({
+                           request: socket.options.request,
+                           response: socket.options.response
+                        });
+                     }
+                  }
+                  if(response.headerReceived && !response.bodyReceived)
+                  {
+                     response.readBody(response.buffer);
+                  }
+                  if(response.bodyReceived)
+                  {
+                     socket.options.bodyReady({
+                        request: socket.options.request,
+                        response: socket.options.response
+                     });
+                  }
+               }
+            },
+            error: function(e)
+            {
+               // do error callback, include request
+               socket.options.error({
+                  type: e.type,
+                  message: e.message,
+                  request: socket.options.request,
+                  response: socket.options.response
+               });
+            }
+         });
+         client.idle.push(socket);
+      }
+      
+      /**
+       * Connects and sends a request.
+       *
+       * @param socket the socket to use.
+       */
+      var _doRequest = function(socket)
+      {
+         // FIXME: handle https scheme
+         // if(client.url.scheme === 'https')
+         
+         if(socket.isConnected)
+         {
+            // already connected
+            socket.connected();
+         }
+         else
+         {
+            // connect
+            socket.connect(client.url);
+         }
+      };
+      
+      /**
+       * Sends a request.
+       * 
+       * @param options:
+       *           request: the request to send.
+       *           connected: a callback for when the connection is open.
+       *           headerReady: a callback for when the response header arrives.
+       *           bodyReady: a callback for when the response body arrives.
+       *           error: a callback for if an error occurs.
+       */
+      client.send = function(options)
+      {
+         // set default dummy handlers
+         options.connected = options.connected || function(){};
+         options.headerReady = options.connected || function(){};
+         options.bodyReady = options.connected || function(){};
+         options.error = options.connected || function(){};
+         
+         // create response
+         options.response = http.createResponse();
+         //options.response.flashApi = client.socketPool.flashApi;
+         options.response.buffer = util.createBuffer();
+         //options.request.flashApi = client.socketPool.flashApi;
+         
+         // queue request options if there are no idle sockets
+         if(idle.length == 0)
+         {
+            client.requests.push(options);
+         }
+         // use an idle socket
+         else
+         {
+            var socket = idle.pop();
+            socket.options = options;
+            _doRequest(socket);
+         }
+      };
    };
    
    /**
@@ -127,6 +264,7 @@
       request.path = options.path || null;
       request.body = options.body || null;
       request.bodyDeflated = false;
+      request.flashApi = null;
       
       // add custom headers
       var headers = options.headers || [];
@@ -147,7 +285,8 @@
       {
          request.setField('Accept', '*/*');
       }
-      if(_api !== null && request.getField('Accept-Encoding' === null))
+      if(request.flashApi !== null &&
+         request.getField('Accept-Encoding' === null))
       {
          request.setField('Accept-Encoding', 'deflate');
       }
@@ -170,13 +309,13 @@
           */
          
          // if the body isn't null, deflate it by default
-         if(_api !== null && request.body !== null &&
+         if(request.flashApi !== null && request.body !== null &&
             request.getField('Content-Encoding') === null &&
             !request.bodyDeflated)
          {
             // use flash to compress data
             request.setField('Content-Encoding', 'deflate');
-            request.body = api.deflate(request.body);
+            request.body = request.flashApi.deflate(request.body);
             request.bodyDeflated = true;
             request.setField('Content-Length', request.body.length);
          }
@@ -229,6 +368,7 @@
       response.body = null;
       response.headerReceived = false;
       response.bodyReceived = false;
+      response.flashApi = null;
       
       /**
        * Reads a line that ends in CRLF from a byte buffer.
@@ -473,12 +613,12 @@
             response.bodyReceived = true;
          }
          
-         if(_api !== null &&
+         if(response.flashApi !== null &&
             response.bodyReceived && response.body !== null &&
             response.getField('Content-Encoding') === 'deflate')
          {
             // inflate using flash api
-            response.body = _api.inflate(response.body);
+            response.body = response.flashApi.inflate(response.body);
          }
          
          return response.bodyReceived;

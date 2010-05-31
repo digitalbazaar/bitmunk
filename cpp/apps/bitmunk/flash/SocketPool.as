@@ -85,6 +85,10 @@ package
                // add a callback for subscribing to socket events
                ExternalInterface.addCallback("subscribe", subscribe);
                
+               // add callbacks for deflate/inflate
+               ExternalInterface.addCallback("deflate", deflate);
+               ExternalInterface.addCallback("inflate", inflate);
+               
                // socket pool is now ready
                ExternalInterface.call("sp.ready");
             }
@@ -329,9 +333,12 @@ package
        *
        * @param id the ID of the Socket.
        * @param bytes the string of bytes to write.
+       *
+       * @return true on success, false on failure. 
        */
-      private function send(id:String, bytes:String):void
+      private function send(id:String, bytes:String):Boolean
       {
+         var rval:Boolean = false;
          log("send(" + id + ")");
          
          if(id in mSocketMap)
@@ -342,15 +349,15 @@ package
             {
                s.writeUTFBytes(bytes);
                s.flush();
+               rval = true;
             }
             catch(e:IOError)
             {
                log(e);
                
                // dispatch IO error event
-               mEventDispatcher.dispatchEvent(new IOErrorEvent(
-                  IOErrorEvent.IO_ERROR,
-                  false, false, e.message));
+               mEventDispatcher.dispatchEvent(new SocketEvent(
+                  IOErrorEvent.IO_ERROR, s, e.message));
                if(s.connected)
                {
                   s.close();
@@ -364,6 +371,7 @@ package
          }
          
          log("send(" + id + ") done");
+         return rval;
       }
       
       /**
@@ -398,9 +406,8 @@ package
                log(e);
                
                // dispatch IO error event
-               mEventDispatcher.dispatchEvent(new IOErrorEvent(
-                  IOErrorEvent.IO_ERROR,
-                  false, false, e.message));
+               mEventDispatcher.dispatchEvent(new SocketEvent(
+                  IOErrorEvent.IO_ERROR, s, e.message));
                if(s.connected)
                {
                   s.close();
@@ -470,9 +477,10 @@ package
                   
                   // build event for javascript
                   var e:Object = new Object();
-                  e.id = event.socket.id;
+                  e.id = event.socket ? event.socket.id : 0;
                   e.type = eventType;
-                  e.bytesAvailable = event.socket.bytesAvailable;
+                  e.bytesAvailable = event.socket ?
+                     event.socket.bytesAvailable : 0;
                   
                   // send event to javascript
                   ExternalInterface.call(callback, e);
@@ -486,6 +494,38 @@ package
          }
          
          log("subscribe(" + eventType + "," + callback + ") done");
+      }
+      
+      /**
+       * Deflates the given data.
+       * 
+       * @param data the data to deflate.
+       * 
+       * @return the deflated data.
+       */
+      private function deflate(data:String):String
+      {
+         var b:ByteArray = new ByteArray();
+         b.writeUTFBytes(data);
+         b.compress();
+         b.position = 0;
+         return b.readUTFBytes(b.length);
+      }
+      
+      /**
+       * Inflates the given data.
+       * 
+       * @param data the data to inflate.
+       * 
+       * @return the inflated data.
+       */
+      private function inflate(data:String):String
+      {
+         var b:ByteArray = new ByteArray();
+         b.writeUTFBytes(data);
+         b.uncompress();
+         b.position = 0;
+         return b.readUTFBytes(b.length);
       }
    }
 }
