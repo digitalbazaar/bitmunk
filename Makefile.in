@@ -47,7 +47,7 @@ INSTALL_APPLICATIONS := \
 INSTALL_BASE_LIBS := \
 	dist/lib/libbmcommon.so \
 	dist/lib/libbmprotocol.so \
-   dist/lib/libbmapp.so \
+	dist/lib/libbmapp.so \
 	dist/lib/libbmnode.so
 
 INSTALL_BASE_CONFIGS := \
