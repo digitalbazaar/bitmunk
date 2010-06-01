@@ -457,7 +457,8 @@ static PRInt32 _startBitmunk(
 
       We must escape the first 2 dots, but not the last one.
    */
-   string nodePortFileKey = "bitmunk\\.system\\.System.nodePortFile";
+   string nodePortFileOption = "bitmunk\\.system\\.System.nodePortFile=";
+   nodePortFileOption.append(nodePortFile);
 
    // prepend keyword to resource path
    resourcePath.insert(0, "RESOURCE_PATH=");
@@ -480,8 +481,7 @@ static PRInt32 _startBitmunk(
    // quote parameter values
    _quote(resourcePath);
    _quote(packageConfigFile);
-   _quote(nodePortFileKey);
-   _quote(nodePortFile);
+   _quote(nodePortFileOption);
    _quote(logFile);
 #endif
    if(pid == 0)
@@ -492,8 +492,7 @@ static PRInt32 _startBitmunk(
          (char*)BITMUNK_BIN,
          (char*)"--config-keyword", (char*)resourcePath.c_str(),
          (char*)"--config-include", (char*)packageConfigFile.c_str(),
-         (char*)"--option", (char*)nodePortFileKey.c_str(),
-         (char*)nodePortFile.c_str(),
+         (char*)"--option", (char*)nodePortFileOption.c_str(),
          (char*)"--log-home", (char*)logFile.c_str(),
          (NULL)
       };
