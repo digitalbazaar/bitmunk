@@ -202,7 +202,6 @@ if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
    BITMUNK_WEBUI_PLUGINS_DIR="$BITMUNK_DIR/cpp/apps/bitmunk/plugins"
    BITMUNK_PURCHASE_TEMP_DIR="tmp"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="downloads"
-   BITMUNK_PACKAGE_CONFIG=""
    BITMUNK_SYSTEM_CONFIG_DIR="$BITMUNK_DIR/configs"
    BITMUNK_SYSTEM_CONFIG="$BITMUNK_DIR/configs/dev.config"
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
@@ -215,7 +214,6 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
    BITMUNK_PURCHASE_TEMP_DIR="tmp"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="downloads"
-   BITMUNK_PACKAGE_CONFIG="{RESOURCE_PATH}/configs/default.config"
    BITMUNK_SYSTEM_CONFIG_DIR="$BITMUNK_DIR/configs"
    BITMUNK_SYSTEM_CONFIG="$BITMUNK_DIR/configs/dev.config"
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
@@ -240,7 +238,6 @@ if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
    BITMUNK_WEBUI_PLUGINS_DIR="NOT_USED"
    BITMUNK_PURCHASE_TEMP_DIR="NOT_USED"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="NOT_USED"
-   BITMUNK_PACKAGE_CONFIG=""
    BITMUNK_SYSTEM_CONFIG_DIR="$sysconfdir/bitmunk3/conf.d"
    BITMUNK_SYSTEM_CONFIG="$sysconfdir/bitmunk3/system.config"
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
@@ -252,7 +249,6 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
    BITMUNK_PURCHASE_TEMP_DIR="tmp"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="~/Music/Bitmunk"
-   BITMUNK_PACKAGE_CONFIG="{RESOURCE_PATH}/configs/default.config"
    BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
    BITMUNK_SYSTEM_CONFIG="/etc/bitmunk3/system.config"
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
@@ -267,7 +263,6 @@ if test "x$BUILD_FOR_MACOS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
    BITMUNK_WEBUI_PLUGINS_DIR="$BITMUNK_DIR/cpp/apps/bitmunk/plugins"
    BITMUNK_PURCHASE_TEMP_DIR="/tmp/dev/tmp"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="/tmp/dev/downloads"
-   BITMUNK_PACKAGE_CONFIG=""
    BITMUNK_SYSTEM_CONFIG_DIR="$BITMUNK_DIR/configs"
    BITMUNK_SYSTEM_CONFIG="$BITMUNK_DIR/configs/dev.config"
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
@@ -279,7 +274,6 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
    BITMUNK_PURCHASE_TEMP_DIR="tmp"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="downloads"
-   BITMUNK_PACKAGE_CONFIG=""
    BITMUNK_SYSTEM_CONFIG_DIR="$BITMUNK_DIR/configs"
    BITMUNK_SYSTEM_CONFIG="$BITMUNK_DIR/configs/dev.config"
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
@@ -291,7 +285,6 @@ if test "x$BUILD_FOR_MACOS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
    BITMUNK_WEBUI_PLUGINS_DIR="NOT_USED"
    BITMUNK_PURCHASE_TEMP_DIR="NOT_USED"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="NOT_USED"
-   BITMUNK_PACKAGE_CONFIG=""
    BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
    BITMUNK_SYSTEM_CONFIG="/etc/bitmunk3/system.config"
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
@@ -303,7 +296,6 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
    BITMUNK_PURCHASE_TEMP_DIR="tmp"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="~/Music/Bitmunk"
-   BITMUNK_PACKAGE_CONFIG="{RESOURCE_PATH}/configs/default.config"
    BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
    BITMUNK_SYSTEM_CONFIG="/etc/bitmunk3/system.config"
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
@@ -318,7 +310,6 @@ if test "x$BUILD_FOR_WINDOWS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
    BITMUNK_WEBUI_PLUGINS_DIR="../../plugins"
    BITMUNK_PURCHASE_TEMP_DIR="../../tmp"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="../../downloads"
-   BITMUNK_PACKAGE_CONFIG=""
    BITMUNK_SYSTEM_CONFIG="NOT_USED"
    BITMUNK_SYSTEM_USER_CONFIG="NOT_USED"
 if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
@@ -329,7 +320,6 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
    BITMUNK_PURCHASE_TEMP_DIR="tmp"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="downloads"
-   BITMUNK_PACKAGE_CONFIG="configs/dev.config"
    # NOTE: See note about this var in Win/Rel/FF section below.
    #BITMUNK_SYSTEM_CONFIG="C:/Program Files/Bitmunk3/configs/system.config"
    BITMUNK_SYSTEM_CONFIG=""
@@ -342,7 +332,6 @@ if test "x$BUILD_FOR_WINDOWS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
    BITMUNK_WEBUI_PLUGINS_DIR="NOT_USED"
    BITMUNK_PURCHASE_TEMP_DIR="NOT_USED"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="NOT_USED"
-   BITMUNK_PACKAGE_CONFIG="NOT_USED"
    BITMUNK_SYSTEM_CONFIG="NOT_USED"
    BITMUNK_SYSTEM_USER_CONFIG="NOT_USED"
 if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
@@ -353,7 +342,6 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
    BITMUNK_PURCHASE_TEMP_DIR="tmp"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="~/My Documents/My Music/Bitmunk"
-   BITMUNK_PACKAGE_CONFIG="{RESOURCE_PATH}/configs/default.config"
    # NOTE: Not loading a system default file on Windows.
    # In the future, change "C:" to a magic %%-type of var.
    #BITMUNK_SYSTEM_CONFIG="C:/Program Files/Bitmunk3/configs/system.config"
@@ -773,7 +761,6 @@ AC_SUBST(STRIP)
 AC_SUBST(STRIP_FLAGS)
 
 # Directory location variables
-AC_SUBST(BITMUNK_PACKAGE_CONFIG)
 AC_SUBST(BITMUNK_SYSTEM_CONFIG_DIR)
 AC_SUBST(BITMUNK_SYSTEM_CONFIG)
 AC_SUBST(BITMUNK_SYSTEM_USER_CONFIG)
@@ -893,11 +880,6 @@ AC_OUTPUT
 # Dump the path configuration
 echo -e "\n--------- Bitmunk Path Configuration -----------"
 echo "Modules dir       : $BITMUNK_MODULES_DIR"
-if test "x$BITMUNK_PACKAGE_CONFIG" = "x"; then
-echo "Package config    : (empty)"
-else
-echo "Package config    : $BITMUNK_PACKAGE_CONFIG"
-fi
 echo "System config     : $BITMUNK_SYSTEM_CONFIG"
 echo "System user config: $BITMUNK_SYSTEM_USER_CONFIG"
 echo "Home dir          : $BITMUNK_HOME_DIR"

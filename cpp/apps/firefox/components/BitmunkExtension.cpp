@@ -434,18 +434,20 @@ inline static PRInt32 _execve(
  * @param libraryPath the environment library path.
  * @param homePath the environment home path.
  * @param resourcePath the config system resource path option.
- * @param packageConfigFile the config system package config option.
- * @param nodePortFile the config system node port file option.
- * @param logFile the config system log file option.
  *
  * @return the pid of the new bitmunk process or 0 on error.
  */
 static PRInt32 _startBitmunk(
    string& bitmunkApp, string& libraryPath, string& homePath,
-   string& resourcePath, string& packageConfigFile, string& nodePortFile,
-   string& logFile)
+   string& resourcePath)
 {
    PRInt32 rval = 0;
+
+   /* Setup the command line options to be passed into the Bitmunk app. These
+      can have all of their file separators normalized to '/'. */
+   string packageConfigFile("{RESOURCE_PATH}/configs/default.config");
+   string nodePortFile("{RESOURCE_PATH}/" NODE_PORT_FILE);
+   string logFile("bitmunk.log");
 
    /* This is the path to the node port file config key, a '.' is a
       separator between levels in our config tree, and since this value
@@ -459,9 +461,6 @@ static PRInt32 _startBitmunk(
    */
    string nodePortFileOption = "bitmunk\\.system\\.System.nodePortFile=";
    nodePortFileOption.append(nodePortFile);
-
-   // prepend keyword to resource path
-   resourcePath.insert(0, "RESOURCE_PATH=");
 
 // linux/apple specific implementation
 #if defined(__linux__) || defined(__APPLE__)
@@ -490,8 +489,8 @@ static PRInt32 _startBitmunk(
       char* argv[] =
       {
          (char*)BITMUNK_BIN,
+         (char*)"--config", (char*)packageConfigFile.c_str(),
          (char*)"--config-keyword", (char*)resourcePath.c_str(),
-         (char*)"--config-include", (char*)packageConfigFile.c_str(),
          (char*)"--option", (char*)nodePortFileOption.c_str(),
          (char*)"--log-home", (char*)logFile.c_str(),
          (NULL)
@@ -667,14 +666,9 @@ PRInt32 nsBitmunkExtension::launchBitmunkApplication(nsCString pluginDir)
    string homePath("HOME=");
    homePath.append(getenv(ENV_HOME));
 
-   /* Setup the command line options to be passed into the Bitmunk app. These
-      can have all of their file separators normalized to '/'.
-    */
-   // set the resource path
-   string resourcePath(pluginDir.get());
-   string packageConfigFile("{RESOURCE_PATH}/configs/default.config");
-   string nodePortFile("{RESOURCE_PATH}/" NODE_PORT_FILE);
-   string logFile("bitmunk.log");
+   // set the resource path keyword
+   string resourcePath("RESOURCE_PATH=");
+   resourcePath.append(pluginDir.get());
 
    // make bitmunk app executable (fix firefox 3.6.0 bug)
    nsCOMPtr<nsILocalFile> file;
@@ -690,9 +684,7 @@ PRInt32 nsBitmunkExtension::launchBitmunkApplication(nsCString pluginDir)
    file->SetPermissions(0755);
 
    // start bitmunk application
-   rval = _startBitmunk(
-      bitmunkApp, libraryPath, homePath,
-      resourcePath, packageConfigFile, nodePortFile, logFile);
+   rval = _startBitmunk(bitmunkApp, libraryPath, homePath, resourcePath);
 
    gStartupInProcess = false;
 
