@@ -148,7 +148,7 @@
                {
                   out += request.body;
                }
-               socket.send(util.encode64(out));
+               socket.send(out);
             },
             closed: function(e)
             {
@@ -392,8 +392,7 @@
             !request.bodyDeflated)
          {
             // use flash to compress data
-            request.body = util.decode64(
-               request.flashApi.deflate(util.encode64(request.body)).rval);
+            request.body = util.deflate(request.flashApi, request.body);
             request.bodyDeflated = true;
             request.setField('Content-Encoding', 'deflate');
             request.setField('Content-Length', request.body.length);
@@ -697,8 +696,7 @@
             response.getField('Content-Encoding') === 'deflate')
          {
             // inflate using flash api
-            response.body = util.decode64(
-               response.flashApi.inflate(util.encode64(response.body)).rval);
+            response.body = util.inflate(response.flashApi, response.body);
          }
          
          return response.bodyReceived;

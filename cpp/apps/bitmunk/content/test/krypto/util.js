@@ -409,6 +409,33 @@
    };
    
    /**
+    * Deflates the given data using a flash interface.
+    * 
+    * @param api the flash interface.
+    * @param bytes the data.
+    * 
+    * @return the deflated data as a string.
+    */
+   util.deflate = function(api, bytes)
+   {
+      return util.decode64(api.deflate(util.encode64(bytes)).rval);
+   };
+   
+   /**
+    * Inflates the given data using a flash interface.
+    * 
+    * @param api the flash interface.
+    * @param bytes the data.
+    * 
+    * @return the inflated data as a string, null on error.
+    */
+   util.inflate = function(api, bytes)
+   {
+      var rval = api.inflate(util.encode64(bytes)).rval;
+      return (rval === null) ? null : util.decode64(rval);
+   };
+   
+   /**
     * The crypto namespace and util API.
     */
    window.krypto = window.krypto || {};
