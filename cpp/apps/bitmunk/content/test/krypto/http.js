@@ -386,10 +386,10 @@
             request.setField('Accept-Encoding', 'deflate');
          }
          
-         // if the body isn't null, deflate it by default
+         // if the body isn't null, deflate it if its larger than 100 bytes
          if(request.flashApi !== null && request.body !== null &&
             request.getField('Content-Encoding') === null &&
-            !request.bodyDeflated)
+            !request.bodyDeflated && request.body.length > 100)
          {
             // use flash to compress data
             request.body = util.deflate(request.flashApi, request.body);
