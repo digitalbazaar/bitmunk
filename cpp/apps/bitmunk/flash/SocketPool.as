@@ -28,6 +28,8 @@ package
       import flash.external.ExternalInterface;
       import flash.system.Security;
       import flash.utils.ByteArray;
+      import mx.utils.Base64Decoder;
+      import mx.utils.Base64Encoder;
       
       // a map of ID to Socket
       private var mSocketMap:Object;
@@ -334,7 +336,7 @@ package
        * Writes bytes to a Socket.
        *
        * @param id the ID of the Socket.
-       * @param bytes the string of bytes to write.
+       * @param bytes the string of base64-encoded bytes to write.
        *
        * @return true on success, false on failure. 
        */
@@ -349,7 +351,10 @@ package
             var s:PooledSocket = mSocketMap[id];
             try
             {
-               s.writeUTFBytes(bytes);
+               var b64:Base64Decoder = new Base64Decoder();
+               b64.decode(bytes);
+               var b:ByteArray = b64.toByteArray();
+               s.writeBytes(b, 0, b.length);
                s.flush();
                rval = true;
             }
@@ -382,11 +387,12 @@ package
        * @param id the ID of the Socket.
        * @param count the maximum number of bytes to receive.
        *
-       * @return the received bytes 'bytes' in an object, set to null on error.
+       * @return an object with 'rval' set to the received bytes,
+       *         base64-encoded, or set to null on error.
        */
       private function receive(id:String, count:uint):Object
       {
-      	 var rval:Object = {bytes: null};
+      	 var rval:String = null;
          log("receive(" + id + "," + count + ")");
          
          if(id in mSocketMap)
@@ -401,7 +407,13 @@ package
             try
             {
                // read bytes from socket
-               rval.bytes = s.readUTFBytes(count);
+               var b:ByteArray = new ByteArray();
+               s.readBytes(b, 0, count);
+               b.position = 0;
+               var b64:Base64Encoder = new Base64Encoder();
+               b64.insertNewLines = false;
+               b64.encodeBytes(b, 0, b.length);
+               rval = b64.toString();
             }
             catch(e:IOError)
             {
@@ -423,7 +435,7 @@ package
          }
          
          log("receive(" + id + "," + count + ") done");
-         return rval;
+         return {rval: rval};
       }
       
       /**
@@ -511,34 +523,59 @@ package
       /**
        * Deflates the given data.
        * 
-       * @param data the data to deflate.
+       * @param data the base64-encoded data to deflate.
        * 
-       * @return the deflated data 'bytes' in an object.
+       * @return an object with 'rval' set to deflated data, base64-encoded.
        */
       private function deflate(data:String):Object
       {
-         var b:ByteArray = new ByteArray();
-         b.writeUTFBytes(data);
+         log("deflate");
+         
+         var b64d:Base64Decoder = new Base64Decoder();
+         b64d.decode(data);
+         var b:ByteArray = b64d.toByteArray();
          b.compress();
          b.position = 0;
-         var obj:Object = new Object();
-         return {bytes: b.readUTFBytes(b.length)};
+         var b64e:Base64Encoder = new Base64Encoder();
+         b64e.insertNewLines = false;
+         b64e.encodeBytes(b, 0, b.length);
+         
+         log("deflate done");
+         return {rval: b64e.toString()};
       }
       
       /**
        * Inflates the given data.
        * 
-       * @param data the data to inflate.
+       * @param data the base64-encoded data to inflate.
        * 
-       * @return the inflated data 'bytes' in an object.
+       * @return an object with 'rval' set to the inflated data,
+       *         base64-encoded, null on error.
        */
       private function inflate(data:String):Object
       {
-         var b:ByteArray = new ByteArray();
-         b.writeUTFBytes(data);
-         b.uncompress();
-         b.position = 0;
-         return {bytes: b.readUTFBytes(b.length)};
+         log("inflate");
+         var rval:String = null;
+      	 
+      	 try
+      	 {
+            var b64d:Base64Decoder = new Base64Decoder();
+            b64d.decode(data);
+            var b:ByteArray = b64d.toByteArray();
+            b.uncompress();
+            b.position = 0;
+            var b64e:Base64Encoder = new Base64Encoder();
+            b64e.insertNewLines = false;
+            b64e.encodeBytes(b, 0, b.length);
+            rval = b64e.toString();
+         }
+         catch(e:Error)
+         {
+         	log(e);
+         }
+         
+         log("inflate done");
+         return {rval: rval};
       }
    }
 }

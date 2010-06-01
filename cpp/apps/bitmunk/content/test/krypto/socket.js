@@ -225,7 +225,8 @@
           */
          socket.receive = function(count)
          {
-            return api.receive(id, count).bytes;
+            var obj = api.receive(id, count);
+            return (obj.rval === null) ? null : util.decode64(obj.rval);
          };
          
          /**

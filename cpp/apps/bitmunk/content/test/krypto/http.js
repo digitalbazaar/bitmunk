@@ -143,13 +143,12 @@
             {
                socket.options.connected(e);
                var request = socket.options.request;
-               if(socket.send(request.toString()))
+               var out = request.toString();
+               if(request.body)
                {
-                  if(request.body)
-                  {
-                     socket.send(request.body);
-                  }
+                  out += request.body;
                }
+               socket.send(util.encode64(out));
             },
             closed: function(e)
             {
@@ -384,8 +383,7 @@
          if(request.flashApi !== null &&
             request.getField('Accept-Encoding') === null)
          {
-            // FIXME: disabled due to unexplained flash security error
-            //request.setField('Accept-Encoding', 'deflate');
+            request.setField('Accept-Encoding', 'deflate');
          }
          
          // if the body isn't null, deflate it by default
@@ -394,9 +392,10 @@
             !request.bodyDeflated)
          {
             // use flash to compress data
-            request.setField('Content-Encoding', 'deflate');
-            request.body = request.flashApi.deflate(request.body).bytes;
+            request.body = util.decode64(
+               request.flashApi.deflate(util.encode64(request.body)).rval);
             request.bodyDeflated = true;
+            request.setField('Content-Encoding', 'deflate');
             request.setField('Content-Length', request.body.length);
          }
          else if(request.body !== null)
@@ -698,7 +697,8 @@
             response.getField('Content-Encoding') === 'deflate')
          {
             // inflate using flash api
-            response.body = response.flashApi.inflate(response.body).bytes;
+            response.body = util.decode64(
+               response.flashApi.inflate(util.encode64(response.body)).rval);
          }
          
          return response.bodyReceived;
