@@ -674,7 +674,7 @@ PRInt32 nsBitmunkExtension::launchBitmunkApplication(nsCString pluginDir)
    string resourcePath(pluginDir.get());
    string packageConfigFile("{RESOURCE_PATH}/configs/default.config");
    string nodePortFile("{RESOURCE_PATH}/" NODE_PORT_FILE);
-   string logFile("{BITMUNK_HOME}/bitmunk.log");
+   string logFile("bitmunk.log");
 
    // make bitmunk app executable (fix firefox 3.6.0 bug)
    nsCOMPtr<nsILocalFile> file;
