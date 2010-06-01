@@ -610,7 +610,7 @@
                if(line !== null)
                {
                   // parse chunk-size (ignore any chunk extension)
-                  _chunkSize = parseInt('0x' + line.split(';', 1)[0], 16);
+                  _chunkSize = parseInt(line.split(';', 1)[0], 16);
                   _chunksFinished = (_chunkSize == 0);
                }
             }
