@@ -332,7 +332,6 @@
    {
       var output = new String();
       var chr1, chr2, chr3;
-      var enc1, enc2, enc3, enc4;
       var i = 0;
       while(i < input.length)
       {
@@ -341,18 +340,17 @@
          chr3 = input.charCodeAt(i++);
          
          // encode 4 character group
-         enc1 = _base64.charAt(chr1 >> 2);
-         enc2 = _base64.charAt(((chr1 & 3) << 4) | (chr2 >> 4));
+         output += _base64.charAt(chr1 >> 2);
+         output += _base64.charAt(((chr1 & 3) << 4) | (chr2 >> 4));
          if(isNaN(chr2))
          {
-            enc3 = enc4 = '=';
+            output += '==';
          }
          else
          {
-            enc3 = _base64.charAt(((chr2 & 15) << 2) | (chr3 >> 6));
-            enc4 = isNaN(chr3) ? '=' : _base64.charAt(chr3 & 63);
+            output += _base64.charAt(((chr2 & 15) << 2) | (chr3 >> 6));
+            output += isNaN(chr3) ? '=' : _base64.charAt(chr3 & 63);
          }
-         output += (enc1 + enc2 + enc3 + enc4);
       }
       
       return output;      
@@ -367,13 +365,12 @@
     */
    util.decode64 = function(input)
    {
-      var output = new String();
-      var chr1, chr2, chr3;
-      var enc1, enc2, enc3, enc4;
-      var i = 0;
-      
       // remove all non-base64 characters
       input = input.replace(/[^A-Za-z0-9\+\/\=]/g, '');
+      
+      var output = new String();
+      var enc1, enc2, enc3, enc4;
+      var i = 0;
       
       while(i < input.length)
       {
@@ -382,25 +379,15 @@
          enc3 = _base64Idx[input.charCodeAt(i++) - 43];
          enc4 = _base64Idx[input.charCodeAt(i++) - 43];
          
-         chr1 = String.fromCharCode((enc1 << 2) | (enc2 >> 4));
-         if(enc3 === 64)
+         output += String.fromCharCode((enc1 << 2) | (enc2 >> 4));
+         if(enc3 !== 64)
          {
-            // decoded 1 byte, 2 bytes of padding
-            output += chr1;
-         }
-         else
-         {
-            chr2 = String.fromCharCode(((enc2 & 15) << 4) | (enc3 >> 2));
-            if(enc4 === 64)
-            {
-               // decoded 2 bytes, 1 byte of padding
-               output += (chr1 + chr2);
-            }
-            else
+            // decoded at least 2 bytes
+            output += String.fromCharCode(((enc2 & 15) << 4) | (enc3 >> 2));
+            if(enc4 !== 64)
             {
                // decoded 3 bytes
-               chr3 = String.fromCharCode(((enc3 & 3) << 6) | enc4);
-               output += (chr1 + chr2 + chr3);
+               output += String.fromCharCode(((enc3 & 3) << 6) | enc4);
             }
          }
       }
