@@ -461,10 +461,9 @@
     * 
     * @param b the byte buffer.
     * @param lenBytes the number of bytes required to store the length.
-    * @param bits the size of each element in bits.
     * @param v the byte buffer vector.
     */
-   var writeVector = function(b, lenBytes, bits, v)
+   var writeVector = function(b, lenBytes, v)
    {
       // encode length at the start of the vector, where the number
       // of bytes for the length is the maximum number of bytes it
@@ -478,6 +477,15 @@
     */
    var tls =
    {
+      /**
+       * Version: TLS 1.2 = 3.3, TLS 1.0 = 3.1
+       */
+      Version:
+      {
+         major: 3,
+         minor: 3
+      },
+      
       /**
        * Maximum fragment size.
        */
@@ -1323,70 +1331,6 @@
    };
    
    /**
-    * Creates an empty TLS record.
-    * 
-    * @param options:
-    *    type: the record type
-    *    data: the plain text data
-    * 
-    * @return the created record.
-    */
-   tls.createRecord: function(options)
-   {
-      var record =
-      {
-         type: options.type,
-         version:
-         {
-            // FIXME: TLS 1.2 = 3.3, TLS 1.0 = 3.1, send whichever ends
-            // up being implemented
-            major: 3,
-            minor: 3
-         },
-         length: options.data.length,
-         fragment: options.data
-      };
-      return record;
-   };
-   
-   /**
-    * Creates a TLS handshake message and stores it in a byte array.
-    * 
-    * struct {
-    *    HandshakeType msg_type;    // handshake type
-    *    uint24 length;             // bytes in message
-    *    select(HandshakeType) {
-    *       case hello_request:       HelloRequest;
-    *       case client_hello:        ClientHello;
-    *       case server_hello:        ServerHello;
-    *       case certificate:         Certificate;
-    *       case server_key_exchange: ServerKeyExchange;
-    *       case certificate_request: CertificateRequest;
-    *       case server_hello_done:   ServerHelloDone;
-    *       case certificate_verify:  CertificateVerify;
-    *       case client_key_exchange: ClientKeyExchange;
-    *       case finished:            Finished;
-    *    } body;
-    * } Handshake;
-    * 
-    * @param type the type of handshake message.
-    * @param body the message body.
-    */
-   // FIXME: old, remove/replace this and its implementation
-   tls.createHandshakeMessage: function(type, body)
-   {
-      var data = [];
-      data[0] = type & 0xFF;
-      // encode length of body using 3 bytes, big endian
-      var len = body.length & 0xFFFFFF;
-      data[1] = (len >> 16) & 0xFF;
-      data[2] = (len >> 8) & 0xFF;
-      data[3] = len & 0xFF;
-      data = data.concat(body);
-      return data;
-   };
-   
-   /**
     * Creates a Random structure.
     * 
     * struct {
@@ -1421,22 +1365,56 @@
    };
    
    /**
-    * Gets the cipher-suites supported by the client.
+    * Creates an empty TLS record.
     * 
-    * uint8 CipherSuite[2];
+    * @param options:
+    *    type: the record type.
+    *    data: the plain text data in a byte buffer.
     * 
-    * @return the cipher suites supported by the client.
+    * @return the created record.
     */
-   tls.getSupportedCipherSuites: function()
+   tls.createRecord: function(options)
    {
-      // FIXME: create array of 2-byte arrays
+      var record =
+      {
+         type: options.type,
+         version:
+         {
+            major: tls.Version.major,
+            minor: tls.Version.minor
+         },
+         length: options.data.length,
+         fragment: options.data
+      };
+      return record;
    };
    
+   /* The structure of a TLS handshake message.
+    * 
+    * struct {
+    *    HandshakeType msg_type;    // handshake type
+    *    uint24 length;             // bytes in message
+    *    select(HandshakeType) {
+    *       case hello_request:       HelloRequest;
+    *       case client_hello:        ClientHello;
+    *       case server_hello:        ServerHello;
+    *       case certificate:         Certificate;
+    *       case server_key_exchange: ServerKeyExchange;
+    *       case certificate_request: CertificateRequest;
+    *       case server_hello_done:   ServerHelloDone;
+    *       case certificate_verify:  CertificateVerify;
+    *       case client_key_exchange: ClientKeyExchange;
+    *       case finished:            Finished;
+    *    } body;
+    * } Handshake;
+    */
+   
    /**
-    * Creates a ClientHello body.
+    * Creates a ClientHello message.
     * 
     * opaque SessionID<0..32>;
     * enum { null(0), (255) } CompressionMethod;
+    * uint8 CipherSuite[2];
     * 
     * struct {
     *    ProtocolVersion client_version;
@@ -1444,7 +1422,7 @@
     *    SessionID session_id;
     *    CipherSuite cipher_suites<2..2^16-2>;
     *    CompressionMethod compression_methods<1..2^8-1>;
-    *    select (extensions_present) {
+    *    select(extensions_present) {
     *        case false:
     *            struct {};
     *        case true:
@@ -1454,43 +1432,45 @@
     * 
     * @param sessionId the session ID to use.
     * 
-    * @return the ClientHello body bytes.
+    * @return the ClientHello byte buffer.
     */
    tls.createClientHello: function(sessionId)
    {
-      var body =
-      {
-         // no extensions... see session ID cache for session ID
-         version:
-         {
-            // FIXME: TLS 1.2 = 3.3, TLS 1.0 = 3.1, send whichever ends
-            // up being implemented
-            major: 3,
-            minor: 3
-         },
-         // create client random bytes
-         random: createRandom(),
-         // use given session ID or blank
-         session_id: sessionId || [],
-         // use all supported cipher suites
-         cipher_suites: getSupportedCipherSuites(),
-         // no compression
-         compression_methods: [0]
-         // no extensions
-         extensions: []
-      };
+      // determine length of the handshake message
+      // cipher suites and compression methods size will need to be
+      // updated if more get added to the list
+      var length =
+         sessionId.length + 1 + // session ID vector
+         2 +                    // version (major + minor)
+         4 + 28 +               // random time and random bytes
+         2 + 2 +                // cipher suites vector (1 supported)
+         1 + 1 +                // compression methods vector
+         0;                     // no extensions (FIXME: add TLS SNI)
       
-      // FIXME: old, replace this
-      // convert body into TLS-encoded bytes
-      var array = tls.createArray();
-      array.pushInt(body.version.major, 8);
-      array.pushInt(body.version.minor, 8);
-      array.pushInt(body.random.gmt_unix_time, 32);
-      array.pushBytes(body.random.random_bytes);
-      array.pushVector(body.session_id, 32, array.pushByte);
-      array.pushVector(body.cipher_suites, 2, array.pushBytes);
-      array.pushVector(body.compression_methods, 1, array.pushByte);
-      return array.bytes;
+      // create random
+      var random = createRandom();
+      
+      // create supported cipher suites, only 1 at present
+      // TLS_RSA_WITH_AES_128_CBC_SHA = { 0x00,0x2F }
+      var cipherSuites = util.createBuffer();
+      cipherSuites.putByte(0x00);
+      cipherSuites.putByte(0x2F);
+      
+      // create supported compression methods, only null supported
+      var compressionMethods = util.createBuffer();
+      compressionMethods.putByte(0x00);
+
+      // build record fragment
+      var rval = util.createBuffer();
+      rval.putInt24(length);               // handshake length
+      rval.putByte(tls.Version.major);     // major version
+      rval.putByte(tls.Version.minor);     // minor version
+      rval.putInt32(random.gmt_unix_time); // random time
+      rval.putBytes(random.random_bytes);  // random bytes
+      writeVector(rval, 1, util.createBuffer(sessionId));
+      writeVector(rval, 2, cipherSuites);
+      writeVector(rval, 1, compressionMethods);
+      return rval;
    };
    
    /**
@@ -1703,7 +1683,7 @@
             var record = tls.createRecord(
             {
                type: tls.ContentType.application_data,
-               data: data
+               data: util.createBuffer(data)
             };
             tls.queue(c, record);
          }
@@ -1717,7 +1697,7 @@
                var record = tls.createRecord(
                {
                   type: tls.ContentType.application_data,
-                  data: tmp
+                  data: util.createBuffer(tmp)
                };
                tls.queue(c, record);
             }
