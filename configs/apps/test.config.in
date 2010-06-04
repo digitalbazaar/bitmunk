@@ -9,5 +9,10 @@
             "@BITMUNK_DIR@/dist/modules/tests/@LIB_PREFIX@bmtest-common.@DYNAMIC_LIB_EXT@"
          ]
       }
+   },
+   "_merge_": {
+      "monarch.app.Core": {
+         "home": "@BITMUNK_HOME_DIR@"
+      }
    }
 }
