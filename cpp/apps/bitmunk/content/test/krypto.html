@@ -527,13 +527,15 @@
             var input = krypto.util.createBuffer(aesPlain);
             
             // encrypt
-            cipher = krypto.aes.startEncrypting(key, aesIvWords);
+            cipher = krypto.aes.createEncryptionCipher(key);
+            cipher.start(aesIvWords);
             cipher.update(input);
             cipher.finish();
             
             // decrypt
             var ct = cipher.output;
-            cipher = krypto.aes.startDecrypting(key, aesIvWords);
+            cipher = krypto.aes.createDecryptionCipher(key);
+            cipher.start(aesIvWords);
             cipher.update(ct);
             cipher.finish();
             

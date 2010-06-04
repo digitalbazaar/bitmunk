@@ -279,6 +279,8 @@
    /**
     * Gets the SHA-1 hash for the given data.
     * 
+    * @param data the data.
+    * 
     * @return the sha-1 hash (20 bytes) for the given data.
     */
    var hmac_sha1 = function(data)
@@ -299,15 +301,15 @@
    {
       var rval = null;
       
-      // append sha-1 hash to fragment
-      record.fragment.putBytes(hmac_sha1(record.fragment.bytes()));
+      // append hash to fragment
+      record.fragment.putBytes(state.hash(record.fragment.getBytes()));
       
       // generate a new IV
       var iv = window.krypto.random.getBytes(16);
       
-      // restart cipher
+      // start cipher
       var cipher = state.cipherState.cipher;
-      cipher.restart(iv);
+      cipher.start(iv);
       
       // write IV into output
       cipher.output.putBytes(iv);
@@ -382,9 +384,9 @@
       {
          var iv = record.fragment.getBytes(16);
          
-         // restart cipher
+         // start cipher
          var cipher = state.cipherState.cipher;
-         cipher.restart(iv);
+         cipher.start(iv);
          
          // do decryption
          if(cipher.update(record.fragment) &&
@@ -606,9 +608,12 @@
     */
    var tls.handleInvalid = function(c, record)
    {
-      // FIXME:
+      // FIXME: send alert and close connection?
+      
       // error case
-      c.error(c, 'Received TLS record out of order.');
+      c.error(c, {
+         message: 'Received TLS record out of order.'
+      });
    };
    
    /**
@@ -1125,7 +1130,7 @@
    };
    
    /**
-    * FIXME: Generates keys for the current state
+    * Generates keys using the given security parameters.
     * 
     * The Record Protocol requires an algorithm to generate keys required
     * by the current connection state.
@@ -1161,26 +1166,19 @@
     * for implicit nonce techniques as described in Section 3.2.1 of
     * [AEAD]. This implementation does not use AEAD, so these are not
     * generated.
-    * FIXME: I would have thought you needed this for aes CBC as well...
     *
     * Implementation note: The currently defined cipher suite which
     * requires the most material is AES_256_CBC_SHA256. It requires 2 x 32
     * byte keys and 2 x 32 byte MAC keys, for a total 128 bytes of key
     * material.
     * 
-    * FIXME:
+    * @param sp the security parameters to use.
     * 
-    * @param sp the security parameters to use
-    * 
-    * @return the security keys and IVs.
+    * @return the security keys.
     */
    tls.generateKeys: function(sp)
    {
       // TLS_RSA_WITH_AES_128_CBC_SHA (this one is mandatory)
-      
-      // FIXME: change security parameters so they aren't stored
-      // in the state, only the keys are and any encryption function
-      // decryption functions necessary ... etc.
       
       // determine the PRF
       var prf;
@@ -1190,7 +1188,7 @@
             prf = prf_sha256;
             break;
          default:
-            // FIXME: raise some kind of record alert?
+            // should never happen
             throw 'Invalid PRF';
             break;
       }
@@ -1245,37 +1243,38 @@
     *    particular connection state MUST use sequence number 0.
     * 
     * @param sp the security parameters used to initialize the state.
-    * @param keys the encryption key and the mac key for this state.
     * 
     * @return the new initialized TLS connection state.
     */
-   tls.createConnectionState: function(sp, keys)
+   tls.createConnectionState: function(sp)
    {
       var state =
       {
          compressionState: null,
          cipherState: null,
-         macKey: null,
+         keys: null,
          sequenceNumber: 0,
-         encrypt: null,
-         decrypt: null,
-         compress: null,
-         decompress: null
+         hash: null,
+         encrypt: function(record){return record;},
+         decrypt: function(record){return record;},
+         compress: function(record){return record;},
+         decompress: function(record){return record;}
       };
       
-      // FIXME: determine how this should be done
       if(sp)
       {
-         // FIXME: start encrypting/decrypting
+         // generate keys
+         state.keys = tls.generateKeys(sp);
          
          switch(sp.bulk_cipher_algorithm)
          {
             case tls.BulkCipherAlgorithm.aes:
                cipherState =
                {
-                  eCipher: null,
-                  dCipher: null,
-                  key: keys.encryptionKey;
+                  eCipher: krypto.aes.createEncryptionCipher(
+                     keys.client_write_key),
+                  dCipher: krypto.aes.createDecryptionCipher(
+                     keys.server_write_key)
                };
                state.encrypt = encrypt_aes_128_cbc_sha1;
                state.decrypt = decrypt_aes_128_cbc_sha1;
@@ -1295,7 +1294,7 @@
          switch(sp.mac_algorithm)
          {
             case tls.MACAlgorithm.hmac_sha1:
-               state.macKey = keys.macKey;
+               hash = hmac_sha1;
                break;
              default:
                 throw 'Unsupported MAC algorithm';
@@ -1309,7 +1308,7 @@
                throw 'Unsupported compression algorithm';
          }
          
-         /*
+         /* security parameters:
          entity: tls.ConnectionEnd.client,
          prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
          bulk_cipher_algorithm: tls.BulkCipherAlgorithm.none,
@@ -1646,8 +1645,10 @@
                   }
                   else
                   {
-                     // FIXME: error, invalid fragmented record
-                     c.error('Invalid fragmented record.');
+                     // error, invalid fragmented record
+                     c.error(c, {
+                        message: 'Invalid fragmented record.'
+                     });
                   }
                }
                

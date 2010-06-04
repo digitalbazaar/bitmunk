@@ -755,10 +755,12 @@
     * used.
     * 
     * The key and iv may be given as a string of bytes, an array of bytes, a
-    * byte buffer, or an array of 32-bit words.
+    * byte buffer, or an array of 32-bit words. If an iv is provided, then
+    * encryption/decryption will be started, otherwise start() must be called
+    * with an iv.
     * 
     * @param key the symmetric key to use.
-    * @param iv the initialization vector to use.
+    * @param iv the initialization vector to start with, null not to start.
     * @param output the buffer to write to.
     * @param decrypt true for decryption, false for encryption.
     * 
@@ -779,7 +781,7 @@
          integers, it must be 4, 6, or 8 integers long.
       */
       
-      // convert iv string into byte buffer
+      // convert key string into byte buffer
       if(key.constructor == String &&
          (key.length == 16 || key.length == 24 || key.length == 32))
       {
@@ -972,16 +974,16 @@
          };
          
          /**
-          * Restarts the encryption or decryption process, whichever was
-          * previously configured.
+          * Starts or restarts the encryption or decryption process, whichever
+          * was previously configured.
           * 
           * The iv may be given as a string of bytes, an array of bytes, a
           * byte buffer, or an array of 32-bit words.
           * 
           * @param iv the initialization vector to use.
-          * @param output the output the buffer to write to.
+          * @param output the output the buffer to write to, null to create one.
           */
-         cipher.restart = function(iv, output)
+         cipher.start = function(iv, output)
          {
             /* Note: The IV may be a string of bytes, an array of bytes, a
                byte buffer, or an array of 32-bit integers. If the IV is in
@@ -1024,7 +1026,10 @@
             _finish = false;
             cipher.output = _output;
          };
-         cipher.restart(iv, output);
+         if(iv !== null)
+         {
+            cipher.start(iv, output);
+         }
       }
       return cipher;
    };
@@ -1055,6 +1060,25 @@
       },
       
       /**
+       * Creates an AES cipher object to encrypt data in CBC mode using the
+       * given symmetric key.
+       * 
+       * The key may be given as a string of bytes, an array of bytes, a
+       * byte buffer, or an array of 32-bit words.
+       * 
+       * To start encrypting call start() on the cipher with an iv and optional
+       * output buffer.
+       * 
+       * @param key the symmetric key to use.
+       * 
+       * @return the cipher.
+       */
+      createEncryptionCipher: function(key)
+      {
+         return createCipher(key, null, null, false);
+      },
+      
+      /**
        * Creates an AES cipher object to decrypt data in CBC mode using the
        * given symmetric key. The output will be stored in the 'output' member
        * of the returned cipher.
@@ -1071,6 +1095,25 @@
       startDecrypting: function(key, iv, output)
       {
          return createCipher(key, iv, output, true);
+      },
+      
+      /**
+       * Creates an AES cipher object to decrypt data in CBC mode using the
+       * given symmetric key.
+       * 
+       * The key may be given as a string of bytes, an array of bytes, a
+       * byte buffer, or an array of 32-bit words.
+       * 
+       * To start decrypting call start() on the cipher with an iv and
+       * optional output buffer.
+       * 
+       * @param key the symmetric key to use.
+       * 
+       * @return the cipher.
+       */
+      createDecryptionCipher: function(key)
+      {
+         return createCipher(key, null, null, true);
       },
       
       /**
