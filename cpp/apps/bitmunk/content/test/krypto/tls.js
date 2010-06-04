@@ -400,7 +400,7 @@
             var mac = '';
             for(var i = 0; i < 20; i++)
             {
-               mac[i] = String.fromCharCode(0);
+               mac += String.fromCharCode(0);
             }
             
             // get fragment and mac
@@ -417,7 +417,7 @@
             }
             
             // see if data integrity checks out
-            if(hmac_sha1(record.fragment) == mac)
+            if(state.hash(record.fragment) === mac)
             {
                rval = record;
             }
