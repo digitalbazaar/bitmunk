@@ -37,9 +37,6 @@
     */
    var _doRequest = function(socket)
    {
-      // FIXME: handle https scheme
-      // if(client.url.scheme === 'https')
-      
       // socket no longer idle
       socket.idle = false;
       
@@ -134,80 +131,88 @@
          idle: []
       };
       
+      // determine if TLS is used
+      var useTls = (url.scheme === 'https');
+      
       // create sockets
       for(var i = 0; i < options.connections; i++)
       {
-         // FIXME: wrap socket for TLS?
-         var socket = sp.createSocket({
-            connected: function(e)
+         var socket = sp.createSocket();
+         // wrap socket for TLS
+         if(useTls)
+         {
+            // FIXME: uncomment
+            //socket = tls.wrapSocket(socket);
+         }
+         // set up handlers
+         socket.connected = function(e)
+         {
+            socket.options.connected(e);
+            var request = socket.options.request;
+            var out = request.toString();
+            if(request.body)
             {
-               socket.options.connected(e);
-               var request = socket.options.request;
-               var out = request.toString();
-               if(request.body)
+               out += request.body;
+            }
+            socket.send(out);
+         };
+         socket.closed = function(e)
+         {
+            socket.options.closed(e);
+            _handleNextRequest(client, socket);
+         };
+         socket.data = function(e)
+         {
+            // receive all bytes available
+            var response = socket.options.response;
+            var bytes = socket.receive(e.bytesAvailable);
+            if(bytes !== null)
+            {
+               // receive header and then body
+               socket.buffer.putBytes(bytes);
+               if(!response.headerReceived)
                {
-                  out += request.body;
-               }
-               socket.send(out);
-            },
-            closed: function(e)
-            {
-               socket.options.closed(e);
-               _handleNextRequest(client, socket);
-            },
-            data: function(e)
-            {
-               // receive all bytes available
-               var response = socket.options.response;
-               var bytes = socket.receive(e.bytesAvailable);
-               if(bytes !== null)
-               {
-                  // receive header and then body
-                  socket.buffer.putBytes(bytes);
-                  if(!response.headerReceived)
+                  response.readHeader(socket.buffer);
+                  if(response.headerReceived)
                   {
-                     response.readHeader(socket.buffer);
-                     if(response.headerReceived)
-                     {
-                        socket.options.headerReady({
-                           request: socket.options.request,
-                           response: response
-                        });
-                     }
-                  }
-                  if(response.headerReceived && !response.bodyReceived)
-                  {
-                     response.readBody(socket.buffer);
-                  }
-                  if(response.bodyReceived)
-                  {
-                     socket.options.bodyReady({
+                     socket.options.headerReady({
                         request: socket.options.request,
                         response: response
                      });
-                     var value = response.getField('Connection') || '';
-                     if(value.indexOf('close') != -1)
-                     {
-                        // close socket
-                        socket.close();
-                     }
-                     _handleNextRequest(client, socket);
                   }
                }
-            },
-            error: function(e)
-            {
-               // do error callback, include request
-               socket.options.error({
-                  type: e.type,
-                  message: e.message,
-                  request: socket.options.request,
-                  response: socket.options.response
-               });
-               socket.close();
-               _handleNextRequest(client, socket);               
+               if(response.headerReceived && !response.bodyReceived)
+               {
+                  response.readBody(socket.buffer);
+               }
+               if(response.bodyReceived)
+               {
+                  socket.options.bodyReady({
+                     request: socket.options.request,
+                     response: response
+                  });
+                  var value = response.getField('Connection') || '';
+                  if(value.indexOf('close') != -1)
+                  {
+                     // close socket
+                     socket.close();
+                  }
+                  _handleNextRequest(client, socket);
+               }
             }
-         });
+         };
+         socket.error = function(e)
+         {
+            // do error callback, include request
+            socket.options.error({
+               type: e.type,
+               message: e.message,
+               request: socket.options.request,
+               response: socket.options.response
+            });
+            socket.close();
+            _handleNextRequest(client, socket);               
+         };
          socket.idle = true;
          socket.buffer = util.createBuffer();
          client.sockets.push(socket);

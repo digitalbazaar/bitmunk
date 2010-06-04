@@ -198,8 +198,8 @@
          }
          else
          {
-            // read all bytes
-            rval = buf.data.slice(buf.read);
+            // read all bytes, optimize to only copy when needed
+            rval = (buf.read === 0) ? buf.data : buf.data.slice(buf.read);
             buf.clear();
          }
          return rval;

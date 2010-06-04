@@ -141,6 +141,9 @@
        */
       sp.createSocket = function(options)
       {
+         // default to empty options
+         options = options || {};
+         
          // create flash socket 
          var id = api.create();
          
@@ -201,6 +204,8 @@
           * Writes bytes to this socket.
           * 
           * @param bytes the bytes (as a string) to write.
+          * 
+          * @return true on success, false on failure.
           */
          socket.send = function(bytes)
          {
