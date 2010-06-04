@@ -301,8 +301,10 @@
    {
       var rval = null;
       
-      // append hash to fragment
-      record.fragment.putBytes(state.hash(record.fragment.getBytes()));
+      // append MAC to fragment
+      var mac = state.macFunction(
+         state.clientMacKey, record.fragment.getBytes());
+      record.fragment.putBytes(mac);
       
       // generate a new IV
       var iv = window.krypto.random.getBytes(16);
@@ -395,20 +397,21 @@
             // decrypted data:
             // first (len - 20) bytes = application data
             // last 20 bytes          = MAC
+            var macLen = state.macLength;
             
             // create a zero'd out mac
             var mac = '';
-            for(var i = 0; i < 20; i++)
+            for(var i = 0; i < macLen; i++)
             {
                mac += String.fromCharCode(0);
             }
             
             // get fragment and mac
             var len = cipher.output.length();
-            if(len >= 20)
+            if(len >= macLen)
             {
-               record.fragment = cipher.output.getBytes(len - 20);
-               mac = cipher.output.getBytes(20);
+               record.fragment = cipher.output.getBytes(len - macLen);
+               mac = cipher.output.getBytes(macLen);
             }
             // bad data, but get bytes anyway to try to keep timing consistent
             else
@@ -417,7 +420,8 @@
             }
             
             // see if data integrity checks out
-            if(state.hash(record.fragment) === mac)
+            var mac2 = state.macFunction(state.serverMacKey, record.fragment);
+            if(mac2 === mac)
             {
                rval = record;
             }
@@ -1250,22 +1254,56 @@
    {
       var state =
       {
-         compressionState: null,
-         cipherState: null,
-         keys: null,
          sequenceNumber: 0,
-         hash: null,
+         clientMacKey: null,
+         serverMacKey: null,
+         macLength: 0,
+         macFunction: null,
+         cipherState: null,
          encrypt: function(record){return record;},
          decrypt: function(record){return record;},
+         compressionState: null,
          compress: function(record){return record;},
          decompress: function(record){return record;}
       };
       
+      /* security parameters:
+         
+         entity: tls.ConnectionEnd.client,
+         prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
+         bulk_cipher_algorithm: tls.BulkCipherAlgorithm.none,
+         cipher_type: tls.CipherType.block,
+         enc_key_length: 0,
+         block_length: 0,
+         fixed_iv_length: 0,
+         record_iv_length: 0,
+         mac_algorithm: tls.MACAlgorithm.none,
+         mac_length: 0,
+         mac_key_length: 0,
+         compression_algorithm: tls.CompressionMethod.none,
+         master_secret: null,
+         client_random: null,
+         server_random: null
+      */
       if(sp)
       {
          // generate keys
          state.keys = tls.generateKeys(sp);
          
+         // mac setup
+         state.serverMacKey = keys.server_write_MAC_key;
+         state.clientMacKey = keys.client_write_MAC_key;
+         state.macLength = sp.mac_length;
+         switch(sp.mac_algorithm)
+         {
+            case tls.MACAlgorithm.hmac_sha1:
+               state.macFunction = hmac_sha1;
+               break;
+             default:
+                throw 'Unsupported MAC algorithm';
+         }
+         
+         // cipher setup
          switch(sp.bulk_cipher_algorithm)
          {
             case tls.BulkCipherAlgorithm.aes:
@@ -1282,7 +1320,6 @@
             default:
                throw 'Unsupported cipher algorithm';
          }
-         
          switch(sp.cipher_type)
          {
             case tls.CipherType.block:
@@ -1291,15 +1328,7 @@
                throw 'Unsupported cipher type';
          }
          
-         switch(sp.mac_algorithm)
-         {
-            case tls.MACAlgorithm.hmac_sha1:
-               hash = hmac_sha1;
-               break;
-             default:
-                throw 'Unsupported MAC algorithm';
-         }
-         
+         // compression setup
          switch(sp.compression_algorithm)
          {
             case tls.CompressionMethod.none:
@@ -1307,24 +1336,6 @@
             default:
                throw 'Unsupported compression algorithm';
          }
-         
-         /* security parameters:
-         entity: tls.ConnectionEnd.client,
-         prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
-         bulk_cipher_algorithm: tls.BulkCipherAlgorithm.none,
-         cipher_type: tls.CipherType.block,
-         enc_key_length: 0,
-         block_length: 0,
-         fixed_iv_length: 0,
-         record_iv_length: 0,
-         mac_algorithm: tls.MACAlgorithm.none,
-         mac_length: 0,
-         mac_key_length: 0,
-         compression_algorithm: tls.CompressionMethod.none,
-         master_secret: null,
-         client_random: null,
-         server_random: null
-         */
       }
       
       return state;
