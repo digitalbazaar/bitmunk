@@ -613,6 +613,8 @@ dnl ----------------- end of options -----------------
 
 echo -e "\n--------- Configuring Bitmunk Build Environment -----------"
 
+PKG_PROG_PKG_CONFIG
+
 # Check the system type
 AC_CANONICAL_BUILD()
 
@@ -620,17 +622,15 @@ AC_CANONICAL_BUILD()
 #AC_LANG(C++)
 AC_PROG_INSTALL()
 
-AC_PATH_PROG([PKGCONFIG], [pkg-config])
-
 # Common part of XUL config
 if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
-   if test "x$PKGCONFIG" != "x" && $PKGCONFIG --exists libxul; then
-      XULRUNNER_TYPE=["`$PKGCONFIG --variable=includetype libxul`"]
-      XULRUNNER_SDK_DIR=["`$PKGCONFIG --variable=sdkdir libxul`"]
-      XULRUNNER_IDL_DIR=["`$PKGCONFIG --variable=idldir libxul`"]
+   if test "x$PKG_CONFIG" != "x" && $PKG_CONFIG --exists libxul; then
+      XULRUNNER_TYPE=["`$PKG_CONFIG --variable=includetype libxul`"]
+      XULRUNNER_SDK_DIR=["`$PKG_CONFIG --variable=sdkdir libxul`"]
+      XULRUNNER_IDL_DIR=["`$PKG_CONFIG --variable=idldir libxul`"]
       AC_PATH_PROG([XPIDL], [xpidl],, [$XULRUNNER_SDK_DIR/bin])
-      XULRUNNER_CXX_FLAGS=["`$PKGCONFIG --cflags libxul`"]
-      XULRUNNER_LD_FLAGS=["`$PKGCONFIG --libs-only-L libxul`"]
+      XULRUNNER_CXX_FLAGS=["`$PKG_CONFIG --cflags libxul`"]
+      XULRUNNER_LD_FLAGS=["`$PKG_CONFIG --libs-only-L libxul`"]
       XULRUNNER_IDL_FLAGS=["-I $XULRUNNER_IDL_DIR/$XULRUNNER_TYPE"]
    fi
    # Platform specific sections below and in Makefiles will setup XUL config

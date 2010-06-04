@@ -50,13 +50,13 @@ Bitmunk.
 
 To compile and run on Linux:
 
-autoconf
+./autogen.sh
 ./configure
 make
 
 To compile and run on Intel Mac OS X:
 
-autoconf
+./autogen.sh
 ./configure --enable-macos
 make
 
@@ -64,7 +64,7 @@ To compile for Windows XP, Vista, 7:
 * You must have the mingw32 compiler toolchain - the easiest way to get
 this working is to use Linux and cross-compile for Windows.
 
-autoconf
+./autogen.sh
 ./configure --enable-windows
 make
 
