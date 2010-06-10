@@ -505,10 +505,11 @@
       */
       if(decrypt)
       {
-         var imx0 = imix[0];
-         var imx1 = imix[1];
-         var imx2 = imix[2];
-         var imx3 = imix[3];
+         var tmp;
+         var m0 = imix[0];
+         var m1 = imix[1];
+         var m2 = imix[2];
+         var m3 = imix[3];
          // do not modify the first or last round key (round keys are Nb words)
          // as no column mixing is performed before they are added 
          for(var i = Nb; i < w.length - Nb; i++)
@@ -516,11 +517,12 @@
             // substitute each round key byte because the inverse-mix table
             // will inverse-substitute it (effectively cancel the substitution
             // because round key bytes aren't sub'd in decryption mode)
+            tmp = w[i];
             w[i] =
-               imx0[sbox[w[i] >>> 24]] ^
-               imx1[sbox[w[i] >>> 16 & 255]] ^
-               imx2[sbox[w[i] >>> 8 & 255]] ^
-               imx3[sbox[w[i] & 255]];
+               m0[sbox[tmp >>> 24]] ^
+               m1[sbox[tmp >>> 16 & 255]] ^
+               m2[sbox[tmp >>> 8 & 255]] ^
+               m3[sbox[tmp & 255]];
          }
       }
       
@@ -579,17 +581,17 @@
       // Note: To understand the purpose of the 'r2' and 'r4' vars read below.
       var Nr = w.length / 4 - 1;
       var i, delta, r2, r4;
-      var mx0, mx1, mx2, mx3, sub;
+      var m0, m1, m2, m3, sub;
       if(decrypt)
       {
          i = Nr * Nb;
          delta = -4;
          r2 = 3;
          r4 = 1;
-         mx0 = imix[0];
-         mx1 = imix[1];
-         mx2 = imix[2];
-         mx3 = imix[3];
+         m0 = imix[0];
+         m1 = imix[1];
+         m2 = imix[2];
+         m3 = imix[3];
          sub = isbox;
       }
       else
@@ -598,13 +600,13 @@
          delta = 4;
          r2 = 1;
          r4 = 3;
-         mx0 = mix[0];
-         mx1 = mix[1];
-         mx2 = mix[2];
-         mx3 = mix[3];
+         m0 = mix[0];
+         m1 = mix[1];
+         m2 = mix[2];
+         m3 = mix[3];
          sub = sbox;
       }
-      var a, b, c, d;
+      var a, b, c, d, a2, b2, c2;
       a = input[0] ^ w[i];
       b = input[r2] ^ w[i + r2];
       c = input[2] ^ w[i + 2];
@@ -625,7 +627,7 @@
             mix a column, we perform these transformations on each row in c,
             which is 1 byte in each word. The new column for c0 is c'0:
             
-                     mx0      mx1      mx2      mx3
+                     m0      m1      m2      m3
             r0,c'0 = 2*r0,c0 + 3*r1,c0 + 1*r2,c0 + 1*r3,c0
             r1,c'0 = 1*r0,c0 + 2*r1,c0 + 3*r2,c0 + 1*r3,c0
             r2,c'0 = 1*r0,c0 + 1*r1,c0 + 2*r2,c0 + 3*r3,c0
@@ -634,16 +636,16 @@
             So using mix tables where c0 is a word with r0 being its upper
             8 bits and r3 being its lower 8 bits:
             
-            mx0[c0 >> 24] will yield this word: [2*r0,1*r0,1*r0,3*r0]
+            m0[c0 >> 24] will yield this word: [2*r0,1*r0,1*r0,3*r0]
             ...
-            mx3[c0 & 255] will yield this word: [1*r3,1*r3,3*r3,2*r3]
+            m3[c0 & 255] will yield this word: [1*r3,1*r3,3*r3,2*r3]
             
             Therefore to mix the columns in each word in the state we
             do the following (& 255 omitted for brevity):
-            c'0,r0 = mx0[c0 >> 24] ^ mx1[c1 >> 16] ^ mx2[c2 >> 8] ^ mx3[c3]
-            c'0,r1 = mx0[c0 >> 24] ^ mx1[c1 >> 16] ^ mx2[c2 >> 8] ^ mx3[c3]
-            c'0,r2 = mx0[c0 >> 24] ^ mx1[c1 >> 16] ^ mx2[c2 >> 8] ^ mx3[c3]
-            c'0,r3 = mx0[c0 >> 24] ^ mx1[c1 >> 16] ^ mx2[c2 >> 8] ^ mx3[c3]
+            c'0,r0 = m0[c0 >> 24] ^ m1[c1 >> 16] ^ m2[c2 >> 8] ^ m3[c3]
+            c'0,r1 = m0[c0 >> 24] ^ m1[c1 >> 16] ^ m2[c2 >> 8] ^ m3[c3]
+            c'0,r2 = m0[c0 >> 24] ^ m1[c1 >> 16] ^ m2[c2 >> 8] ^ m3[c3]
+            c'0,r3 = m0[c0 >> 24] ^ m1[c1 >> 16] ^ m2[c2 >> 8] ^ m3[c3]
             
             However, before mixing, the algorithm requires us to perform
             ShiftRows(). The ShiftRows() transformation cyclically shifts the
@@ -687,8 +689,8 @@
             c'1 = 3*r0,c1 + 1*r1,c2 + 1*r2,c3 + 2*r3,c0
             
             ... and so forth for c'2 and c'3. The important distinction is
-            that the columns are cycling, with c0 being used with the mx0
-            map when calculating c0, but c1 being used with the mx0 map when
+            that the columns are cycling, with c0 being used with the m0
+            map when calculating c0, but c1 being used with the m0 map when
             calculating c1 ... and so forth.
             
             When performing the inverse we transform the mirror image and
@@ -735,30 +737,29 @@
             for rows 2 and 4 (r2, r4) based on the encryption/decryption mode.
           */
          i += delta;
-         output[0] =
-            mx0[a >>> 24] ^
-            mx1[b >>> 16 & 255] ^
-            mx2[c >>> 8 & 255] ^
-            mx3[d & 255] ^ w[i];
-         output[r2] =
-            mx0[b >>> 24] ^
-            mx1[c >>> 16 & 255] ^
-            mx2[d >>> 8 & 255] ^
-            mx3[a & 255] ^ w[i + r2];
-         output[2] =
-            mx0[c >>> 24] ^
-            mx1[d >>> 16 & 255] ^
-            mx2[a >>> 8 & 255] ^
-            mx3[b & 255] ^ w[i + 2];
-         output[r4] =
-            mx0[d >>> 24] ^
-            mx1[a >>> 16 & 255] ^
-            mx2[b >>> 8 & 255] ^
-            mx3[c & 255] ^ w[i + r4];
-         a = output[0];
-         b = output[r2];
-         c = output[2];
-         d = output[r4];
+         a2 =
+            m0[a >>> 24] ^
+            m1[b >>> 16 & 255] ^
+            m2[c >>> 8 & 255] ^
+            m3[d & 255] ^ w[i];
+         b2 =
+            m0[b >>> 24] ^
+            m1[c >>> 16 & 255] ^
+            m2[d >>> 8 & 255] ^
+            m3[a & 255] ^ w[i + r2];
+         c2 =
+            m0[c >>> 24] ^
+            m1[d >>> 16 & 255] ^
+            m2[a >>> 8 & 255] ^
+            m3[b & 255] ^ w[i + 2];
+         d =
+            m0[d >>> 24] ^
+            m1[a >>> 16 & 255] ^
+            m2[b >>> 8 & 255] ^
+            m3[c & 255] ^ w[i + r4];
+         a = a2;
+         b = b2;
+         c = c2;
       }
       
       /*
