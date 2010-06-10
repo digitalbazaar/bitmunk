@@ -297,24 +297,26 @@
          
          /* Mixing columns is done using matrix multiplication. The columns
             that are to be mixed are each a single word in the current state.
-            The state has Nb columns (4 columns). Therefore each column and
-            each row is a 4 byte word. So to mix the columns in a single
-            column 'c' we use the following matrix multiplication:
+            The state has Nb columns (4 columns). Therefore each column is a
+            4 byte word. So to mix the columns in a single column 'c' where
+            its rows are r0, r1, r2, and r3, we use the following matrix
+            multiplication:
             
-            [2 3 1 1]*[c0]=[c'0]
-            [1 2 3 1] [c1] [c'1]
-            [1 1 2 3] [c2] [c'2]
-            [3 1 1 2] [c3] [c'3]
+            [2 3 1 1]*[r0,c]=[r'0,c]
+            [1 2 3 1] [r1,c] [r'1,c]
+            [1 1 2 3] [r2,c] [r'2,c]
+            [3 1 1 2] [r3,c] [r'3,c]
             
-            c0, c1, c2, and c3 are the bytes of one of the words in the state.
-            To do matrix multiplication, for each mixed column c' we multiply
-            the corresponding row from the left matrix with the corresponding
-            column from the right matrix. In total, we get 4 equations: 
+            r0, r1, r2, and r3 are each 1 byte of one of the words in the
+            state (a column). To do matrix multiplication for each mixed
+            column c' we multiply the corresponding row from the left matrix
+            with the corresponding column from the right matrix. In total, we
+            get 4 equations: 
             
-            c'0 = 2*c0 + 3*c1 + 1*c2 + 1*c3
-            c'1 = 1*c0 + 2*c1 + 3*c2 + 1*c3
-            c'2 = 1*c0 + 1*c1 + 2*c2 + 3*c3
-            c'3 = 3*c0 + 1*c1 + 1*c2 + 2*c3
+            r0,c' = 2*r0,c + 3*r1,c + 1*r2,c + 1*r3,c
+            r1,c' = 1*r0,c + 2*r1,c + 3*r2,c + 1*r3,c
+            r2,c' = 1*r0,c + 1*r1,c + 2*r2,c + 3*r3,c
+            r3,c' = 3*r0,c + 1*r1,c + 1*r2,c + 2*r3,c
             
             As usual, the multiplication is as previously defined and the
             addition is XOR. In order to optimize mixing columns we can store
@@ -322,13 +324,12 @@
             column as a word (it might help to visualize by mentally rotating
             the equations above by counterclockwise 90 degrees) then you can
             see that it would be useful to map the multiplications performed on
-            each byte (c0, c1, c2, c3) onto a word as well. For instance,
-            we could map 2*c0,1*c0,1*c0,3*c0 onto a word by storing 2*c0
-            in the highest 8 bits and 3*c0 in the lowest 8 bits (with the
-            other two respectively in the middle). This means that a table
-            can be constructed that uses c0 as an index to the word. We can
-            do something similar with c1, c2, and c3, creating a total of
-            4 tables.
+            each byte (r0, r1, r2, r3) onto a word as well. For instance, we
+            could map 2*r0,1*r0,1*r0,3*r0 onto a word by storing 2*r0 in the
+            highest 8 bits and 3*r0 in the lowest 8 bits (with the other two
+            respectively in the middle). This means that a table can be
+            constructed that uses r0 as an index to the word. We can do the
+            same with r1, r2, and r3, creating a total of 4 tables.
             
             To construct a full c', we can just look up each byte of c in
             their respective tables and XOR the results together.
@@ -575,15 +576,16 @@
       
       // Encrypt: AddRoundKey(state, w[0, Nb-1])
       // Decrypt: AddRoundKey(state, w[Nr*Nb, (Nr+1)*Nb-1])
-      // Note: To understand the purpose of the 'order' var read on below.
+      // Note: To understand the purpose of the 'r2' and 'r4' vars read below.
       var Nr = w.length / 4 - 1;
-      var i, delta, order;
+      var i, delta, r2, r4;
       var mx0, mx1, mx2, mx3, sub;
       if(decrypt)
       {
          i = Nr * Nb;
          delta = -4;
-         order = [3, 0, 1, 2];
+         r2 = 3;
+         r4 = 1;
          mx0 = imix[0];
          mx1 = imix[1];
          mx2 = imix[2];
@@ -594,20 +596,19 @@
       {
          i = 0;
          delta = 4;
-         order = [1, 2, 3, 0];
+         r2 = 1;
+         r4 = 3;
          mx0 = mix[0];
          mx1 = mix[1];
          mx2 = mix[2];
          mx3 = mix[3];
          sub = sbox;
       }
-      var tmp;
-      var out1 = new Array(4);
-      var out2 = new Array(4);
-      out1[0] = input[0] ^ w[i];
-      out1[1] = input[1] ^ w[i + 1];
-      out1[2] = input[2] ^ w[i + 2];
-      out1[3] = input[3] ^ w[i + 3];
+      var a, b, c, d;
+      a = input[0] ^ w[i];
+      b = input[r2] ^ w[i + r2];
+      c = input[2] ^ w[i + 2];
+      d = input[r4] ^ w[i + r4];
       
       /* In order to share code we follow the encryption algorithm when both
          encrypting and decrypting. To account for the changes required in the
@@ -616,32 +617,38 @@
          order of transformations applied when performing rounds. We also get
          key rounds in reverse order (relative to encryption).
       */
-      var s0, s1, s2;
       for(var round = 1; round < Nr; round++)
       {
          /* As described above, we'll be using table lookups to perform the
-            column mixing. In order to mix columns we perform these
-            transformations on each column (s0, s1, s2, s3 are columns):
+            column mixing. Each column is stored as a word in the state (the
+            array 'input' has one column as a word at each index). In order to
+            mix a column, we perform these transformations on each row in c,
+            which is 1 byte in each word. The new column for c0 is c'0:
             
-            c'0 = 2*c0 + 3*c1 + 1*c2 + 1*c3
-            c'1 = 1*c0 + 2*c1 + 3*c2 + 1*c3
-            c'2 = 1*c0 + 1*c1 + 2*c2 + 3*c3
-            c'3 = 3*c0 + 1*c1 + 1*c2 + 2*c3
+                     mx0      mx1      mx2      mx3
+            r0,c'0 = 2*r0,c0 + 3*r1,c0 + 1*r2,c0 + 1*r3,c0
+            r1,c'0 = 1*r0,c0 + 2*r1,c0 + 3*r2,c0 + 1*r3,c0
+            r2,c'0 = 1*r0,c0 + 1*r1,c0 + 2*r2,c0 + 3*r3,c0
+            r3,c'0 = 3*r0,c0 + 1*r1,c0 + 1*r2,c0 + 2*r3,c0
             
-            So using mix tables,
-            mx0[s0 >> 24] will yield this word: [2*c0,1*c0,1*c0,3*c0]
+            So using mix tables where c0 is a word with r0 being its upper
+            8 bits and r3 being its lower 8 bits:
+            
+            mx0[c0 >> 24] will yield this word: [2*r0,1*r0,1*r0,3*r0]
             ...
-            mx3[s0 & 255] will yield this word: [1*c3,1*c3,3*c3,2*c3]
+            mx3[c0 & 255] will yield this word: [1*r3,1*r3,3*r3,2*r3]
             
-            Therefore (& 255 omitted for brevity):
-            s0 = mx0[s0 >> 24] ^ mx1[s0 >> 16] ^ mx2[s0 >> 8] ^ mx3[s0]
-            s1 = mx0[s1 >> 24] ^ mx1[s1 >> 16] ^ mx2[s1 >> 8] ^ mx3[s1]
-            s2 = mx0[s2 >> 24] ^ mx1[s2 >> 16] ^ mx2[s2 >> 8] ^ mx3[s2]
-            s3 = mx0[s3 >> 24] ^ mx1[s3 >> 16] ^ mx2[s3 >> 8] ^ mx3[s3]
+            Therefore to mix the columns in each word in the state we
+            do the following (& 255 omitted for brevity):
+            c'0,r0 = mx0[c0 >> 24] ^ mx1[c1 >> 16] ^ mx2[c2 >> 8] ^ mx3[c3]
+            c'0,r1 = mx0[c0 >> 24] ^ mx1[c1 >> 16] ^ mx2[c2 >> 8] ^ mx3[c3]
+            c'0,r2 = mx0[c0 >> 24] ^ mx1[c1 >> 16] ^ mx2[c2 >> 8] ^ mx3[c3]
+            c'0,r3 = mx0[c0 >> 24] ^ mx1[c1 >> 16] ^ mx2[c2 >> 8] ^ mx3[c3]
             
-            However, first we need to perform ShiftRows(). The ShiftRows()
-            transformation cyclically shifts the last 3 rows of the state
-            over different offsets. The first row (r = 0) is not shifted.
+            However, before mixing, the algorithm requires us to perform
+            ShiftRows(). The ShiftRows() transformation cyclically shifts the
+            last 3 rows of the state over different offsets. The first row
+            (r = 0) is not shifted.
             
             s'_r,c = s_r,(c + shift(r, Nb) mod Nb
             for 0 < r < 4 and 0 <= c < Nb and
@@ -654,63 +661,104 @@
             the row, the first 3 bytes in r = 3 to be moved to the end of
             the row:
             
-            [s1,0 s1,1 s1,2 s1,3] => [s1,1 s1,2 s1,3 s1,0]
-            [s2,0 s2,1 s2,2 s2,3]    [s2,2 s2,3 s2,0 s2,1]
-            [s3,0 s3,1 s3,2 s3,3]    [s3,2 s3,3 s3,0 s3,1]
+            r1: [c0 c1 c2 c3] => [c1 c2 c3 c0]
+            r2: [c0 c1 c2 c3]    [c2 c3 c0 c1]
+            r3: [c0 c1 c2 c3]    [c3 c0 c1 c2]
             
             We can make these substitutions inline with our column mixing to
-            generate an updated set of equations:
+            generate an updated set of equations to produce each word in the
+            state (note the columns have changed positions):
             
             c0 c1 c2 c3 => c0 c1 c2 c3
             c0 c1 c2 c3    c1 c2 c3 c0  (cycled 1 byte)
             c0 c1 c2 c3    c2 c3 c0 c1  (cycled 2 bytes)
             c0 c1 c2 c3    c3 c0 c1 c2  (cycled 3 bytes)
             
-            c'0 = 2*c0 + 3*c1 + 1*c2 + 1*c3
-            c'1 = 1*c1 + 2*c2 + 3*c3 + 1*c0
-            c'2 = 1*c2 + 1*c3 + 2*c0 + 3*c1
-            c'3 = 3*c3 + 1*c0 + 1*c1 + 2*c2
+            Therefore:
+            
+            c'0 = 2*r0,c0 + 3*r1,c1 + 1*r2,c2 + 1*r3,c3
+            c'0 = 1*r0,c0 + 2*r1,c1 + 3*r2,c2 + 1*r3,c3
+            c'0 = 1*r0,c0 + 1*r1,c1 + 2*r2,c2 + 3*r3,c3
+            c'0 = 3*r0,c0 + 1*r1,c1 + 1*r2,c2 + 2*r3,c3
+            
+            c'1 = 2*r0,c1 + 3*r1,c2 + 1*r2,c3 + 1*r3,c0            
+            c'1 = 1*r0,c1 + 2*r1,c2 + 3*r2,c3 + 1*r3,c0
+            c'1 = 1*r0,c1 + 1*r1,c2 + 2*r2,c3 + 3*r3,c0
+            c'1 = 3*r0,c1 + 1*r1,c2 + 1*r2,c3 + 2*r3,c0
+            
+            ... and so forth for c'2 and c'3. The important distinction is
+            that the columns are cycling, with c0 being used with the mx0
+            map when calculating c0, but c1 being used with the mx0 map when
+            calculating c1 ... and so forth.
             
             When performing the inverse we transform the mirror image and
             skip the bottom row, instead of the top one, and move upwards:
             
-            c3 c2 c1 c0 => c0 c3 c2 c1  (cycled 3 bytes)
+            c3 c2 c1 c0 => c0 c3 c2 c1  (cycled 3 bytes) *same as encryption
             c3 c2 c1 c0    c1 c0 c3 c2  (cycled 2 bytes)
-            c3 c2 c1 c0    c2 c1 c0 c3  (cycled 1 byte)
+            c3 c2 c1 c0    c2 c1 c0 c3  (cycled 1 byte)  *same as encryption
             c3 c2 c1 c0    c3 c2 c1 c0
             
-            If you compare the resulting matrixes for ShiftRows()+MixColumns()
-            and for InvShiftRows()+InvMixColumns() only the 2nd and 4th columns
-            are different. So the code below uses an array to specify the order
-            for the 2nd and 4th columns based on encryption vs. decryption mode.
+            If you compare the resulting matrices for ShiftRows()+MixColumns()
+            and for InvShiftRows()+InvMixColumns() the 2nd and 4th columns are
+            different (in encrypt mode vs. decrypt mode). So in order to use
+            the same code to handle both encryption and decryption, we will
+            need to do some mapping.
             
-            encrypt: c1,c2,c3,c0
-            decrypt: c3,c0,c1,c2
-         */
+            If in encryption mode we let a=c0, b=c1, c=c2, d=c3, and r<N> be
+            a row number in the state, then the resulting matrix in encryption
+            mode for applying the above transformations would be:
+            
+            r1: a b c d
+            r2: b c d a
+            r3: c d a b
+            r4: d a b c
+            
+            If we did the same in decryption mode we would get:
+            
+            r1: a d c b
+            r2: b a d c
+            r3: c b a d
+            r4: d c b a
+            
+            If instead we swap d and b (set b=c3 and d=c1), then we get:
+            
+            r1: a b c d
+            r2: d a b c
+            r3: c d a b
+            r4: b c d a
+            
+            Now the 1st and 3rd rows are the same as the encryption matrix. All
+            we need to do then to make the mapping exactly the same is to swap
+            the 2nd and 4th rows when in decryption mode. To do this, we simply
+            initialize variables before the loop that hold different indexes
+            for rows 2 and 4 (r2, r4) based on the encryption/decryption mode.
+          */
          i += delta;
-         out2[0] =
-            mx0[out1[0] >>> 24] ^
-            mx1[out1[order[0]] >>> 16 & 255] ^
-            mx2[out1[2] >>> 8 & 255] ^
-            mx3[out1[order[2]] & 255] ^ w[i];
-         out2[1] =
-            mx0[out1[1] >>> 24] ^
-            mx1[out1[order[1]] >>> 16 & 255] ^
-            mx2[out1[3] >>> 8 & 255] ^
-            mx3[out1[order[3]] & 255] ^ w[i + 1];
-         out2[2] =
-            mx0[out1[2] >>> 24] ^
-            mx1[out1[order[2]] >>> 16 & 255] ^
-            mx2[out1[0] >>> 8 & 255] ^
-            mx3[out1[order[0]] & 255] ^ w[i + 2];
-         out2[3] =
-            mx0[out1[3] >>> 24] ^
-            mx1[out1[order[3]] >>> 16 & 255] ^
-            mx2[out1[1] >>> 8 & 255] ^
-            mx3[out1[order[1]] & 255] ^ w[i + 3];
-         tmp = out1;
-         out1 = out2;
-         out2 = tmp;
+         output[0] =
+            mx0[a >>> 24] ^
+            mx1[b >>> 16 & 255] ^
+            mx2[c >>> 8 & 255] ^
+            mx3[d & 255] ^ w[i];
+         output[r2] =
+            mx0[b >>> 24] ^
+            mx1[c >>> 16 & 255] ^
+            mx2[d >>> 8 & 255] ^
+            mx3[a & 255] ^ w[i + r2];
+         output[2] =
+            mx0[c >>> 24] ^
+            mx1[d >>> 16 & 255] ^
+            mx2[a >>> 8 & 255] ^
+            mx3[b & 255] ^ w[i + 2];
+         output[r4] =
+            mx0[d >>> 24] ^
+            mx1[a >>> 16 & 255] ^
+            mx2[b >>> 8 & 255] ^
+            mx3[c & 255] ^ w[i + r4];
+         a = output[0];
+         b = output[r2];
+         c = output[2];
+         d = output[r4];
       }
       
       /*
@@ -727,25 +775,25 @@
       // Note: rows are shifted inline
       i += delta;
       output[0] =
-         (sub[out1[0] >>> 24] << 24) ^
-         (sub[out1[order[0]] >>> 16 & 255] << 16) ^
-         (sub[out1[2] >>> 8 & 255] << 8) ^
-         (sub[out1[order[2]] & 255]) ^ w[i];
-      output[1] =
-         (sub[out1[1] >>> 24] << 24) ^
-         (sub[out1[order[1]] >>> 16 & 255] << 16) ^
-         (sub[out1[3] >>> 8 & 255] << 8) ^
-         (sub[out1[order[3]] & 255]) ^ w[i + 1];
+         (sub[a >>> 24] << 24) ^
+         (sub[b >>> 16 & 255] << 16) ^
+         (sub[c >>> 8 & 255] << 8) ^
+         (sub[d & 255]) ^ w[i];
+      output[r2] =
+         (sub[b >>> 24] << 24) ^
+         (sub[c >>> 16 & 255] << 16) ^
+         (sub[d >>> 8 & 255] << 8) ^
+         (sub[a & 255]) ^ w[i + r2];
       output[2] =
-         (sub[out1[2] >>> 24] << 24) ^
-         (sub[out1[order[2]] >>> 16 & 255] << 16) ^
-         (sub[out1[0] >>> 8 & 255] << 8) ^
-         (sub[out1[order[0]] & 255]) ^ w[i + 2];
-      output[3] =
-         (sub[out1[3] >>> 24] << 24) ^
-         (sub[out1[order[3]] >>> 16 & 255] << 16) ^
-         (sub[out1[1] >>> 8 & 255] << 8) ^
-         (sub[out1[order[1]] & 255]) ^ w[i + 3];
+         (sub[c >>> 24] << 24) ^
+         (sub[d >>> 16 & 255] << 16) ^
+         (sub[a >>> 8 & 255] << 8) ^
+         (sub[b & 255]) ^ w[i + 2];
+      output[r4] =
+         (sub[d >>> 24] << 24) ^
+         (sub[a >>> 16 & 255] << 16) ^
+         (sub[b >>> 8 & 255] << 8) ^
+         (sub[c & 255]) ^ w[i + r4];
    };
    
    /**
