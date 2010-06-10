@@ -601,10 +601,13 @@
          mx3 = mix[3];
          sub = sbox;
       }
-      output[0] = input[0] ^ w[i];
-      output[1] = input[1] ^ w[i + 1];
-      output[2] = input[2] ^ w[i + 2];
-      output[3] = input[3] ^ w[i + 3];
+      var tmp;
+      var out1 = new Array(4);
+      var out2 = new Array(4);
+      out1[0] = input[0] ^ w[i];
+      out1[1] = input[1] ^ w[i + 1];
+      out1[2] = input[2] ^ w[i + 2];
+      out1[3] = input[3] ^ w[i + 3];
       
       /* In order to share code we follow the encryption algorithm when both
          encrypting and decrypting. To account for the changes required in the
@@ -685,29 +688,29 @@
             decrypt: c3,c0,c1,c2
          */
          i += delta;
-         s0 =
-            mx0[output[0] >>> 24] ^
-            mx1[output[order[0]] >>> 16 & 255] ^
-            mx2[output[2] >>> 8 & 255] ^
-            mx3[output[order[2]] & 255] ^ w[i];
-         s1 =
-            mx0[output[1] >>> 24] ^
-            mx1[output[order[1]] >>> 16 & 255] ^
-            mx2[output[3] >>> 8 & 255] ^
-            mx3[output[order[3]] & 255] ^ w[i + 1];
-         s2 =
-            mx0[output[2] >>> 24] ^
-            mx1[output[order[2]] >>> 16 & 255] ^
-            mx2[output[0] >>> 8 & 255] ^
-            mx3[output[order[0]] & 255] ^ w[i + 2];
-         output[3] =
-            mx0[output[3] >>> 24] ^
-            mx1[output[order[3]] >>> 16 & 255] ^
-            mx2[output[1] >>> 8 & 255] ^
-            mx3[output[order[1]] & 255] ^ w[i + 3];
-         output[0] = s0;
-         output[1] = s1;
-         output[2] = s2;
+         out2[0] =
+            mx0[out1[0] >>> 24] ^
+            mx1[out1[order[0]] >>> 16 & 255] ^
+            mx2[out1[2] >>> 8 & 255] ^
+            mx3[out1[order[2]] & 255] ^ w[i];
+         out2[1] =
+            mx0[out1[1] >>> 24] ^
+            mx1[out1[order[1]] >>> 16 & 255] ^
+            mx2[out1[3] >>> 8 & 255] ^
+            mx3[out1[order[3]] & 255] ^ w[i + 1];
+         out2[2] =
+            mx0[out1[2] >>> 24] ^
+            mx1[out1[order[2]] >>> 16 & 255] ^
+            mx2[out1[0] >>> 8 & 255] ^
+            mx3[out1[order[0]] & 255] ^ w[i + 2];
+         out2[3] =
+            mx0[out1[3] >>> 24] ^
+            mx1[out1[order[3]] >>> 16 & 255] ^
+            mx2[out1[1] >>> 8 & 255] ^
+            mx3[out1[order[1]] & 255] ^ w[i + 3];
+         tmp = out1;
+         out1 = out2;
+         out2 = tmp;
       }
       
       /*
@@ -723,29 +726,26 @@
       */
       // Note: rows are shifted inline
       i += delta;
-      s0 =
-         (sub[output[0] >>> 24] << 24) ^
-         (sub[output[order[0]] >>> 16 & 255] << 16) ^
-         (sub[output[2] >>> 8 & 255] << 8) ^
-         (sub[output[order[2]] & 255]) ^ w[i];
-      s1 =
-         (sub[output[1] >>> 24] << 24) ^
-         (sub[output[order[1]] >>> 16 & 255] << 16) ^
-         (sub[output[3] >>> 8 & 255] << 8) ^
-         (sub[output[order[3]] & 255]) ^ w[i + 1];
-      s2 =
-         (sub[output[2] >>> 24] << 24) ^
-         (sub[output[order[2]] >>> 16 & 255] << 16) ^
-         (sub[output[0] >>> 8 & 255] << 8) ^
-         (sub[output[order[0]] & 255]) ^ w[i + 2];
+      output[0] =
+         (sub[out1[0] >>> 24] << 24) ^
+         (sub[out1[order[0]] >>> 16 & 255] << 16) ^
+         (sub[out1[2] >>> 8 & 255] << 8) ^
+         (sub[out1[order[2]] & 255]) ^ w[i];
+      output[1] =
+         (sub[out1[1] >>> 24] << 24) ^
+         (sub[out1[order[1]] >>> 16 & 255] << 16) ^
+         (sub[out1[3] >>> 8 & 255] << 8) ^
+         (sub[out1[order[3]] & 255]) ^ w[i + 1];
+      output[2] =
+         (sub[out1[2] >>> 24] << 24) ^
+         (sub[out1[order[2]] >>> 16 & 255] << 16) ^
+         (sub[out1[0] >>> 8 & 255] << 8) ^
+         (sub[out1[order[0]] & 255]) ^ w[i + 2];
       output[3] =
-         (sub[output[3] >>> 24] << 24) ^
-         (sub[output[order[3]] >>> 16 & 255] << 16) ^
-         (sub[output[1] >>> 8 & 255] << 8) ^
-         (sub[output[order[1]] & 255]) ^ w[i + 3];
-      output[0] = s0;
-      output[1] = s1;
-      output[2] = s2;
+         (sub[out1[3] >>> 24] << 24) ^
+         (sub[out1[order[3]] >>> 16 & 255] << 16) ^
+         (sub[out1[1] >>> 8 & 255] << 8) ^
+         (sub[out1[order[1]] & 255]) ^ w[i + 3];
    };
    
    /**
