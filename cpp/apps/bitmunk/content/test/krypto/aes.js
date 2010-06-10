@@ -613,7 +613,7 @@
          order of transformations applied when performing rounds. We also get
          key rounds in reverse order (relative to encryption).
       */
-      var s0, s1, s2, s3;
+      var s0, s1, s2;
       for(var round = 1; round < Nr; round++)
       {
          /* As described above, we'll be using table lookups to perform the
@@ -700,7 +700,7 @@
             mx1[output[order[2]] >>> 16 & 255] ^
             mx2[output[0] >>> 8 & 255] ^
             mx3[output[order[0]] & 255] ^ w[i + 2];
-         s3 =
+         output[3] =
             mx0[output[3] >>> 24] ^
             mx1[output[order[3]] >>> 16 & 255] ^
             mx2[output[1] >>> 8 & 255] ^
@@ -708,7 +708,6 @@
          output[0] = s0;
          output[1] = s1;
          output[2] = s2;
-         output[3] = s3;
       }
       
       /*
@@ -739,7 +738,7 @@
          (sub[output[order[2]] >>> 16 & 255] << 16) ^
          (sub[output[0] >>> 8 & 255] << 8) ^
          (sub[output[order[0]] & 255]) ^ w[i + 2];
-      s3 =
+      output[3] =
          (sub[output[3] >>> 24] << 24) ^
          (sub[output[order[3]] >>> 16 & 255] << 16) ^
          (sub[output[1] >>> 8 & 255] << 8) ^
@@ -747,7 +746,6 @@
       output[0] = s0;
       output[1] = s1;
       output[2] = s2;
-      output[3] = s3;
    };
    
    /**
