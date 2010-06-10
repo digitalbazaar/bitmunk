@@ -289,7 +289,7 @@
          
          // apply affine transformation
          sx = ei ^ (ei << 1) ^ (ei << 2) ^ (ei << 3) ^ (ei << 4);
-         sx = (sx >> 8) ^ (sx & 0xFF) ^ 0x63;
+         sx = (sx >> 8) ^ (sx & 255) ^ 0x63;
          
          // update tables
          sbox[e] = sx;
@@ -447,9 +447,9 @@
          {
             // temp = SubWord(RotWord(temp)) ^ Rcon[i / Nk]
             temp =
-               sbox[temp >>> 16 & 0xFF] << 24 ^
-               sbox[temp >>> 8 & 0xFF] << 16 ^
-               sbox[temp & 0xFF] << 8 ^
+               sbox[temp >>> 16 & 255] << 24 ^
+               sbox[temp >>> 8 & 255] << 16 ^
+               sbox[temp & 255] << 8 ^
                sbox[temp >>> 24] ^ (rcon[iNk] << 24);
             iNk++;
          }
@@ -458,9 +458,9 @@
             // temp = SubWord(temp)
             temp =
                sbox[temp >>> 24] << 24 ^
-               sbox[temp >>> 16 & 0xFF] << 16 ^
-               sbox[temp >>> 8 & 0xFF] << 8 ^
-               sbox[temp & 0xFF];
+               sbox[temp >>> 16 & 255] << 16 ^
+               sbox[temp >>> 8 & 255] << 8 ^
+               sbox[temp & 255];
          }
          w[i] = w[i - Nk] ^ temp;
       }
@@ -517,9 +517,9 @@
             // because round key bytes aren't sub'd in decryption mode)
             w[i] =
                imx0[sbox[w[i] >>> 24]] ^
-               imx1[sbox[w[i] >>> 16 & 0xFF]] ^
-               imx2[sbox[w[i] >>> 8 & 0xFF]] ^
-               imx3[sbox[w[i] & 0xFF]];
+               imx1[sbox[w[i] >>> 16 & 255]] ^
+               imx2[sbox[w[i] >>> 8 & 255]] ^
+               imx3[sbox[w[i] & 255]];
          }
       }
       
@@ -628,9 +628,9 @@
             So using mix tables,
             mx0[s0 >> 24] will yield this word: [2*c0,1*c0,1*c0,3*c0]
             ...
-            mx3[s0 & 0xFF] will yield this word: [1*c3,1*c3,3*c3,2*c3]
+            mx3[s0 & 255] will yield this word: [1*c3,1*c3,3*c3,2*c3]
             
-            Therefore (& 0xFF omitted for brevity):
+            Therefore (& 255 omitted for brevity):
             s0 = mx0[s0 >> 24] ^ mx1[s0 >> 16] ^ mx2[s0 >> 8] ^ mx3[s0]
             s1 = mx0[s1 >> 24] ^ mx1[s1 >> 16] ^ mx2[s1 >> 8] ^ mx3[s1]
             s2 = mx0[s2 >> 24] ^ mx1[s2 >> 16] ^ mx2[s2 >> 8] ^ mx3[s2]
@@ -687,24 +687,24 @@
          i += delta;
          s0 =
             mx0[output[0] >>> 24] ^
-            mx1[output[order[0]] >>> 16 & 0xFF] ^
-            mx2[output[2] >>> 8 & 0xFF] ^
-            mx3[output[order[2]] & 0xFF] ^ w[i];
+            mx1[output[order[0]] >>> 16 & 255] ^
+            mx2[output[2] >>> 8 & 255] ^
+            mx3[output[order[2]] & 255] ^ w[i];
          s1 =
             mx0[output[1] >>> 24] ^
-            mx1[output[order[1]] >>> 16 & 0xFF] ^
-            mx2[output[3] >>> 8 & 0xFF] ^
-            mx3[output[order[3]] & 0xFF] ^ w[i + 1];
+            mx1[output[order[1]] >>> 16 & 255] ^
+            mx2[output[3] >>> 8 & 255] ^
+            mx3[output[order[3]] & 255] ^ w[i + 1];
          s2 =
             mx0[output[2] >>> 24] ^
-            mx1[output[order[2]] >>> 16 & 0xFF] ^
-            mx2[output[0] >>> 8 & 0xFF] ^
-            mx3[output[order[0]] & 0xFF] ^ w[i + 2];
+            mx1[output[order[2]] >>> 16 & 255] ^
+            mx2[output[0] >>> 8 & 255] ^
+            mx3[output[order[0]] & 255] ^ w[i + 2];
          s3 =
             mx0[output[3] >>> 24] ^
-            mx1[output[order[3]] >>> 16 & 0xFF] ^
-            mx2[output[1] >>> 8 & 0xFF] ^
-            mx3[output[order[1]] & 0xFF] ^ w[i + 3];
+            mx1[output[order[3]] >>> 16 & 255] ^
+            mx2[output[1] >>> 8 & 255] ^
+            mx3[output[order[1]] & 255] ^ w[i + 3];
          output[0] = s0;
          output[1] = s1;
          output[2] = s2;
@@ -726,24 +726,24 @@
       i += delta;
       s0 =
          (sub[output[0] >>> 24] << 24) ^
-         (sub[output[order[0]] >>> 16 & 0xFF] << 16) ^
-         (sub[output[2] >>> 8 & 0xFF] << 8) ^
-         (sub[output[order[2]] & 0xFF]) ^ w[i];
+         (sub[output[order[0]] >>> 16 & 255] << 16) ^
+         (sub[output[2] >>> 8 & 255] << 8) ^
+         (sub[output[order[2]] & 255]) ^ w[i];
       s1 =
          (sub[output[1] >>> 24] << 24) ^
-         (sub[output[order[1]] >>> 16 & 0xFF] << 16) ^
-         (sub[output[3] >>> 8 & 0xFF] << 8) ^
-         (sub[output[order[3]] & 0xFF]) ^ w[i + 1];
+         (sub[output[order[1]] >>> 16 & 255] << 16) ^
+         (sub[output[3] >>> 8 & 255] << 8) ^
+         (sub[output[order[3]] & 255]) ^ w[i + 1];
       s2 =
          (sub[output[2] >>> 24] << 24) ^
-         (sub[output[order[2]] >>> 16 & 0xFF] << 16) ^
-         (sub[output[0] >>> 8 & 0xFF] << 8) ^
-         (sub[output[order[0]] & 0xFF]) ^ w[i + 2];
+         (sub[output[order[2]] >>> 16 & 255] << 16) ^
+         (sub[output[0] >>> 8 & 255] << 8) ^
+         (sub[output[order[0]] & 255]) ^ w[i + 2];
       s3 =
          (sub[output[3] >>> 24] << 24) ^
-         (sub[output[order[3]] >>> 16 & 0xFF] << 16) ^
-         (sub[output[1] >>> 8 & 0xFF] << 8) ^
-         (sub[output[order[1]] & 0xFF]) ^ w[i + 3];
+         (sub[output[order[3]] >>> 16 & 255] << 16) ^
+         (sub[output[1] >>> 8 & 255] << 8) ^
+         (sub[output[order[1]] & 255]) ^ w[i + 3];
       output[0] = s0;
       output[1] = s1;
       output[2] = s2;
