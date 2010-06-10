@@ -502,6 +502,15 @@
          This change will correctly alter our key schedule so that we can XOR
          each round key with our already transformed decryption state. This
          allows us to use the same code path as the encryption algorithm.
+         
+         We make one more change to the decryption key. Since the decryption
+         algorithm runs in reverse from the encryption algorithm, we reverse
+         the expanded key to avoid having to iterate over it backwards when
+         running the encryption algorithm later in decryption mode. In addition
+         to reversing the key, we also swap each round key's 2nd and 4th rows.
+         See the comments section where rounds are performed for more details
+         about why this is done. These changes are done inline with the other
+         substitution described above.
       */
       if(decrypt)
       {
@@ -510,20 +519,36 @@
          var m1 = imix[1];
          var m2 = imix[2];
          var m3 = imix[3];
-         // do not modify the first or last round key (round keys are Nb words)
-         // as no column mixing is performed before they are added 
-         for(var i = Nb; i < w.length - Nb; i++)
+         var wnew = w.slice(0);
+         var end = w.length;
+         for(var i = 0; i < end; i += Nb)
          {
-            // substitute each round key byte because the inverse-mix table
-            // will inverse-substitute it (effectively cancel the substitution
-            // because round key bytes aren't sub'd in decryption mode)
-            tmp = w[i];
-            w[i] =
-               m0[sbox[tmp >>> 24]] ^
-               m1[sbox[tmp >>> 16 & 255]] ^
-               m2[sbox[tmp >>> 8 & 255]] ^
-               m3[sbox[tmp & 255]];
+            // do not sub the first or last round key (round keys are Nb
+            // words) as no column mixing is performed before they are added,
+            // but do change the key order
+            if(i == 0 || i == (end - Nb))
+            {
+               wnew[i + 1] = w[i + 3];
+               wnew[i + 3] = w[i + 1];
+            }
+            else
+            {
+               // substitute each round key byte because the inverse-mix
+               // table will inverse-substitute it (effectively cancel the
+               // substitution because round key bytes aren't sub'd in
+               // decryption mode) and swap indexes 3 and 1
+               for(var n = 0; n < Nb; n++)
+               {
+                  tmp = w[i + n];
+                  wnew[i + (3&-n)] =
+                     m0[sbox[tmp >>> 24]] ^
+                     m1[sbox[tmp >>> 16 & 255]] ^
+                     m2[sbox[tmp >>> 8 & 255]] ^
+                     m3[sbox[tmp & 255]];
+               }
+            }
          }
+         w = wnew;
       }
       
       return w;
@@ -608,9 +633,9 @@
       }
       var a, b, c, d, a2, b2, c2;
       a = input[0] ^ w[i];
-      b = input[r2] ^ w[i + r2];
+      b = input[r2] ^ w[i + 1];
       c = input[2] ^ w[i + 2];
-      d = input[r4] ^ w[i + r4];
+      d = input[r4] ^ w[i + 3];
       
       /* In order to share code we follow the encryption algorithm when both
          encrypting and decrypting. To account for the changes required in the
@@ -732,9 +757,11 @@
             
             Now the 1st and 3rd rows are the same as the encryption matrix. All
             we need to do then to make the mapping exactly the same is to swap
-            the 2nd and 4th rows when in decryption mode. To do this, we simply
-            initialize variables before the loop that hold different indexes
-            for rows 2 and 4 (r2, r4) based on the encryption/decryption mode.
+            the 2nd and 4th rows when in decryption mode. To do this without
+            having to do it on each iteration, we swapped the 2nd and 4th rows
+            in the decryption key schedule. We also have to do the swap above
+            when we first pull in the input and when we set the final output.
+            We set r2 and r4 based on the encryption mode to accomplish this.
           */
          i += delta;
          a2 =
@@ -746,7 +773,7 @@
             m0[b >>> 24] ^
             m1[c >>> 16 & 255] ^
             m2[d >>> 8 & 255] ^
-            m3[a & 255] ^ w[i + r2];
+            m3[a & 255] ^ w[i + 1];
          c2 =
             m0[c >>> 24] ^
             m1[d >>> 16 & 255] ^
@@ -756,7 +783,7 @@
             m0[d >>> 24] ^
             m1[a >>> 16 & 255] ^
             m2[b >>> 8 & 255] ^
-            m3[c & 255] ^ w[i + r4];
+            m3[c & 255] ^ w[i + 3];
          a = a2;
          b = b2;
          c = c2;
@@ -784,7 +811,7 @@
          (sub[b >>> 24] << 24) ^
          (sub[c >>> 16 & 255] << 16) ^
          (sub[d >>> 8 & 255] << 8) ^
-         (sub[a & 255]) ^ w[i + r2];
+         (sub[a & 255]) ^ w[i + 1];
       output[2] =
          (sub[c >>> 24] << 24) ^
          (sub[d >>> 16 & 255] << 16) ^
@@ -794,7 +821,7 @@
          (sub[d >>> 24] << 24) ^
          (sub[a >>> 16 & 255] << 16) ^
          (sub[b >>> 8 & 255] << 8) ^
-         (sub[c & 255]) ^ w[i + r4];
+         (sub[c & 255]) ^ w[i + 3];
    };
    
    /**
