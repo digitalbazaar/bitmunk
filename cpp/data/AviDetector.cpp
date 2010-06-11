@@ -370,7 +370,7 @@ int AviDetector::parseJunkChunk(
       int size = (int)rch.getChunkSize();
       if(size > 0 && b[size - 1] == 0x00)
       {
-         size--;
+         --size;
       }
 
       // inflate contract

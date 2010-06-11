@@ -1030,8 +1030,7 @@ bool DownloadManager::pieceUpdate(DynamicObject& msg)
       if(conns > 1)
       {
          // decrement entry
-         conns--;
-         mDownloadState["activeSellers"][key.c_str()] = conns;
+         mDownloadState["activeSellers"][key.c_str()] = --conns;
       }
       else
       {
