@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/gtkui/Controller.h"
 
@@ -25,7 +25,7 @@ Controller::~Controller()
 {
    // clean up handlers
    for(HandlerMap::iterator i = mHandlerMap.begin();
-       i != mHandlerMap.end(); i++)
+       i != mHandlerMap.end(); ++i)
    {
       free((char*)i->first);
       delete i->second;

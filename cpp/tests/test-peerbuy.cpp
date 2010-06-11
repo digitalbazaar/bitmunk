@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_FORMAT_MACROS
 
@@ -97,7 +97,7 @@ void runPeerBuyTest(
          price = "8.00";
          
          ware["mediaId"] = 1;
-         for(int i = 0; testIds[i].fileId != NULL; i++)
+         for(int i = 0; testIds[i].fileId != NULL; ++i)
          {
             FileInfo& fi = ware["fileInfos"]->append();
             fi["id"] = testIds[i].fileId;
@@ -469,7 +469,7 @@ public:
       //runPeerBuyTest(node, tr, *this, Single);
       
       // buy all individual singles
-      for(int i = 0; testIds[i].fileId != NULL; i++)
+      for(int i = 0; testIds[i].fileId != NULL; ++i)
       {
          runPeerBuyTest(node, tr, *this, Single, i);
       }

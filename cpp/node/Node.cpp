@@ -303,7 +303,7 @@ void Node::interruptUserFibers(UserId id)
          // interrupt all of user's fibers
          UserFiberIdList* list = i->second;
          for(UserFiberIdList::iterator li = list->begin();
-             li != list->end(); li++)
+             li != list->end(); ++li)
          {
             FiberId fiberId = *li;
             interruptFiber(fiberId);

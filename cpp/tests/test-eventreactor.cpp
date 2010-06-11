@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_CONSTANT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -100,7 +100,7 @@ void runEventReactorTest(
       // FIXME: use this loop to run concurrent downloads,
       // simply change "count" to the number of concurrent downloads
       int count = 1;
-      for(int i = 0; i < count; i++)
+      for(int i = 0; i < count; ++i)
       {
          // hit self to create directive
          Url url;

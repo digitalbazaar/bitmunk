@@ -591,7 +591,7 @@ bool FileAssembler::cleanupFilePieces(FileInfo& fi)
       // remove file piece
       File file(fp["path"]->getString());
       file->remove();
-      pieceCount++;
+      ++pieceCount;
       yield();
    }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/data/RiffDetector.h"
 
@@ -32,7 +32,7 @@ int RiffDetector::findRiffChunkHeader(
       }
       else
       {
-         currentOffset++;
+         ++currentOffset;
       }
    }
    
@@ -57,7 +57,7 @@ int RiffDetector::findRiffListHeader(
       }
       else
       {
-         currentOffset++;
+         ++currentOffset;
       }
    }
    

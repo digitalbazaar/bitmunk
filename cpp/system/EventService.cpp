@@ -364,7 +364,7 @@ void EventService::cleanup()
    mObserverLock.lockExclusive();
    {
       for(ObserverMap::iterator i = mObservers.begin();
-          i != mObservers.end(); i++)
+          i != mObservers.end(); ++i)
       {
          // unregister observer entirely
          mNode->getEventController()->unregisterObserver(i->second);
@@ -441,7 +441,7 @@ static bool applyCoalesceRule(DynamicObject& rule, Event& e1, Event* e2)
             // traverse rule details
             rval = applyCoalesceRule(
                av, e1[idx], (e2 == NULL) ? NULL : &(*e2)[idx]);
-            idx++;
+            ++idx;
          }
       }
       else
@@ -605,7 +605,7 @@ bool EventService::createObservers(
    out->setType(Array);
 
    int count = in["count"]->getInt32();
-   for(int i = 0; i < count; i++)
+   for(int i = 0; i < count; ++i)
    {
       // safe to lock on each iteration, allowing better concurrency
       mObserverLock.lockExclusive();
@@ -700,7 +700,7 @@ bool EventService::registerObservers(
       // first assure all observers to be registered exist
       int index = 0;
       DynamicObjectIterator i = in.getIterator();
-      for(; i->hasNext(); index++)
+      for(; i->hasNext(); ++index)
       {
          // find the observer (or skip it if it is to be created ... these
          // have an ID of "0")
@@ -740,7 +740,7 @@ bool EventService::registerObservers(
          // all observers valid, register them
          index = 0;
          i = in.getIterator();
-         for(; i->hasNext(); index++)
+         for(; i->hasNext(); ++index)
          {
             DynamicObject& entry = i->next();
             const char* id = entry["id"]->getString();

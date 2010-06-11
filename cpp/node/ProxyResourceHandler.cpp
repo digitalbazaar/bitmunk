@@ -35,11 +35,11 @@ ProxyResourceHandler::ProxyResourceHandler(Node* node, const char* path) :
 ProxyResourceHandler::~ProxyResourceHandler()
 {
    free(mPath);
-   for(ProxyDomainList::iterator i = mDomains.begin(); i != mDomains.end(); i++)
+   for(ProxyDomainList::iterator i = mDomains.begin(); i != mDomains.end(); ++i)
    {
       ProxyDomain* pd = *i;
       PathToRule& rules = pd->rules;
-      for(PathToRule::iterator ri = rules.begin(); ri != rules.end(); ri++)
+      for(PathToRule::iterator ri = rules.begin(); ri != rules.end(); ++ri)
       {
          free((char*)ri->first);
       }
@@ -80,11 +80,11 @@ static PatternRef _compileDomainRegex(const char* domain)
 static int _countWildcards(const char* domain)
 {
    int rval = 0;
-   for(; *domain != '\0'; domain++)
+   for(; *domain != '\0'; ++domain)
    {
       if(*domain == '*')
       {
-         rval++;
+         ++rval;
       }
    }
    return rval;
@@ -410,7 +410,7 @@ bool ProxyResourceHandler::addRule(
       // try to find exact domain
       ProxyDomain* pd = NULL;
       for(ProxyDomainList::iterator i = mDomains.begin();
-          pd == NULL && i != mDomains.end(); i++)
+          pd == NULL && i != mDomains.end(); ++i)
       {
          if(strcmp((*i)->domain, domain) == 0)
          {
@@ -490,7 +490,7 @@ ProxyResourceHandler::Rule* ProxyResourceHandler::findRule(
 
    // try to find regex-matching domain
    for(ProxyDomainList::iterator i = mDomains.begin();
-       rval == NULL && i != mDomains.end(); i++)
+       rval == NULL && i != mDomains.end(); ++i)
    {
       ProxyDomain* pd = *i;
       if(pd->regex->match(host.c_str()))

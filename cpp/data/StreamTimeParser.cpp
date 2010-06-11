@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/data/StreamTimeParser.h"
 
@@ -25,7 +25,7 @@ bool StreamTimeParser::addTimeSet(double start, double end)
       // make sure time set is not a duplicate
       bool duplicate = false;
       for(TimeSetList::iterator i = mTimeSets.begin();
-          !duplicate && i != mTimeSets.end(); i++)
+          !duplicate && i != mTimeSets.end(); ++i)
       {
          duplicate = (i->first == start && i->second == end);
       }
@@ -60,7 +60,7 @@ void StreamTimeParser::removeTimeSet(double start, double end)
             // update time set so that it starts at the end (remove
             // the beginning of the time set)
             i->first = end;
-            i++;
+            ++i;
          }
       }
       else if(start > i->first)
@@ -78,7 +78,7 @@ void StreamTimeParser::removeTimeSet(double start, double end)
          }
          
          // increment iterator
-         i++;
+         ++i;
       }
       else if(end > i->first)
       {
@@ -92,19 +92,19 @@ void StreamTimeParser::removeTimeSet(double start, double end)
          {
             // set a new start time to the end
             i->first = end;
-            i++;
+            ++i;
          }
       }
       else
       {
          // no overlap
-         i++;
+         ++i;
       }
    }
    
    // add in the new time sets and merge all time sets
    for(TimeSetList::iterator i = newTimeSets.begin();
-       i != newTimeSets.end(); i++)
+       i != newTimeSets.end(); ++i)
    {
       mTimeSets.push_back(make_pair(i->first, i->second));
    }
@@ -115,7 +115,7 @@ bool StreamTimeParser::isTimeValid(double time)
    bool rval = false;
    
    for(TimeSetList::iterator i = mTimeSets.begin();
-       !rval && i != mTimeSets.end(); i++)
+       !rval && i != mTimeSets.end(); ++i)
    {
       // see if data is in time interval
       rval = (time >= i->first && time <= i->second);

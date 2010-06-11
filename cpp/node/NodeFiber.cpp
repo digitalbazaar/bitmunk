@@ -134,7 +134,7 @@ DynamicObject NodeFiber::waitForMessages(const char** keys, Operation* op)
          }
 
          // check for keys
-         for(int i = 0; keys[i] != NULL; i++)
+         for(int i = 0; keys[i] != NULL; ++i)
          {
             if(msg->hasMember(keys[i]))
             {

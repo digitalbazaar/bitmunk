@@ -521,7 +521,7 @@ bool CatalogDatabase::allocateNewPayeeScheme(
          if(e->getCode() == SQLITE_CONSTRAINT)
          {
             allocatedPayeeSchemeId = 0;
-            allocationAttempts++;
+            ++allocationAttempts;
             rval = s->reset() && si->reset();
          }
       }
@@ -770,7 +770,7 @@ bool CatalogDatabase::populatePayeeSchemes(
                   // means we must increment the current payee scheme offset
                   if(lastPsId != 0)
                   {
-                     currentPsOffset++;
+                     ++currentPsOffset;
                   }
 
                   // if the new offset is within the range of payee schemes
@@ -1336,7 +1336,7 @@ bool CatalogDatabase::populateWareSet(
          " LEFT JOIN " MLDB_TABLE_FILES " f"
          " ON w.media_library_id=f.media_library_id"
          " WHERE f.file_id IN (";
-      for(int i = 0, len = query["fileIds"]->length(); i < len; i++)
+      for(int i = 0, len = query["fileIds"]->length(); i < len; ++i)
       {
          sql.push_back('?');
          if(i != (len - 1))
@@ -1354,8 +1354,7 @@ bool CatalogDatabase::populateWareSet(
          // start at bind index 1
          int offset = 1;
          for(int i = 0, len = query["fileIds"]->length();
-            rval && (i < len);
-            i++)
+             rval && (i < len); ++i)
          {
             rval = s->setText(i + offset, query["fileIds"][i]->getString());
          }
@@ -1423,7 +1422,7 @@ bool CatalogDatabase::populateWareSet(
             sql.push_back(',');
          }
          sql.push_back('?');
-         i++;
+         ++i;
       }
       sql.push_back(')');
 

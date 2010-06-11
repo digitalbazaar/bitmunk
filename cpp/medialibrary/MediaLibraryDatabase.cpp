@@ -247,7 +247,7 @@ bool MediaLibraryDatabase::initializePerUserDatabase(
    {
       // call all media library extensions
       for(ExtensionList::iterator i = mExtensions.begin();
-          rval && i != mExtensions.end(); i++)
+          rval && i != mExtensions.end(); ++i)
       {
          rval = (*i)->mediaLibraryInitialized(userId, conn, dbc);
       }
@@ -264,7 +264,7 @@ void MediaLibraryDatabase::cleanupPerUserDatabase(
 {
    // call all media library extension clean up code
    for(ExtensionList::iterator i = mExtensions.begin();
-       i != mExtensions.end(); i++)
+       i != mExtensions.end(); ++i)
    {
       (*i)->mediaLibraryCleaningUp(userId);
    }
@@ -798,7 +798,7 @@ bool MediaLibraryDatabase::populateFileSet(
       if(idsSpecified)
       {
          selectSql.append(" AND f.file_id IN (");
-         for(int i = 0, len = query["ids"]->length(); i < len; i++)
+         for(int i = 0, len = query["ids"]->length(); i < len; ++i)
          {
             selectSql.push_back('?');
             if(i != (len - 1))
@@ -850,8 +850,7 @@ bool MediaLibraryDatabase::populateFileSet(
             {
                int offset = 1;
                for(int i = 0, len = query["ids"]->length();
-                  rval && (i < len);
-                  i++)
+                   rval && (i < len); ++i)
                {
                   rval = s->setText(i + offset, query["ids"][i]->getString());
                }

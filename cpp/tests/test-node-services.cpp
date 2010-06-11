@@ -671,7 +671,7 @@ void pingPerfTest(Node& node, TestRunner& tr, bitmunk::test::Tester* tester)
       
       DynamicObject dummy;
       uint64_t startTime = Timer::startTiming();
-      for(int i = 0; i < n; i++)
+      for(int i = 0; i < n; ++i)
       {
          messenger->getFromBitmunk(&url, dummy);
       }
@@ -686,7 +686,7 @@ void pingPerfTest(Node& node, TestRunner& tr, bitmunk::test::Tester* tester)
       
       DynamicObject dummy;
       uint64_t startTime = Timer::startTiming();
-      for(int i=0; i<n; i++)
+      for(int i = 0; i < n; ++i)
       {
          messenger->getSecureFromBitmunk(&url, dummy, node.getDefaultUserId());
       }
@@ -712,7 +712,7 @@ void accountGetPerfTest(Node& node, TestRunner& tr)
       Url url("/api/3.0/accounts/?owner=900");
       
       uint64_t startTime = Timer::startTiming();
-      for(int i=0; i<n; i++)
+      for(int i = 0; i < n; ++i)
       {
          User user;
          messenger->getFromBitmunk(&url, user);
@@ -727,7 +727,7 @@ void accountGetPerfTest(Node& node, TestRunner& tr)
       Url url("/api/3.0/accounts/?owner=900");
       
       uint64_t startTime = Timer::startTiming();
-      for(int i=0; i<n; i++)
+      for(int i = 0; i < n; ++i)
       {
          User user;
          messenger->getFromBitmunk(&url, user, node.getDefaultUserId());

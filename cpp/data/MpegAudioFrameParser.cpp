@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/data/MpegAudioFrameParser.h"
 
@@ -88,7 +88,7 @@ int MpegAudioFrameParser::findFrame(const char* b, int length)
       // search until 1 minus offset + length as we look ahead 1 byte during
       // the search
       int end = length - 1;
-      for(int offset = 0; offset < end; offset++)
+      for(int offset = 0; offset < end; ++offset)
       {
          // if the byte after the current offset is not at least 224, we know
          // we can skip two bytes of data in our search for a frame, and if the
@@ -114,7 +114,7 @@ int MpegAudioFrameParser::findFrame(const char* b, int length)
          {
             // we can skip an offset because the second byte can't possibly
             // match a frame header's second byte
-            offset++;
+            ++offset;
          }
       }
    }

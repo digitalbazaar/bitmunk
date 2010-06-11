@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_CONSTANT_MACROS
 
@@ -81,10 +81,10 @@ void Watermark::reset()
    
    // clean up detected embeds
    for(EmbedDataMap::iterator im = mEmbedDataMap.begin();
-       im != mEmbedDataMap.end(); im++)
+       im != mEmbedDataMap.end(); ++im)
    {
       for(EmbedDataList::iterator il = im->second->begin();
-          il != im->second->end(); il++)
+          il != im->second->end(); ++il)
       {
          // free hash
          free(il->hash);
@@ -153,7 +153,7 @@ bool Watermark::getEmbedHash(uint32_t index, char* hash)
       
       // copy hash that matches the embed count
       for(EmbedDataList::iterator itr = list->begin();
-          !rval && itr != list->end(); itr++)
+          !rval && itr != list->end(); ++itr)
       {
          if(itr->count == count)
          {
@@ -178,7 +178,7 @@ int Watermark::getEmbedCount(uint32_t index)
       
       // compare existing hashes
       for(EmbedDataList::iterator itr = list->begin();
-          itr != list->end(); itr++)
+          itr != list->end(); ++itr)
       {
          if(itr->count > rval)
          {
@@ -238,12 +238,12 @@ void Watermark::addDetectedEmbedData(unsigned char* data)
    // compare existing hashes
    bool found = false;
    for(EmbedDataList::iterator itr = list->begin();
-       !found && itr != list->end(); itr++)
+       !found && itr != list->end(); ++itr)
    {
       if(memcmp(itr->hash, hash, 20) == 0)
       {
          // existing hash found, up embed count
-         itr->count++;
+         ++itr->count;
          found = true;
       }
    }

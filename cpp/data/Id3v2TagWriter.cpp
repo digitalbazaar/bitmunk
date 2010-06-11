@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/data/Id3v2TagWriter.h"
 
@@ -24,7 +24,7 @@ Id3v2TagWriter::Id3v2TagWriter(
    {
       // add all frame headers to list of headers to write
       for(FrameList::iterator i = mTag->getFrameHeaders().begin();
-          i != mTag->getFrameHeaders().end(); i++)
+          i != mTag->getFrameHeaders().end(); ++i)
       {
          mFrames.push_back(*i);
       }

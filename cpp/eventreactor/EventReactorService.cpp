@@ -264,7 +264,7 @@ bool EventReactorService::deleteReactors(
       BM_ID_SET(out["userId"], userId);
       out["names"]->setType(Array);
       for(ReactorMap::iterator i = mEventReactors.begin();
-          i != mEventReactors.end(); i++)
+          i != mEventReactors.end(); ++i)
       {
          if(i->second->getObserverContainer()->unregisterUser(userId))
          {
@@ -287,7 +287,7 @@ bool EventReactorService::getStatus(
    // return all supported names
    out["supported"]->setType(Array);
    for(ReactorMap::iterator i = mEventReactors.begin();
-       i != mEventReactors.end(); i++)
+       i != mEventReactors.end(); ++i)
    {
       // send back names for available event reactors
       DynamicObject name;

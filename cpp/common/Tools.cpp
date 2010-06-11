@@ -437,7 +437,7 @@ string Tools::createMediaFilename(
          // iterate over every item in the group
          while(mi->hasNext())
          {
-            maxPosition++;
+            ++maxPosition;
             Media& m = mi->next();
 
             // Check to see if the media IDs match

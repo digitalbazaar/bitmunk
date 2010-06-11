@@ -383,7 +383,7 @@ bool MediaLibraryService::getFileSet(
       // build query from filter params
       const char* params[] =
          {"start", "num", "extension", "order", "dir", NULL};
-      for(int i = 0; params[i] != NULL; i++)
+      for(int i = 0; params[i] != NULL; ++i)
       {
          const char* p = params[i];
          if(filters->hasMember(p))

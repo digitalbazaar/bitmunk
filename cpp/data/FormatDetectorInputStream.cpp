@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/data/FormatDetectorInputStream.h"
 
@@ -114,8 +114,7 @@ vector<DataFormatInspector*> FormatDetectorInputStream::getInspectors()
    InspectorInputStream* iis = static_cast<InspectorInputStream*>(mInputStream);
    iis->getInspectors(inspectors);
    for(list<DataInspector*>::iterator i = inspectors.begin();
-       i != inspectors.end();
-       i++)
+       i != inspectors.end(); ++i)
    {
       DataFormatInspector* dfi = dynamic_cast<DataFormatInspector*>(*i);
       if(dfi != NULL && dfi->isFormatRecognized())
@@ -137,8 +136,7 @@ bool FormatDetectorInputStream::isFormatRecognized()
          static_cast<InspectorInputStream*>(mInputStream);
       iis->getInspectors(inspectors);
       for(list<DataInspector*>::iterator i = inspectors.begin();
-          !mDataFormatRecognized && i != inspectors.end();
-          i++)
+          !mDataFormatRecognized && i != inspectors.end(); ++i)
       {
          DataFormatInspector* dfi = dynamic_cast<DataFormatInspector*>(*i);
          if(dfi != NULL)
@@ -157,7 +155,7 @@ DynamicObject FormatDetectorInputStream::getFormatDetails()
    details->setType(Array);
 
    for(vector<DataFormatInspector*>::iterator i = mInspectors.begin();
-       i != mInspectors.end(); i++)
+       i != mInspectors.end(); ++i)
    {
       DataFormatInspector* dfi = dynamic_cast<DataFormatInspector*>(*i);
       if(dfi != NULL && dfi->isFormatRecognized())

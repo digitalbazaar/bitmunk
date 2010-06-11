@@ -47,7 +47,7 @@ int MpegAudioDetector::detectFormat(const char* b, int length)
             if(getFramesDetected() == 1)
             {
                resetFormatDetails();
-               mFalsePositives++;
+               ++mFalsePositives;
             }
             // if two frames in a row have been detected and there is a gap
             // then assume we're actually looking a movie file or something
@@ -121,7 +121,7 @@ int MpegAudioDetector::detectFormat(const char* b, int length)
                   if(calcCrc != existingCrc)
                   {
                      // increment frame CRC errors
-                     mFrameCrcErrors++;
+                     ++mFrameCrcErrors;
                   }
                }
                else
@@ -271,17 +271,17 @@ void MpegAudioDetector::resetFormatDetails()
 void MpegAudioDetector::recordHeaderInfo(AudioFrameHeader* header)
 {
    // increment frames detected
-   mFramesDetected++;
+   ++mFramesDetected;
 
    // update version map
    AudioVersion version;
    header->getVersion(version);
-   mVersionMap[version.type]++;
+   ++mVersionMap[version.type];
 
    // update layer map
    AudioLayer layer;
    header->getLayer(layer);
-   mLayerMap[layer.type]++;
+   ++mLayerMap[layer.type];
 
    // update bitrate stats
    unsigned int bitrate = header->getBitrate();

@@ -294,7 +294,7 @@ void runCustomCatalogTest(
 
       // add each file ID 2-10, and print a dot after each successful iteration
       printf("\b");
-      for(uint32_t i = 2; i <= 10; i++)
+      for(uint32_t i = 2; i <= 10; ++i)
       {
          DynamicObject in;
          DynamicObject out;
@@ -444,7 +444,7 @@ void runCustomCatalogTest(
       SellerListingUpdate expectedUpdate = buildUpdate(0, 1);
 
       // build each expected PayeeScheme in the Seller Listing updates array
-      for(uint32_t psId = 1; psId < 10; psId++)
+      for(uint32_t psId = 1; psId < 10; ++psId)
       {
          PayeeScheme& ps = expectedUpdate["payeeSchemes"]["updates"]->append();
 
@@ -943,7 +943,7 @@ static void cleanPayeeScheme(Catalog* cat, uint32_t& updateId)
    assertUpdate(update, expected);
 
    // build the response
-   updateId++;
+   ++updateId;
    SellerListingUpdate response = buildResponse(updateId);
 
    // process the response
@@ -964,7 +964,7 @@ static void cleanWare(Catalog* cat, uint32_t& updateId)
    assertUpdate(update, expected);
 
    // build the response
-   updateId++;
+   ++updateId;
    SellerListingUpdate response = buildResponse(updateId);
 
    // process the response

@@ -30,7 +30,7 @@ BtpService::~BtpService()
 {
    // clean up all action names
    for(HandlerMap::iterator i = mActionHandlers.begin();
-       i != mActionHandlers.end(); i++)
+       i != mActionHandlers.end(); ++i)
    {
       free((char*)i->first);
    }

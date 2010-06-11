@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/data/MpegAudioFrameInputStream.h"
 
@@ -55,7 +55,7 @@ int MpegAudioFrameInputStream::read(char* b, int length)
          if(mFrameParser.getLastOffset() == 0)
          {
             // frame found, record number of bytes remaining in frame
-            mFrameCount++;
+            ++mFrameCount;
             AudioFrameHeader* header = mFrameParser.getLastHeader();
             mFrameBytesLeft = header->getFrameLength();
          }

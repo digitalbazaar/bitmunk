@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include <iostream>
 #include <sstream>
@@ -570,7 +570,7 @@ void runBfpMultiPieceTest(
 
       // create a list of file pieces
       DynamicObject fpList;
-      for(int i = 0; i < pieces; i++)
+      for(int i = 0; i < pieces; ++i)
       {
          char path[50];
          sprintf(path, "/tmp/bmtestfile-mp-%s-%04i.fp", extension, i);

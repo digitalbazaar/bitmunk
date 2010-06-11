@@ -241,7 +241,7 @@ void Negotiator::pickFiles(std::list<FileProgress>& fpStack)
    // stack with the file progresses with the fewest assigned sellers on top
    // (given preference)
    for(map<int, DynamicObject>::iterator i = autoSort.begin();
-       i != autoSort.end(); i++)
+       i != autoSort.end(); ++i)
    {
       fpi = i->second.getIterator();
       while(fpi->hasNext())

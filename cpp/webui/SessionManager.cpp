@@ -34,7 +34,7 @@ SessionManager::SessionManager(Node* node) :
 SessionManager::~SessionManager()
 {
    // clean up all sessions
-   for(SessionMap::iterator i = mSessions.begin(); i != mSessions.end(); i++)
+   for(SessionMap::iterator i = mSessions.begin(); i != mSessions.end(); ++i)
    {
       free((char*)i->first);
    }
@@ -110,8 +110,7 @@ bool SessionManager::createSession(
                if(!i->second.valid)
                {
                   // save iterator and increment
-                  tmpi = i;
-                  i++;
+                  tmpi = i++;
 
                   // clean up session
                   const char* tmp = tmpi->first;
@@ -125,8 +124,7 @@ bool SessionManager::createSession(
                      strcmp(sd.ip.c_str(), i->second.ip.c_str()) == 0)
                   {
                      // save iterator and increment
-                     tmpi = i;
-                     i++;
+                     tmpi = i++;
 
                      // clean up session
                      const char* tmp = tmpi->first;
@@ -136,12 +134,12 @@ bool SessionManager::createSession(
                   }
                   else
                   {
-                     i++;
+                     ++i;
                   }
                }
                else
                {
-                  i++;
+                  ++i;
                }
             }
 

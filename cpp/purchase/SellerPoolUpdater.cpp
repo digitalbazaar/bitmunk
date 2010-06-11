@@ -222,7 +222,7 @@ bool SellerPoolUpdater::initFileProgress()
       uint32_t size = sp["pieceSize"]->getUInt32();
       uint32_t count = sp["pieceCount"]->getUInt32();
       totalPieces += count;
-      for(uint32_t n = 0; n < count; n++)
+      for(uint32_t n = 0; n < count; ++n)
       {
          FilePiece& piece = fp["unassigned"]->append();
          piece["size"] = size;

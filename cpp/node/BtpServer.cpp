@@ -140,7 +140,7 @@ bool BtpServer::initialize(Config& cfg)
 void BtpServer::cleanup()
 {
    // clean up services
-   for(DomainMap::iterator i = mServices.begin(); i != mServices.end(); i++)
+   for(DomainMap::iterator i = mServices.begin(); i != mServices.end(); ++i)
    {
       free((char*)i->first);
       delete i->second;

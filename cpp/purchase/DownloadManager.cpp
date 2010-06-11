@@ -394,7 +394,7 @@ bool DownloadManager::handleMessages()
                // take note of non-progress updates
                if(getMessageType(msg, getId()) != MsgProgressPoll)
                {
-                  nonProgressUpdate++;
+                  ++nonProgressUpdate;
                }
 
                // handle the message
@@ -915,8 +915,7 @@ bool DownloadManager::assignPiece(SellerData& sd)
             string key = Tools::createSellerServerKey(sd["seller"]);
             uint32_t conns =
                mDownloadState["activeSellers"][key.c_str()]->getUInt32();
-            conns++;
-            mDownloadState["activeSellers"][key.c_str()] = conns;
+            mDownloadState["activeSellers"][key.c_str()] = conns + 1;
          }
 
          // get piece index and file extension
@@ -1308,7 +1307,7 @@ bool DownloadManager::interrupt(DynamicObject& msg)
 
    // interrupt all piece downloaders
    for(PieceDownloaderMap::iterator i = mPieceDownloaders.begin();
-       i != mPieceDownloaders.end(); i++)
+       i != mPieceDownloaders.end(); ++i)
    {
       DynamicObject msg2;
       msg2["interrupt"] = true;
@@ -1340,7 +1339,7 @@ bool DownloadManager::progressPolled(DynamicObject& msg)
    DynamicObject fpMap;
    fpMap->setType(Map);
    for(PieceDownloaderMap::iterator i = mPieceDownloaders.begin();
-       i != mPieceDownloaders.end(); i++)
+       i != mPieceDownloaders.end(); ++i)
    {
       FileId fileId = i->second.fileId.c_str();
       DynamicObject& entry = fpMap[fileId];

@@ -236,7 +236,7 @@ static HttpConnectionRef _connect(
 
       if(pConn.isNull())
       {
-         retries++;
+         ++retries;
          MO_CAT_DEBUG(BM_PROTOCOL_CAT,
             "BtpProxyService retrying proxy connection to: %s",
             url->toString().c_str());

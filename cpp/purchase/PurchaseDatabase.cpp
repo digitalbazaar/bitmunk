@@ -513,7 +513,7 @@ static bool _dropMigrationTables(Connection* conn)
 
    DynamicObject sql;
    int i;
-   for(i = 0; rval && tables[i] != NULL; i++)
+   for(i = 0; rval && tables[i] != NULL; ++i)
    {
       sql->format("DROP TABLE IF EXISTS %s", tables[i]);
       Statement* s = conn->prepare(sql->getString());

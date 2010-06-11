@@ -190,7 +190,7 @@ void RestResourceHandler::handleAction(
          // add valid types
          const char* typeStr;
          e->getDetails()["validTypes"]->setType(Array);
-         for(mmi = mm->begin(); mmi != mm->end(); mmi++)
+         for(mmi = mm->begin(); mmi != mm->end(); ++mmi)
          {
             typeStr = BtpMessage::typeToString(mmi->first);
             e->getDetails()["validTypes"]->append() = typeStr;

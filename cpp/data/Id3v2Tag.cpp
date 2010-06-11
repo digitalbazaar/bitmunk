@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/data/Id3v2Tag.h"
 
@@ -68,7 +68,7 @@ void Id3v2Tag::addFrames(Contract* c, FileInfo* fi, Media* m)
             while(!found && mi->hasNext())
             {
                Media& next = mi->next();
-               track++;
+               ++track;
                if(BM_MEDIA_ID_EQUALS(BM_MEDIA_ID(next["id"]), mediaId))
                {
                   media = next;

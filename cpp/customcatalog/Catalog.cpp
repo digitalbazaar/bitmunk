@@ -540,7 +540,7 @@ bool Catalog::populateFileInfoList(UserId userId, FileInfoList& fil)
             rval = mMediaLibrary->populateFile(userId, fi, 0, c);
             if(rval)
             {
-               count++;
+               ++count;
             }
          }
 

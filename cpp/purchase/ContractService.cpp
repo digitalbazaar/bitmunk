@@ -1049,7 +1049,7 @@ bool ContractService::cleanupFilePieces(DownloadState& ds)
 
       // iterate over downloaded and assigned file piece lists
       const char* keys[2] = {"assigned", "downloaded"};
-      for(int i = 0; i < 2; i++)
+      for(int i = 0; i < 2; ++i)
       {
          progress[keys[i]]->setType(Map);
          DynamicObjectIterator fpli = progress[keys[i]].getIterator();
@@ -1081,7 +1081,7 @@ bool ContractService::cleanupFilePieces(DownloadState& ds)
          // remove file piece
          File file(fp["path"]->getString());
          file->remove();
-         pieceCount++;
+         ++pieceCount;
       }
 
       if(rval)

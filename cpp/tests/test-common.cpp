@@ -163,7 +163,7 @@ static void runPayeeResolveTest(TestRunner& tr)
          "19.65", "21.615", "23.58", "25.545", "27.51", "29.475", "31.44",
          "33.405", "35.37", "37.335", "39.30"
       };
-      for(int i = 0; i <= 20; i++)
+      for(int i = 0; i <= 20; ++i)
       {
          license = multiplier * i;
          snprintf(name, 100, "plicense %s", license.toString(true).c_str());
@@ -675,7 +675,7 @@ static void runValidatorTest(TestRunner& tr)
       const char* tests[] = {"0", "0.00", "0.0000000", NULL};
       v::ValidatorRef v = BitmunkValidator::zeroMoney();
       DynamicObject d;
-      for(int i = 0; tests[i] != NULL; i++)
+      for(int i = 0; tests[i] != NULL; ++i)
       {
          d = tests[i];
          bool success = v->isValid(d);
@@ -690,7 +690,7 @@ static void runValidatorTest(TestRunner& tr)
       const char* tests[] = {"0.", "0.0", ".0", "1.00", NULL};
       v::ValidatorRef v = BitmunkValidator::zeroMoney();
       DynamicObject d;
-      for(int i = 0; tests[i] != NULL; i++)
+      for(int i = 0; tests[i] != NULL; ++i)
       {
          d = tests[i];
          bool success = v->isValid(d);

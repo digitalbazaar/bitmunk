@@ -73,7 +73,7 @@ bool bitmunk::test::comparePayeeLists(PayeeList& list1, PayeeList& list2)
    {
       rval = true;
       // compare each payee in each list (order matters)
-      for(int i = 0; rval && i < list1->length(); i++)
+      for(int i = 0; rval && i < list1->length(); ++i)
       {
          rval = comparePayees(list1[i], list2[i]);
       }

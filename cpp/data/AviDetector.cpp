@@ -516,7 +516,7 @@ DynamicObject AviDetector::getFormatDetails()
          bool vids = false;
          bool auds = false;
          StreamHeaderLists& shl = mHeaderList->getStreamHeaderLists();
-         for(StreamHeaderLists::iterator i = shl.begin(); i != shl.end(); i++)
+         for(StreamHeaderLists::iterator i = shl.begin(); i != shl.end(); ++i)
          {
             DynamicObject stream;
             stream->setType(Map);

@@ -201,7 +201,7 @@ void DatabaseHub::userLoggedOut(Event& e)
    mMapLock.lockExclusive();
    {
       for(ConnectionMap::iterator ci = mConnectionMap.begin();
-          ci != mConnectionMap.end(); ci++)
+          ci != mConnectionMap.end(); ++ci)
       {
          UserMap::iterator ui = ci->second.userMap->find(userId);
          if(ui != ci->second.userMap->end())
