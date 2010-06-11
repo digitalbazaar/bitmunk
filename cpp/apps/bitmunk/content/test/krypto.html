@@ -8,6 +8,8 @@
       <script type="text/javascript" src="/bitmunk/js/swfobject/swfobject.js"></script>
       <script type="text/javascript" src="/bitmunk/js/jquery.js"></script>
       <script type="text/javascript" src="/bitmunk/test/jscrypto/jscrypto.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/sjcl/sjcl.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/sjcl/aes.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/random.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/util.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/aes.js"></script>
@@ -467,6 +469,49 @@
             word_array_to_string(plain));
       };
 
+      var count_128_speed = 70000;
+
+      var aes_krypto_128_speed = function()
+      {
+         console.log('testing krypto AES-128 speed ...');
+         
+         var block = [];
+         block.push(0x00112233);
+         block.push(0x44556677);
+         block.push(0x8899aabb);
+         block.push(0xccddeeff);
+         
+         var key = [];
+         key.push(0x00010203);
+         key.push(0x04050607);
+         key.push(0x08090a0b);
+         key.push(0x0c0d0e0f);
+
+         var now;
+         var totalEncrypt = 0;
+         var totalDecrypt = 0;
+         var count = count_128_speed;
+         for(var i = 0; i < count; i++)
+         {
+            var output = [];
+            var w = krypto.aes._expandKey(key, false);
+            now = +new Date();
+            krypto.aes._updateBlock(w, block, output, false);
+            totalEncrypt += (+new Date()) - now;
+
+            block = output;
+            output = [];
+            w = krypto.aes._expandKey(key, true);
+            now = +new Date();
+            krypto.aes._updateBlock(w, block, output, true);
+            totalDecrypt += (+new Date()) - now;
+         }
+
+         console.log('encrypt time: ' + (totalEncrypt / count) + ' ms');
+         console.log('decrypt time: ' + (totalDecrypt / count) + ' ms');
+         console.log('krypto aes-128 speed test complete.');
+      };
+
       var aes_krypto = function()
       {
          console.log('testing AES (krypto) ...');
@@ -554,7 +599,7 @@
          var now;
          var totalEncrypt = 0;
          var totalDecrypt = 0;
-         var count = 100;
+         var count = 2000;
          var totalTimes = aesKeys.length * count;
          for(var n = 0; n < count; n++)
          {
@@ -591,92 +636,86 @@
          console.log('krypto aes test complete.');
       };
 
-      var aes_jscrypto = function()
+      var aes_jscrypto_128_speed = function()
       {
-         console.log('testing AES (jscrypto) ...');
+         console.log('testing AES (jscrypto) speed ...');
 
          var block = [];
-         block.push(0x3243f6a8);
-         block.push(0x885a308d);
-         block.push(0x313198a2);
-         block.push(0xe0370734);
-         /*
          block.push(0x00112233);
          block.push(0x44556677);
          block.push(0x8899aabb);
          block.push(0xccddeeff);
-         */
          
          var key = [];
-         key.push(0x2b7e1516);
-         key.push(0x28aed2a6);
-         key.push(0xabf71588);
-         key.push(0x09cf4f3c);
-         /*
          key.push(0x00010203);
          key.push(0x04050607);
          key.push(0x08090a0b);
          key.push(0x0c0d0e0f);
-         */
-         
-         var expect = [];
-         expect.push(0x3925841d);
-         expect.push(0x02dc09fb);
-         expect.push(0xdc118597);
-         expect.push(0x196a0b32);
-         /*
-         expect.push(0x69c4e0d8);
-         expect.push(0x6a7b0430);
-         expect.push(0xd8cdb780);
-         expect.push(0x70b4c55a);
-         */
-         
-         var cipher = new aes(key);
-         var ct = [];
-         cipher.encryptBlock(block, ct, false);
-         
-         console.log('ct', ct);
-         console.log('expect', expect);
 
-         var dt = [];
-         cipher.decryptBlock(ct, dt);
-
-         console.log('dt', dt);
-         console.log('expect', block);
-
-         /*
          var now;
          var totalEncrypt = 0;
          var totalDecrypt = 0;
-         for(var i = 0; i < aesKeys.length; i++)
+         var count = count_128_speed;
+         for(var i = 0; i < count; i++)
          {
-            var key = aesKeys[i];
-            var cipher = new aes(key, OCB);
-            var ciphered = [];
-            var plain = [];
-            var macTag = [];
-
-            // encrypt
+            var cipher = new aes(key);
+            var output = [];
             now = +new Date();
-            cipher.encrypt(aesIv, aesPlain, ciphered, '', macTag);
+            cipher.encryptBlock(block, output, false);
             totalEncrypt += (+new Date()) - now;
-            console.log('ciphered', aes._hex(ciphered));
-            
-            // decrypt
-            now = +new Date();
-            cipher.decrypt(ciphered, plain, macTag);
-            totalDecrypt += (+new Date()) - now;
 
-            console.log('plain', plain);
+            block = output;
+            output = [];
+            now = +new Date();
+            cipher.decryptBlock(block, output);
+            totalDecrypt += (+new Date()) - now;
          }
 
-         var len = aesKeys.length;
-         console.log('encrypt time: ' + (totalEncrypt / len) + ' ms');
-         console.log('decrypt time: ' + (totalDecrypt / len) + ' ms');
-         console.log('jscrypto aes test complete.');
-         */
+         console.log('encrypt time: ' + (totalEncrypt / count) + ' ms');
+         console.log('decrypt time: ' + (totalDecrypt / count) + ' ms');
+         console.log('jscrypto aes-128 speed test complete.');
       };
+      
+      var aes_sjcl_128_speed = function()
+      {
+         console.log('testing AES (sjcl) speed ...');
 
+         var block = [];
+         block.push(0x00112233);
+         block.push(0x44556677);
+         block.push(0x8899aabb);
+         block.push(0xccddeeff);
+         
+         var key = [];
+         key.push(0x00010203);
+         key.push(0x04050607);
+         key.push(0x08090a0b);
+         key.push(0x0c0d0e0f);
+
+         var now;
+         var totalEncrypt = 0;
+         var totalDecrypt = 0;
+         var count = count_128_speed;
+         for(var i = 0; i < count; i++)
+         {
+            var cipher = new sjcl.cipher.aes(key);
+            var output;
+            now = +new Date();
+            output = cipher.encrypt(block);
+            totalEncrypt += (+new Date()) - now;
+
+            block = output;
+            output = [];
+            now = +new Date();
+            output = cipher.decrypt(block);
+            totalDecrypt += (+new Date()) - now;
+         }
+
+         console.log('encrypt time: ' + (totalEncrypt / count) + ' ms');
+         console.log('decrypt time: ' + (totalDecrypt / count) + ' ms');
+         console.log('sjcl aes-128 speed test complete.');
+      };
+      
       var aes_pid_crypt = function()
       {
          console.log('testing AES (pidcrypt) ...');
@@ -784,21 +823,22 @@
          <p>Could not load the flash Test.</p>
       </div>
       <div id="aes_controls">
-         <button id="aes1" onclick="javascript:return aes_krypto_128();">krypto 128</button>
-         <button id="aes2" onclick="javascript:return aes_krypto_192();">krypto 192</button>
-         <button id="aes3" onclick="javascript:return aes_krypto_256();">krypto 256</button>
+         <button id="aes_krypto128" onclick="javascript:return aes_krypto_128();">krypto 128</button>
+         <button id="aes_krypto192" onclick="javascript:return aes_krypto_192();">krypto 192</button>
+         <button id="aes_krypto256" onclick="javascript:return aes_krypto_256();">krypto 256</button>
+         <button id="aes__krypto128_speed" onclick="javascript:return aes_krypto_128_speed();">krypto 128 speed</button>
+         <button id="aes__jscrypto128_speed" onclick="javascript:return aes_jscrypto_128_speed();">jscrypto 128 speed</button>
+         <button id="aes__sjcl128_speed" onclick="javascript:return aes_sjcl_128_speed();">sjcl 128 speed</button>
          <br />
-         <button id="aes4" onclick="javascript:return aes_krypto();">krypto</button>
-         <button id="aes5" onclick="javascript:return aes_krypto_cbc();">krypto CBC</button>
-         <button id="aes6" onclick="javascript:return aes_krypto_cbc_speed();">krypto CBC speed</button>
-         <button id="aes7" onclick="javascript:return aes_jscrypto();">jscrypto</button>
-         <button id="aes8" onclick="javascript:return aes_pid_crypt();">pidcrypt</button>
-         <button id="aes9" onclick="javascript:return aes_as3crypto();">as3crypto</button>
-         <button id="aes10" onclick="javascript:return aes_as3crypto_cbc();">as3crypto CBC</button>
-         <button id="aes11" onclick="javascript:return aes_flash_128();">flash 128</button>
-         <button id="aes12" onclick="javascript:return aes_flash_test();">flash test</button>
+         <button id="aes_krypto" onclick="javascript:return aes_krypto();">krypto</button>
+         <button id="aes_krypto_cbc" onclick="javascript:return aes_krypto_cbc();">krypto CBC</button>         <button id="aes6" onclick="javascript:return aes_krypto_cbc_speed();">krypto CBC speed</button>
+         <button id="aes_pidcrypt" onclick="javascript:return aes_pid_crypt();">pidcrypt</button>
+         <button id="aes_as3crypto" onclick="javascript:return aes_as3crypto();">as3crypto</button>
+         <button id="aes_as3crypto_cbc" onclick="javascript:return aes_as3crypto_cbc();">as3crypto CBC</button>
+         <button id="aes_flash128" onclick="javascript:return aes_flash_128();">flash 128</button>
+         <button id="aes_flash" onclick="javascript:return aes_flash_test();">flash test</button>
          <br />
-         <button id="tls1" onclick="javascript:return tls_handshake();">tls handshake</button>
+         <button id="tls_handshake" onclick="javascript:return tls_handshake();">tls handshake</button>
       </div>
    </body>
 </html>
