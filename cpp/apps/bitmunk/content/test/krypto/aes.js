@@ -209,7 +209,7 @@
       
       // compute xtime table which maps i onto GF(i, 0x02)
       var xtime = new Array(256);
-      for(var i = 0; i < 128; i++)
+      for(var i = 0; i < 128; ++i)
       {
          xtime[i] = i << 1;
          xtime[i + 128] = (i + 128) << 1 ^ 0x11B;
@@ -220,13 +220,13 @@
       isbox = new Array(256);
       mix = new Array(4);
       imix = new Array(4);
-      for(var i = 0; i < 4; i++)
+      for(var i = 0; i < 4; ++i)
       {
          mix[i] = new Array(256);
          imix[i] = new Array(256);
       }
       var e = 0, ei = 0, e2, e4, e8, sx, sx2, me, ime;
-      for(var i = 0; i < 256; i++)
+      for(var i = 0; i < 256; ++i)
       {
          /* We need to generate the SubBytes() sbox and isbox tables so that
             we can perform byte substitutions. This requires us to traverse
@@ -372,7 +372,7 @@
             (e ^ e4 ^ e8) << 8 ^    // D (13)
             (e ^ e2 ^ e8);          // B (11)
          // produce each of the mix tables by rotating the 2,1,1,3 value
-         for(var n = 0; n < 4; n++)
+         for(var n = 0; n < 4; ++n)
          {
             mix[n][e] = me;
             imix[n][sx] = ime;
@@ -441,7 +441,7 @@
       var temp, iNk = 1;
       var Nk = w.length;
       var Nr1 = Nk + 6 + 1;
-      for(var i = Nk; i < Nb * Nr1; i++)
+      for(var i = Nk; i < Nb * Nr1; ++i)
       {
          temp = w[i - 1];
          if(i % Nk == 0)
@@ -540,7 +540,7 @@
                // table will inverse-substitute it (effectively cancel the
                // substitution because round key bytes aren't sub'd in
                // decryption mode) and swap indexes 3 and 1
-               for(var n = 0; n < Nb; n++)
+               for(var n = 0; n < Nb; ++n)
                {
                   tmp = w[wi + n];
                   wnew[i + (3&-n)] =
@@ -607,7 +607,7 @@
       // Encrypt: AddRoundKey(state, w[0, Nb-1])
       // Decrypt: AddRoundKey(state, w[Nr*Nb, (Nr+1)*Nb-1])
       var Nr = w.length / 4 - 1;
-      var i = 0;
+      var i = -1;
       var m0, m1, m2, m3, sub;
       if(decrypt)
       {
@@ -626,10 +626,10 @@
          sub = sbox;
       }
       var a, b, c, d, a2, b2, c2;
-      a = input[0] ^ w[i++];
-      b = input[decrypt ? 3 : 1] ^ w[i++];
-      c = input[2] ^ w[i++];
-      d = input[decrypt ? 1 : 3] ^ w[i++];
+      a = input[0] ^ w[++i];
+      b = input[decrypt ? 3 : 1] ^ w[++i];
+      c = input[2] ^ w[++i];
+      d = input[decrypt ? 1 : 3] ^ w[++i];
       
       /* In order to share code we follow the encryption algorithm when both
          encrypting and decrypting. To account for the changes required in the
@@ -638,7 +638,7 @@
          order of transformations applied when performing rounds. We also get
          key rounds in reverse order (relative to encryption).
       */
-      for(var round = 1; round < Nr; round++)
+      for(var round = 1; round < Nr; ++round)
       {
          /* As described above, we'll be using table lookups to perform the
             column mixing. Each column is stored as a word in the state (the
@@ -760,22 +760,22 @@
             m0[a >>> 24] ^
             m1[b >>> 16 & 255] ^
             m2[c >>> 8 & 255] ^
-            m3[d & 255] ^ w[i++];
+            m3[d & 255] ^ w[++i];
          b2 =
             m0[b >>> 24] ^
             m1[c >>> 16 & 255] ^
             m2[d >>> 8 & 255] ^
-            m3[a & 255] ^ w[i++];
+            m3[a & 255] ^ w[++i];
          c2 =
             m0[c >>> 24] ^
             m1[d >>> 16 & 255] ^
             m2[a >>> 8 & 255] ^
-            m3[b & 255] ^ w[i++];
+            m3[b & 255] ^ w[++i];
          d =
             m0[d >>> 24] ^
             m1[a >>> 16 & 255] ^
             m2[b >>> 8 & 255] ^
-            m3[c & 255] ^ w[i++];
+            m3[c & 255] ^ w[++i];
          a = a2;
          b = b2;
          c = c2;
@@ -797,22 +797,22 @@
          (sub[a >>> 24] << 24) ^
          (sub[b >>> 16 & 255] << 16) ^
          (sub[c >>> 8 & 255] << 8) ^
-         (sub[d & 255]) ^ w[i++];
+         (sub[d & 255]) ^ w[++i];
       output[decrypt ? 3 : 1] =
          (sub[b >>> 24] << 24) ^
          (sub[c >>> 16 & 255] << 16) ^
          (sub[d >>> 8 & 255] << 8) ^
-         (sub[a & 255]) ^ w[i++];
+         (sub[a & 255]) ^ w[++i];
       output[2] =
          (sub[c >>> 24] << 24) ^
          (sub[d >>> 16 & 255] << 16) ^
          (sub[a >>> 8 & 255] << 8) ^
-         (sub[b & 255]) ^ w[i++];
+         (sub[b & 255]) ^ w[++i];
       output[decrypt ? 1 : 3] =
          (sub[d >>> 24] << 24) ^
          (sub[a >>> 16 & 255] << 16) ^
          (sub[b >>> 8 & 255] << 8) ^
-         (sub[c & 255]) ^ w[i++];
+         (sub[c & 255]) ^ w[++i];
    };
    
    /**
@@ -852,7 +852,7 @@
       {
          var tmp = key;
          var key = window.krypto.util.createBuffer();
-         for(var i = 0; i < tmp.length; i++)
+         for(var i = 0; i < tmp.length; ++i)
          {
             key.putByte(tmp[i]);
          }
@@ -931,7 +931,7 @@
                // get next block
                if(decrypt)
                {
-                  for(var i = 0; i < Nb; i++)
+                  for(var i = 0; i < Nb; ++i)
                   {
                      _inBlock[i] = _input.getInt32();
                   }
@@ -939,7 +939,7 @@
                else
                {
                   // CBC mode XOR's IV (or previous block) with plaintext
-                  for(var i = 0; i < Nb; i++)
+                  for(var i = 0; i < Nb; ++i)
                   {
                      _inBlock[i] = _prev[i] ^ _input.getInt32();
                   }
@@ -952,7 +952,7 @@
                if(decrypt)
                {
                   // CBC mode XOR's IV (or previous block) with plaintext
-                  for(var i = 0; i < Nb; i++)
+                  for(var i = 0; i < Nb; ++i)
                   {
                      _output.putInt32(_prev[i] ^ _outBlock[i]);
                   }
@@ -960,7 +960,7 @@
                }
                else
                {
-                  for(var i = 0; i < Nb; i++)
+                  for(var i = 0; i < Nb; ++i)
                   {
                      _output.putInt32(_outBlock[i]);
                   }
@@ -993,7 +993,7 @@
                   // value of the number of pad bytes)
                   var padding = Math.max(
                      _blockSize, _blockSize - _input.length());
-                  for(var i = 0; i < padding; i++)
+                  for(var i = 0; i < padding; ++i)
                   {
                      _input.putByte(padding);
                   }
@@ -1022,7 +1022,7 @@
                      // ensure padding bytes are valid
                      var len = _output.length();
                      var count = _output.at(len - 1);
-                     for(var i = len - count; rval && i < len; i++)
+                     for(var i = len - count; rval && i < len; ++i)
                      {
                         rval = (_output.at(i) == count);
                      }
@@ -1065,7 +1065,7 @@
             {
                var tmp = iv;
                var iv = window.krypto.util.createBuffer();
-               for(var i = 0; i < 16; i++)
+               for(var i = 0; i < 16; ++i)
                {
                   iv.putByte(tmp[i]);
                }
