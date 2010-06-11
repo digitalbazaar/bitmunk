@@ -607,7 +607,6 @@
       // Encrypt: AddRoundKey(state, w[0, Nb-1])
       // Decrypt: AddRoundKey(state, w[Nr*Nb, (Nr+1)*Nb-1])
       var Nr = w.length / 4 - 1;
-      var i = -1;
       var m0, m1, m2, m3, sub;
       if(decrypt)
       {
@@ -626,10 +625,11 @@
          sub = sbox;
       }
       var a, b, c, d, a2, b2, c2;
-      a = input[0] ^ w[++i];
-      b = input[decrypt ? 3 : 1] ^ w[++i];
-      c = input[2] ^ w[++i];
-      d = input[decrypt ? 1 : 3] ^ w[++i];
+      a = input[0] ^ w[0];
+      b = input[decrypt ? 3 : 1] ^ w[1];
+      c = input[2] ^ w[2];
+      d = input[decrypt ? 1 : 3] ^ w[3];
+      var i = 3;
       
       /* In order to share code we follow the encryption algorithm when both
          encrypting and decrypting. To account for the changes required in the
