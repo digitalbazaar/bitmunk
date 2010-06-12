@@ -5,8 +5,8 @@
 #define bitmunk_node_BtpActionDelegate_H
 
 #include "monarch/rt/DynamicObject.h"
+#include "monarch/modest/Engine.h"
 #include "monarch/modest/Operation.h"
-#include "monarch/modest/OperationDispatcher.h"
 #include "bitmunk/protocol/BtpActionHandler.h"
 #include "bitmunk/protocol/BtpMessage.h"
 
@@ -254,9 +254,8 @@ bool BtpActionDelegate<Handler>::canPerformAction(
    if(pass && (hasUser || checkSeq))
    {
       // get the current operation
-      monarch::modest::OperationDispatcher* od =
-         mNode->getKernel()->getEngine()->getOperationDispatcher();
-      monarch::modest::Operation op = od->getCurrentOperation();
+      monarch::modest::Engine* engine = mNode->getKernel()->getEngine();
+      monarch::modest::Operation op = engine->getCurrentOperation();
 
       // since this operation is to be served by a particular user,
       // add a user operation to the node and retrieve the user's profile
