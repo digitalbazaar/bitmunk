@@ -424,6 +424,7 @@ bool DownloadManager::handleMessages()
    {
       Event e;
       e["type"] = EVENT_CHECK_COMPLETION;
+      e["parallel"] = true;
       e["details"]["fiberId"] = getId();
       getNode()->getEventDaemon()->remove(e);
    }

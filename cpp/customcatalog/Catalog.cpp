@@ -299,10 +299,22 @@ void Catalog::mediaLibraryCleaningUp(UserId userId)
    mListingUpdaterMap.erase(userId);
 
    // remove sync listings daemon event
-   Event e;
-   e["type"] = EVENT_SYNC_SELLER_LISTINGS;
-   e["details"]["userId"] = userId;
-   mNode->getEventDaemon()->remove(e);
+   {
+      Event e;
+      e["type"] = EVENT_SYNC_SELLER_LISTINGS;
+      e["parallel"] = true;
+      e["details"]["userId"] = userId;
+      mNode->getEventDaemon()->remove(e);
+   }
+
+   // remove test net access daemon event
+   {
+      Event e;
+      e["type"] = EVENT_TEST_NET_ACCESS;
+      e["parallel"] = true;
+      e["details"]["userId"] = userId;
+      mNode->getEventDaemon()->remove(e);
+   }
 }
 
 bool Catalog::updateWare(UserId userId, Ware& ware)
