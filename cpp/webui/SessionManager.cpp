@@ -74,7 +74,8 @@ bool SessionManager::createSession(
          uint64_t time = System::getCurrentMilliseconds();
 
          // create session ID: digest username+password+ip+random
-         MessageDigest md("SHA1");
+         MessageDigest md;
+         md.start("SHA1");
          md.update(username);
          md.update(password);
          md.update(ip->getAddress());

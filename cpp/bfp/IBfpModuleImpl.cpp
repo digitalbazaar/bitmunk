@@ -40,8 +40,8 @@ IBfpModuleImpl::~IBfpModuleImpl()
 
 static bool fileSha1(File file, string& sha1)
 {
-   MessageDigest md("SHA1");
-   bool rval = md.digestFile(file);
+   MessageDigest md;
+   bool rval = md.start("SHA1") && md.digestFile(file);
    if(rval)
    {
       sha1 = md.getDigest();

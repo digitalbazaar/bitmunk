@@ -107,7 +107,8 @@ string Tools::getContractSectionHash(ContractSection& cs)
    // use same algorithm as for signing contract section
    string str;
    Signer::appendContractSectionContent(cs, str);
-   MessageDigest hash("SHA1");
+   MessageDigest hash;
+   hash.start("SHA1");
    hash.update(str.c_str());
    return hash.getDigest();
 }
