@@ -239,24 +239,28 @@ bool BtpAction::sendResult(DynamicObject& dyno)
          mResponse->getHeader()->setStatus(200, "OK");
       }
 
-      // use accept content-type
-      string contentType;
-      if(mRequest->getHeader()->getField("Accept", contentType))
+      // use accept content-type if not already set
+      string contentType =
+         mResponse->getHeader()->getFieldValue("Content-Type");
+      if(contentType.length() == 0)
       {
-         if(strstr(contentType.c_str(), "text/xml") != NULL)
+         if(mRequest->getHeader()->getField("Accept", contentType))
          {
-            contentType = "text/xml";
+            if(strstr(contentType.c_str(), "text/xml") != NULL)
+            {
+               contentType = "text/xml";
+            }
+            else
+            {
+               // default to JSON
+               contentType = "application/json";
+            }
          }
          else
          {
             // default to JSON
             contentType = "application/json";
          }
-      }
-      else
-      {
-         // default to JSON
-         contentType = "application/json";
       }
 
       // set content object
