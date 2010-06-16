@@ -467,6 +467,14 @@ bool BtpServer::addVirtualHost(ProfileRef& profile)
 {
    bool rval = false;
 
+   // FIXME: for future support of client-side certificates, enable peer
+   // authentication (pass true instead of false to SslContext constructor)
+   // and add same trusted certs used by BtpClient, then add a way to expose
+   // the user in the client cert (currently taken from common name) to the
+   // application as the bitmunk user ID of the caller, keep in mind agent
+   // headers (acting on behalf of another bitmunk user ID) must still be
+   // checked
+
    // create an SSL context for the user's virtual host
    SslContextRef ctx = new SslContext("TLS", false);
    rval =
