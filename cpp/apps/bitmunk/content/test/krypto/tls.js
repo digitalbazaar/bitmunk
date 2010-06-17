@@ -647,6 +647,9 @@
       var b = record.fragment;
       var len = b.getInt24();
       
+      // FIXME: len indicates total length of message, record length
+      // might be shorter due to fragmentation
+      
       // minimum of 38 bytes in message
       if(len < 38)
       {
@@ -701,6 +704,9 @@
       // get the length of the message
       var b = record.fragment;
       var len = b.getInt24();
+      
+      // FIXME: len indicates total length of message, record length
+      // might be shorter due to fragmentation
       
       // minimum of 3 bytes in message
       if(len < 3)
@@ -762,6 +768,9 @@
       var b = record.fragment;
       var len = b.getInt24();
       
+      // FIXME: len indicates total length of message, record length
+      // might be shorter due to fragmentation
+      
       // this implementation only supports RSA, no Diffie-Hellman support
       // so any length > 0 is invalid
       if(len > 0)
@@ -800,6 +809,9 @@
       var b = record.fragment;
       var len = b.getInt24();
       
+      // FIXME: len indicates total length of message, record length
+      // might be shorter due to fragmentation
+      
       // minimum of 5 bytes in message
       if(len < 5)
       {
@@ -807,7 +819,7 @@
       }
       else
       {
-         // FIXME: readVector needs to check for fragmented record
+         // FIXME: need to check for fragmented record
          var msg =
          {
             certificate_types: readVector(b, 1),
