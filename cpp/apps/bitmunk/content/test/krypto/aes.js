@@ -1103,109 +1103,108 @@
     * The crypto namespace and aes API.
     */
    window.krypto = window.krypto || {};
-   window.krypto.aes =
+   window.krypto.aes = {};
+   
+   /**
+    * Creates an AES cipher object to encrypt data in CBC mode using the
+    * given symmetric key. The output will be stored in the 'output' member
+    * of the returned cipher.
+    * 
+    * The key and iv may be given as a string of bytes, an array of bytes,
+    * a byte buffer, or an array of 32-bit words.
+    * 
+    * @param key the symmetric key to use.
+    * @param iv the initialization vector to use.
+    * @param output the buffer to write to, null to create one.
+    * 
+    * @return the cipher.
+    */
+   window.krypto.aes.startEncrypting = function(key, iv, output)
    {
-      /**
-       * Creates an AES cipher object to encrypt data in CBC mode using the
-       * given symmetric key. The output will be stored in the 'output' member
-       * of the returned cipher.
-       * 
-       * The key and iv may be given as a string of bytes, an array of bytes,
-       * a byte buffer, or an array of 32-bit words.
-       * 
-       * @param key the symmetric key to use.
-       * @param iv the initialization vector to use.
-       * @param output the buffer to write to, null to create one.
-       * 
-       * @return the cipher.
-       */
-      startEncrypting: function(key, iv, output)
-      {
-         return createCipher(key, iv, output, false);
-      },
-      
-      /**
-       * Creates an AES cipher object to encrypt data in CBC mode using the
-       * given symmetric key.
-       * 
-       * The key may be given as a string of bytes, an array of bytes, a
-       * byte buffer, or an array of 32-bit words.
-       * 
-       * To start encrypting call start() on the cipher with an iv and optional
-       * output buffer.
-       * 
-       * @param key the symmetric key to use.
-       * 
-       * @return the cipher.
-       */
-      createEncryptionCipher: function(key)
-      {
-         return createCipher(key, null, null, false);
-      },
-      
-      /**
-       * Creates an AES cipher object to decrypt data in CBC mode using the
-       * given symmetric key. The output will be stored in the 'output' member
-       * of the returned cipher.
-       * 
-       * The key and iv may be given as a string of bytes, an array of bytes,
-       * a byte buffer, or an array of 32-bit words.
-       * 
-       * @param key the symmetric key to use.
-       * @param iv the initialization vector to use.
-       * @param output the buffer to write to, null to create one.
-       * 
-       * @return the cipher.
-       */
-      startDecrypting: function(key, iv, output)
-      {
-         return createCipher(key, iv, output, true);
-      },
-      
-      /**
-       * Creates an AES cipher object to decrypt data in CBC mode using the
-       * given symmetric key.
-       * 
-       * The key may be given as a string of bytes, an array of bytes, a
-       * byte buffer, or an array of 32-bit words.
-       * 
-       * To start decrypting call start() on the cipher with an iv and
-       * optional output buffer.
-       * 
-       * @param key the symmetric key to use.
-       * 
-       * @return the cipher.
-       */
-      createDecryptionCipher: function(key)
-      {
-         return createCipher(key, null, null, true);
-      },
-      
-      /**
-       * Expands a key. Typically only used for testing.
-       * 
-       * @param key the symmetric key to expand, as an array of 32-bit words.
-       * @param decrypt true to expand for decryption, false for encryption.
-       * 
-       * @return the expanded key.
-       */
-      _expandKey: function(key, decrypt)
-      {
-         if(!init)
-         {
-            initialize();
-         }
-         return expandKey(key, decrypt);
-      },
-      
-      /**
-       * Updates a single block. Typically only used for testing.
-       * 
-       * @param w the expanded key to use.
-       * @param input an array of block-size 32-bit words.
-       * @param output an array of block-size 32-bit words.
-       * @param decrypt true to decrypt, false to encrypt.
-       */
-      _updateBlock: updateBlock
+      return createCipher(key, iv, output, false);
    };
+   
+   /**
+    * Creates an AES cipher object to encrypt data in CBC mode using the
+    * given symmetric key.
+    * 
+    * The key may be given as a string of bytes, an array of bytes, a
+    * byte buffer, or an array of 32-bit words.
+    * 
+    * To start encrypting call start() on the cipher with an iv and optional
+    * output buffer.
+    * 
+    * @param key the symmetric key to use.
+    * 
+    * @return the cipher.
+    */
+   window.krypto.aes.createEncryptionCipher = function(key)
+   {
+      return createCipher(key, null, null, false);
+   };
+   
+   /**
+    * Creates an AES cipher object to decrypt data in CBC mode using the
+    * given symmetric key. The output will be stored in the 'output' member
+    * of the returned cipher.
+    * 
+    * The key and iv may be given as a string of bytes, an array of bytes,
+    * a byte buffer, or an array of 32-bit words.
+    * 
+    * @param key the symmetric key to use.
+    * @param iv the initialization vector to use.
+    * @param output the buffer to write to, null to create one.
+    * 
+    * @return the cipher.
+    */
+   window.krypto.aes.startDecrypting = function(key, iv, output)
+   {
+      return createCipher(key, iv, output, true);
+   };
+   
+   /**
+    * Creates an AES cipher object to decrypt data in CBC mode using the
+    * given symmetric key.
+    * 
+    * The key may be given as a string of bytes, an array of bytes, a
+    * byte buffer, or an array of 32-bit words.
+    * 
+    * To start decrypting call start() on the cipher with an iv and
+    * optional output buffer.
+    * 
+    * @param key the symmetric key to use.
+    * 
+    * @return the cipher.
+    */
+   window.krypto.aes.createDecryptionCipher = function(key)
+   {
+      return createCipher(key, null, null, true);
+   };
+   
+   /**
+    * Expands a key. Typically only used for testing.
+    * 
+    * @param key the symmetric key to expand, as an array of 32-bit words.
+    * @param decrypt true to expand for decryption, false for encryption.
+    * 
+    * @return the expanded key.
+    */
+   window.krypto.aes._expandKey = function(key, decrypt)
+   {
+      if(!init)
+      {
+         initialize();
+      }
+      return expandKey(key, decrypt);
+   };
+   
+   /**
+    * Updates a single block. Typically only used for testing.
+    * 
+    * @param w the expanded key to use.
+    * @param input an array of block-size 32-bit words.
+    * @param output an array of block-size 32-bit words.
+    * @param decrypt true to decrypt, false to encrypt.
+    */
+   window.krypto.aes._updateBlock = updateBlock;
 })(jQuery);

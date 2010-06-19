@@ -345,7 +345,7 @@
     * 
     * @return true on success, false on failure.
     */
-   var decrypt_aes_128_cbc_sha1_padding: function(blockSize, output, decrypt)
+   var decrypt_aes_128_cbc_sha1_padding = function(blockSize, output, decrypt)
    {
       var rval = true;
       if(decrypt)
@@ -1158,7 +1158,7 @@
     *    
     * @return FIXME:
     */
-   tls.createSecurityParameters: function()
+   tls.createSecurityParameters = function()
    {
       // new parameters have no compression, encryption, or MAC algorithms
       var securityParams =
@@ -1229,7 +1229,7 @@
     * 
     * @return the security keys.
     */
-   tls.generateKeys: function(sp)
+   tls.generateKeys = function(sp)
    {
       // TLS_RSA_WITH_AES_128_CBC_SHA (this one is mandatory)
       
@@ -1299,7 +1299,7 @@
     * 
     * @return the new initialized TLS connection state.
     */
-   tls.createConnectionState: function(sp)
+   tls.createConnectionState = function(sp)
    {
       var state =
       {
@@ -1412,7 +1412,7 @@
     * 
     * @return the Random structure.
     */
-   tls.createRandom: function()
+   tls.createRandom = function()
    {
       // get UTC milliseconds
       var d = new Date();
@@ -1432,7 +1432,7 @@
     * 
     * @return the created record.
     */
-   tls.createRecord: function(options)
+   tls.createRecord = function(options)
    {
       var record =
       {
@@ -1493,7 +1493,7 @@
     * 
     * @return the ClientHello byte buffer.
     */
-   tls.createClientHello: function(sessionId)
+   tls.createClientHello = function(sessionId)
    {
       // determine length of the handshake message
       // cipher suites and compression methods size will need to be
@@ -1631,7 +1631,7 @@
        * 
        * @param sessionId the session ID to use, null to start a new one.
        */
-      c.handshake: function(sessionId)
+      c.handshake = function(sessionId)
       {
          var record = tls.createRecord(
          {
@@ -1654,7 +1654,7 @@
        * @return 0 if the data could be processed, otherwise the number of
        *         bytes required for data to be processed.
        */
-      c.process: function(data)
+      c.process = function(data)
       {
          var rval = 0;
          
@@ -1737,7 +1737,7 @@
        * 
        * @param data the application data, as a string, to be sent.
        */
-      c.prepare: function(data)
+      c.prepare = function(data)
       {
          // fragment data as necessary
          if(data.length <= tls.MaxFragment)
@@ -1773,7 +1773,7 @@
       /**
        * Closes the connection (sends a close_notify message).
        */
-      c.close: function()
+      c.close = function()
       {
          // FIXME: implement me
          // FIXME: call closed() handler
@@ -1785,214 +1785,213 @@
    /**
     * The crypto namespace and tls API.
     */
-   krypto.tls = 
+   krypto.tls = {};
+   
+   /**
+    * Creates a new TLS connection. This does not make any assumptions about
+    * the transport layer that TLS is working on top of, ie: it does not
+    * assume there is a TCP/IP connection or establish one. A TLS connection
+    * is totally abstracted away from the layer is runs on top of, it merely
+    * establishes a secure channel between a client" and a "server".
+    * 
+    * A TLS connection contains 4 connection states: pending read and write,
+    * and current read and write.
+    * 
+    * At initialization, the current read and write states will be null.
+    * Only once the security parameters have been set and the keys have
+    * been generated can the pending states be converted into current
+    * states. Current states will be updated for each record processed.
+    * 
+    * @param options the options for this connection:
+    *    sessionId: a session ID to reuse, null for a new connection.
+    *    tlsDataReady: function(conn) called when TLS protocol data has
+    *       been prepared and is ready to be used (typically sent over a
+    *       socket connection to its destination), read from conn.tlsData
+    *       buffer.
+    *    dataReady: function(conn) called when application data has
+    *       been parsed from a TLS record and should be consumed by the
+    *       application, read from conn.data buffer.
+    *    closed: function(conn) called when the connection has been closed.
+    *    error: function(conn, error) called when there was an error.
+    * 
+    * @return the new TLS connection.
+    */
+   krypto.tls.createConnection: function(options)
    {
-      /**
-       * Creates a new TLS connection. This does not make any assumptions about
-       * the transport layer that TLS is working on top of, ie: it does not
-       * assume there is a TCP/IP connection or establish one. A TLS connection
-       * is totally abstracted away from the layer is runs on top of, it merely
-       * establishes a secure channel between a client" and a "server".
-       * 
-       * A TLS connection contains 4 connection states: pending read and write,
-       * and current read and write.
-       * 
-       * At initialization, the current read and write states will be null.
-       * Only once the security parameters have been set and the keys have
-       * been generated can the pending states be converted into current
-       * states. Current states will be updated for each record processed.
-       * 
-       * @param options the options for this connection:
-       *    sessionId: a session ID to reuse, null for a new connection.
-       *    tlsDataReady: function(conn) called when TLS protocol data has
-       *       been prepared and is ready to be used (typically sent over a
-       *       socket connection to its destination), read from conn.tlsData
-       *       buffer.
-       *    dataReady: function(conn) called when application data has
-       *       been parsed from a TLS record and should be consumed by the
-       *       application, read from conn.data buffer.
-       *    closed: function(conn) called when the connection has been closed.
-       *    error: function(conn, error) called when there was an error.
-       * 
-       * @return the new TLS connection.
-       */
-      createConnection: function(options)
+      return tls.createConnection(options);
+   },
+   
+   /**
+    * Wraps a krypto.net socket with a TLS layer. Any existing handlers
+    * on the socket will be replaced.
+    * 
+    * @param options:
+    *    sessionId: a session ID to reuse, null for a new connection.
+    *    socket: the socket to wrap.
+    *    connected: function(event) called when the socket connects.
+    *    closed: function(event) called when the socket closes.
+    *    data: function(event) called when socket data has arrived,
+    *       it can be read from the socket using receive().
+    *    error: function(event) called when a socket error occurs.
+    * 
+    * @return the TLS-wrapped socket.
+    */
+   krypto.tls.wrapSocket: function(options)
+   {
+      // get raw socket
+      var socket = options.socket;
+      
+      // create TLS socket
+      var tlsSocket =
       {
-         return tls.createConnection(options);
-      },
+         id: socket.id,
+         // set handlers
+         connected: options.connected || function(e){},
+         closed: options.closed || function(e){},
+         data: options.data || function(e){},
+         error: options.error || function(e){}
+      };
+      
+      // create TLS connection
+      var c = krypto.tls.createConnection({
+         sessionId: options.sessionId || null,
+         tlsDataReady: function(c)
+         {
+            // send TLS data over socket
+            return socket.send(c.tlsData.getBytes());
+         },
+         dataReady: function(c)
+         {
+            // indicate application data is ready
+            tlsSocket.data({
+               id: socket.id,
+               type: 'socketData',
+               bytesAvailable: c.data.length()
+            });
+         },
+         closed: function(c)
+         {
+            // close socket
+            socket.close();
+            tlsSocket.closed({
+               id: socket.id,
+               type: 'close',
+               bytesAvailable: 0
+            });
+         },
+         error: function(c, e)
+         {
+            // close socket, send error
+            socket.close();
+            tlsSocket.error({
+               id: socket.id,
+               type: 'tlsError',
+               message: e.message,
+               bytesAvailable: 0,
+               error: e
+            });
+         }
+      });
+      
+      // handle receiving raw TLS data from socket
+      var _requiredBytes = 0;
+      socket.data = function(e)
+      {
+         // only receive if there are enough bytes available to
+         // process a record
+         if(e.bytesAvailable >= _requiredBytes)
+         {
+            var count = Math.max(e.bytesAvailable, _requiredBytes);
+            var data = socket.receive(count);
+            if(data !== null)
+            {
+               _requiredBytes = c.process(data);
+            }
+         }
+      };
       
       /**
-       * Wraps a krypto.net socket with a TLS layer. Any existing handlers
-       * on the socket will be replaced.
+       * Destroys this socket.
+       */
+      tlsSocket.destroy = function()
+      {
+         socket.destroy();
+      };
+      
+      /**
+       * Connects this socket.
        * 
        * @param options:
-       *    sessionId: a session ID to reuse, null for a new connection.
-       *    socket: the socket to wrap.
-       *    connected: function(event) called when the socket connects.
-       *    closed: function(event) called when the socket closes.
-       *    data: function(event) called when socket data has arrived,
-       *       it can be read from the socket using receive().
-       *    error: function(event) called when a socket error occurs.
-       * 
-       * @return the TLS-wrapped socket.
+       *           host: the host to connect to.
+       *           port: the port to connec to.
+       *           policyPort: the policy port to use (if non-default). 
        */
-      wrapSocket: function(options)
+      tlsSocket.connect = function(options)
       {
-         // get raw socket
-         var socket = options.socket;
-         
-         // create TLS socket
-         var tlsSocket =
-         {
-            id: socket.id,
-            // set handlers
-            connected: options.connected || function(e){},
-            closed: options.closed || function(e){},
-            data: options.data || function(e){},
-            error: options.error || function(e){}
-         };
-         
-         // create TLS connection
-         var c = krypto.tls.createConnection({
-            sessionId: options.sessionId || null,
-            tlsDataReady: function(c)
-            {
-               // send TLS data over socket
-               return socket.send(c.tlsData.getBytes());
-            },
-            dataReady: function(c)
-            {
-               // indicate application data is ready
-               tlsSocket.data({
-                  id: socket.id,
-                  type: 'socketData',
-                  bytesAvailable: c.data.length()
-               });
-            },
-            closed: function(c)
-            {
-               // close socket
-               socket.close();
-               tlsSocket.closed({
-                  id: socket.id,
-                  type: 'close',
-                  bytesAvailable: 0
-               });
-            },
-            error: function(c, e)
-            {
-               // close socket, send error
-               socket.close();
-               tlsSocket.error({
-                  id: socket.id,
-                  type: 'tlsError',
-                  message: e.message,
-                  bytesAvailable: 0,
-                  error: e
-               });
-            }
-         });
-         
-         // handle receiving raw TLS data from socket
-         var _requiredBytes = 0;
-         socket.data = function(e)
-         {
-            // only receive if there are enough bytes available to
-            // process a record
-            if(e.bytesAvailable >= _requiredBytes)
-            {
-               var count = Math.max(e.bytesAvailable, _requiredBytes);
-               var data = socket.receive(count);
-               if(data !== null)
-               {
-                  _requiredBytes = c.process(data);
-               }
-            }
-         };
-         
-         /**
-          * Destroys this socket.
-          */
-         tlsSocket.destroy = function()
-         {
-            socket.destroy();
-         };
-         
-         /**
-          * Connects this socket.
-          * 
-          * @param options:
-          *           host: the host to connect to.
-          *           port: the port to connec to.
-          *           policyPort: the policy port to use (if non-default). 
-          */
-         tlsSocket.connect = function(options)
-         {
-            socket.connect(options);
-         };
-         
-         /**
-          * Closes this socket.
-          */
-         tlsSocket.close = function()
-         {
-            c.close();
-         };
-         
-         /**
-          * Determines if the socket is connected or not.
-          * 
-          * @return true if connected, false if not.
-          */
-         tlsSocket.isConnected = function()
-         {
-            socket.isConnected();
-         };
-         
-         /**
-          * Writes bytes to this socket.
-          * 
-          * @param bytes the bytes (as a string) to write.
-          * 
-          * @return true on success, false on failure.
-          */
-         tlsSocket.send = function(bytes)
-         {
-            return c.prepare(bytes);
-         };
-         
-         /**
-          * Reads bytes from this socket (non-blocking). Fewer than the number
-          * of bytes requested may be read if enough bytes are not available.
-          * 
-          * This method should be called from the data handler if there are
-          * enough bytes available. To see how many bytes are available, check
-          * the 'bytesAvailable' property on the event in the data handler or
-          * call the bytesAvailable() function on the socket. If the browser is
-          * msie, then the bytesAvailable() function should be used to avoid
-          * race conditions. Otherwise, using the property on the data handler's
-          * event may be quicker.
-          * 
-          * @param count the maximum number of bytes to read.
-          * 
-          * @return the bytes read (as a string) or null on error.
-          */
-         tlsSocket.receive = function(count)
-         {
-            return c.data.getBytes(count);
-         };
-         
-         /**
-          * Gets the number of bytes available for receiving on the socket.
-          * 
-          * @return the number of bytes available for receiving.
-          */
-         tlsSocket.bytesAvailable = function()
-         {
-            return c.data.length();
-         };
-         
-         return tlsSocket;
-      }
+         socket.connect(options);
+      };
+      
+      /**
+       * Closes this socket.
+       */
+      tlsSocket.close = function()
+      {
+         c.close();
+      };
+      
+      /**
+       * Determines if the socket is connected or not.
+       * 
+       * @return true if connected, false if not.
+       */
+      tlsSocket.isConnected = function()
+      {
+         socket.isConnected();
+      };
+      
+      /**
+       * Writes bytes to this socket.
+       * 
+       * @param bytes the bytes (as a string) to write.
+       * 
+       * @return true on success, false on failure.
+       */
+      tlsSocket.send = function(bytes)
+      {
+         return c.prepare(bytes);
+      };
+      
+      /**
+       * Reads bytes from this socket (non-blocking). Fewer than the number
+       * of bytes requested may be read if enough bytes are not available.
+       * 
+       * This method should be called from the data handler if there are
+       * enough bytes available. To see how many bytes are available, check
+       * the 'bytesAvailable' property on the event in the data handler or
+       * call the bytesAvailable() function on the socket. If the browser is
+       * msie, then the bytesAvailable() function should be used to avoid
+       * race conditions. Otherwise, using the property on the data handler's
+       * event may be quicker.
+       * 
+       * @param count the maximum number of bytes to read.
+       * 
+       * @return the bytes read (as a string) or null on error.
+       */
+      tlsSocket.receive = function(count)
+      {
+         return c.data.getBytes(count);
+      };
+      
+      /**
+       * Gets the number of bytes available for receiving on the socket.
+       * 
+       * @return the number of bytes available for receiving.
+       */
+      tlsSocket.bytesAvailable = function()
+      {
+         return c.data.length();
+      };
+      
+      return tlsSocket;
    };
 })();
