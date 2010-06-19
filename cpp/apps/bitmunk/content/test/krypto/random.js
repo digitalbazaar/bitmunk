@@ -40,49 +40,48 @@
     * The crypto namespace and random API.
     */
    window.krypto = window.krypto || {};
-   window.krypto.random =
+   window.krypto.random = {};
+   
+   /**
+    * Gets random bytes. This method tries to make the bytes more
+    * unpredictable by drawing from data that can be collected from
+    * the user of the browser, ie mouse movement.
+    * 
+    * @param count the number of random bytes to get.
+    * 
+    * @return the random bytes in a string.
+    */
+   window.krypto.random.getBytes = function(count)
    {
-      /**
-       * Gets random bytes. This method tries to make the bytes more
-       * unpredictable by drawing from data that can be collected from
-       * the user of the browser, ie mouse movement.
-       * 
-       * @param count the number of random bytes to get.
-       * 
-       * @return the random bytes in a string.
-       */
-      getBytes: function(count)
+      var b = '';
+      
+      // consume random bytes from pool
+      var pb = state.pool.splice(0, count);
+      
+      /* Draws from Park-Miller "minimal standard" 31 bit PRNG, implemented
+      with David G. Carta's optimization: with 32 bit math and without
+      division (Public Domain). */
+      var hi, lo;
+      while(b.length < count)
       {
-         var b = '';
+         lo = 16807 * (state.seed & 0xFFFF);
+         hi = 16807 * (state.seed >> 16);
+         lo += (hi & 0x7FFF) << 16;
+         lo += hi >> 15;
+         lo = (lo & 0x7FFFFFFF) + (lo >> 31);
+         state.seed = lo & 0xFFFFFFFF;
          
-         // consume random bytes from pool
-         var pb = state.pool.splice(0, count);
-         
-         /* Draws from Park-Miller "minimal standard" 31 bit PRNG, implemented
-         with David G. Carta's optimization: with 32 bit math and without
-         division (Public Domain). */
-         var hi, lo;
-         while(b.length < count)
+         // consume lower 3 bytes of seed
+         for(var i = 0; i < 3 && b.length < count; i++)
          {
-            lo = 16807 * (state.seed & 0xFFFF);
-            hi = 16807 * (state.seed >> 16);
-            lo += (hi & 0x7FFF) << 16;
-            lo += hi >> 15;
-            lo = (lo & 0x7FFFFFFF) + (lo >> 31);
-            state.seed = lo & 0xFFFFFFFF;
-            
-            // consume lower 3 bytes of seed
-            for(var i = 0; i < 3 && b.length < count; i++)
-            {
-               // throw in random or pseudo-random byte (WEAK)
-               var byte = state.seed >> (i << 3) & 0xFF;
-               byte ^= (b.length < pb.length) ?
-                  pb[b.length] : Math.random() * 0xFF;
-               b += String.fromCharCode(byte & 0xFF);
-            }
+            // throw in random or pseudo-random byte (WEAK)
+            var byte = state.seed >> (i << 3) & 0xFF;
+            byte ^= (b.length < pb.length) ?
+               pb[b.length] : Math.random() * 0xFF;
+            b += String.fromCharCode(byte & 0xFF);
          }
-         
-         return b;
       }
+      
+      return b;
    };
 })(jQuery);

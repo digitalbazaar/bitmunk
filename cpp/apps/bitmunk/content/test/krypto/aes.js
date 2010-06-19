@@ -1045,11 +1045,15 @@
           * The iv may be given as a string of bytes, an array of bytes, a
           * byte buffer, or an array of 32-bit words.
           * 
-          * @param iv the initialization vector to use.
+          * @param iv the initialization vector to use, null to reuse the
+          *           last ciphered block from a previous update().
           * @param output the output the buffer to write to, null to create one.
           */
          cipher.start = function(iv, output)
          {
+            // if IV is null, reuse block from previous encryption/decryption
+            iv = iv || _prev.slice(0);
+            
             /* Note: The IV may be a string of bytes, an array of bytes, a
                byte buffer, or an array of 32-bit integers. If the IV is in
                bytes, then it must be Nb (16) bytes in length. If it is in

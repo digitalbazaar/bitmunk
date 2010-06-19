@@ -264,12 +264,32 @@
    var krypto = window.krypto;
    
    /**
-    * Generates pseudo random bytes using a SHA256 algorithm.
+    * Generates pseudo random bytes by mixing the result of two hash
+    * functions, MD5 and SHA-1.
+    * 
+    * prf_TLS1(secret, label, seed) =
+    *    P_MD5(S1, label + seed) XOR P_SHA-1(S2, label + seed);
+    * 
+    * @param ms the master secret.
+    * @param label the label to use.
+    * @param seed the seed to use.
+    * 
+    * @return the pseudo random bytes.
+    */
+   var prf_TLS1 = function(ms, label, seed)
+   {
+      // FIXME: implement me
+   };
+   
+   /**
+    * Generates pseudo random bytes using a SHA256 algorithm. For TLS 1.2.
     * 
     * @param ms the master secret.
     * @param ke the key expansion.
     * @param r the server random concatenated with the client random.
     * @param cr the client random bytes.
+    * 
+    * @return the pseudo random bytes.
     */
    var prf_sha256 = function(ms, ke, sr, cr)
    {
@@ -306,11 +326,17 @@
          state.clientMacKey, record.fragment.getBytes());
       record.fragment.putBytes(mac);
       
-      // generate a new IV
-      var iv = window.krypto.random.getBytes(16);
+      // FIXME: TLS 1.1 & 1.2 use an explicit IV every time to protect
+      // against CBC attacks
+      // var iv = window.krypto.random.getBytes(16);
+      
+      // only generate a new IV when initializing for TLS 1.0, otherwise
+      // use the residue from the previous encryption
+      var iv = state.cipherState.eInit ? null : state.cipherState.eIV;
+      state.cipherState.eInit = true;
       
       // start cipher
-      var cipher = state.cipherState.cipher;
+      var cipher = state.cipherState.eCipher;
       cipher.start(iv);
       
       // write IV into output
@@ -330,6 +356,7 @@
          
          // set record fragment to encrypted output
          record.fragment = cipher.output;
+         record.length = record.fragment.length();
          rval = record;
       }
       
@@ -381,50 +408,54 @@
    {
       var rval = null;
       
-      // get IV from beginning of fragment
-      if(record.fragment.length() >= 16)
+      // FIXME: TLS 1.1 & 1.2 use an explicit IV every time to protect
+      // against CBC attacks
+      //var iv = record.fragment.getBytes(16);
+      
+      // use first-time IV when initializing for TLS 1.0, otherwise
+      // use the residue from the previous decryption
+      var iv = state.cipherState.dInit ? null : state.cipherState.dIV;
+      state.cipherState.dInit = true;
+      
+      // start cipher
+      var cipher = state.cipherState.dCipher;
+      cipher.start(iv);
+      
+      // do decryption
+      if(cipher.update(record.fragment) &&
+         cipher.finish(decrypt_aes_128_cbc_sha1_padding))
       {
-         var iv = record.fragment.getBytes(16);
+         // decrypted data:
+         // first (len - 20) bytes = application data
+         // last 20 bytes          = MAC
+         var macLen = state.macLength;
          
-         // start cipher
-         var cipher = state.cipherState.cipher;
-         cipher.start(iv);
-         
-         // do decryption
-         if(cipher.update(record.fragment) &&
-            cipher.finish(decrypt_aes_128_cbc_sha1_padding))
+         // create a zero'd out mac
+         var mac = '';
+         for(var i = 0; i < macLen; i++)
          {
-            // decrypted data:
-            // first (len - 20) bytes = application data
-            // last 20 bytes          = MAC
-            var macLen = state.macLength;
-            
-            // create a zero'd out mac
-            var mac = '';
-            for(var i = 0; i < macLen; i++)
-            {
-               mac += String.fromCharCode(0);
-            }
-            
-            // get fragment and mac
-            var len = cipher.output.length();
-            if(len >= macLen)
-            {
-               record.fragment = cipher.output.getBytes(len - macLen);
-               mac = cipher.output.getBytes(macLen);
-            }
-            // bad data, but get bytes anyway to try to keep timing consistent
-            else
-            {
-               record.fragment = cipher.output.getBytes();
-            }
-            
-            // see if data integrity checks out
-            var mac2 = state.macFunction(state.serverMacKey, record.fragment);
-            if(mac2 === mac)
-            {
-               rval = record;
-            }
+            mac += String.fromCharCode(0);
+         }
+         
+         // get fragment and mac
+         var len = cipher.output.length();
+         if(len >= macLen)
+         {
+            record.fragment = cipher.output.getBytes(len - macLen);
+            mac = cipher.output.getBytes(macLen);
+         }
+         // bad data, but get bytes anyway to try to keep timing consistent
+         else
+         {
+            record.fragment = cipher.output.getBytes();
+         }
+         record.length = record.fragment.length();
+         
+         // see if data integrity checks out
+         var mac2 = state.macFunction(state.serverMacKey, record.fragment);
+         if(mac2 === mac)
+         {
+            rval = record;
          }
       }
       
@@ -484,12 +515,14 @@
    var tls =
    {
       /**
-       * Version: TLS 1.2 = 3.3, TLS 1.0 = 3.1
+       * Version: TLS 1.2 = 3.3, TLS 1.1 = 3.2, TLS 1.0 = 3.1. Both TLS 1.1
+       * and TLS 1.2 were still too new (ie: openSSL didn't implement them) at
+       * the time of this implementation so TLS 1.0 was implemented instead. 
        */
       Version:
       {
          major: 3,
-         minor: 3
+         minor: 1
       },
       
       /**
@@ -616,7 +649,7 @@
       
       // error case
       c.error(c, {
-         message: 'Received TLS record out of order.'
+         message: 'Unexpected message. Received TLS record out of order.'
       });
    };
    
@@ -931,7 +964,7 @@
       var b = record.fragment;
       var len = b.getInt24();
       
-      // FIXME: check length against expected verify_data_length
+      // FIXME: for TLS 1.2 check length against expected verify_data_length
       var vdl = 12;
       if(len != vdl)
       {
@@ -1238,8 +1271,15 @@
     */
    tls.generateKeys = function(sp)
    {
-      // TLS_RSA_WITH_AES_128_CBC_SHA (this one is mandatory)
+      // TLS_RSA_WITH_AES_128_CBC_SHA (required to be compliant with TLS 1.2)
+      // is the only cipher suite implemented at present
       
+      // TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA is required to be compliant with
+      // TLS 1.0 but we don't care because AES is better and we have an
+      // implementation for it
+      
+      // FIXME: TLS 1.2 implementation
+      /*
       // determine the PRF
       var prf;
       switch(sp.prf_algorithm)
@@ -1252,6 +1292,31 @@
             throw 'Invalid PRF';
             break;
       }
+      
+      // generate the amount of key material needed
+      var len = 2 * sp.mac_key_length + 2 * sp.enc_key_length;
+      var key_block;
+      var km = [];
+      while(km.length < len)
+      {
+         key_block = prf(
+            sp.master_secret,
+            'key expansion',
+            sp.server_random.concat(sp.client_random));
+         km = km.concat(key_block);
+      }
+      
+      // split the key material into the MAC and encryption keys
+      return {
+         client_write_MAC_key: km.splice(0, sp.mac_key_length),
+         server_write_MAC_key: km.splice(0, sp.mac_key_length),
+         client_write_key: km.splice(0, sp.enc_key_length),
+         server_write_key: km.splice(0, sp.enc_key_length)
+      };
+      */
+      
+      // TLS 1.0 implementation
+      var prf = prf_TLS1;
       
       // generate the amount of key material needed
       var len = 2 * sp.mac_key_length + 2 * sp.enc_key_length;
@@ -1364,8 +1429,10 @@
             case tls.BulkCipherAlgorithm.aes:
                cipherState =
                {
+                  eInit: false,
                   eCipher: krypto.aes.createEncryptionCipher(
                      keys.client_write_key),
+                  dInit: false,
                   dCipher: krypto.aes.createDecryptionCipher(
                      keys.server_write_key)
                };
@@ -1425,7 +1492,7 @@
       var utc = +d + d.getTimezoneOffset() * 60000;
       return {
          gmt_unix_time: utc,
-         random_bytes: krypto.random.getRandomBytes(28)
+         random_bytes: krypto.random.getBytes(28)
       };
    };
    
@@ -1440,6 +1507,7 @@
     */
    tls.createRecord = function(options)
    {
+      console.log('creating TLS record', options);
       var record =
       {
          type: options.type,
@@ -1513,7 +1581,7 @@
          0;                     // no extensions (FIXME: add TLS SNI)
       
       // create random
-      var random = createRandom();
+      var random = tls.createRandom();
       
       // create supported cipher suites, only 1 at present
       // TLS_RSA_WITH_AES_128_CBC_SHA = { 0x00,0x2F }
@@ -1527,6 +1595,7 @@
 
       // build record fragment
       var rval = util.createBuffer();
+      rval.putByte(tls.HandshakeType.client_hello);
       rval.putInt24(length);               // handshake length
       rval.putByte(tls.Version.major);     // major version
       rval.putByte(tls.Version.minor);     // minor version
@@ -1546,10 +1615,13 @@
     */
    tls.queue = function(c, record)
    {
+      console.log('queuing TLS record', record);
+      
       // compress and encrypt the record using current state
-      var s = c.current;
+      var s = c.state.current;
       if(s === null || (s.compress(record, s) && s.encrypt(record, s)))
       {
+         console.log('TLS record queued');
          // store record
          c.records.push(record);
       }
@@ -1573,11 +1645,21 @@
     */
    tls.flush = function(c)
    {
+      console.log('flushing TLS records');
       for(var i = 0; i < c.records.length; i++)
       {
+         var record = c.records[i];
+         console.log('flushing TLS record', record);
+         
+         // add record header and fragment
+         c.tlsData.putByte(record.type);
+         c.tlsData.putByte(record.version.major);
+         c.tlsData.putByte(record.version.minor);
+         c.tlsData.putInt16(record.fragment.length());
          c.tlsData.putBuffer(c.records[i].fragment);
       }
       c.records = [];
+      console.log('TLS flush finished');
       return c.tlsDataReady(c);
    };
    
@@ -1642,13 +1724,22 @@
        */
       c.handshake = function(sessionId)
       {
+         // FIXME: remove try/catch
+         try{
+         console.log('doing TLS handshake');
          var record = tls.createRecord(
          {
             type: tls.ContentType.handshake,
-            data: tls.createClientHello(sessionId)
+            data: tls.createClientHello(sessionId || '')
          });
+         console.log('TLS handshake record created');
          tls.queue(c, record);
          tls.flush(c);
+         }
+         catch(ex)
+         {
+            console.log(ex);
+         }
       };
       
       // used while buffering enough data to read an entire record
@@ -1870,6 +1961,7 @@
          sessionId: options.sessionId || null,
          connected: function(c)
          {
+            console.log('TLS connected');
             // initial handshake complete
             tlsSocket.connected({
                id: socket.id,
@@ -1879,11 +1971,13 @@
          },
          tlsDataReady: function(c)
          {
+            console.log('sending TLS data over socket');
             // send TLS data over socket
             return socket.send(c.tlsData.getBytes());
          },
          dataReady: function(c)
          {
+            console.log('TLS application data ready');
             // indicate application data is ready
             tlsSocket.data({
                id: socket.id,
@@ -1893,11 +1987,13 @@
          },
          closed: function(c)
          {
+            console.log('TLS connection closed');
             // close socket
             socket.close();
          },
          error: function(c, e)
          {
+            console.log('TLS error', e);
             // close socket, send error
             socket.close();
             tlsSocket.error({
@@ -1913,6 +2009,7 @@
       // handle doing handshake after connecting
       socket.connected = function(e)
       {
+         console.log('connected', e);
          c.handshake(options.sessionId);
       };
       
