@@ -621,6 +621,17 @@
    };
    
    /**
+    * Called when the client receives a HelloRequest record.
+    * 
+    * @param c the connection.
+    * @param record the record.
+    */
+   tls.handleHelloRequest = function(c, record)
+   {
+      // ignore renegotiation requests from the server
+   };
+   
+   /**
     * Called when the client receives a ServerHello record.
     * 
     * uint24 length;
@@ -647,17 +658,17 @@
       var b = record.fragment;
       var len = b.getInt24();
       
-      // FIXME: len indicates total length of message, record length
-      // might be shorter due to fragmentation
-      
       // minimum of 38 bytes in message
       if(len < 38)
       {
-         // FIXME: error
+         // FIXME: send TLS alert
+         
+         c.error(c, {
+            message: 'Invalid ServerHello message. Message too short.'
+         });
       }
       else
       {
-         // FIXME: need to check for fragmented record
          var msg =
          {
             version:
@@ -684,7 +695,8 @@
          
          // FIXME: do stuff
          
-         // FIXME: update c.expect
+         // expect a server Certificate message next
+         c.expect = SCE;
       }
    };
    
@@ -705,17 +717,17 @@
       var b = record.fragment;
       var len = b.getInt24();
       
-      // FIXME: len indicates total length of message, record length
-      // might be shorter due to fragmentation
-      
       // minimum of 3 bytes in message
       if(len < 3)
       {
-         // FIXME: error
+        // FIXME: send TLS alert
+         
+         c.error(c, {
+            message: 'Invalid Certificate message. Message too short.'
+         });
       }
       else
       {
-         // FIXME: readVector needs to check for fragmented record
          var msg =
          {
             certificate_list: readVector(b, 3)
@@ -723,7 +735,8 @@
          
          // FIXME: check server certificate
          
-         // FIXME: update c.expect
+         // expect a ServerKeyExchange message next
+         c.expect = SKE;
       }
    };
    
@@ -768,18 +781,20 @@
       var b = record.fragment;
       var len = b.getInt24();
       
-      // FIXME: len indicates total length of message, record length
-      // might be shorter due to fragmentation
-      
       // this implementation only supports RSA, no Diffie-Hellman support
       // so any length > 0 is invalid
       if(len > 0)
       {
-         // FIXME: error
+         // FIXME: send TLS alert
+         
+         c.error(c, {
+            message: 'Invalid key parameters. Only RSA is supported.'
+         });
       }
       else
       {
-         // FIXME: update c.expect
+         // expect an optional CertificateRequest message next
+         c.expect = SCR;
       }
    };
    
@@ -809,17 +824,17 @@
       var b = record.fragment;
       var len = b.getInt24();
       
-      // FIXME: len indicates total length of message, record length
-      // might be shorter due to fragmentation
-      
       // minimum of 5 bytes in message
       if(len < 5)
       {
-         // FIXME: error
+         // FIXME: send TLS alert
+         
+         c.error(c, {
+            message: 'Invalid CertificateRequest. Message too short.'
+         });
       }
       else
       {
-         // FIXME: need to check for fragmented record
          var msg =
          {
             certificate_types: readVector(b, 1),
@@ -830,8 +845,61 @@
          // FIXME: this implementation doesn't support client certs
          // FIXME: prepare a client certificate/indicate there isn't one
          
-         // FIXME: update c.expect
+         // expect a ServerHelloDone message next
+         c.expect = SHD;
       }
+   };
+   
+   /**
+    * Called when the client receives a ServerHelloDone record.
+    * 
+    * struct {} ServerHelloDone;
+    * 
+    * @param c the connection.
+    * @param record the record.
+    */
+   tls.handleServerHelloDone = function(c, record)
+   {
+      // get the length of the message
+      var b = record.fragment;
+      var len = b.getInt24();
+      
+      // len must be 0 bytes
+      if(len != 0)
+      {
+         // FIXME: send TLS alert
+         
+         c.error(c, {
+            message: 'Invalid ServerHelloDone message. Invalid length.'
+         });
+      }
+      else
+      {
+         // FIXME: create all of the client response records
+         // client certificate
+         // client key exchange
+         // certificate verify
+         // change cipher spec
+         // finished
+         
+         // expect a server ChangeCipherSpec message next
+         c.expect = SCC;
+      }
+   };
+  
+   /**
+    * Called when the client receives a ChangeCipherSpec record.
+    * 
+    * @param c the connection.
+    * @param record the record.
+    */
+   tls.handleChangeCipherSpec = function(c, record)
+   {
+      // FIXME: handle server has changed their cipher spec, change read
+      // pending state to current, get ready for finished record
+      
+      // expect a Finished record next
+      c.expect = SFI;
    };
    
    /**
@@ -865,9 +933,16 @@
       
       // FIXME: check length against expected verify_data_length
       var vdl = 12;
-      if(len == 12)
+      if(len != vdl)
       {
-         // FIXME: need to check for fragmented record
+         // FIXME: send TLS alert
+         
+         c.error(c, {
+            message: 'Invalid Finished message. Invalid length.'
+         });
+      }
+      else
+      {
          var msg =
          {
             verify_data: b.getBytes(len);
@@ -877,68 +952,9 @@
          // FIXME: create client change cipher spec record and
          // finished record
          
-         // FIXME: update c.expect
+         // expect server application data next
+         c.expect = SAD;
       }
-   };
-   
-   /**
-    * Called when the client receives a ServerHelloDone record.
-    * 
-    * struct {} ServerHelloDone;
-    * 
-    * @param c the connection.
-    * @param record the record.
-    */
-   tls.handleServerHelloDone = function(c, record)
-   {
-      // get the length of the message
-      var b = record.fragment;
-      var len = b.getInt24();
-      
-      // len must be 0 bytes
-      if(len != 0)
-      {
-         // FIXME: error
-      }
-      else
-      {
-         // FIXME: create all of the client response records
-         // client certificate
-         // client key exchange
-         // certificate verify
-         // change cipher spec
-         // finished
-         
-         // FIXME: update c.expect
-      }
-   };
-   
-   /**
-    * Called when the client receives a HelloRequest record.
-    * 
-    * @param c the connection.
-    * @param record the record.
-    */
-   tls.handleHelloRequest = function(c, record)
-   {
-      // FIXME: determine whether or not to ignore request based on state
-      // FIXME: only handle hello request when expecting app data ... or
-      // just don't support it at all, although that won't work for long
-      // connections ... unless the client handles renegotiation earlier
-      // FIXME: update c.expect
-   };
-   
-   /**
-    * Called when the client receives a ChangeCipherSpec record.
-    * 
-    * @param c the connection.
-    * @param record the record.
-    */
-   tls.handleChangeCipherSpec = function(c, record)
-   {
-      // FIXME: handle server has changed their cipher spec, change read
-      // pending state to current, get ready for finished record
-      // FIXME: update c.expect
    };
    
    /**
@@ -950,7 +966,6 @@
    tls.handleAlert = function(c, record)
    {
       // FIXME: handle alert, determine if connection must end
-      // FIXME: update c.expect
    };
    
    /**
@@ -962,17 +977,39 @@
    tls.handleHandshake = function(c, record)
    {
       // get the handshake type
-      var type = record.fragment.getByte();
-      var f = hsTable[c.expect][type];
-      if(f)
+      var type = record.fragment.byte();
+      
+      // get the length of the message
+      var b = record.fragment;
+      var len = b.getInt24();
+      
+      // see if the record fragment doesn't yet contain the full message
+      if(len > b.length())
       {
-         // handle specific handshake type record
-         f(c, record);
+         // cache the record and reset the buffer read pointer
+         c.fragmented = record;
+         b.read -= 4;
       }
       else
       {
-         // invalid handshake type
-         // FIXME: handle
+         // full message now available, clear cache, reset read pointer for len
+         c.fragmented = null;
+         b.read -= 3;
+         
+         // handle message
+         var f = hsTable[c.expect][type];
+         if(f)
+         {
+            // handle specific handshake type record
+            f(c, record);
+         }
+         else
+         {
+            // invalid handshake type
+            c.error(c, {
+               message: 'Invalid handshake type.'
+            });
+         }
       }
    };
    
@@ -1380,7 +1417,6 @@
       // get UTC milliseconds
       var d = new Date();
       var utc = +d + d.getTimezoneOffset() * 60000;
-      
       return {
          gmt_unix_time: utc,
          random_bytes: krypto.random.getRandomBytes(28)
@@ -1506,8 +1542,7 @@
    {
       // compress and encrypt the record using current state
       var s = c.current;
-      if(s === null ||
-         (s.compress(record, s) && s.encrypt(record, s)))
+      if(s === null || (s.compress(record, s) && s.encrypt(record, s)))
       {
          // store record
          c.records.push(record);
@@ -1515,8 +1550,10 @@
       // fatal error
       else
       {
-         // FIXME: better errors
-         c.error(c, 'Could not prepare record.');
+         // FIXME: pass on errors from encryption/compression?
+         c.error(c, {
+            message: 'Could not compress and encrypt record.'
+         });
       }
    };
    
@@ -1653,18 +1690,17 @@
             // decrypt and decompress record using current state
             var s = c.state.current;
             if(s === null ||
-               (s.decrypt(record, s) && s.decompress(record, s)))
+               (s.decrypt(_record, s) && s.decompress(_record, s)))
             {
                // if the record type matches a previously fragmented
                // record, append the record fragment to it
                if(c.fragmented !== null)
                {
-                  if(c.fragmented.type === record.type)
+                  if(c.fragmented.type === _record.type)
                   {
                      // concatenate record fragments
-                     c.fragmented.fragment.putBuffer(record.fragment);
-                     record = c.fragmented;
-                     c.fragmented = null;
+                     c.fragmented.fragment.putBuffer(_record.fragment);
+                     _record = c.fragmented;
                   }
                   else
                   {
@@ -1675,11 +1711,9 @@
                   }
                }
                
-               if(c.fragmented === null)
-               {
-                  // update engine state
-                  _update(c, record);
-               }
+               // update engine state, clear cached record
+               _update(c, _record);
+               _record = null;
             }
          }
          else if(_record === null)
