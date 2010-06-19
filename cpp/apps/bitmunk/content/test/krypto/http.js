@@ -141,8 +141,11 @@
          // wrap socket for TLS
          if(useTls)
          {
-            // FIXME: uncomment
-            //socket = tls.wrapSocket(socket);
+            // FIXME: add TLS session cache
+            socket = window.krypto.tls.wrapSocket({
+               sessionId: null,
+               socket: socket
+            });
          }
          // set up handlers
          socket.connected = function(e)

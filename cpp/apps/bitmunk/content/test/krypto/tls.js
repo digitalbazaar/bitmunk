@@ -954,6 +954,13 @@
          
          // expect server application data next
          c.expect = SAD;
+         
+         // now connected
+         c.isConnected = true;
+         if(!c.initHandshake)
+         {
+            c.connected(c);
+         }
       }
    };
    
@@ -1597,9 +1604,12 @@
          expect: SHE,
          fragmented: null,
          records: [],
+         initHandshake: false,
+         isConnected: false,
          input: krypto.util.createBuffer(),
          tlsData: krypto.util.createBuffer(),
          data: krypto.util.createBuffer(),
+         connected: options.connected,
          tlsDataReady: options.tlsDataReady,
          dataReady: options.dataReady,
          closed: options.closed,
@@ -1774,8 +1784,17 @@
        */
       c.close = function()
       {
-         // FIXME: implement me
-         // FIXME: call closed() handler
+         if(c.isConnected)
+         {
+            // FIXME: send shutdown alert, etc.
+         }
+         
+         // call handler
+         c.closed(c);
+         
+         // reset TLS engine state
+         c = null;
+         c = tls.createConnection(options);
       };
       
       return c;
@@ -1803,6 +1822,7 @@
     * 
     * @param options the options for this connection:
     *    sessionId: a session ID to reuse, null for a new connection.
+    *    connected: function(conn) called when the first handshake completes.
     *    tlsDataReady: function(conn) called when TLS protocol data has
     *       been prepared and is ready to be used (typically sent over a
     *       socket connection to its destination), read from conn.tlsData
@@ -1821,17 +1841,11 @@
    },
    
    /**
-    * Wraps a krypto.net socket with a TLS layer. Any existing handlers
-    * on the socket will be replaced.
+    * Wraps a krypto.net socket with a TLS layer.
     * 
     * @param options:
     *    sessionId: a session ID to reuse, null for a new connection.
     *    socket: the socket to wrap.
-    *    connected: function(event) called when the socket connects.
-    *    closed: function(event) called when the socket closes.
-    *    data: function(event) called when socket data has arrived,
-    *       it can be read from the socket using receive().
-    *    error: function(event) called when a socket error occurs.
     * 
     * @return the TLS-wrapped socket.
     */
@@ -1845,15 +1859,24 @@
       {
          id: socket.id,
          // set handlers
-         connected: options.connected || function(e){},
-         closed: options.closed || function(e){},
-         data: options.data || function(e){},
-         error: options.error || function(e){}
+         connected: socket.connected || function(e){},
+         closed: socket.closed || function(e){},
+         data: socket.data || function(e){},
+         error: socket.error || function(e){}
       };
       
       // create TLS connection
       var c = krypto.tls.createConnection({
          sessionId: options.sessionId || null,
+         connected: function(c)
+         {
+            // initial handshake complete
+            tlsSocket.connected({
+               id: socket.id,
+               type: 'connect',
+               bytesAvailable: c.data.length()
+            });
+         },
          tlsDataReady: function(c)
          {
             // send TLS data over socket
@@ -1872,11 +1895,6 @@
          {
             // close socket
             socket.close();
-            tlsSocket.closed({
-               id: socket.id,
-               type: 'close',
-               bytesAvailable: 0
-            });
          },
          error: function(c, e)
          {
@@ -1891,6 +1909,19 @@
             });
          }
       });
+      
+      // handle doing handshake after connecting
+      socket.connected = function(e)
+      {
+         c.handshake(options.sessionId);
+      };
+      
+      // handle closing TLS connection
+      socket.closed = function(e)
+      {
+         c.isConnected = false;
+         c.close();
+      };
       
       // handle receiving raw TLS data from socket
       var _requiredBytes = 0;
@@ -1922,7 +1953,7 @@
        * 
        * @param options:
        *           host: the host to connect to.
-       *           port: the port to connec to.
+       *           port: the port to connect to.
        *           policyPort: the policy port to use (if non-default). 
        */
       tlsSocket.connect = function(options)
