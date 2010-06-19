@@ -505,7 +505,7 @@
       {
          server: 0,
          client: 1
-      };
+      },
       
       /**
        * Pseudo-random function algorithm used to generate keys from the
@@ -519,13 +519,13 @@
       
       /**
        * Bulk encryption algorithms.
-       * enum { null, rc4, 3des, aes } BulkCipherAlgorithm;
+       * enum { null, rc4, des3, aes } BulkCipherAlgorithm;
        */
       BulkCipherAlgorithm:
       {
          none: null,
          rc4: 0,
-         3des: 1,
+         des3: 1,
          aes: 2
       },
       
@@ -610,7 +610,7 @@
     * @param c the connection.
     * @param record the record.
     */
-   var tls.handleInvalid = function(c, record)
+   tls.handleInvalid = function(c, record)
    {
       // FIXME: send alert and close connection?
       
@@ -652,7 +652,7 @@
     * @param c the connection.
     * @param record the record.
     */
-   var tls.handleServerHello = function(c, record)
+   tls.handleServerHello = function(c, record)
    {
       // get the length of the message
       var b = record.fragment;
@@ -945,7 +945,7 @@
       {
          var msg =
          {
-            verify_data: b.getBytes(len);
+            verify_data: b.getBytes(len)
          };
          
          // FIXME: ensure verify data is correct
@@ -1260,8 +1260,7 @@
       }
       
       // split the key material into the MAC and encryption keys
-      return
-      {
+      return {
          client_write_MAC_key: km.splice(0, sp.mac_key_length),
          server_write_MAC_key: km.splice(0, sp.mac_key_length),
          client_write_key: km.splice(0, sp.enc_key_length),
@@ -1636,8 +1635,8 @@
          var record = tls.createRecord(
          {
             type: tls.ContentType.handshake,
-            data: createClientHello(sessionId)
-         };
+            data: tls.createClientHello(sessionId)
+         });
          tls.queue(c, record);
          tls.flush(c);
       };
@@ -1739,14 +1738,14 @@
        */
       c.prepare = function(data)
       {
-         // fragment data as necessary
+         // only fragment data as necessary
          if(data.length <= tls.MaxFragment)
          {
             var record = tls.createRecord(
             {
                type: tls.ContentType.application_data,
                data: util.createBuffer(data)
-            };
+            });
             tls.queue(c, record);
          }
          else
@@ -1760,7 +1759,7 @@
                {
                   type: tls.ContentType.application_data,
                   data: util.createBuffer(tmp)
-               };
+               });
                tls.queue(c, record);
             }
             while(data.length > tls.MaxFragment);
@@ -1816,7 +1815,7 @@
     * 
     * @return the new TLS connection.
     */
-   krypto.tls.createConnection: function(options)
+   krypto.tls.createConnection = function(options)
    {
       return tls.createConnection(options);
    },
@@ -1836,7 +1835,7 @@
     * 
     * @return the TLS-wrapped socket.
     */
-   krypto.tls.wrapSocket: function(options)
+   krypto.tls.wrapSocket = function(options)
    {
       // get raw socket
       var socket = options.socket;
