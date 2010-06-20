@@ -297,15 +297,35 @@
    };
    
    /**
-    * Gets the SHA-1 hash for the given data.
+    * Gets a MAC for a record using the SHA-1 hash algorithm.
     * 
-    * @param data the data.
+    * @param key the mac key.
+    * @param state the sequence number.
+    * @param record the record.
     * 
-    * @return the sha-1 hash (20 bytes) for the given data.
+    * @return the sha-1 hash (20 bytes) for the given record.
     */
-   var hmac_sha1 = function(data)
+   var hmac_sha1 = function(key, seqNum, record)
    {
-      // FIXME:
+      /* MAC is computed like so:
+      HMAC_hash(
+         key, seqNum +
+            TLSCompressed.type +
+            TLSCompressed.version +
+            TLSCompressed.length +
+            TLSCompressed.fragment)
+      */
+      
+      var b = krypto.util.createBuffer();
+      b.putInt32(0);
+      b.putInt32(seqNum);
+      b.putByte(record.type);
+      b.putByte(record.version.major);
+      b.putByte(record.version.minor);
+      b.putByte(record.length);
+      b.putBytes(record.fragment.bytes());
+      
+      // FIXME: calculate MAC
    };
    
    /**
@@ -323,7 +343,7 @@
       
       // append MAC to fragment
       var mac = state.macFunction(
-         state.clientMacKey, record.fragment.getBytes());
+         state.clientMacKey, state.clientSequenceNumber++, record);
       record.fragment.putBytes(mac);
       
       // FIXME: TLS 1.1 & 1.2 use an explicit IV every time to protect
@@ -452,7 +472,8 @@
          record.length = record.fragment.length();
          
          // see if data integrity checks out
-         var mac2 = state.macFunction(state.serverMacKey, record.fragment);
+         var mac2 = state.macFunction(
+            state.serverMacKey, state.serverSequenceNumber++, record);
          if(mac2 === mac)
          {
             rval = record;
@@ -662,6 +683,7 @@
    tls.handleHelloRequest = function(c, record)
    {
       // ignore renegotiation requests from the server
+      console.log('got HelloRequest');
    };
    
    /**
@@ -687,6 +709,7 @@
     */
    tls.handleServerHello = function(c, record)
    {
+      console.log('got ServerHello');
       // get the length of the message
       var b = record.fragment;
       var len = b.getInt24();
@@ -746,6 +769,7 @@
     */
    tls.handleCertificate = function(c, record)
    {
+      console.log('got Certificate');
       // get the length of the message
       var b = record.fragment;
       var len = b.getInt24();
@@ -810,6 +834,7 @@
     */
    tls.handleServerKeyExchange = function(c, record)
    {
+      console.log('got ServerKeyExchange');
       // get the length of the message
       var b = record.fragment;
       var len = b.getInt24();
@@ -853,6 +878,7 @@
     */
    tls.handleCertificateRequest = function(c, record)
    {
+      console.log('got CertificateRequest');
       // get the length of the message
       var b = record.fragment;
       var len = b.getInt24();
@@ -893,6 +919,7 @@
     */
    tls.handleServerHelloDone = function(c, record)
    {
+      console.log('got ServerHelloDone');
       // get the length of the message
       var b = record.fragment;
       var len = b.getInt24();
@@ -928,6 +955,7 @@
     */
    tls.handleChangeCipherSpec = function(c, record)
    {
+      console.log('got ChangeCipherSpec');
       // FIXME: handle server has changed their cipher spec, change read
       // pending state to current, get ready for finished record
       
@@ -960,6 +988,7 @@
     */
    tls.handleFinished = function(c, record)
    {
+      console.log('got Finished');
       // get the length of the message
       var b = record.fragment;
       var len = b.getInt24();
@@ -1005,6 +1034,7 @@
     */
    tls.handleAlert = function(c, record)
    {
+      console.log('got Alert');
       // FIXME: handle alert, determine if connection must end
    };
    
@@ -1016,8 +1046,9 @@
     */
    tls.handleHandshake = function(c, record)
    {
+      console.log('got Handshake message');
       // get the handshake type
-      var type = record.fragment.byte();
+      var type = record.fragment.getByte();
       
       // get the length of the message
       var b = record.fragment;
@@ -1061,6 +1092,7 @@
     */
    tls.handleApplicationData = function(c, record)
    {
+      console.log('got application data');
       // buffer data, notify that its ready
       c.data.putBuffer(record.fragment);
       c.dataReady(c);
@@ -1372,9 +1404,14 @@
     */
    tls.createConnectionState = function(sp)
    {
+      /* Note: In this implementation a connection state applies to both
+         incoming and outgoing messages (not just one or the other).
+       */
+      
       var state =
       {
-         sequenceNumber: 0,
+         clientSequenceNumber: 0,
+         serverSequenceNumber: 0,
          clientMacKey: null,
          serverMacKey: null,
          macLength: 0,
@@ -1688,6 +1725,7 @@
          records: [],
          initHandshake: false,
          isConnected: false,
+         fail: false,
          input: krypto.util.createBuffer(),
          tlsData: krypto.util.createBuffer(),
          data: krypto.util.createBuffer(),
@@ -1695,7 +1733,12 @@
          tlsDataReady: options.tlsDataReady,
          dataReady: options.dataReady,
          closed: options.closed,
-         error: options.error
+         error: function(c)
+         {
+            // set fail flag
+            c.fail = true;
+            options.error(c);
+         }
       };
       
       /**
@@ -1706,6 +1749,7 @@
        */
       var _update = function(c, record)
       {
+         console.log('updating TLS engine state');
          // get record handler (align type in table by subtracting lowest)
          var aligned = record.type - tls.ContentType.change_cipher_spec;
          var handler = ctTable[c.expect][aligned];
@@ -1751,80 +1795,101 @@
        * 
        * @param data the TLS protocol data, as a string, to process.
        * 
-       * @return 0 if the data could be processed, otherwise the number of
-       *         bytes required for data to be processed.
+       * @return 0 if the data could be processed, otherwise the
+       *         number of bytes required for data to be processed.
        */
       c.process = function(data)
       {
+         console.log('processing TLS data');
          var rval = 0;
          
          // buffer data, get input length
          var b = c.input;
          b.putBytes(data);
          var len = b.length();
+         console.log('data len', len);
          
-         // if there is no pending record and there are at least 5 bytes
-         // for the record, parse the basic record info
-         if(_record === null && len >= 5)
+         // keep processing data until more is needed
+         while(rval === 0 && b.length() > 0 && !c.fail)
          {
-            _record =
+            // if there is no pending record and there are at least 5 bytes
+            // for the record, parse the basic record info
+            if(_record === null && len >= 5)
             {
-               type: b.getByte(),
-               version:
+               console.log('got record header');
+               _record =
                {
-                  major: b.getByte(),
-                  minor: b.getByte()
-               },
-               length: b.getInt16(),
-               fragment: krypto.util.createBuffer()
-            };
-            len -= 5;
-         }
-         
-         // see if there is enough data to parse the pending record
-         if(_record !== null && len >= _record.length)
-         {
-            // fill record fragment
-            _record.fragment.putBytes(b.getBytes(_record.length));
-            
-            // decrypt and decompress record using current state
-            var s = c.state.current;
-            if(s === null ||
-               (s.decrypt(_record, s) && s.decompress(_record, s)))
-            {
-               // if the record type matches a previously fragmented
-               // record, append the record fragment to it
-               if(c.fragmented !== null)
-               {
-                  if(c.fragmented.type === _record.type)
+                  type: b.getByte(),
+                  version:
                   {
-                     // concatenate record fragments
-                     c.fragmented.fragment.putBuffer(_record.fragment);
-                     _record = c.fragmented;
-                  }
-                  else
-                  {
-                     // error, invalid fragmented record
-                     c.error(c, {
-                        message: 'Invalid fragmented record.'
-                     });
-                  }
-               }
+                     major: b.getByte(),
+                     minor: b.getByte()
+                  },
+                  length: b.getInt16(),
+                  fragment: krypto.util.createBuffer()
+               };
+               len -= 5;
+               console.log('record length', _record.length);
                
-               // update engine state, clear cached record
-               _update(c, _record);
-               _record = null;
+               // check record version
+               if(_record.version.major != tls.Version.major ||
+                  _record.version.minor != tls.Version.minor)
+               {
+                  c.error(c, {
+                     message: 'Incompatible TLS version.'
+                  });
+                  // FIXME: send TLS alert
+                  c.close();
+               }
             }
-         }
-         else if(_record === null)
-         {
-            // need at least 5 bytes
-            rval = 5 - len;
-         }
-         else
-         {
-            // need remainder of record
-            rval = _record.length - len;
+            
+            // see if there is enough data to parse the pending record
+            if(_record !== null && len >= _record.length)
+            {
+               console.log('filling record fragment');
+               // fill record fragment
+               _record.fragment.putBytes(b.getBytes(_record.length));
+               
+               // decrypt and decompress record using current state
+               var s = c.state.current;
+               if(s === null ||
+                  (s.decrypt(_record, s) && s.decompress(_record, s)))
+               {
+                  // if the record type matches a previously fragmented
+                  // record, append the record fragment to it
+                  if(c.fragmented !== null)
+                  {
+                     if(c.fragmented.type === _record.type)
+                     {
+                        console.log('combining fragmented records');
+                        // concatenate record fragments
+                        c.fragmented.fragment.putBuffer(_record.fragment);
+                        _record = c.fragmented;
+                     }
+                     else
+                     {
+                        // error, invalid fragmented record
+                        c.error(c, {
+                           message: 'Invalid fragmented record.'
+                        });
+                     }
+                  }
+                  
+                  // update engine state, clear cached record
+                  _update(c, _record);
+                  _record = null;
+               }
+            }
+            else if(_record === null)
+            {
+               // need at least 5 bytes
+               rval = 5 - len;
+            }
+            else
+            {
+               // need remainder of record
+               rval = _record.length - len;
+            }
          }
          
          return rval;
@@ -2024,8 +2089,13 @@
       var _requiredBytes = 0;
       socket.data = function(e)
       {
+         console.log('received TLS data');
+         
          // only receive if there are enough bytes available to
          // process a record
+         // FIXME: remove try/catch
+         try
+         {
          if(e.bytesAvailable >= _requiredBytes)
          {
             var count = Math.max(e.bytesAvailable, _requiredBytes);
@@ -2034,6 +2104,11 @@
             {
                _requiredBytes = c.process(data);
             }
+         }
+         }
+         catch(ex)
+         {
+            console.log(ex);
          }
       };
       
