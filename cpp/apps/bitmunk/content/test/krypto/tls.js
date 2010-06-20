@@ -689,6 +689,12 @@
    /**
     * Called when the client receives a ServerHello record.
     * 
+    * When this message will be sent:
+    *    The server will send this message in response to a client hello
+    *    message when it was able to find an acceptable set of algorithms.
+    *    If it cannot find such a match, it will respond with a handshake
+    *    failure alert.
+    * 
     * uint24 length;
     * struct {
     *    ProtocolVersion server_version;
@@ -749,7 +755,13 @@
             msg.extensions = readVector(b, 2); 
          }
          
-         // FIXME: do stuff
+         // store handshake messages
+         c.handshakeMsgs = {
+            hello: msg,
+            certificate: null,
+            keyExchange: null,
+            certificateRequest: null
+         };
          
          // expect a server Certificate message next
          c.expect = SCE;
@@ -758,6 +770,20 @@
    
    /**
     * Called when the client receives a Certificate record.
+    * 
+    * When this message will be sent:
+    *    The server must send a certificate whenever the agreed-upon key
+    *    exchange method is not an anonymous one. This message will always
+    *    immediately follow the server hello message.
+    *
+    * Meaning of this message:
+    *    The certificate type must be appropriate for the selected cipher
+    *    suite's key exchange algorithm, and is generally an X.509v3
+    *    certificate. It must contain a key which matches the key exchange
+    *    method, as follows. Unless otherwise specified, the signing
+    *    algorithm for the certificate must be the same as the algorithm
+    *    for the certificate key. Unless otherwise specified, the public
+    *    key may be of any length.
     * 
     * opaque ASN.1Cert<1..2^24-1>;
     * struct {
@@ -799,6 +825,22 @@
    
    /**
     * Called when the client receives a ServerKeyExchange record.
+    * 
+    * When this message will be sent:
+    *    This message will be sent immediately after the server
+    *    certificate message (or the server hello message, if this is an
+    *    anonymous negotiation).
+    *
+    *    The server key exchange message is sent by the server only when
+    *    the server certificate message (if sent) does not contain enough
+    *    data to allow the client to exchange a premaster secret.
+    * 
+    * Meaning of this message:
+    *    This message conveys cryptographic information to allow the
+    *    client to communicate the premaster secret: either an RSA public
+    *    key to encrypt the premaster secret with, or a Diffie-Hellman
+    *    public key with which the client can complete a key exchange
+    *    (with the result being the premaster secret.)
     * 
     * enum {
     *    dhe_dss, dhe_rsa, dh_anon, rsa, dh_dss, dh_rsa
@@ -859,6 +901,13 @@
    /**
     * Called when the client receives a CertificateRequest record.
     * 
+    * When this message will be sent:
+    *    A non-anonymous server can optionally request a certificate from
+    *    the client, if appropriate for the selected cipher suite. This
+    *    message, if sent, will immediately follow the Server Key Exchange
+    *    message (if it is sent; otherwise, the Server Certificate
+    *    message).
+    * 
     * enum {
     *    rsa_sign(1), dss_sign(2), rsa_fixed_dh(3), dss_fixed_dh(4),
     *    rsa_ephemeral_dh_RESERVED(5), dss_ephemeral_dh_RESERVED(6),
@@ -912,6 +961,20 @@
    /**
     * Called when the client receives a ServerHelloDone record.
     * 
+    * When this message will be sent:
+    *    The server hello done message is sent by the server to indicate
+    *    the end of the server hello and associated messages. After
+    *    sending this message the server will wait for a client response.
+    *
+    * Meaning of this message:
+    *    This message means that the server is done sending messages to
+    *    support the key exchange, and the client can proceed with its
+    *    phase of the key exchange.
+    *
+    *    Upon receipt of the server hello done message the client should
+    *    verify that the server provided a valid certificate if required
+    *    and check that the server hello parameters are acceptable.
+    * 
     * struct {} ServerHelloDone;
     * 
     * @param c the connection.
@@ -935,12 +998,64 @@
       }
       else
       {
-         // FIXME: create all of the client response records
-         // client certificate
-         // client key exchange
-         // certificate verify
-         // change cipher spec
-         // finished
+         // create all of the client response records:
+         
+         // create client certificate message if requested
+         if(c.handshakeMsgs.certificateRequest !== null)
+         {
+            // FIXME: determine cert to send
+            // FIXME: client-side certs not implemented yet, so send none
+            record = tls.createRecord(
+            {
+               type: tls.ContentType.handshake,
+               data: tls.createCertificate([])
+            });
+            console.log('TLS client certificate record created');
+            tls.queue(c, record);
+         }
+         
+         // create client key exchange message
+         record = tls.createRecord(
+         {
+            type: tls.ContentType.handshake,
+            data: tls.createClientKeyExchange()
+         });
+         console.log('TLS client key exchange record created');
+         tls.queue(c, record);
+         
+         // create certificate verify message
+         record = tls.createRecord(
+         {
+            type: tls.ContentType.handshake,
+            data: tls.createCertificateVerify()
+         });
+         console.log('TLS certificate verify record created');
+         tls.queue(c, record);
+         
+         // create change cipher spec message
+         record = tls.createRecord(
+         {
+            type: tls.ContentType.handshake,
+            data: tls.createChangeCipherSpec()
+         });
+         console.log('TLS change cipher spec record created');
+         tls.queue(c, record);
+         
+         // FIXME: change pending state to current before sending finish
+         // FIXME: problematic ... need to change outgoing state only, not
+         // incoming state and current implementation combines them
+         
+         // create finished message
+         record = tls.createRecord(
+         {
+            type: tls.ContentType.handshake,
+            data: tls.createFinished()
+         });
+         console.log('TLS finished record created');
+         tls.queue(c, record);
+         
+         // clear server-side handshake messages
+         c.handshakeMsgs = null;
          
          // expect a server ChangeCipherSpec message next
          c.expect = SCC;
@@ -965,6 +1080,21 @@
    
    /**
     * Called when the client receives a Finished record.
+    * 
+    * When this message will be sent:
+    *    A finished message is always sent immediately after a change
+    *    cipher spec message to verify that the key exchange and
+    *    authentication processes were successful. It is essential that a
+    *    change cipher spec message be received between the other
+    *    handshake messages and the Finished message.
+    *
+    * Meaning of this message:
+    *    The finished message is the first protected with the just-
+    *    negotiated algorithms, keys, and secrets. Recipients of finished
+    *    messages must verify that the contents are correct.  Once a side
+    *    has sent its Finished message and received and validated the
+    *    Finished message from its peer, it may begin to send and receive
+    *    application data over the connection.
     * 
     * struct {
     *    opaque verify_data[verify_data_length];
@@ -1645,6 +1775,178 @@
    };
    
    /**
+    * Creates a Certificate message.
+    * 
+    * When this message will be sent:
+    *    This is the first message the client can send after receiving a
+    *    server hello done message. This message is only sent if the
+    *    server requests a certificate. If no suitable certificate is
+    *    available, the client should send a certificate message
+    *    containing no certificates. If client authentication is required
+    *    by the server for the handshake to continue, it may respond with
+    *    a fatal handshake failure alert.
+    * 
+    * opaque ASN.1Cert<1..2^24-1>;
+    *
+    * struct {
+    *     ASN.1Cert certificate_list<0..2^24-1>;
+    * } Certificate;
+    * 
+    * @param certs the certificates to use.
+    * 
+    * @return the Certificate byte buffer.
+    */
+   tls.createCertificate = function(certs)
+   {
+      // FIXME: check to see if server requested a certificate
+      
+      
+      
+      // determine length of the handshake message
+      // cipher suites and compression methods size will need to be
+      // updated if more get added to the list
+      var length =
+         sessionId.length + 1 + // session ID vector
+         2 +                    // version (major + minor)
+         4 + 28 +               // random time and random bytes
+         2 + 2 +                // cipher suites vector (1 supported)
+         1 + 1 +                // compression methods vector
+         0;                     // no extensions (FIXME: add TLS SNI)
+      
+      // create random
+      var random = tls.createRandom();
+      
+      // create supported cipher suites, only 1 at present
+      // TLS_RSA_WITH_AES_128_CBC_SHA = { 0x00,0x2F }
+      var cipherSuites = util.createBuffer();
+      cipherSuites.putByte(0x00);
+      cipherSuites.putByte(0x2F);
+      
+      // create supported compression methods, only null supported
+      var compressionMethods = util.createBuffer();
+      compressionMethods.putByte(0x00);
+
+      // build record fragment
+      var rval = util.createBuffer();
+      rval.putByte(tls.HandshakeType.client_hello);
+      rval.putInt24(length);               // handshake length
+      rval.putByte(tls.Version.major);     // major version
+      rval.putByte(tls.Version.minor);     // minor version
+      rval.putInt32(random.gmt_unix_time); // random time
+      rval.putBytes(random.random_bytes);  // random bytes
+      writeVector(rval, 1, util.createBuffer(sessionId));
+      writeVector(rval, 2, cipherSuites);
+      writeVector(rval, 1, compressionMethods);
+      return rval;
+   };
+   
+   /**
+    * Creates a ClientKeyExchange message.
+    * 
+    * When this message will be sent:
+    *    This message is always sent by the client. It will immediately
+    *    follow the client certificate message, if it is sent. Otherwise
+    *    it will be the first message sent by the client after it receives
+    *    the server hello done message.
+    *
+    * Meaning of this message:
+    *    With this message, the premaster secret is set, either though
+    *    direct transmission of the RSA-encrypted secret, or by the
+    *    transmission of Diffie-Hellman parameters which will allow each
+    *    side to agree upon the same premaster secret. When the key
+    *    exchange method is DH_RSA or DH_DSS, client certification has
+    *    been requested, and the client was able to respond with a
+    *    certificate which contained a Diffie-Hellman public key whose
+    *    parameters (group and generator) matched those specified by the
+    *    server in its certificate, this message will not contain any
+    *    data.
+    * 
+    * struct {
+    *    select(KeyExchangeAlgorithm) {
+    *       case rsa: EncryptedPreMasterSecret;
+    *       case diffie_hellman: ClientDiffieHellmanPublic;
+    *    } exchange_keys;
+    * } ClientKeyExchange;
+    * 
+    * @param certs the certificates to use.
+    * 
+    * @return the Certificate byte buffer.
+    */
+   tls.createClientKeyExchange = function(certs)
+   {
+   };
+   
+   /**
+    * Creates a CertificateVerify message.
+    * 
+    * Meaning of this message:
+    *    This structure conveys the client's Diffie-Hellman public value
+    *    (Yc) if it was not already included in the client's certificate.
+    *    The encoding used for Yc is determined by the enumerated
+    *    PublicValueEncoding. This structure is a variant of the client
+    *    key exchange message, not a message in itself.
+    *   
+    * When this message will be sent:
+    *    This message is used to provide explicit verification of a client
+    *    certificate. This message is only sent following a client
+    *    certificate that has signing capability (i.e. all certificates
+    *    except those containing fixed Diffie-Hellman parameters). When
+    *    sent, it will immediately follow the client key exchange message.
+    * 
+    * opaque ASN.1Cert<1..2^24-1>;
+    *
+    * struct {
+    *     ASN.1Cert certificate_list<0..2^24-1>;
+    * } Certificate;
+    * 
+    * @param certs the certificates to use.
+    * 
+    * @return the Certificate byte buffer.
+    */
+   tls.createCertificateVerify = function(certs)
+   {
+   };
+   
+   /**
+    * Creates a ChangeCipherSpec message.
+    * 
+    * The change cipher spec protocol exists to signal transitions in
+    * ciphering strategies. The protocol consists of a single message,
+    * which is encrypted and compressed under the current (not the pending)
+    * connection state. The message consists of a single byte of value 1.
+    * 
+    * opaque ASN.1Cert<1..2^24-1>;
+    *
+    * struct {
+    *     ASN.1Cert certificate_list<0..2^24-1>;
+    * } Certificate;
+    * 
+    * @param certs the certificates to use.
+    * 
+    * @return the Certificate byte buffer.
+    */
+   tls.createChangeCipherSpec = function(certs)
+   {
+   };
+   
+   /**
+    * Creates a Finished message.
+    * 
+    * opaque ASN.1Cert<1..2^24-1>;
+    *
+    * struct {
+    *     ASN.1Cert certificate_list<0..2^24-1>;
+    * } Certificate;
+    * 
+    * @param certs the certificates to use.
+    * 
+    * @return the Certificate byte buffer.
+    */
+   tls.createFinished = function(certs)
+   {
+   };
+   
+   /**
     * Compresses, encrypts, and queues a record for delivery.
     * 
     * @param c the connection.
@@ -1724,6 +2026,7 @@
          fragmented: null,
          records: [],
          initHandshake: false,
+         handshakeMsgs: null,
          isConnected: false,
          fail: false,
          input: krypto.util.createBuffer(),
