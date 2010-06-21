@@ -195,19 +195,22 @@ bool Bitmunk::startNode()
    FileList modulePaths = getModulePaths();
    // load all module paths at once
    rval = getKernel()->loadModules(modulePaths);
-   Node* node = dynamic_cast<Node*>(
-      getKernel()->getModuleApi("bitmunk.node.Node"));
-   if(node == NULL)
+   if(rval)
    {
-      ExceptionRef e = new Exception(
-         "Could not load Node interface. No compatible Node module found.",
-         APP_NAME ".InvalidNodeModule");
-      Exception::set(e);
-      rval = false;
-   }
-   else
-   {
-      rval = node->start();
+      Node* node = dynamic_cast<Node*>(
+         getKernel()->getModuleApi("bitmunk.node.Node"));
+      if(node == NULL)
+      {
+         ExceptionRef e = new Exception(
+            "Could not load Node interface. No compatible Node module found.",
+            APP_NAME ".InvalidNodeModule");
+         Exception::set(e);
+         rval = false;
+      }
+      else
+      {
+         rval = node->start();
+      }
    }
 
    // send ready event
