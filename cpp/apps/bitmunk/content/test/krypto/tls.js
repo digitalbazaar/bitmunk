@@ -348,7 +348,7 @@
       
       // FIXME: TLS 1.1 & 1.2 use an explicit IV every time to protect
       // against CBC attacks
-      // var iv = window.krypto.random.getBytes(16);
+      // var iv = krypto.random.getBytes(16);
       
       // only generate a new IV when initializing for TLS 1.0, otherwise
       // use the residue from the previous encryption
@@ -716,8 +716,9 @@
    tls.handleServerHello = function(c, record)
    {
       console.log('got ServerHello');
-      // get the length of the message
+      // save a copy of the message, get its length
       var b = record.fragment;
+      c.handshakeMsgs[0].serverHello = b.copy();
       var len = b.getInt24();
       
       // minimum of 38 bytes in message
@@ -755,14 +756,6 @@
             msg.extensions = readVector(b, 2); 
          }
          
-         // store handshake messages
-         c.handshakeMsgs = {
-            hello: msg,
-            certificate: null,
-            keyExchange: null,
-            certificateRequest: null
-         };
-         
          // expect a server Certificate message next
          c.expect = SCE;
       }
@@ -787,7 +780,7 @@
     * 
     * opaque ASN.1Cert<1..2^24-1>;
     * struct {
-    *    ASN.1Cert certificate_list<0..2^24-1>;
+    *    ASN.1Cert certificate_list<1..2^24-1>;
     * } Certificate;
     * 
     * @param c the connection.
@@ -796,8 +789,9 @@
    tls.handleCertificate = function(c, record)
    {
       console.log('got Certificate');
-      // get the length of the message
+      // save a copy of the message, get its length
       var b = record.fragment;
+      c.handshakeMsgs[0].serverCertificate = b.copy();
       var len = b.getInt24();
       
       // minimum of 3 bytes in message
@@ -877,8 +871,9 @@
    tls.handleServerKeyExchange = function(c, record)
    {
       console.log('got ServerKeyExchange');
-      // get the length of the message
+      // save a copy of the message, get its length
       var b = record.fragment;
+      c.handshakeMsgs[0].serverKeyExchange = b.copy();
       var len = b.getInt24();
       
       // this implementation only supports RSA, no Diffie-Hellman support
@@ -928,8 +923,9 @@
    tls.handleCertificateRequest = function(c, record)
    {
       console.log('got CertificateRequest');
-      // get the length of the message
+      // save a copy of the message, get its length
       var b = record.fragment;
+      c.handshakeMsgs[0].serverCertificateRequest = b.copy();
       var len = b.getInt24();
       
       // minimum of 5 bytes in message
@@ -983,8 +979,9 @@
    tls.handleServerHelloDone = function(c, record)
    {
       console.log('got ServerHelloDone');
-      // get the length of the message
+      // save a copy of the message, get its length
       var b = record.fragment;
+      c.handshakeMsgs[0].serverHelloDone = b.copy();
       var len = b.getInt24();
       
       // len must be 0 bytes
@@ -1001,7 +998,7 @@
          // create all of the client response records:
          
          // create client certificate message if requested
-         if(c.handshakeMsgs.certificateRequest !== null)
+         if(c.handshakeMsgs[0].serverCertificateRequest !== null)
          {
             // FIXME: determine cert to send
             // FIXME: client-side certs not implemented yet, so send none
@@ -1014,23 +1011,31 @@
             tls.queue(c, record);
          }
          
+         // FIXME: get public key from server RSA cert
+         var pubKey = null;
+         
          // create client key exchange message
          record = tls.createRecord(
          {
             type: tls.ContentType.handshake,
-            data: tls.createClientKeyExchange()
+            data: tls.createClientKeyExchange(pubKey)
          });
          console.log('TLS client key exchange record created');
          tls.queue(c, record);
          
-         // create certificate verify message
-         record = tls.createRecord(
+         if(c.handshakeMsgs[0].serverCertificateRequest !== null)
          {
-            type: tls.ContentType.handshake,
-            data: tls.createCertificateVerify()
-         });
-         console.log('TLS certificate verify record created');
-         tls.queue(c, record);
+            /* FIXME: client certs not yet implemented
+            // create certificate verify message
+            record = tls.createRecord(
+            {
+               type: tls.ContentType.handshake,
+               data: tls.createCertificateVerify(c.handshakeMsgs[0])
+            });
+            console.log('TLS certificate verify record created');
+            tls.queue(c, record);
+            */
+         }
          
          // create change cipher spec message
          record = tls.createRecord(
@@ -1055,7 +1060,7 @@
          tls.queue(c, record);
          
          // clear server-side handshake messages
-         c.handshakeMsgs = null;
+         c.handshakeMsgs.shift();
          
          // expect a server ChangeCipherSpec message next
          c.expect = SCC;
@@ -1752,23 +1757,23 @@
       
       // create supported cipher suites, only 1 at present
       // TLS_RSA_WITH_AES_128_CBC_SHA = { 0x00,0x2F }
-      var cipherSuites = util.createBuffer();
+      var cipherSuites = krypto.util.createBuffer();
       cipherSuites.putByte(0x00);
       cipherSuites.putByte(0x2F);
       
       // create supported compression methods, only null supported
-      var compressionMethods = util.createBuffer();
+      var compressionMethods = krypto.util.createBuffer();
       compressionMethods.putByte(0x00);
 
       // build record fragment
-      var rval = util.createBuffer();
+      var rval = krypto.util.createBuffer();
       rval.putByte(tls.HandshakeType.client_hello);
       rval.putInt24(length);               // handshake length
       rval.putByte(tls.Version.major);     // major version
       rval.putByte(tls.Version.minor);     // minor version
       rval.putInt32(random.gmt_unix_time); // random time
       rval.putBytes(random.random_bytes);  // random bytes
-      writeVector(rval, 1, util.createBuffer(sessionId));
+      writeVector(rval, 1, krypto.util.createBuffer(sessionId));
       writeVector(rval, 2, cipherSuites);
       writeVector(rval, 1, compressionMethods);
       return rval;
@@ -1798,45 +1803,17 @@
     */
    tls.createCertificate = function(certs)
    {
-      // FIXME: check to see if server requested a certificate
-      
-      
+      var certBuffer = krypto.util.createBuffer();
+      // FIXME: fill buffer with certs to support client side certs
       
       // determine length of the handshake message
-      // cipher suites and compression methods size will need to be
-      // updated if more get added to the list
-      var length =
-         sessionId.length + 1 + // session ID vector
-         2 +                    // version (major + minor)
-         4 + 28 +               // random time and random bytes
-         2 + 2 +                // cipher suites vector (1 supported)
-         1 + 1 +                // compression methods vector
-         0;                     // no extensions (FIXME: add TLS SNI)
+      var length = 3 + certBuffer.length(); // cert vector
       
-      // create random
-      var random = tls.createRandom();
-      
-      // create supported cipher suites, only 1 at present
-      // TLS_RSA_WITH_AES_128_CBC_SHA = { 0x00,0x2F }
-      var cipherSuites = util.createBuffer();
-      cipherSuites.putByte(0x00);
-      cipherSuites.putByte(0x2F);
-      
-      // create supported compression methods, only null supported
-      var compressionMethods = util.createBuffer();
-      compressionMethods.putByte(0x00);
-
       // build record fragment
-      var rval = util.createBuffer();
-      rval.putByte(tls.HandshakeType.client_hello);
+      var rval = krypto.util.createBuffer();
+      rval.putByte(tls.HandshakeType.certificate);
       rval.putInt24(length);               // handshake length
-      rval.putByte(tls.Version.major);     // major version
-      rval.putByte(tls.Version.minor);     // minor version
-      rval.putInt32(random.gmt_unix_time); // random time
-      rval.putBytes(random.random_bytes);  // random bytes
-      writeVector(rval, 1, util.createBuffer(sessionId));
-      writeVector(rval, 2, cipherSuites);
-      writeVector(rval, 1, compressionMethods);
+      writeVector(rval, 3, certBuffer);
       return rval;
    };
    
@@ -1861,6 +1838,15 @@
     *    server in its certificate, this message will not contain any
     *    data.
     * 
+    * Meaning of this message:
+    *    If RSA is being used for key agreement and authentication, the
+    *    client generates a 48-byte premaster secret, encrypts it using
+    *    the public key from the server's certificate or the temporary RSA
+    *    key provided in a server key exchange message, and sends the
+    *    result in an encrypted premaster secret message. This structure
+    *    is a variant of the client key exchange message, not a message in
+    *    itself.
+    * 
     * struct {
     *    select(KeyExchangeAlgorithm) {
     *       case rsa: EncryptedPreMasterSecret;
@@ -1868,12 +1854,43 @@
     *    } exchange_keys;
     * } ClientKeyExchange;
     * 
-    * @param certs the certificates to use.
+    * struct {
+    *    ProtocolVersion client_version;
+    *    opaque random[46];
+    * } PreMasterSecret;
+    *
+    * struct {
+    *    public-key-encrypted PreMasterSecret pre_master_secret;
+    * } EncryptedPreMasterSecret;
     * 
-    * @return the Certificate byte buffer.
+    * @param pubKey the RSA public key to use to encrypt the pre-master secret.
+    * 
+    * @return the ClientKeyExchange byte buffer.
     */
-   tls.createClientKeyExchange = function(certs)
+   tls.createClientKeyExchange = function(pubKey)
    {
+      // create buffer to encrypt
+      var b = krypto.util.createBuffer();
+      
+      // add highest client-supported protocol to help server avoid version
+      // rollback attacks
+      b.putByte(tls.Version.major);
+      b.putByte(tls.Version.minor);
+      
+      // generate and add 46 random bytes
+      b.putBytes(krypto.random.getBytes(46));
+      
+      // FIXME: do RSA encryption
+      
+      // determine length of the handshake message
+      var length = b.length();
+      
+      // build record fragment
+      var rval = krypto.util.createBuffer();
+      rval.putByte(tls.HandshakeType.client_key_exchange);
+      rval.putInt24(length);               // handshake length
+      rval.putBuffer(b);
+      return rval;
    };
    
    /**
@@ -1893,18 +1910,29 @@
     *    except those containing fixed Diffie-Hellman parameters). When
     *    sent, it will immediately follow the client key exchange message.
     * 
-    * opaque ASN.1Cert<1..2^24-1>;
-    *
     * struct {
-    *     ASN.1Cert certificate_list<0..2^24-1>;
-    * } Certificate;
+    *    Signature signature;
+    * } CertificateVerify;
+    *   
+    * CertificateVerify.signature.md5_hash
+    *    MD5(handshake_messages);
+    *
+    * Certificate.signature.sha_hash
+    *    SHA(handshake_messages);
+    *
+    * Here handshake_messages refers to all handshake messages sent or
+    * received starting at client hello up to but not including this
+    * message, including the type and length fields of the handshake
+    * messages.
     * 
-    * @param certs the certificates to use.
+    * @param privKey the private key to sign with.
+    * @param msgs the handshake messages to use.
     * 
-    * @return the Certificate byte buffer.
+    * @return the CertificateVerify byte buffer.
     */
-   tls.createCertificateVerify = function(certs)
+   tls.createCertificateVerify = function(privKey, msgs)
    {
+      // FIXME: sign all handshake messages, including type and length
    };
    
    /**
@@ -1915,28 +1943,41 @@
     * which is encrypted and compressed under the current (not the pending)
     * connection state. The message consists of a single byte of value 1.
     * 
-    * opaque ASN.1Cert<1..2^24-1>;
-    *
     * struct {
-    *     ASN.1Cert certificate_list<0..2^24-1>;
-    * } Certificate;
+    *    enum { change_cipher_spec(1), (255) } type;
+    * } ChangeCipherSpec;
     * 
-    * @param certs the certificates to use.
-    * 
-    * @return the Certificate byte buffer.
+    * @return the ChangeCipherSpec byte buffer.
     */
-   tls.createChangeCipherSpec = function(certs)
+   tls.createChangeCipherSpec = function()
    {
+      var rval = krypto.util.createBuffer();
+      rval.putByte(0x01);
+      return rval;
    };
    
    /**
     * Creates a Finished message.
     * 
-    * opaque ASN.1Cert<1..2^24-1>;
-    *
     * struct {
-    *     ASN.1Cert certificate_list<0..2^24-1>;
-    * } Certificate;
+    *    opaque verify_data[12];
+    * } Finished;
+    *
+    * verify_data
+    *    PRF(master_secret, finished_label, MD5(handshake_messages) +
+    *    SHA-1(handshake_messages)) [0..11];
+    *
+    * finished_label
+    *    For Finished messages sent by the client, the string "client
+    *    finished". For Finished messages sent by the server, the
+    *    string "server finished".
+    *
+    * handshake_messages
+    *    All of the data from all handshake messages up to but not
+    *    including this message. This is only data visible at the
+    *    handshake layer and does not include record layer headers.
+    *    This is the concatenation of all the Handshake structures as
+    *    defined in 7.4 exchanged thus far.
     * 
     * @param certs the certificates to use.
     * 
@@ -1944,6 +1985,7 @@
     */
    tls.createFinished = function(certs)
    {
+      
    };
    
    /**
@@ -2026,7 +2068,7 @@
          fragmented: null,
          records: [],
          initHandshake: false,
-         handshakeMsgs: null,
+         handshakeMsgs: [],
          isConnected: false,
          fail: false,
          input: krypto.util.createBuffer(),
@@ -2079,6 +2121,19 @@
             type: tls.ContentType.handshake,
             data: tls.createClientHello(sessionId || '')
          });
+         
+         // store handshake messages
+         c.handshakeMsgs.push({
+            clientHello: record.data,
+            serverHello: null,
+            serverCertificate: null,
+            serverKeyExchange: null,
+            serverCertificateRequest: null,
+            serverHelloDone: null,
+            clientCertificate: null,
+            clientKeyExchange: null
+         });
+         
          console.log('TLS handshake record created');
          tls.queue(c, record);
          tls.flush(c);
@@ -2213,7 +2268,7 @@
             var record = tls.createRecord(
             {
                type: tls.ContentType.application_data,
-               data: util.createBuffer(data)
+               data: krypto.util.createBuffer(data)
             });
             tls.queue(c, record);
          }
@@ -2227,7 +2282,7 @@
                var record = tls.createRecord(
                {
                   type: tls.ContentType.application_data,
-                  data: util.createBuffer(tmp)
+                  data: krypto.util.createBuffer(tmp)
                });
                tls.queue(c, record);
             }
