@@ -798,6 +798,7 @@ AC_CONFIG_FILES([
    cpp/app/Makefile
    cpp/apps/bitmunk/Makefile
    cpp/apps/bitmunk/config.h
+   cpp/apps/tester/Makefile
    cpp/apps/firefox/Makefile
    cpp/apps/firefox/Makefile.common
    cpp/apps/firefox/components/Makefile
