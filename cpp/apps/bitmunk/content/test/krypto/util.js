@@ -58,32 +58,32 @@
       };
       
       /**
-       * Puts a 16-bit integer in this buffer.
+       * Puts a 16-bit integer in this buffer in big-endian order.
        * 
        * @param i the 16-bit integer.
        */
       buf.putInt16 = function(i)
       {
          buf.data +=
-            String.fromCharCode(s >> 8 & 0xFF) +
-            String.fromCharCode(s & 0xFF);
+            String.fromCharCode(i >> 8 & 0xFF) +
+            String.fromCharCode(i & 0xFF);
       };
       
       /**
-       * Puts a 24-bit integer in this buffer.
+       * Puts a 24-bit integer in this buffer in big-endian order.
        * 
        * @param i the 24-bit integer.
        */
-      buf.putInt24 = function(s)
+      buf.putInt24 = function(i)
       {
          buf.data +=
-            String.fromCharCode(s >> 16 & 0xFF) +
-            String.fromCharCode(s >> 8 & 0xFF) +
-            String.fromCharCode(s & 0xFF);
+            String.fromCharCode(i >> 16 & 0xFF) +
+            String.fromCharCode(i >> 8 & 0xFF) +
+            String.fromCharCode(i & 0xFF);
       };
       
       /**
-       * Puts a 32-bit integer in this buffer.
+       * Puts a 32-bit integer in this buffer in big-endian order.
        * 
        * @param i the 32-bit integer.
        */
@@ -97,7 +97,46 @@
       };
       
       /**
-       * Puts an n-bit integer in this buffer.
+       * Puts a 16-bit integer in this buffer in little-endian order.
+       * 
+       * @param i the 16-bit integer.
+       */
+      buf.putInt16Le = function(i)
+      {
+         buf.data +=
+            String.fromCharCode(i & 0xFF) +
+            String.fromCharCode(i >> 8 & 0xFF);
+      };
+      
+      /**
+       * Puts a 24-bit integer in this buffer in little-endian order.
+       * 
+       * @param i the 24-bit integer.
+       */
+      buf.putInt24Le = function(i)
+      {
+         buf.data +=
+            String.fromCharCode(i & 0xFF) +
+            String.fromCharCode(i >> 8 & 0xFF) +
+            String.fromCharCode(i >> 16 & 0xFF);
+      };
+      
+      /**
+       * Puts a 32-bit integer in this buffer in little-endian order.
+       * 
+       * @param i the 32-bit integer.
+       */
+      buf.putInt32Le = function(i)
+      {
+         buf.data +=
+            String.fromCharCode(i & 0xFF) +
+            String.fromCharCode(i >> 8 & 0xFF) +
+            String.fromCharCode(i >> 16 & 0xFF) +
+            String.fromCharCode(i >> 24 & 0xFF);
+      };
+      
+      /**
+       * Puts an n-bit integer in this buffer in big-endian order.
        * 
        * @param i the n-bit integer.
        * @param n the number of bits in the integer.
@@ -109,7 +148,7 @@
             n -= 8;
             buf.data += String.fromCharCode((i >> n) & 0xFF);
          }
-         while(bits > 0);
+         while(n > 0);
       };
       
       /**
@@ -133,8 +172,8 @@
       };
       
       /**
-       * Gets a uint16 from this buffer and advances the read pointer
-       * by 2.
+       * Gets a uint16 from this buffer in big-endian order and advances the
+       * read pointer by 2.
        * 
        * @return the uint16.
        */
@@ -146,8 +185,8 @@
       };
       
       /**
-       * Gets a uint24 from this buffer and advances the read pointer
-       * by 3.
+       * Gets a uint24 from this buffer in big-endian order and advances the
+       * read pointer by 3.
        * 
        * @return the uint24.
        */
@@ -160,8 +199,8 @@
       };
       
       /**
-       * Gets a uint32 from this buffer and advances the read pointer
-       * by 4.
+       * Gets a uint32 from this buffer in big-endian order and advances the
+       * read pointer by 4.
        * 
        * @return the word.
        */
@@ -172,6 +211,48 @@
             buf.data.charCodeAt(buf.read++) << 16 ^
             buf.data.charCodeAt(buf.read++) << 8 ^
             buf.data.charCodeAt(buf.read++));
+      };
+      
+      /**
+       * Gets a uint16 from this buffer in little-endian order and advances the
+       * read pointer by 2.
+       * 
+       * @return the uint16.
+       */
+      buf.getInt16Le = function()
+      {
+         return (
+            buf.data.charCodeAt(buf.read++) ^
+            buf.data.charCodeAt(buf.read++) << 8);
+      };
+      
+      /**
+       * Gets a uint24 from this buffer in little-endian order and advances the
+       * read pointer by 3.
+       * 
+       * @return the uint24.
+       */
+      buf.getInt24Le = function()
+      {
+         return (
+            buf.data.charCodeAt(buf.read++) ^
+            buf.data.charCodeAt(buf.read++) << 8 ^
+            buf.data.charCodeAt(buf.read++) << 16);
+      };
+      
+      /**
+       * Gets a uint32 from this buffer in little-endian order and advances the
+       * read pointer by 4.
+       * 
+       * @return the word.
+       */
+      buf.getInt32Le = function()
+      {
+         return (
+            buf.data.charCodeAt(buf.read++) ^
+            buf.data.charCodeAt(buf.read++) << 8 ^
+            buf.data.charCodeAt(buf.read++) << 16 ^
+            buf.data.charCodeAt(buf.read++) << 24);
       };
       
       /**
