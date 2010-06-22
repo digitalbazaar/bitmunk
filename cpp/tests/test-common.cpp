@@ -31,6 +31,9 @@ using namespace monarch::util;
 using namespace monarch::test;
 namespace v = monarch::validation;
 
+namespace bm_tests_common
+{
+
 static void runProfileTest(TestRunner& tr)
 {
    tr.test("Profile");
@@ -715,4 +718,6 @@ static bool run(TestRunner& tr)
    return true;
 }
 
-MO_TEST_MODULE_FN("bitmunk.tests.common.test", "1.0", run)
+} // end namespace
+
+MO_TEST_MODULE_FN("bitmunk.tests.common.test", "1.0", bm_tests_common::run)
