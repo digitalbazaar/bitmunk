@@ -6,13 +6,20 @@
       "monarch.app.Kernel": {
          "appPath": "@BITMUNK_DIR@/dist/modules/apps/@LIB_PREFIX@bmtester.@DYNAMIC_LIB_EXT@",
          "modulePath": [
-            "@BITMUNK_DIR@/dist/modules/tests/@LIB_PREFIX@bmtest-common.@DYNAMIC_LIB_EXT@"
+            "@BITMUNK_DIR@/dist/modules/tests/@LIB_PREFIX@bmtest-common.@DYNAMIC_LIB_EXT@",
+            "@BITMUNK_DIR@/dist/modules/tests/@LIB_PREFIX@bmtest-config.@DYNAMIC_LIB_EXT@",
+            "@BITMUNK_DIR@/dist/modules/tests/@LIB_PREFIX@bmtest-customcatalog.@DYNAMIC_LIB_EXT@",
+            "@BITMUNK_DIR@/dist/modules/tests/@LIB_PREFIX@bmtest-statemonitor.@DYNAMIC_LIB_EXT@"
          ]
       }
    },
    "_merge_": {
       "monarch.app.Core": {
          "home": "@BITMUNK_HOME_DIR@"
+      },
+      "bitmunk.apps.tester.Tester": {
+         "configPath": "@BITMUNK_DIR@/configs/test.config",
+         "unitTestConfigPath": "@BITMUNK_DIR@/configs/tests"
       }
    }
 }

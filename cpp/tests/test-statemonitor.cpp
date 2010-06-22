@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/node/Node.h"
 #include "bitmunk/test/Tester.h"
 #include "monarch/test/Test.h"
-#include "monarch/test/TestRunner.h"
+#include "monarch/test/TestModule.h"
 #include "monarch/rt/DynamicObject.h"
 #include "monarch/data/json/JsonWriter.h"
 #include "bitmunk/node/NodeMonitor.h"
@@ -17,6 +17,9 @@ using namespace monarch::data::json;
 using namespace monarch::io;
 using namespace monarch::rt;
 using namespace monarch::test;
+
+namespace bm_tests_statemonitor
+{
 
 static void runNodeMonitorTest(TestRunner& tr)
 {
@@ -361,34 +364,15 @@ static void runNodeMonitorTest(TestRunner& tr)
    tr.ungroup();
 }
 
-class BmStateMonitorTester : public bitmunk::test::Tester
+static bool run(TestRunner& tr)
 {
-public:
-   BmStateMonitorTester()
+   if(tr.isDefaultEnabled())
    {
-      setName("StateMonitor");
-   }
-
-   /**
-    * Run automatic unit tests.
-    */
-   virtual int runAutomaticTests(TestRunner& tr)
-   {
-      // run test
       runNodeMonitorTest(tr);
-      
-      return 0;
    }
+   return true;
+}
 
-   /**
-    * Runs interactive unit tests.
-    */
-   virtual int runInteractiveTests(TestRunner& tr)
-   {
-      return 0;
-   }
-};
+} // end namespace
 
-#ifndef MO_TEST_NO_MAIN
-BM_TEST_MAIN(BmStateMonitorTester)
-#endif
+MO_TEST_MODULE_FN("bitmunk.tests.statemonitor.test", "1.0", bm_tests_statemonitor::run)

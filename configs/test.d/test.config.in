@@ -1,7 +1,6 @@
 {
    "_id_" : "bitmunk.test.Tester.config.base",
-   "_group_" : "boot",
-   "_parent_" : "root",
+   "_group_" : "defaults",
    "_version_" : "Monarch Config 3.0",
    "_merge_" : {
       "test" : {

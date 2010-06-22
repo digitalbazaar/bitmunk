@@ -856,6 +856,7 @@ AC_CONFIG_FILES([
 	configs/dev-bpe.config
 	configs/test.d/node.config
 	configs/test.d/test.config
+	configs/tests/test-customcatalog.config
 ])
 fi
 

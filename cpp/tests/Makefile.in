@@ -63,7 +63,9 @@ endef
 
 TEST_MODS = \
 	test-common \
-	test-config
+	test-config \
+	test-customcatalog \
+	test-statemonitor
 
 $(foreach mod,$(TEST_MODS),$(eval $(call setup_test_mod,$(mod))))
 

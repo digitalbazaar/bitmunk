@@ -20,7 +20,7 @@ using namespace monarch::io;
 using namespace monarch::rt;
 using namespace monarch::test;
 
-void runConfigTest(Node& node, TestRunner& tr)
+static void runConfigTest(Node& node, TestRunner& tr)
 {
    tr.group("config");
 
@@ -68,11 +68,15 @@ static bool run(TestRunner& tr)
       // load bitmunk node
       Node* node = bitmunk::test::Tester::loadNode(tr);
       assert(node != NULL);
+      success = node->start();
+      assertNoException();
+      assert(success);
 
       // run config test
       runConfigTest(*node, tr);
 
       // unload bitmunk node
+      node->stop();
       success = bitmunk::test::Tester::unloadNode(tr);
       assertNoException();
       assert(success);

@@ -5,7 +5,7 @@
 
 #include "bitmunk/common/Logging.h"
 #include "monarch/config/ConfigManager.h"
-#include "monarch/io/File.h"
+#include "monarch/io/FileList.h"
 #include "monarch/rt/Platform.h"
 #include "monarch/test/Test.h"
 
@@ -31,9 +31,10 @@ bool Tester::loadConfig(monarch::test::TestRunner& tr, Config* extraMerge)
 {
    bool rval;
 
-   // FIXME: get config path, do not hard code
    ConfigManager* cm = tr.getApp()->getConfigManager();
-   rval = cm->addConfigFile("configs/test.config");
+   rval = cm->addConfigFile(
+      tr.getApp()->getConfig()
+         ["bitmunk.apps.tester.Tester"]["configPath"]->getString());
    assertNoException();
    if(rval)
    {
@@ -72,6 +73,22 @@ bool Tester::unloadConfig(monarch::test::TestRunner& tr)
    return rval;
 }
 
+static FileList _getModulePaths(App* app)
+{
+   FileList rval;
+
+   Config cfg = app->getConfig()["node"];
+   ConfigIterator mpi = cfg["modulePath"].getIterator();
+   while(mpi->hasNext())
+   {
+      const char* path = mpi->next()->getString();
+      FileList pathList = File::parsePath(path);
+      rval->concat(*pathList);
+   }
+
+   return rval;
+}
+
 Node* Tester::loadNode(monarch::test::TestRunner& tr)
 {
    Node* rval = NULL;
@@ -99,6 +116,17 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr)
             "bitmunk.test.Tester.InvalidNodeModule");
          e->getDetails()["filename"] = nodeModule;
          Exception::set(e);
+      }
+      else
+      {
+         // get node and other related module paths
+         FileList modulePaths = _getModulePaths(tr.getApp());
+         // load all module paths at once
+         if(!k->loadModules(modulePaths))
+         {
+            unloadNode(tr);
+            rval = NULL;
+         }
       }
    }
 

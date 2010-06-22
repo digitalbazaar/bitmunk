@@ -14,7 +14,7 @@
 #include "monarch/rt/DynamicObject.h"
 #include "monarch/rt/Exception.h"
 #include "monarch/test/Test.h"
-#include "monarch/test/TestRunner.h"
+#include "monarch/test/TestModule.h"
 #include "monarch/util/StringTools.h"
 
 using namespace std;
@@ -40,6 +40,9 @@ using namespace monarch::util;
 #define TEST_SERVER_TOKEN "123"
 #define TEST_CONTENT_SIZE (uint64_t)2712402
 #define TEST_PS_ID        1
+
+namespace bm_tests_customcatalog
+{
 
 static string sTestDataDir;
 
@@ -261,8 +264,7 @@ static DynamicObject buildListing(bool removal)
    } \
 }
 
-void runCustomCatalogTest(
-   Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
+static void runCustomCatalogTest(Node& node, TestRunner& tr)
 {
    // reset the test environment
    resetTestEnvironment(node);
@@ -858,7 +860,7 @@ void runCustomCatalogTest(
  * deleteW()
  */
 
-void initializeCatalog(Node& node, Catalog* cat)
+static void initializeCatalog(Node& node, Catalog* cat)
 {
    // delete the customcatalog and medialibrary database and re-initialize them
    resetTestEnvironment(node);
@@ -980,7 +982,7 @@ static void cleanWare(Catalog* cat, uint32_t& updateId)
    assertUpdate(empty, expectedEmpty);
 }
 
-void initCleanPsCleanW(Catalog* cat, uint32_t& updateId)
+static void initCleanPsCleanW(Catalog* cat, uint32_t& updateId)
 {
    // insert a payee scheme and a ware
    insertPayeeScheme(cat);
@@ -1000,7 +1002,7 @@ void initCleanPsCleanW(Catalog* cat, uint32_t& updateId)
    assertUpdate(update, expected);
 }
 
-void initCleanPsDirtyW(Catalog* cat, uint32_t& updateId)
+static void initCleanPsDirtyW(Catalog* cat, uint32_t& updateId)
 {
    // insert a payee scheme and a ware
    insertPayeeScheme(cat);
@@ -1020,7 +1022,7 @@ void initCleanPsDirtyW(Catalog* cat, uint32_t& updateId)
    assertUpdate(update, expected);
 }
 
-void initCleanPsDeletedW(Catalog* cat, uint32_t& updateId)
+static void initCleanPsDeletedW(Catalog* cat, uint32_t& updateId)
 {
    // insert a payee scheme and a ware
    insertPayeeScheme(cat);
@@ -1041,7 +1043,7 @@ void initCleanPsDeletedW(Catalog* cat, uint32_t& updateId)
    assertUpdate(update, expected);
 }
 
-void initDirtyPsCleanW(Catalog* cat, uint32_t& updateId)
+static void initDirtyPsCleanW(Catalog* cat, uint32_t& updateId)
 {
    // insert a payee scheme and a ware
    insertPayeeScheme(cat);
@@ -1065,7 +1067,7 @@ void initDirtyPsCleanW(Catalog* cat, uint32_t& updateId)
    assertUpdate(update, expected);
 }
 
-void initDirtyPsDirtyW(Catalog* cat, uint32_t& updateId)
+static void initDirtyPsDirtyW(Catalog* cat, uint32_t& updateId)
 {
    // insert a payee scheme and a ware
    insertPayeeScheme(cat);
@@ -1082,7 +1084,7 @@ void initDirtyPsDirtyW(Catalog* cat, uint32_t& updateId)
    assertUpdate(update, expected);
 }
 
-void initDirtyPsDeletedW(Catalog* cat, uint32_t& updateId)
+static void initDirtyPsDeletedW(Catalog* cat, uint32_t& updateId)
 {
    // insert a payee scheme and a ware
    insertPayeeScheme(cat);
@@ -1102,7 +1104,7 @@ void initDirtyPsDeletedW(Catalog* cat, uint32_t& updateId)
    assertUpdate(update, expected);
 }
 
-void initDeletedPsDeletedW(Catalog* cat, uint32_t& updateId)
+static void initDeletedPsDeletedW(Catalog* cat, uint32_t& updateId)
 {
    // insert a payee scheme and a ware
    insertPayeeScheme(cat);
@@ -1123,8 +1125,7 @@ void initDeletedPsDeletedW(Catalog* cat, uint32_t& updateId)
    assertUpdate(update, expected);
 }
 
-void runUpdateCrashTest(
-   Node& node, Catalog* cat, TestRunner& tr, bitmunk::test::Tester& tester)
+static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
 {
    tr.group("update crash test");
 
@@ -2449,144 +2450,80 @@ void runUpdateCrashTest(
    tr.ungroup();
 }
 
-class BmCustomCatalogTester : public bitmunk::test::Tester
+static bool run(TestRunner& tr)
 {
-public:
-   BmCustomCatalogTester()
+   if(tr.isDefaultEnabled())
    {
-      setName("Custom Catalog");
-   }
+      bool success = bitmunk::test::Tester::loadConfig(tr);
+      assertNoException();
+      assert(success);
 
-   /**
-    * Run automatic unit tests.
-    */
-   virtual int runAutomaticTests(TestRunner& tr)
-   {
+      // load bitmunk test config
       ConfigManager* cm = tr.getApp()->getConfigManager();
-      Config cfg = cm->getConfig(BITMUNK_TESTER_CONFIG_ID);
+      Config cfg = tr.getApp()->getConfig()["bitmunk.apps.tester.Tester"];
+      string path = File::join(
+         cfg["unitTestConfigPath"]->getString(), "test-customcatalog.config");
+      success = cm->addConfigFile(path.c_str());
+      assertNoException();
+      assert(success);
+
+      // load bitmunk node
+      Node* node = bitmunk::test::Tester::loadNode(tr);
+      assertNoException();
+      assert(node != NULL);
+      success = node->start();
+      assertNoException();
+      assert(success);
+
+      cfg = tr.getApp()->getConfig();
       sTestDataDir = cfg["test"]["dataPath"]->getString();
 
-      // FIXME:
-#if 0
-      // create a client node for communicating
-      Node node;
-      {
-         bool success;
-         success = setupNode(&node);
-         assertNoException();
-         assert(success);
-         Config config;
-         config["node"]["modulePath"] = BPE_MODULES_DIRECTORY;
-         config["bitmunk.catalog.CustomCatalog"]["uploadListings"] = false;
-         success = setupPeerNode(&node, &config);
-         assertNoException();
-         assert(success);
-      }
-
-      if(!node.start())
-      {
-         dumpException();
-         exit(1);
-      }
-
-      // Note: always print this out to avoid confusion
       const char* profileFile = "devuser.profile";
       string profileDir =
-         getApp()->getConfig()["node"]["profilePath"]->getString();
+         tr.getApp()->getConfig()["node"]["profilePath"]->getString();
       string prof = File::join(profileDir.c_str(), profileFile);
       File file(prof.c_str());
-      printf(
-         "You must copy '%s' from pki to '%s' to run this. "
-         "If you're seeing security breaches, your copy may "
-         "be out of date.\n", profileFile, profileDir.c_str());
       if(!file->exists())
       {
+         printf(
+            "You must copy '%s' from pki to '%s' to run this. "
+            "If you're seeing security breaches, your copy may "
+            "be out of date.\n", profileFile, profileDir.c_str());
          exit(1);
       }
 
       // login the devuser
-      node.login("devuser", "password");
+      node->login("devuser", "password");
       assertNoException();
 
       // run test(s):
-      runCustomCatalogTest(node, tr, *this);
+      runCustomCatalogTest(*node, tr);
 
       // get the custom catalog interface
       Catalog* cat = dynamic_cast<Catalog*>(
-         node.getModuleApiByType("bitmunk.catalog"));
+         node->getModuleApiByType("bitmunk.catalog"));
       assert(cat != NULL);
-      runUpdateCrashTest(node, cat, tr, *this);
+      runUpdateCrashTest(*node, cat, tr);
 
       // logout of client node
-      node.logout(0);
+      node->logout(0);
 
-      // stop node
-      node.stop();
-#endif
-      return 0;
-   }
-
-   /**
-    * Runs interactive unit tests.
-    */
-   virtual int runInteractiveTests(TestRunner& tr)
-   {
-      ConfigManager* cm = tr.getApp()->getConfigManager();
-      Config cfg = cm->getConfig(BITMUNK_TESTER_CONFIG_ID);
-      sTestDataDir = cfg["test"]["dataPath"]->getString();
-
-      // FIXME:
-#if 0
-      // create a client node for communicating
-      Node node;
-      {
-         bool success;
-         success = setupNode(&node);
-         assertNoException();
-         assert(success);
-         success = setupPeerNode(&node);
-         assertNoException();
-         assert(success);
-      }
-
-      if(!node.start())
-      {
-         dumpException();
-         exit(1);
-      }
-
-      // Note: always print this out to avoid confusion
-      const char* profileFile = "devuser.profile";
-      const char* profileDir =
-         getApp()->getConfig()["node"]["profilePath"]->getString();
-      string prof = File::join(profileDir, profileFile);
-      File file(prof.c_str());
-      printf(
-         "You must copy '%s' from pki to '%s' to run this. "
-         "If you're seeing security breaches, your copy may "
-         "be out of date.\n", profileFile, profileDir);
-      if(!file->exists())
-      {
-         exit(1);
-      }
-
-      // login the devuser
-      node.login("devuser", "password");
+      // unload bitmunk node
+      node->stop();
+      success = bitmunk::test::Tester::unloadNode(tr);
       assertNoException();
+      assert(success);
 
-      // run test(s)
-      runCustomCatalogTest(node, tr, *this);
-
-      // logout of client node
-      node.logout(0);
-
-      // stop node
-      node.stop();
-#endif
-      return 0;
+      // unload bitmunk test config
+      success = bitmunk::test::Tester::unloadConfig(tr);
+      assertNoException();
+      assert(success);
    }
-};
 
-#ifndef MO_TEST_NO_MAIN
-BM_TEST_MAIN(BmCustomCatalogTester)
-#endif
+   return true;
+}
+
+} // end namespace
+
+MO_TEST_MODULE_FN(
+   "bitmunk.tests.customcatalog.test", "1.0", bm_tests_customcatalog::run)

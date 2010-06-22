@@ -1,0 +1,20 @@
+{
+   "_id_": "bitmunk.tests.test-customcatalog",
+   "_version_": "Monarch Config 3.0",
+   "_group_": "after defaults",
+   "_append_": {
+      "node": {
+         "modulePath": [
+            "@BITMUNK_DIR@/dist/lib/@LIB_PREFIX@bmbfp.@DYNAMIC_LIB_EXT@",
+            "@BITMUNK_DIR@/dist/lib/@LIB_PREFIX@bmcustomcatalog.@DYNAMIC_LIB_EXT@",
+            "@BITMUNK_DIR@/dist/lib/@LIB_PREFIX@bmmedialibrary.@DYNAMIC_LIB_EXT@",
+            "@BITMUNK_DIR@/dist/lib/@LIB_PREFIX@bmperuserdb.@DYNAMIC_LIB_EXT@"
+         ]
+      }
+   },
+   "_merge_": {
+      "bitmunk.catalog.CustomCatalog": {
+         "uploadListings": false
+      }
+   }
+}
