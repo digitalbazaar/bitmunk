@@ -12,6 +12,7 @@
       <script type="text/javascript" src="/bitmunk/test/sjcl/aes.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/random.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/util.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/sha1.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/aes.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/tls.js"></script>
       <script type="text/javascript" src="/bitmunk/test/pidcrypt/string_extend.js"></script>
@@ -107,14 +108,17 @@
          ba.putByte(2);
          ba.putByte(3);
          ba.putInt32(4294967295);
+         var hex = ba.toHex();
          var bytes = [];
          while(ba.length() > 0)
          {
             bytes.push(ba.getByte());
          }
          var expect = [1, 2, 3, 4, 0, 0, 0, 4, 1, 2, 3, 255, 255, 255, 255];
+         var exHex = '0102030400000004010203ffffffff';
          console.log('ba', bytes);
          console.log('ex', expect);
+         console.log('assert', hex === exHex);
       };
 
       var test_base64 = function()
@@ -160,6 +164,28 @@
          }
          et = +new Date();
          console.log('time per decode', ((et - st)/count) + ' ms');
+      };
+
+      var test_sha1 = function()
+      {
+         // empty message sha-1
+         var expect = 'da39a3ee5e6b4b0d3255bfef95601890afd80709';
+         var md = krypto.sha1.create();
+         console.log('digest', md.digest().toHex());
+         console.log('assert', md.digest().toHex() === expect);
+
+         // message sha-1
+         expect = '5f24f4d6499fd2d44df6c6e94be8b14a796c071d';
+         md.reset();
+         md.update('THIS IS A MESSAGE');
+         console.log('digest', md.digest().toHex());
+         // assert twice to test continuing digest
+         console.log('assert', md.digest().toHex() === expect);
+         console.log('assert', md.digest().toHex() === expect);
+      };
+
+      var test_sha1_speed = function()
+      {
       };
 
       // 128-bit test keys
@@ -818,6 +844,10 @@
          <button id="buffer" onclick="javascript:return test_buffer();">buffer</button>
          <button id="base64" onclick="javascript:return test_base64();">base64</button>
          <button id="base64_speed" onclick="javascript:return test_base64_speed();">base64 speed</button>
+      </div>
+      <div id="hash_controls">
+         <button id="sha1" onclick="javascript:return test_sha1();">sha1</button>
+         <button id="sha1_speed" onclick="javascript:return test_sha1_speed();">sha1 speed</button>
       </div>
       <div id="flashTest">
          <p>Could not load the flash Test.</p>

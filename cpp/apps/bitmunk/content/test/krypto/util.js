@@ -65,8 +65,8 @@
       buf.putInt16 = function(i)
       {
          buf.data +=
-            String.fromCharCode(i >> 8 & 0xFF) +
-            String.fromCharCode(i & 0xFF);
+            String.fromCharCode(s >> 8 & 0xFF) +
+            String.fromCharCode(s & 0xFF);
       };
       
       /**
@@ -74,12 +74,12 @@
        * 
        * @param i the 24-bit integer.
        */
-      buf.putInt24 = function(i)
+      buf.putInt24 = function(s)
       {
          buf.data +=
-            String.fromCharCode(i >> 16 & 0xFF) +
-            String.fromCharCode(i >> 8 & 0xFF) +
-            String.fromCharCode(i & 0xFF);
+            String.fromCharCode(s >> 16 & 0xFF) +
+            String.fromCharCode(s >> 8 & 0xFF) +
+            String.fromCharCode(s & 0xFF);
       };
       
       /**
@@ -109,7 +109,7 @@
             n -= 8;
             buf.data += String.fromCharCode((i >> n) & 0xFF);
          }
-         while(n > 0);
+         while(bits > 0);
       };
       
       /**
@@ -283,6 +283,27 @@
          var len = Math.max(0, buf.length() - count);
          buf.data = buf.data.substr(buf.read, len);
          buf.read = 0;
+      };
+      
+      /**
+       * Converts this buffer to a hexadecimal string.
+       * 
+       * @return a hexadecimal string.
+       */
+      buf.toHex = function()
+      {
+         var rval = '';
+         var len = buf.length();
+         for(var i = buf.read; i < len; i++)
+         {
+            var byte = buf.data.charCodeAt(i);
+            if(byte < 16)
+            {
+               rval += '0';
+            }
+            rval += byte.toString(16);
+         }
+         return rval;
       };
       
       return buf;
