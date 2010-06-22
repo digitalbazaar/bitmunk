@@ -4,7 +4,7 @@
    "_group_": "after defaults",
    "_append_": {
       "monarch.app.Kernel": {
-         "appPath": "@MONARCH_DIR@/dist/modules/apps/@LIB_PREFIX@motester.@DYNAMIC_LIB_EXT@",
+         "appPath": "@BITMUNK_DIR@/dist/modules/apps/@LIB_PREFIX@bmtester.@DYNAMIC_LIB_EXT@",
          "modulePath": [
             "@BITMUNK_DIR@/dist/modules/tests/@LIB_PREFIX@bmtest-common.@DYNAMIC_LIB_EXT@"
          ]
