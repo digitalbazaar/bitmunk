@@ -1,5 +1,5 @@
 /**
- * Secure Hash Algorithm with 160-bit digest (SHA-1) implementation.
+ * Message Digest Algorithm 5 with 128-bit digest (MD5) implementation.
  * 
  * This implementation is currently limited to message lengths (in bytes) that
  * are up to 32-bits in size.
@@ -13,8 +13,10 @@
    // local alias for krypto stuff
    var krypto = window.krypto;
    
-   // sha-1 padding bytes not initialized yet
+   // padding, constant tables for calculating md5
    var _padding = null;
+   var _r = null;
+   var _k = null;
    var _initialized = false;
    
    /**
@@ -29,40 +31,47 @@
          _padding += String.fromCharCode(0);
       }
       
+      // rounds table
+      _r = [
+         7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,
+         5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,
+         4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,
+         6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21
+      ];
+      
+      /* Note: Here the algorithm uses the binary integer part of the
+         result of abs(sin(i + 1)) * 2^32. However, since that is in
+         little-endian and * 2^32 is the same as left shifting 32 bits,
+         we can instead not bother left shifting at all and just use
+         the result as the binary integer part (lower 32-bits). 
+       */
+      _k = new Array(64);
+      for(var i = 0; i < 64; ++i)
+      {
+         _k[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 0x100000000);
+      }
+      
       // now initialized
       _initialized = true;
    };
    
    /**
-    * Updates a SHA-1 state with the given byte buffer.
+    * Updates an MD5 state with the given byte buffer.
     * 
-    * @param s the SHA-1 state to update.
+    * @param s the MD5 state to update.
     * @param w the array to use to store words.
     * @param bytes the byte buffer to update with.
     */
    var _update = function(s, w, bytes)
    {
       // consume 512 bit (64 byte) chunks
-      var tmp, a, b, c, d, e, f;
+      var t1, t2, a, b, c, d, f, g, r;
       while(bytes.length() >= 64)
       {
-         // get sixteen 32-bit big-endian words
+         // get sixteen 32-bit little-endian words
          for(var i = 0; i < 16; ++i)
          {
-            w[i] = bytes.getInt32();
-         }
-         
-         // extend 16 words into 80 32-bit words according to SHA-1 algorithm
-         // and for 32-79 use Max Locktyukhin's optimization
-         for(var i = 16; i < 32; ++i)
-         {
-            tmp = (w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]);
-            w[i] = (tmp << 1) | (tmp >>> 31);
-         }
-         for(var i = 32; i < 80; ++i)
-         {
-            tmp = (w[i - 6] ^ w[i - 16] ^ w[i - 28] ^ w[i - 32]);
-            w[i] = (tmp << 2) | (tmp >>> 30);
+            w[i] = bytes.getInt32Le();
          }
          
          // initialize hash value for this chunk
@@ -70,49 +79,56 @@
          b = s.h1;
          c = s.h2;
          d = s.h3;
-         e = s.h4;
          
          // do rounds loops
          var i = 0;
-         for(; i < 20; ++i)
+         for(; i < 16; ++i)
          {
             f = d ^ (b & (c ^ d));
-            tmp = ((a << 5) | (a >>> 27)) + f + e + 0x5A827999 + w[i];
-            e = d;
+            g = i;
+            t1 = d;
             d = c;
-            c = (b << 30) | (b >>> 2);
-            b = a;
-            a = tmp;
+            c = b;
+            t2 = (a + f + _k[i] + w[g]);
+            r = _r[i];
+            b += (t2 << r) | (t2 >>> (32 - r));
+            a = t1;
          }
-         for(; i < 40; ++i)
+         for(; i < 32; ++i)
+         {
+            f = c ^ (d & (b ^ c));
+            g = ((i << 2) + i + 1) % 16;
+            t1 = d;
+            d = c;
+            c = b;
+            t2 = (a + f + _k[i] + w[g]);
+            r = _r[i];
+            b += (t2 << r) | (t2 >>> (32 - r));
+            a = t1;
+         }
+         for(; i < 48; ++i)
          {
             f = b ^ c ^ d;
-            tmp = ((a << 5) | (a >>> 27)) + f + e + 0x6ED9EBA1 + w[i];
-            e = d;
+            g = ((i << 1) + i + 5) % 16;
+            t1 = d;
             d = c;
-            c = (b << 30) | (b >>> 2);
-            b = a;
-            a = tmp;
+            c = b;
+            t2 = (a + f + _k[i] + w[g]);
+            r = _r[i];
+            b += (t2 << r) | (t2 >>> (32 - r));
+            a = t1;
          }
-         for(; i < 60; ++i)
+         for(; i < 64; ++i)
          {
-            f = (b & c) | (d & (b ^ c));
-            tmp = ((a << 5) | (a >>> 27)) + f + e + 0x8F1BBCDC + w[i];
-            e = d;
+            f = c ^ (b | ~d);
+            g = ((i << 2) + (i << 1) + i) % 16;
+            t1 = d;
             d = c;
-            c = (b << 30) | (b >>> 2);
-            b = a;
-            a = tmp;
-         }
-         for(; i < 80; ++i)
-         {
-            f = b ^ c ^ d;
-            tmp = ((a << 5) | (a >>> 27)) + f + e + 0xCA62C1D6 + w[i];
-            e = d;
-            d = c;
-            c = (b << 30) | (b >>> 2);
-            b = a;
-            a = tmp;
+            c = b;
+            t2 = (a + f + _k[i] + w[g]);
+            r = _r[i];
+            b += (t2 << r) | (t2 >>> (32 - r));
+            a = t1;
          }
          
          // update hash state
@@ -120,19 +136,18 @@
          s.h1 += b;
          s.h2 += c;
          s.h3 += d;
-         s.h4 += e;
       }
    };
    
-   // the sha1 interface
-   var sha1 = {};
+   // the md5 interface
+   var md5 = {};
    
    /**
-    * Creates a SHA-1 message digest object.
+    * Creates an MD5 message digest object.
     * 
     * @return a message digest object.
     */
-   sha1.create = function()
+   md5.create = function()
    {
       // do initialization as necessary
       if(!_initialized)
@@ -140,7 +155,7 @@
          _init();
       }
       
-      // SHA-1 state contains five 32-bit integers
+      // MD5 state contains four 32-bit integers
       var _state = null;
       
       // input buffer
@@ -150,7 +165,7 @@
       var _length = 0;
       
       // used for word storage
-      var _w = new Array(80);
+      var _w = new Array(16);
       
       // message digest object
       var md = {};
@@ -167,8 +182,7 @@
             h0: 0x67452301,
             h1: 0xEFCDAB89,
             h2: 0x98BADCFE,
-            h3: 0x10325476,
-            h4: 0xC3D2E1F0
+            h3: 0x10325476
          };
       };
       md.reset();
@@ -204,7 +218,7 @@
       md.digest = function()
       {
          /* Note: Here we copy the remaining bytes in the input buffer and
-            add the appropriate SHA-1 padding. Then we do the final update
+            add the appropriate MD5 padding. Then we do the final update
             on a copy of the state so that if the user wants to get
             intermediate digests they can do so.
           */
@@ -230,36 +244,34 @@
          padBytes.putBytes(_padding.substr(0, 64 - ((_length + 8) % 64)));
          
          /* Now append length of the message. The length is appended in bits
-            as a 64-bit number in big-endian order. Since we store the length
-            in bytes, we must multiply it by 8 (or left shift by 3). So here
-            store the high 3 bits in the low end of the first 32-bits of the
-            64-bit number and the lower 5 bits in the high end of the second
-            32-bits.
+            as a 64-bit number in little-endian format. Since we store the
+            length in bytes, we must multiply it by 8 (or left shift by 3). So
+            here store the high 3 bits in the high end of the second 32-bits of
+            the 64-bit number and the lower 5 bits in the low end of the
+            second 32-bits.
           */
-         padBytes.putInt32((_length >>> 29) & 0xFF);
-         padBytes.putInt32((_length << 3) & 0xFFFFFFFF);
+         padBytes.putInt32Le((_length << 3) & 0xFFFFFFFF);
+         padBytes.putInt32Le((_length >>> 29) & 0xFF);
          var s2 =
          {
             h0: _state.h0,
             h1: _state.h1,
             h2: _state.h2,
-            h3: _state.h3,
-            h4: _state.h4
+            h3: _state.h3
          };
          _update(s2, _w, padBytes);
          var rval = krypto.util.createBuffer();
-         rval.putInt32(s2.h0);
-         rval.putInt32(s2.h1);
-         rval.putInt32(s2.h2);
-         rval.putInt32(s2.h3);
-         rval.putInt32(s2.h4);
+         rval.putInt32Le(s2.h0);
+         rval.putInt32Le(s2.h1);
+         rval.putInt32Le(s2.h2);
+         rval.putInt32Le(s2.h3);
          return rval;
       };
       
       return md;
    };
    
-   // expose sha1 interface in krypto library
+   // expose md5 interface in krypto library
    krypto.md = krypto.md || {};
-   krypto.md.sha1 = sha1;
+   krypto.md.md5 = md5;
 })();

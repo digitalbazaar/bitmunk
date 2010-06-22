@@ -12,6 +12,7 @@
       <script type="text/javascript" src="/bitmunk/test/sjcl/aes.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/random.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/util.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/md5.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/sha1.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/aes.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/tls.js"></script>
@@ -166,19 +167,114 @@
          console.log('time per decode', ((et - st)/count) + ' ms');
       };
 
+      var test_md5 = function()
+      {
+         // empty message sha-1
+         var expect = 'd41d8cd98f00b204e9800998ecf8427e';
+         var md = krypto.md.md5.create();
+         console.log('digest', md.digest().toHex());
+         console.log('assert', md.digest().toHex() === expect);
+
+         // message md5 ('abc')
+         expect = '900150983cd24fb0d6963f7d28e17f72';
+         md.reset();
+         md.update('abc');
+         //console.log('digest', md.digest().toHex());
+         // assert twice to test continuing digest
+         console.log('assert', md.digest().toHex() === expect);
+         console.log('assert', md.digest().toHex() === expect);
+
+         // message md5 ('The quick brown fox jumps over the lazy dog')
+         expect = '9e107d9d372bb6826bd81d3542a419d6';
+         md.reset();
+         md.update('The quick brown fox jumps over the lazy dog');
+         //console.log('digest', md.digest().toHex());
+         // assert twice to test continuing digest
+         console.log('assert', md.digest().toHex() === expect);
+         console.log('assert', md.digest().toHex() === expect);
+         
+         // message md5 ('THIS IS A MESSAGE')
+         expect = '78eebfd9d42958e3f31244f116ab7bbe';
+         md.reset();
+         md.update('THIS IS ');
+         md.update('A MESSAGE');
+         //console.log('digest', md.digest().toHex());
+         // assert twice to test continuing digest
+         console.log('assert', md.digest().toHex() === expect);
+         console.log('assert', md.digest().toHex() === expect);
+      };
+
+      var count_md5_speed = 80;
+      var test_md5_speed = function()
+      {
+         // create input data
+         var input = ['0123456789abcdef', '', '', '', ''];
+         for(var i = 0; i < 4; ++i)
+         {
+            input[1] += input[0];
+         }
+         for(var i = 0; i < 4; ++i)
+         {
+            input[2] += input[1];
+         }
+         for(var i = 0; i < 4; ++i)
+         {
+            input[3] += input[2];
+         }
+         for(var i = 0; i < 8; ++i)
+         {
+            input[4] += input[3];
+         }
+         
+         var md = krypto.md.md5.create();
+
+         var st, et;
+         var t = [0, 0, 0, 0, 0];
+         var ct = count_md5_speed;
+         var c = [ct * 16, ct * 8, ct * 4, ct * 2, ct];
+         for(var n = 0; n < 5; ++n)
+         {
+            for(var i = 0; i < c[n]; ++i)
+            {
+               st = +new Date();
+               md.update(input[n]);
+               md.digest();
+               et = +new Date();
+               t[n] = t[n] + (et - st);
+               md.reset();
+            }
+         }
+
+         console.log('md5 times in 1000s of bytes/sec processed:');
+         console.log('  16 bytes: ' + (t[0] / c[0] * 16) + 'k/sec');
+         console.log('  64 bytes: ' + (t[1] / c[1] * 64) + 'k/sec');
+         console.log(' 256 bytes: ' + (t[2] / c[2] * 256) + 'k/sec');
+         console.log('1024 bytes: ' + (t[3] / c[3] * 1024) + 'k/sec');
+         console.log('8192 bytes: ' + (t[4] / c[4] * 8192) + 'k/sec');
+         console.log('krypto md5 speed test complete.');
+      };
+      
       var test_sha1 = function()
       {
          // empty message sha-1
          var expect = 'da39a3ee5e6b4b0d3255bfef95601890afd80709';
-         var md = krypto.sha1.create();
+         var md = krypto.md.sha1.create();
          //console.log('digest', md.digest().toHex());
          console.log('assert', md.digest().toHex() === expect);
 
          // message sha-1 ('abc')
          expect = 'a9993e364706816aba3e25717850c26c9cd0d89d';
          md.reset();
-         var md = krypto.sha1.create();
          md.update('abc');
+         //console.log('digest', md.digest().toHex());
+         // assert twice to test continuing digest
+         console.log('assert', md.digest().toHex() === expect);
+         console.log('assert', md.digest().toHex() === expect);
+         
+         // message sha-1 ('The quick brown fox jumps over the lazy dog')
+         expect = '2fd4e1c67a2d28fced849ee1bb76e7391b93eb12';
+         md.reset();
+         md.update('The quick brown fox jumps over the lazy dog');
          //console.log('digest', md.digest().toHex());
          // assert twice to test continuing digest
          console.log('assert', md.digest().toHex() === expect);
@@ -217,7 +313,7 @@
             input[4] += input[3];
          }
          
-         var md = krypto.sha1.create();
+         var md = krypto.md.sha1.create();
 
          var st, et;
          var t = [0, 0, 0, 0, 0];
@@ -285,7 +381,7 @@
             aesIvBytes.charCodeAt(i + 2) << 8 ^
             aesIvBytes.charCodeAt(i + 3));
       }
-      console.log('aesIv', aesIv);
+      //console.log('aesIv', aesIv);
 
       // test data to encrypt
       var aesPlain =
@@ -903,6 +999,8 @@
          <button id="base64_speed" onclick="javascript:return test_base64_speed();">base64 speed</button>
       </div>
       <div id="hash_controls">
+         <button id="md5" onclick="javascript:return test_md5();">md5</button>
+         <button id="md5_speed" onclick="javascript:return test_md5_speed();">md5 speed</button>
          <button id="sha1" onclick="javascript:return test_sha1();">sha1</button>
          <button id="sha1_speed" onclick="javascript:return test_sha1_speed();">sha1 speed</button>
       </div>
