@@ -39,12 +39,7 @@
          6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21
       ];
       
-      /* Note: Here the algorithm uses the binary integer part of the
-         result of abs(sin(i + 1)) * 2^32. However, since that is in
-         little-endian and * 2^32 is the same as left shifting 32 bits,
-         we can instead not bother left shifting at all and just use
-         the result as the binary integer part (lower 32-bits). 
-       */
+      // get the result of abs(sin(i + 1)) as a 32-bit integer
       _k = new Array(64);
       for(var i = 0; i < 64; ++i)
       {
