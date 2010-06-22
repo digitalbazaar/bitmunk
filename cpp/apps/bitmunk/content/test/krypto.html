@@ -195,8 +195,54 @@
          console.log('assert', md.digest().toHex() === expect);
       };
 
+      var count_sha1_speed = 80;
       var test_sha1_speed = function()
       {
+         // create input data
+         var input = ['0123456789abcdef', '', '', '', ''];
+         for(var i = 0; i < 4; ++i)
+         {
+            input[1] += input[0];
+         }
+         for(var i = 0; i < 4; ++i)
+         {
+            input[2] += input[1];
+         }
+         for(var i = 0; i < 4; ++i)
+         {
+            input[3] += input[2];
+         }
+         for(var i = 0; i < 8; ++i)
+         {
+            input[4] += input[3];
+         }
+         
+         var md = krypto.sha1.create();
+
+         var st, et;
+         var t = [0, 0, 0, 0, 0];
+         var ct = count_sha1_speed;
+         var c = [ct * 16, ct * 8, ct * 4, ct * 2, ct];
+         for(var n = 0; n < 5; ++n)
+         {
+            for(var i = 0; i < c[n]; ++i)
+            {
+               st = +new Date();
+               md.update(input[n]);
+               md.digest();
+               et = +new Date();
+               t[n] = t[n] + (et - st);
+               md.reset();
+            }
+         }
+
+         console.log('sha-1 times in 1000s of bytes/sec processed:');
+         console.log('  16 bytes: ' + (t[0] / c[0] * 16) + 'k/sec');
+         console.log('  64 bytes: ' + (t[1] / c[1] * 64) + 'k/sec');
+         console.log(' 256 bytes: ' + (t[2] / c[2] * 256) + 'k/sec');
+         console.log('1024 bytes: ' + (t[3] / c[3] * 1024) + 'k/sec');
+         console.log('8192 bytes: ' + (t[4] / c[4] * 8192) + 'k/sec');
+         console.log('krypto sha-1 speed test complete.');
       };
 
       // 128-bit test keys
