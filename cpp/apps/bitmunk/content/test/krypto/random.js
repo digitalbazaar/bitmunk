@@ -7,6 +7,8 @@
  * providing slightly more random bytes (in a timely fashion and without
  * blocking to wait for user input) than would be provided from an purely
  * arithmetic-PRNG.
+ * 
+ * FIXME: Use Blum Blum Shub? What about new algorithm by Ribeiro Alvo?
  *
  * @author Dave Longley
  *

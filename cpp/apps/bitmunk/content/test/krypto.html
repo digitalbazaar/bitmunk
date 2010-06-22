@@ -171,14 +171,25 @@
          // empty message sha-1
          var expect = 'da39a3ee5e6b4b0d3255bfef95601890afd80709';
          var md = krypto.sha1.create();
-         console.log('digest', md.digest().toHex());
+         //console.log('digest', md.digest().toHex());
          console.log('assert', md.digest().toHex() === expect);
 
-         // message sha-1
+         // message sha-1 ('abc')
+         expect = 'a9993e364706816aba3e25717850c26c9cd0d89d';
+         md.reset();
+         var md = krypto.sha1.create();
+         md.update('abc');
+         //console.log('digest', md.digest().toHex());
+         // assert twice to test continuing digest
+         console.log('assert', md.digest().toHex() === expect);
+         console.log('assert', md.digest().toHex() === expect);
+         
+         // message sha-1 ('THIS IS A MESSAGE')
          expect = '5f24f4d6499fd2d44df6c6e94be8b14a796c071d';
          md.reset();
-         md.update('THIS IS A MESSAGE');
-         console.log('digest', md.digest().toHex());
+         md.update('THIS IS ');
+         md.update('A MESSAGE');
+         //console.log('digest', md.digest().toHex());
          // assert twice to test continuing digest
          console.log('assert', md.digest().toHex() === expect);
          console.log('assert', md.digest().toHex() === expect);

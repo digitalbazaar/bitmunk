@@ -24,7 +24,6 @@
       // consume 512 bit (64 byte) chunks
       var w = new Array(16);
       var tmp, a, b, c, d, e, f;
-      console.log('bytes length', bytes.length());
       while(bytes.length() >= 64)
       {
          // get sixteen 32-bit big-endian words
@@ -32,7 +31,6 @@
          {
             w[i] = bytes.getInt32();
          }
-         console.log('words', w);
          
          // extend 16 words into 80 32-bit words according to SHA-1 algorithm
          // and for 32-79 use Max Locktyukhin's optimization
@@ -64,7 +62,7 @@
             d = c;
             c = (b << 30) | (b >>> 2);
             b = a;
-            a = tmp;
+            a = tmp & 0xFFFFFFFF;
          }
          for(; i < 40; ++i)
          {
@@ -74,9 +72,9 @@
             d = c;
             c = (b << 30) | (b >>> 2);
             b = a;
-            a = tmp;
+            a = tmp & 0xFFFFFFFF;
          }
-         for(; i < 60; i++)
+         for(; i < 60; ++i)
          {
             f = (b & c) | (d & (b ^ c));
             tmp = ((a << 5) | (a >>> 27)) + f + e + 0x8F1BBCDC + w[i];
@@ -84,9 +82,9 @@
             d = c;
             c = (b << 30) | (b >>> 2);
             b = a;
-            a = tmp;
+            a = tmp & 0xFFFFFFFF;
          }
-         for(; i < 80; i++)
+         for(; i < 80; ++i)
          {
             f = b ^ c ^ d;
             tmp = ((a << 5) | (a >>> 27)) + f + e + 0xCA62C1D6 + w[i];
@@ -94,15 +92,15 @@
             d = c;
             c = (b << 30) | (b >>> 2);
             b = a;
-            a = tmp;
+            a = tmp & 0xFFFFFFFF;
          }
          
          // update hash state
-         state.h0 = state.h0 + a;
-         state.h1 = state.h1 + b;
-         state.h2 = state.h2 + c;
-         state.h3 = state.h3 + d;
-         state.h4 = state.h4 + e;
+         state.h0 = (state.h0 + a) & 0xFFFFFFFF;
+         state.h1 = (state.h1 + b) & 0xFFFFFFFF;
+         state.h2 = (state.h2 + c) & 0xFFFFFFFF;
+         state.h3 = (state.h3 + d) & 0xFFFFFFFF;
+         state.h4 = (state.h4 + e) & 0xFFFFFFFF;
       }
    };
    
@@ -161,12 +159,10 @@
          
          // process bytes
          _update(_state, _input);
-         console.log('update complete');
          
          // compact input buffer every 2K or if empty
          if(_input.read > 2048 || _input.length() === 0)
          {
-            console.log('compacting');
             _input.compact();
          }
       };
@@ -209,9 +205,15 @@
          {
             padBytes.putByte(0x00);
          }
-         // append length of the message
-         padBytes.putInt32(0);
-         padBytes.putInt32(_length);
+         
+         /* Now append length of the message. The length is appended in bits
+            as a 64-bit number. Since we store the length in bytes, we must
+            multiply it by 8 (or left shift by 3). So here store the high 3
+            bits in the low end of the first 32-bits of the 64-bit number and
+            the lower 5 bits in the high end of the second 32-bits.
+          */
+         padBytes.putInt32((_length >>> 29) & 0xFF);
+         padBytes.putInt32((_length << 3) & 0xFFFFFFFF);
          var s2 =
          {
             h0: _state.h0,
