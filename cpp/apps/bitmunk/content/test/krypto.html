@@ -204,7 +204,7 @@
          console.log('assert', md.digest().toHex() === expect);
       };
 
-      var count_md5_speed = 80;
+      var count_md5_speed = 300;
       var test_md5_speed = function()
       {
          // create input data
@@ -228,30 +228,38 @@
          
          var md = krypto.md.md5.create();
 
+         console.log('md5 times in 1000s of bytes/sec processed:');
+
          var st, et;
+         var output =
+            ['  16 bytes: ',
+             '  64 bytes: ',
+             ' 256 bytes: ',
+             '1024 bytes: ',
+             '8192 bytes: '];
+         var s = [16, 64, 256, 1024, 8192];
          var t = [0, 0, 0, 0, 0];
          var ct = count_md5_speed;
-         var c = [ct * 16, ct * 8, ct * 4, ct * 2, ct];
+         var c = [ct, ct, ct, ct, ct];
          for(var n = 0; n < 5; ++n)
          {
-            for(var i = 0; i < c[n]; ++i)
+            var f = function(n)
             {
-               st = +new Date();
-               md.update(input[n]);
-               md.digest();
-               et = +new Date();
-               t[n] = t[n] + (et - st);
-               md.reset();
-            }
+               setTimeout(function()
+               {
+                  for(var i = 0; i < c[n]; ++i)
+                  {
+                     st = +new Date();
+                     md.update(input[n]);
+                     md.digest();
+                     et = +new Date();
+                     t[n] = t[n] + (et - st);
+                     md.reset();
+                  }
+                  console.log(output[n], (t[n] / c[n] * s[n]) + 'k/sec');
+               }, 0);
+            }(n);
          }
-
-         console.log('md5 times in 1000s of bytes/sec processed:');
-         console.log('  16 bytes: ' + (t[0] / c[0] * 16) + 'k/sec');
-         console.log('  64 bytes: ' + (t[1] / c[1] * 64) + 'k/sec');
-         console.log(' 256 bytes: ' + (t[2] / c[2] * 256) + 'k/sec');
-         console.log('1024 bytes: ' + (t[3] / c[3] * 1024) + 'k/sec');
-         console.log('8192 bytes: ' + (t[4] / c[4] * 8192) + 'k/sec');
-         console.log('krypto md5 speed test complete.');
       };
       
       var test_sha1 = function()
@@ -291,7 +299,7 @@
          console.log('assert', md.digest().toHex() === expect);
       };
 
-      var count_sha1_speed = 80;
+      var count_sha1_speed = 300;
       var test_sha1_speed = function()
       {
          // create input data
@@ -315,30 +323,38 @@
          
          var md = krypto.md.sha1.create();
 
+         console.log('sha-1 times in 1000s of bytes/sec processed:');
+
          var st, et;
+         var output =
+            ['  16 bytes: ',
+             '  64 bytes: ',
+             ' 256 bytes: ',
+             '1024 bytes: ',
+             '8192 bytes: '];
+         var s = [16, 64, 256, 1024, 8192];
          var t = [0, 0, 0, 0, 0];
          var ct = count_sha1_speed;
-         var c = [ct * 16, ct * 8, ct * 4, ct * 2, ct];
+         var c = [ct, ct, ct, ct, ct];
          for(var n = 0; n < 5; ++n)
          {
-            for(var i = 0; i < c[n]; ++i)
+            var f = function(n)
             {
-               st = +new Date();
-               md.update(input[n]);
-               md.digest();
-               et = +new Date();
-               t[n] = t[n] + (et - st);
-               md.reset();
-            }
+               setTimeout(function()
+               {
+                  for(var i = 0; i < c[n]; ++i)
+                  {
+                     st = +new Date();
+                     md.update(input[n]);
+                     md.digest();
+                     et = +new Date();
+                     t[n] = t[n] + (et - st);
+                     md.reset();
+                  }
+                  console.log(output[n], (t[n] / c[n] * s[n]) + 'k/sec');
+               }, 0);
+            }(n);
          }
-
-         console.log('sha-1 times in 1000s of bytes/sec processed:');
-         console.log('  16 bytes: ' + (t[0] / c[0] * 16) + 'k/sec');
-         console.log('  64 bytes: ' + (t[1] / c[1] * 64) + 'k/sec');
-         console.log(' 256 bytes: ' + (t[2] / c[2] * 256) + 'k/sec');
-         console.log('1024 bytes: ' + (t[3] / c[3] * 1024) + 'k/sec');
-         console.log('8192 bytes: ' + (t[4] / c[4] * 8192) + 'k/sec');
-         console.log('krypto sha-1 speed test complete.');
       };
 
       // 128-bit test keys

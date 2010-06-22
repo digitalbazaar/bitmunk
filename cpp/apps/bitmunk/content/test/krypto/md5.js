@@ -15,6 +15,7 @@
    
    // padding, constant tables for calculating md5
    var _padding = null;
+   var _g = null;
    var _r = null;
    var _k = null;
    var _initialized = false;
@@ -30,6 +31,14 @@
       {
          _padding += String.fromCharCode(0);
       }
+      
+      // g values
+      _g = [
+         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+         1, 6, 11, 0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12,
+         5, 8, 11, 14, 1, 4, 7, 10, 13, 0, 3, 6, 9, 12, 15, 2,
+         0, 7, 14, 5, 12, 3, 10, 1, 8, 15, 6, 13, 4, 11, 2, 9
+      ];
       
       // rounds table
       _r = [
@@ -60,7 +69,7 @@
    var _update = function(s, w, bytes)
    {
       // consume 512 bit (64 byte) chunks
-      var t1, t2, a, b, c, d, f, g, r;
+      var t1, t2, a, b, c, d, f, r;
       while(bytes.length() >= 64)
       {
          // get sixteen 32-bit little-endian words
@@ -80,11 +89,10 @@
          for(; i < 16; ++i)
          {
             f = d ^ (b & (c ^ d));
-            g = i;
             t1 = d;
             d = c;
             c = b;
-            t2 = (a + f + _k[i] + w[g]);
+            t2 = (a + f + _k[i] + w[i]);
             r = _r[i];
             b += (t2 << r) | (t2 >>> (32 - r));
             a = t1;
@@ -92,11 +100,10 @@
          for(; i < 32; ++i)
          {
             f = c ^ (d & (b ^ c));
-            g = ((i << 2) + i + 1) % 16;
             t1 = d;
             d = c;
             c = b;
-            t2 = (a + f + _k[i] + w[g]);
+            t2 = (a + f + _k[i] + w[_g[i]]);
             r = _r[i];
             b += (t2 << r) | (t2 >>> (32 - r));
             a = t1;
@@ -104,11 +111,10 @@
          for(; i < 48; ++i)
          {
             f = b ^ c ^ d;
-            g = ((i << 1) + i + 5) % 16;
             t1 = d;
             d = c;
             c = b;
-            t2 = (a + f + _k[i] + w[g]);
+            t2 = (a + f + _k[i] + w[_g[i]]);
             r = _r[i];
             b += (t2 << r) | (t2 >>> (32 - r));
             a = t1;
@@ -116,11 +122,10 @@
          for(; i < 64; ++i)
          {
             f = c ^ (b | ~d);
-            g = ((i << 2) + (i << 1) + i) % 16;
             t1 = d;
             d = c;
             c = b;
-            t2 = (a + f + _k[i] + w[g]);
+            t2 = (a + f + _k[i] + w[_g[i]]);
             r = _r[i];
             b += (t2 << r) | (t2 >>> (32 - r));
             a = t1;
