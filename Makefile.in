@@ -132,23 +132,9 @@ LIBS_DIR = @BITMUNK_DIR@/dist/lib
 BIN_DIR = @BITMUNK_DIR@/dist/bin
 MODULES_DIR = @BITMUNK_DIR@/dist/modules
 
-ifeq ($(BUILD_FOR_LINUX),yes)
-MODULE_FILES += $(patsubst %,$(MODULES_DIR)/bpe/lib%.so, $(BPE_MODULES))
-MODULE_FILES += $(patsubst %,$(MODULES_DIR)/apps/lib%.so, $(APP_MODULES))
-MODULE_FILES += $(patsubst %,$(MODULES_DIR)/tests/lib%.so, $(TEST_MODULES))
-endif
-
-ifeq ($(BUILD_FOR_WINDOWS),yes)
-MODULE_FILES += $(patsubst %,$(MODULES_DIR)/bpe/%.dll, $(BPE_MODULES))
-MODULE_FILES += $(patsubst %,$(MODULES_DIR)/apps/%.dll, $(APP_MODULES))
-MODULE_FILES += $(patsubst %,$(MODULES_DIR)/tests/%.dll, $(TEST_MODULES))
-endif
-
-ifeq ($(BUILD_FOR_MACOS),yes)
-MODULE_FILES += $(patsubst %,$(MODULES_DIR)/bpe/lib%.dylib, $(BPE_MODULES))
-MODULE_FILES += $(patsubst %,$(MODULES_DIR)/apps/lib%.dylib, $(APP_MODULES))
-MODULE_FILES += $(patsubst %,$(MODULES_DIR)/tests/lib%.dylib, $(TEST_MODULES))
-endif
+MODULE_FILES += $(patsubst %,$(MODULES_DIR)/bpe/@LIB_PREFIX@%.@DYNAMIC_LIB_EXT@, $(BPE_MODULES))
+MODULE_FILES += $(patsubst %,$(MODULES_DIR)/apps/@LIB_PREFIX@%.@DYNAMIC_LIB_EXT@, $(APP_MODULES))
+MODULE_FILES += $(patsubst %,$(MODULES_DIR)/tests/@LIB_PREFIX@%.@DYNAMIC_LIB_EXT@, $(TEST_MODULES))
 
 .PHONY: all verbose clean test internal-docs clean-docs link-monarch-libs link-monarch-bins
 
