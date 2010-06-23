@@ -29,7 +29,7 @@ Tester::~Tester()
 {
 }
 
-Node* Tester::loadNode(monarch::test::TestRunner& tr, const char* configFile)
+Node* Tester::loadNode(monarch::test::TestRunner& tr, const char* unitTest)
 {
    Node* rval = NULL;
 
@@ -52,11 +52,12 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr, const char* configFile)
    assertNoException();
 
    // add optional unit test config
-   if(configFile != NULL)
+   if(unitTest != NULL)
    {
       Config cfg = app->getConfig()["bitmunk.apps.tester.Tester"];
-      string path = File::join(
-         cfg["unitTestConfigPath"]->getString(), configFile);
+      string path = unitTest;
+      path.append(".config");
+      path = File::join(cfg["unitTestConfigPath"]->getString(), path.c_str());
       cm->addConfigFile(path.c_str());
       assertNoException();
    }

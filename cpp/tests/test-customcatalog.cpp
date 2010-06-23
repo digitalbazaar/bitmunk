@@ -2455,8 +2455,7 @@ static bool run(TestRunner& tr)
    if(tr.isDefaultEnabled())
    {
       // load and start node
-      Node* node = bitmunk::test::Tester::loadNode(
-         tr, "test-customcatalog.config");
+      Node* node = bitmunk::test::Tester::loadNode(tr, "test-customcatalog");
       node->start();
       assertNoException();
 

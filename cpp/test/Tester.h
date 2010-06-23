@@ -38,19 +38,22 @@ public:
     * call to start().
     *
     * An optional config file may be specified with additional configuration
-    * options to be added to the config system before loading the node.
+    * options to be added to the config system before loading the node. The
+    * config file is specified by passing the name of the unit test. The
+    * unit test name concatenated with ".config" will be appended to the
+    * "unitTestConfigPath" variable to find the associated file.
     *
     * The ConfigManager's state will be saved before loading any configs and
     * will be restored when unloadNode() is called.
     *
     * @param tr the test's TestRunner.
-    * @param configFile the name of a test config file to include, relative to
-    *           the configured "unitTestConfigPath".
+    * @param unitTest the name of the unit test if it has a custom config
+    *           file that is to be loaded, otherwise NULL.
     *
     * @return the loaded Node if successful, NULL if not.
     */
    static bitmunk::node::Node* loadNode(
-      monarch::test::TestRunner& tr, const char* configFile = NULL);
+      monarch::test::TestRunner& tr, const char* unitTest = NULL);
 
    /**
     * Unloads a previously loaded Node and restores the ConfigManager's state.
