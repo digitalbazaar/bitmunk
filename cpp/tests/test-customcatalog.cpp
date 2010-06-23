@@ -22,6 +22,7 @@ using namespace bitmunk::common;
 using namespace bitmunk::customcatalog;
 using namespace bitmunk::data;
 using namespace bitmunk::node;
+using namespace bitmunk::test;
 using namespace monarch::config;
 using namespace monarch::data;
 using namespace monarch::data::json;
@@ -2455,7 +2456,7 @@ static bool run(TestRunner& tr)
    if(tr.isDefaultEnabled())
    {
       // load and start node
-      Node* node = bitmunk::test::Tester::loadNode(tr, "test-customcatalog");
+      Node* node = Tester::loadNode(tr, "test-customcatalog");
       node->start();
       assertNoException();
 
@@ -2494,7 +2495,7 @@ static bool run(TestRunner& tr)
 
       // stop and unload node
       node->stop();
-      bitmunk::test::Tester::unloadNode(tr);
+      Tester::unloadNode(tr);
    }
 
    return true;

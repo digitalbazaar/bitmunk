@@ -13,6 +13,7 @@
 using namespace std;
 using namespace bitmunk::common;
 using namespace bitmunk::node;
+using namespace bitmunk::test;
 using namespace monarch::config;
 using namespace monarch::data;
 using namespace monarch::data::json;
@@ -61,7 +62,7 @@ static bool run(TestRunner& tr)
    if(tr.isDefaultEnabled())
    {
       // load bitmunk node
-      Node* node = bitmunk::test::Tester::loadNode(tr);
+      Node* node = Tester::loadNode(tr);
       node->start();
       assertNoException();
 
@@ -70,7 +71,7 @@ static bool run(TestRunner& tr)
 
       // unload bitmunk node
       node->stop();
-      bitmunk::test::Tester::unloadNode(tr);
+      Tester::unloadNode(tr);
       assertNoException();
    }
    return true;
