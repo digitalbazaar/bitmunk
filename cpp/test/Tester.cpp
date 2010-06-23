@@ -19,6 +19,8 @@ using namespace monarch::io;
 using namespace monarch::kernel;
 using namespace monarch::rt;
 
+#define BITMUNK_TESTER_CONFIG_ID   "bitmunk.test.Tester.config.base"
+
 Tester::Tester()
 {
 }
@@ -27,82 +29,47 @@ Tester::~Tester()
 {
 }
 
-bool Tester::loadConfig(monarch::test::TestRunner& tr, Config* extraMerge)
-{
-   bool rval;
-
-   ConfigManager* cm = tr.getApp()->getConfigManager();
-   rval = cm->addConfigFile(
-      tr.getApp()->getConfig()
-         ["bitmunk.apps.tester.Tester"]["configPath"]->getString());
-   assertNoException();
-   if(rval)
-   {
-      Config cfg = cm->getConfig(BITMUNK_TESTER_CONFIG_ID, true);
-      assertNoException();
-      if(!cfg.isNull())
-      {
-         string tmp;
-         assert(File::getTemporaryDirectory(tmp));
-         cfg[ConfigManager::MERGE]["node"]["bitmunkHomePath"] =
-            File::join(tmp.c_str(), "test").c_str();
-         if(extraMerge)
-         {
-            cfg[ConfigManager::MERGE].merge(*extraMerge, false);
-         }
-
-         rval = cm->setConfig(cfg);
-         assertNoException();
-      }
-   }
-
-   return rval;
-}
-
-bool Tester::unloadConfig(monarch::test::TestRunner& tr)
-{
-   bool rval = true;
-
-   ConfigManager* cm = tr.getApp()->getConfigManager();
-   if(cm->hasConfig(BITMUNK_TESTER_CONFIG_ID))
-   {
-      rval = cm->removeConfig(BITMUNK_TESTER_CONFIG_ID);
-      assertNoException();
-   }
-
-   return rval;
-}
-
-static FileList _getModulePaths(App* app)
-{
-   FileList rval;
-
-   Config cfg = app->getConfig()["node"];
-   ConfigIterator mpi = cfg["modulePath"].getIterator();
-   while(mpi->hasNext())
-   {
-      const char* path = mpi->next()->getString();
-      FileList pathList = File::parsePath(path);
-      rval->concat(*pathList);
-   }
-
-   return rval;
-}
-
-Node* Tester::loadNode(monarch::test::TestRunner& tr)
+Node* Tester::loadNode(monarch::test::TestRunner& tr, const char* configFile)
 {
    Node* rval = NULL;
 
-   // get test config
-   ConfigManager* cm = tr.getApp()->getConfigManager();
-   Config cfg = cm->getConfig(BITMUNK_TESTER_CONFIG_ID);
+   // get app and config manager
+   App* app = tr.getApp();
+   ConfigManager* cm = app->getConfigManager();
+
+   // save config manager state
+   cm->saveState();
+
+   // set TMP_DIR keyword, update BITMUNK_HOME
+   string tmp;
+   assert(File::getTemporaryDirectory(tmp));
+   cm->setKeyword("TMP_DIR", tmp.c_str());
+   cm->setKeyword("BITMUNK_HOME", File::join(tmp.c_str(), "test").c_str());
+
+   // add test config
+   cm->addConfigFile(app->getConfig()
+      ["bitmunk.apps.tester.Tester"]["configPath"]->getString());
+   assertNoException();
+
+   // add optional unit test config
+   if(configFile != NULL)
+   {
+      Config cfg = app->getConfig()["bitmunk.apps.tester.Tester"];
+      string path = File::join(
+         cfg["unitTestConfigPath"]->getString(), configFile);
+      cm->addConfigFile(path.c_str());
+      assertNoException();
+   }
+
+   // get the path to the node module
+   Config cfg = app->getConfig();
    assertNoException();
    assert(!cfg.isNull());
 
    // load node module
    assert(cfg["test"]->hasMember("nodeModule"));
    const char* nodeModule = cfg["test"]["nodeModule"]->getString();
-   MicroKernel* k = tr.getApp()->getKernel();
+   MicroKernel* k = app->getKernel();
    MicroKernelModule* mod = k->loadMicroKernelModule(nodeModule);
    if(mod != NULL)
    {
@@ -116,11 +83,22 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr)
             "bitmunk.test.Tester.InvalidNodeModule");
          e->getDetails()["filename"] = nodeModule;
          Exception::set(e);
+
+         // restore config manager state
+         cm->restoreState();
       }
       else
       {
-         // get node and other related module paths
-         FileList modulePaths = _getModulePaths(tr.getApp());
+         // get all of the module paths
+         FileList modulePaths;
+         ConfigIterator mpi = cfg["node"]["modulePath"].getIterator();
+         while(mpi->hasNext())
+         {
+            const char* path = mpi->next()->getString();
+            FileList pathList = File::parsePath(path);
+            modulePaths->concat(*pathList);
+         }
+
          // load all module paths at once
          if(!k->loadModules(modulePaths))
          {
@@ -130,11 +108,22 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr)
       }
    }
 
+   assertNoException();
    return rval;
 }
 
 bool Tester::unloadNode(monarch::test::TestRunner& tr)
 {
+   bool rval = true;
+
+   // unload the node
    MicroKernel* k = tr.getApp()->getKernel();
-   return k->unloadModule("bitmunk.node.Node");
+   rval = k->unloadModule("bitmunk.node.Node");
+   assertNoException();
+
+   // restore the config manager state
+   rval = tr.getApp()->getConfigManager()->restoreState();
+   assertNoException();
+
+   return rval;
 }

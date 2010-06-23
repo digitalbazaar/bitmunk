@@ -60,31 +60,18 @@ static bool run(TestRunner& tr)
 {
    if(tr.isDefaultEnabled())
    {
-      // load bitmunk test config
-      bool success = bitmunk::test::Tester::loadConfig(tr);
-      assertNoException();
-      assert(success);
-
       // load bitmunk node
       Node* node = bitmunk::test::Tester::loadNode(tr);
-      assert(node != NULL);
-      success = node->start();
+      node->start();
       assertNoException();
-      assert(success);
 
       // run config test
       runConfigTest(*node, tr);
 
       // unload bitmunk node
       node->stop();
-      success = bitmunk::test::Tester::unloadNode(tr);
+      bitmunk::test::Tester::unloadNode(tr);
       assertNoException();
-      assert(success);
-
-      // unload bitmunk test config
-      success = bitmunk::test::Tester::unloadConfig(tr);
-      assertNoException();
-      assert(success);
    }
    return true;
 }

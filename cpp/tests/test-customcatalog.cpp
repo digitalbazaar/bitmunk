@@ -2454,28 +2454,13 @@ static bool run(TestRunner& tr)
 {
    if(tr.isDefaultEnabled())
    {
-      bool success = bitmunk::test::Tester::loadConfig(tr);
+      // load and start node
+      Node* node = bitmunk::test::Tester::loadNode(
+         tr, "test-customcatalog.config");
+      node->start();
       assertNoException();
-      assert(success);
 
-      // load bitmunk test config
-      ConfigManager* cm = tr.getApp()->getConfigManager();
-      Config cfg = tr.getApp()->getConfig()["bitmunk.apps.tester.Tester"];
-      string path = File::join(
-         cfg["unitTestConfigPath"]->getString(), "test-customcatalog.config");
-      success = cm->addConfigFile(path.c_str());
-      assertNoException();
-      assert(success);
-
-      // load bitmunk node
-      Node* node = bitmunk::test::Tester::loadNode(tr);
-      assertNoException();
-      assert(node != NULL);
-      success = node->start();
-      assertNoException();
-      assert(success);
-
-      cfg = tr.getApp()->getConfig();
+      Config cfg = tr.getApp()->getConfig();
       sTestDataDir = cfg["test"]["dataPath"]->getString();
 
       const char* profileFile = "devuser.profile";
@@ -2508,16 +2493,9 @@ static bool run(TestRunner& tr)
       // logout of client node
       node->logout(0);
 
-      // unload bitmunk node
+      // stop and unload node
       node->stop();
-      success = bitmunk::test::Tester::unloadNode(tr);
-      assertNoException();
-      assert(success);
-
-      // unload bitmunk test config
-      success = bitmunk::test::Tester::unloadConfig(tr);
-      assertNoException();
-      assert(success);
+      bitmunk::test::Tester::unloadNode(tr);
    }
 
    return true;

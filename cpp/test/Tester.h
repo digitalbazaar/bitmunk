@@ -8,8 +8,6 @@
 #include "bitmunk/test/Test.h"
 #include "monarch/test/TestRunner.h"
 
-#define BITMUNK_TESTER_CONFIG_ID   "bitmunk.test.Tester.config.base"
-
 namespace bitmunk
 {
 namespace test
@@ -35,38 +33,27 @@ public:
    virtual ~Tester();
 
    /**
-    * Adds the Bitmunk test configuration. Optional config merge data may be
-    * provided.
+    * Loads a Node. First the Node's test configuration will be loaded, then
+    * the Node, then its modules. The Node must be started manually with a
+    * call to start().
+    *
+    * An optional config file may be specified with additional configuration
+    * options to be added to the config system before loading the node.
+    *
+    * The ConfigManager's state will be saved before loading any configs and
+    * will be restored when unloadNode() is called.
     *
     * @param tr the test's TestRunner.
-    * @param extraMerge optional config data to add to the merge section.
-    *
-    * @return true if succesful, false if an exception occurred.
-    */
-   static bool loadConfig(
-      monarch::test::TestRunner& tr,
-      monarch::config::Config* extraMerge = NULL);
-
-   /**
-    * Removes the Bitmunk test configuration.
-    *
-    * @param tr the test's TestRunner.
-    *
-    * @return true if succesful, false if an exception occurred.
-    */
-   static bool unloadConfig(monarch::test::TestRunner& tr);
-
-   /**
-    * Loads a Node.
-    *
-    * @param tr the test's TestRunner.
+    * @param configFile the name of a test config file to include, relative to
+    *           the configured "unitTestConfigPath".
     *
     * @return the loaded Node if successful, NULL if not.
     */
-   static bitmunk::node::Node* loadNode(monarch::test::TestRunner& tr);
+   static bitmunk::node::Node* loadNode(
+      monarch::test::TestRunner& tr, const char* configFile = NULL);
 
    /**
-    * Unloads a previously loaded Node.
+    * Unloads a previously loaded Node and restores the ConfigManager's state.
     *
     * @param tr the test's TestRunner.
     *
