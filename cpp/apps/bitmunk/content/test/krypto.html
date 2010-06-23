@@ -14,6 +14,7 @@
       <script type="text/javascript" src="/bitmunk/test/krypto/util.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/md5.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/sha1.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/hmac.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/aes.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/tls.js"></script>
       <script type="text/javascript" src="/bitmunk/test/pidcrypt/string_extend.js"></script>
@@ -120,6 +121,10 @@
          console.log('ba', bytes);
          console.log('ex', expect);
          console.log('assert', hex === exHex);
+
+         var buf = krypto.util.createBuffer();
+         buf.putBytes(krypto.util.hexToBytes(exHex));
+         console.log('assert', buf.toHex() === exHex);
       };
 
       var test_base64 = function()
@@ -355,6 +360,34 @@
                }, 0);
             }(n);
          }
+      };
+
+      var test_hmac = function()
+      {
+         // md5 hmac
+         var expect = '9294727a3638bb1c13f48ef8158bfc9d';
+         var key = krypto.util.hexToBytes(
+            '0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b');
+         var md = krypto.md.md5.create();
+         var hmac = krypto.hmac.create();
+         hmac.start(key, md);
+         hmac.update('Hi There');
+         var mac = hmac.digest();
+         console.log('digest', mac.toHex());
+         console.log('assert', mac.toHex() === expect);
+
+         /*
+         // sha-1 hmac
+         expect = 'b617318655057264e28bc0b6fb378c8ef146be00';
+         key = krypto.util.hexToBytes(
+            '0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b');
+         md = krypto.md.sha1.create();
+         hmac = krypto.hmac.create();
+         hmac.start(key, md);
+         hmac.update('Hi There');
+         var mac = hmac.digest();
+         console.log('digest', mac.toHex());
+         console.log('assert', mac.toHex() === expect);*/
       };
 
       // 128-bit test keys
@@ -1019,6 +1052,7 @@
          <button id="md5_speed" onclick="javascript:return test_md5_speed();">md5 speed</button>
          <button id="sha1" onclick="javascript:return test_sha1();">sha1</button>
          <button id="sha1_speed" onclick="javascript:return test_sha1_speed();">sha1 speed</button>
+         <button id="hmac" onclick="javascript:return test_hmac();">hmac</button>
       </div>
       <div id="flashTest">
          <p>Could not load the flash Test.</p>

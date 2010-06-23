@@ -375,7 +375,7 @@
       {
          var rval = '';
          var len = buf.length();
-         for(var i = buf.read; i < len; i++)
+         for(var i = buf.read; i < len; ++i)
          {
             var byte = buf.data.charCodeAt(i);
             if(byte < 16)
@@ -388,6 +388,31 @@
       };
       
       return buf;
+   };
+   
+   /**
+    * Converts a hex string into a string of bytes.
+    * 
+    * @param hex the hexadecimal string to convert.
+    * 
+    * @return the string of bytes.
+    */
+   util.hexToBytes = function(hex)
+   {
+      var rval = '';
+      var i = 0;
+      if(hex.length & 1 == 1)
+      {
+         // odd number of characters, convert first character alone
+         i = 1;
+         rval += String.fromCharCode(parseInt(hex[0], 16));
+      }
+      // convert 2 characters (1 byte) at a time
+      for(; i < hex.length; i += 2)
+      {
+         rval += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+      }
+      return rval;
    };
    
    // base64 characters, reverse mapping

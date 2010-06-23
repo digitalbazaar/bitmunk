@@ -153,7 +153,11 @@
       var _w = new Array(80);
       
       // message digest object
-      var md = {};
+      var md =
+      {
+         blockLength: 64,
+         digestLength: 20
+      };
       
       /**
        * Resets the digest.
@@ -174,7 +178,7 @@
       md.reset();
       
       /**
-       * Updates the digest with the given bytes.
+       * Updates the digest with the given message bytes.
        * 
        * @param bytes the bytes to update with.
        */
