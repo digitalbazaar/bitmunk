@@ -160,9 +160,9 @@
       };
       
       /**
-       * Resets the digest.
+       * Starts the digest.
        */
-      md.reset = function()
+      md.start = function()
       {
          _length = 0;
          _input = krypto.util.createBuffer();
@@ -175,7 +175,8 @@
             h4: 0xC3D2E1F0
          };
       };
-      md.reset();
+      // start digest automatically for first time
+      md.start();
       
       /**
        * Updates the digest with the given message bytes.

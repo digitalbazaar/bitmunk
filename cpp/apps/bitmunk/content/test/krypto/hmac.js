@@ -85,43 +85,46 @@
             if(keylen > _md.blockLength)
             {
                console.log('key too long');
-               _md.reset();
+               _md.start();
                _md.update(key.bytes());
                key = _md.digest();
             }
-            // if key is shorter than blocksize, pad it with zeros
-            else if(keylen < _md.blockLength)
-            {
-               console.log('key too short');
-               var tmp = _md.blockLength - keylen; 
-               for(var i = 0; i < tmp; ++i)
-               {
-                  key.putByte(0x00);
-               }
-            }
-            _key = key;
-            console.log('key', _key.toHex());
             
             // mix key into inner and outer padding
             // ipadding = [0x36 * blocksize] ^ key
             // opadding = [0x5C * blocksize] ^ key
             _ipadding = krypto.util.createBuffer();
             _opadding = krypto.util.createBuffer();
-            for(var i = 0; i < _md.blockLength; ++i)
+            keylen = key.length();
+            for(var i = 0; i < keylen; ++i)
             {
                var tmp = key.at(i);
                _ipadding.putByte(0x36 ^ tmp);
                _opadding.putByte(0x5C ^ tmp);
             }
+            
+            // if key is shorter than blocksize, add additional padding
+            if(keylen < _md.blockLength)
+            {
+               console.log('key too short');
+               var tmp = _md.blockLength - keylen; 
+               for(var i = 0; i < tmp; ++i)
+               {
+                  _ipadding.putByte(0x36);
+                  _opadding.putByte(0x5C);
+               }
+            }
+            _key = key;
+            console.log('key', _key.toHex());
             console.log('_ipadding', _ipadding.toHex());
             console.log('_opadding', _opadding.toHex());
          }
          
          // digest is done like so: hash(opadding | hash(ipadding | message))
          
-         // reset message digest and prepare to do inner hash
+         // prepare to do inner hash
          // hash(ipadding | message)
-         _md.reset();
+         _md.start();
          _md.update(_ipadding.bytes());
       };
       
@@ -145,7 +148,7 @@
          // digest is done like so: hash(opadding | hash(ipadding | message))
          // here we do the outer hashing
          var inner = _md.digest();
-         _md.reset();
+         _md.start();
          _md.update(_opadding);
          _md.update(inner.bytes());
          return _md.digest();
