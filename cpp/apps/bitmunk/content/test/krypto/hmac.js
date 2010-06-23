@@ -40,16 +40,34 @@
       /**
        * Starts or restarts the HMAC with the given key and message digest.
        * 
+       * @param md the message digest to use, null to reuse the previous one,
+       *           a string to use builtin 'sha1' or 'md5'.
        * @param key the key to use as a string, array of bytes, byte buffer,
        *           or null to reuse the previous key.
-       * @param md the message digest to use, null to reuse the previous one.
        */
-      ctx.start = function(key, md)
+      ctx.start = function(md, key)
       {
          if(md === null)
          {
             // reuse previous message digest
             md = _md;
+         }
+         else if(md.constructor == String)
+         {
+            // create builtin message digest
+            md = md.toLowerCase();
+            if(md == 'md5')
+            {
+               _md = krypto.md.md5.create();
+            }
+            else if(md == 'sha1' || md == 'sha-1')
+            {
+               _md = krypto.md.sha1.create();
+            }
+            else
+            {
+               throw 'Unknown hash algorithm "' + md + '"'; 
+            }
          }
          else
          {
@@ -84,7 +102,6 @@
             var keylen = key.length();
             if(keylen > _md.blockLength)
             {
-               console.log('key too long');
                _md.start();
                _md.update(key.bytes());
                key = _md.digest();
@@ -106,7 +123,6 @@
             // if key is shorter than blocksize, add additional padding
             if(keylen < _md.blockLength)
             {
-               console.log('key too short');
                var tmp = _md.blockLength - keylen; 
                for(var i = 0; i < tmp; ++i)
                {
@@ -115,9 +131,8 @@
                }
             }
             _key = key;
-            console.log('key', _key.toHex());
-            console.log('_ipadding', _ipadding.toHex());
-            console.log('_opadding', _opadding.toHex());
+            _ipadding = _ipadding.bytes();
+            _opadding = _opadding.bytes();
          }
          
          // digest is done like so: hash(opadding | hash(ipadding | message))
@@ -125,7 +140,7 @@
          // prepare to do inner hash
          // hash(ipadding | message)
          _md.start();
-         _md.update(_ipadding.bytes());
+         _md.update(_ipadding);
       };
       
       /**
@@ -147,10 +162,10 @@
       {
          // digest is done like so: hash(opadding | hash(ipadding | message))
          // here we do the outer hashing
-         var inner = _md.digest();
+         var inner = _md.digest().bytes();
          _md.start();
          _md.update(_opadding);
-         _md.update(inner.bytes());
+         _md.update(inner);
          return _md.digest();
       };
       // alias for getMac
