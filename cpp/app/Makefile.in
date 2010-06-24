@@ -4,7 +4,7 @@ LIBRARIES = bmapp
 bmapp_HEADERS = $(wildcard *.h)
 bmapp_SOURCES = $(wildcard *.cpp)
 
-DYNAMIC_LINK_LIBRARIES = mort moconfig moapp bmcommon
+DYNAMIC_LINK_LIBRARIES = mort moconfig moio moapp bmcommon
 
 DYNAMIC_MACOS_LINK_LIBRARIES = momodest moutil moio mofiber mocompress mologging moevent mocrypto modata monet mokernel movalidation
 DYNAMIC_WINDOWS_LINK_LIBRARIES = mokernel
