@@ -69,13 +69,13 @@ TEST_MODS = \
 
 $(foreach mod,$(TEST_MODS),$(eval $(call setup_test_mod,$(mod))))
 
-DYNAMIC_LINK_LIBRARIES = mort momodest moutil moio mologging mocompress mocrypto monet mohttp modata mosql mosqlite3 $(MYSQL_DYNAMIC_LINK_LIBRARIES) moevent mofiber momail moconfig moupnp motest movalidation $(SPHINX_DYNAMIC_LINK_LIBRARIES) moapp mokernel bmcommon bmdata $(DATABASE_DYNAMIC_LINK_LIBRARIES) bmprotocol bmnode $(PERMISSION_DYNAMIC_LINK_LIBRARIES) bmbfp bmcustomcatalog bmpurchase bmsell bmtest $(MAIL_DYNAMIC_LINK_LIBRARIES) $(MEDIA_DYNAMIC_LINK_LIBRARIES) $(UVA_DYNAMIC_LINK_LIBRARIES)
+DYNAMIC_LINK_LIBRARIES = mort momodest moutil moio mologging mocompress mocrypto monet mohttp modata mosql mosqlite3 moevent mofiber momail moconfig moupnp motest movalidation moapp mokernel bmcommon bmdata bmprotocol bmnode bmtest
 #DYNAMIC_EXECUTABLE_LIBRARIES = bmtest
-DYNAMIC_LINUX_LINK_LIBRARIES = pthread crypto ssl expat sqlite3 $(MYSQL_DYNAMIC_LINUX_LIBRARIES)
-DYNAMIC_WINDOWS_LINK_LIBRARIES = sqlite3 $(MYSQL_DYNAMIC_WINDOWS_LIBRARIES)
+DYNAMIC_LINUX_LINK_LIBRARIES = pthread crypto ssl expat sqlite3
+DYNAMIC_WINDOWS_LINK_LIBRARIES = sqlite3
 DYNAMIC_MACOS_LINK_LIBRARIES = crypto ssl
 
-EXTRA_WINDOWS_LIBRARIES = $(WINDOWS_LIB_DIR)/pthreadGCE2.dll $(WINDOWS_LIB_DIR)/libeay32.dll $(WINDOWS_LIB_DIR)/ssleay32.dll $(WINDOWS_LIB_DIR)/libexpat.dll $(WINDOWS_LIB_DIR)/sqlite3.dll $(WINDOWS_LIB_DIR)/iconv2.dll $(WINDOWS_LIB_DIR)/charset1.dll $(MYSQL_EXTRA_WINDOWS_LIBRARIES) -lws2_32
+EXTRA_WINDOWS_LIBRARIES = $(WINDOWS_LIB_DIR)/pthreadGCE2.dll $(WINDOWS_LIB_DIR)/libeay32.dll $(WINDOWS_LIB_DIR)/ssleay32.dll $(WINDOWS_LIB_DIR)/libexpat.dll $(WINDOWS_LIB_DIR)/sqlite3.dll $(WINDOWS_LIB_DIR)/iconv2.dll $(WINDOWS_LIB_DIR)/charset1.dll -lws2_32
 
 # conditional build of tests
 endif
