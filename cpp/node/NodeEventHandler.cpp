@@ -215,40 +215,6 @@ void NodeEventHandler::handleEvent(
    {
       MO_CAT_DEBUG(BM_NODE_CAT, "stats handler (unimplemented)");
    }
-   // Auto-Login event
-   else if(strcmp(hType, "bitmunk.handler.login") == 0)
-   {
-      MO_CAT_DEBUG(BM_NODE_CAT, "auto-login handler");
-
-      if(cfg["login"]["auto"]->getBoolean())
-      {
-         MO_CAT_INFO(BM_NODE_CAT, "Auto-login enabled.");
-
-         const char* user = cfg["login"]["username"]->getString();
-         const char* password = cfg["login"]["password"]->getString();
-         bool pass = mNode->login(user, password);
-         if(pass)
-         {
-            MO_CAT_INFO(BM_NODE_CAT, "Auto-login complete: user=%s.", user);
-         }
-         else
-         {
-            MO_CAT_ERROR(BM_NODE_CAT,
-               "Auto-login failed: user=%s, shutting down..., %s",
-               user, JsonWriter::writeToString(
-                  Exception::getAsDynamicObject()).c_str());
-
-            // schedule shutdown event
-            Event event;
-            event["type"] = "bitmunk.node.Node.shutdown";
-            mNode->getEventController()->schedule(event);
-         }
-      }
-      else
-      {
-         MO_CAT_INFO(BM_NODE_CAT, "Auto-login disabled.");
-      }
-   }
    // Shutdown event
    else if(strcmp(hType, "bitmunk.handler.shutdown") == 0)
    {

@@ -9,7 +9,12 @@
             "@BITMUNK_DIR@/dist/lib/@LIB_PREFIX@bmcustomcatalog.@DYNAMIC_LIB_EXT@",
             "@BITMUNK_DIR@/dist/lib/@LIB_PREFIX@bmmedialibrary.@DYNAMIC_LIB_EXT@",
             "@BITMUNK_DIR@/dist/lib/@LIB_PREFIX@bmperuserdb.@DYNAMIC_LIB_EXT@"
-         ]
+         ],
+         "login" : {
+            "auto" : true,
+            "username" : "devuser",
+            "password" : "password"
+         }
       }
    },
    "_merge_": {
