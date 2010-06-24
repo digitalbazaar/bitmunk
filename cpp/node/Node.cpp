@@ -104,8 +104,10 @@ bool Node::initialize()
    if(rval)
    {
       // dump some configuration information to the logs
+      string home;
+      getConfigManager()->getBitmunkHomePath(home);
       MO_CAT_INFO(BM_NODE_CAT,
-         "Home: %s", cfg["bitmunkHomePath"]->getString());
+         "Home: %s", home.c_str());
       MO_CAT_INFO(BM_NODE_CAT,
          "Bitmunk HTTP URL: %s", cfg["bitmunkUrl"]->getString());
       MO_CAT_INFO(BM_NODE_CAT,

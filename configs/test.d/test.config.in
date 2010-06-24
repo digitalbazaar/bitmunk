@@ -6,9 +6,6 @@
       "test" : {
          "dataPath" : "@BITMUNK_DIR@/../bmtest/",
          "nodeModule" : "@BITMUNK_MODULES_DIR@/@LIB_PREFIX@bmnodemodule.@DYNAMIC_LIB_EXT@"
-      },
-      "node" : {
-         "bitmunkHomePath" : "{TMP_DIR}/test"
       }
    }
 }

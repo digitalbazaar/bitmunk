@@ -363,7 +363,7 @@ bool NodeConfigManager::getBitmunkHomePath(string& path)
 
    Config c = getConfigManager()->getConfig(MAIN_ID);
    // get initial value
-   const char* bitmunkHomePath = c["node"]["bitmunkHomePath"]->getString();
+   const char* bitmunkHomePath = c["monarch.app.Core"]["home"]->getString();
    // make sure bitmunkHomePath is user-expanded
    rval = File::expandUser(bitmunkHomePath, path);
    // make sure path is absolute
