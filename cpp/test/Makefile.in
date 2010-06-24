@@ -7,7 +7,7 @@ bmtest_SOURCES = $(wildcard *.cpp)
 DYNAMIC_LINK_LIBRARIES = mort mocrypto moconfig moapp motest bmnode
 
 DYNAMIC_MACOS_LINK_LIBRARIES = moutil moio modata mologging mocompress monet momodest mokernel mofiber moevent movalidation mohttp bmcommon bmprotocol
-DYNAMIC_WINDOWS_LINK_LIBRARIES = moio
+DYNAMIC_WINDOWS_LINK_LIBRARIES = moio modata
 
 # ----------- Standard Makefile
 include @BITMUNK_DIR@/setup/Makefile.base
