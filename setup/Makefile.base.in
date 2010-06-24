@@ -16,7 +16,9 @@ MONARCH = $(realpath @MONARCH_DIR@)
 BITMUNK = $(realpath @BITMUNK_DIR@)
 TOP_SRC_DIR = $(BITMUNK)
 
+# config.h generated in setup
 INCLUDES += \
+	-I$(BITMUNK)/setup \
 	-I$(MONARCH)/dist/include \
 	-I$(BITMUNK)/dist/include \
 	-I$(BITMUNK)/dist/internal/include

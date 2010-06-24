@@ -3,10 +3,13 @@
  */
 #include "bitmunk/system/VersionService.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "bitmunk/node/BtpActionDelegate.h"
 #include "bitmunk/node/RestResourceHandler.h"
 #include "monarch/data/json/JsonWriter.h"
-#include "config.h"
 
 using namespace std;
 using namespace monarch::data::json;
@@ -70,7 +73,7 @@ bool VersionService::getVersion(
    bool rval = true;
    
    out["name"] = "Bitmunk Personal Edition";
-   out["version"] = BITMUNK_VERSION;
+   out["version"] = PACKAGE_VERSION;
    out["homepage"] = "http://bitmunk.com/";
    out["authors"][0]["name"] = "Digital Bazaar, Inc.";
    out["authors"][0]["email"] = "support@digitalbazaar.com";

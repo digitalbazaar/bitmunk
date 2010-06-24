@@ -1,6 +1,10 @@
 /*
  * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "bitmunk.h"
 
 #include "monarch/app/App.h"
@@ -14,8 +18,6 @@
 #include "bitmunk/app/App.h"
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/node/Node.h"
-
-#include "config.h"
 
 using namespace std;
 using namespace monarch::app;
@@ -54,7 +56,7 @@ bool Bitmunk::initialize()
    if(rval)
    {
       setName(BITMUNK_NAME);
-      setVersion(BITMUNK_VERSION);
+      setVersion(PACKAGE_VERSION);
    }
    return rval;
 }
@@ -293,7 +295,7 @@ bool Bitmunk::run()
 
    // Dump preliminary start-up information
    MO_CAT_INFO(BM_APP_CAT, "Bitmunk");
-   MO_CAT_INFO(BM_APP_CAT, "Version: %s", BITMUNK_VERSION);
+   MO_CAT_INFO(BM_APP_CAT, "Version: %s", PACKAGE_VERSION);
 
    Config cfg = getConfig()["node"];
 

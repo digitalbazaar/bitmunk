@@ -3,6 +3,10 @@
  */
 #define __STDC_FORMAT_MACROS
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "bitmunk/bfp/IBfpModuleImpl.h"
 
 #include "monarch/crypto/MessageDigest.h"
@@ -10,7 +14,6 @@
 #include "monarch/io/FileOutputStream.h"
 #include "monarch/http/HttpConnection.h"
 #include "monarch/rt/Platform.h"
-#include "bitmunk/bfp/BfpApiVersion.h"
 #include "bitmunk/bfp/BfpModule.h"
 #include "bitmunk/common/Logging.h"
 

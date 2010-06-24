@@ -14,3 +14,4 @@ for dir in $MAYBE_AC_DIRS; do
 done
 aclocal $ACDIRS
 autoconf
+autoheader

@@ -5,6 +5,7 @@
 AC_PREREQ([2.60])
 AC_INIT([bitmunk],[3.2.4],[support@digitalbazaar.com])
 AC_CONFIG_AUX_DIR(setup)
+AC_CONFIG_HEADERS([setup/config.h])
 
 # Versioning
 BITMUNK_VERSION_MAJOR=3
@@ -141,13 +142,7 @@ AC_ARG_ENABLE([release],
    esac
    ],
    [BITMUNK_RELEASE_MODE=no]) dnl Default value
-if test "x$BITMUNK_RELEASE_MODE" = xyes; then
-   AC_DEFINE(BITMUNK_RELEASE_MODE, 1,
-      [Build in release mode.])
-else
-   AC_DEFINE(BITMUNK_RELEASE_MODE, 0,
-      [Do not build in release mode.])
-fi
+
 AC_SUBST(BITMUNK_RELEASE_MODE)
 
 dnl ------------- Bitmunk SSL information --------------------
@@ -429,7 +424,7 @@ if test "x$BUILD_FIREFOX_PLUGIN" = "xyes"; then
    fi
 fi
 if test "x$MO_DISABLE_LOG_LINE_NUMBERS" = "xyes"; then
-   AC_DEFINE(MO_DISABLE_LOG_LINE_NUMBERS, 1,
+   AC_DEFINE([MO_DISABLE_LOG_LINE_NUMBERS], [1],
       [Enable log line numbers.])
 fi
 
@@ -554,6 +549,9 @@ AC_ARG_WITH(bfp-api-version,
     esac
   ],
   [:]) dnl Default set above
+
+AC_DEFINE_UNQUOTED([BITMUNK_BFP_API_VERSION], ["$BITMUNK_BFP_API_VERSION"],
+   [Bitmunk BFP API Version])
 
 dnl ----------------- build flash -----------------
 
@@ -771,9 +769,6 @@ AC_SUBST(BITMUNK_WEBUI_PLUGINS_DIR)
 AC_SUBST(BITMUNK_PURCHASE_DOWNLOAD_DIR)
 AC_SUBST(BITMUNK_PURCHASE_TEMP_DIR)
 AC_SUBST(BITMUNK_MODULES_DIR)
-AC_SUBST(BITMUNK_BFP_PEM_DIR)
-AC_SUBST(BITMUNK_BFP_PRIVATE_KEY_PEM)
-AC_SUBST(BITMUNK_BFP_PRIVATE_KEY_PW)
 AC_SUBST(BITMUNK_BFP_API_VERSION)
 
 dnl ----------------- optimization -----------------
@@ -797,7 +792,6 @@ AC_CONFIG_FILES([
    setup/docs.doxygen
    cpp/app/Makefile
    cpp/apps/bitmunk/Makefile
-   cpp/apps/bitmunk/config.h
    cpp/apps/tester/Makefile
    cpp/apps/firefox/Makefile
    cpp/apps/firefox/Makefile.common
@@ -824,7 +818,6 @@ AC_CONFIG_FILES([
    cpp/purchase/Makefile
    cpp/sell/Makefile
    cpp/system/Makefile
-   cpp/system/config.h
    cpp/test/Makefile
    cpp/tests/Makefile
    cpp/webui/Makefile
