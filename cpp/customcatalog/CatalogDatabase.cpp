@@ -1773,7 +1773,7 @@ bool CatalogDatabase::populateUpdatingWares(
 
                SellerListing sl;
                sl["fileInfo"] = fi;
-               sl["payeeSchemeId"] = psId;
+               BM_ID_SET(sl["payeeSchemeId"], psId);
                wares["updates"]->append(sl);
             }
             else
@@ -1797,8 +1797,8 @@ bool CatalogDatabase::populateUpdatingWares(
             DynamicObject ids = StringTools::split(
                tokens[1]->getString(), "-");
             SellerListing sl;
-            BM_ID_SET(sl["fileInfo"]["id"], ids[1]);
-            BM_ID_SET(sl["fileInfo"]["mediaId"], ids[0]);
+            BM_ID_SET(sl["fileInfo"]["id"], BM_FILE_ID(ids[1]));
+            BM_ID_SET(sl["fileInfo"]["mediaId"], BM_MEDIA_ID(ids[0]));
             wares["removals"]->append(sl);
          }
       }

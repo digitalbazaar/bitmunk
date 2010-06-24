@@ -111,8 +111,8 @@ static void populateFormatDetails(FileInfo& fi)
 static Seller buildSeller()
 {
    Seller seller;
-   seller["userId"] = sUserId;
-   seller["serverId"] = TEST_SERVER_ID;
+   BM_ID_SET(seller["userId"], sUserId);
+   BM_ID_SET(seller["serverId"], TEST_SERVER_ID);
    seller["url"] = "http://localhost:19200/";
    return seller;
 }
@@ -150,21 +150,21 @@ static SellerListingUpdate buildResponse(uint32_t updateId)
 static PayeeScheme buildPayeeScheme()
 {
    PayeeScheme ps;
-   ps["id"] = TEST_PS_ID;
+   BM_ID_SET(ps["id"], TEST_PS_ID);
    ps["description"] = "Test payee scheme";
-   ps["userId"] = sUserId;
-   ps["serverId"] = TEST_SERVER_ID;
+   BM_ID_SET(ps["userId"], sUserId);
+   BM_ID_SET(ps["serverId"], TEST_SERVER_ID);
 
    PayeeList payees = ps["payees"];
    Payee p1 = payees->append();
    Payee p2 = payees->append();
 
-   p1["id"] = TEST_ACCOUNT_ID;
+   BM_ID_SET(p1["id"], TEST_ACCOUNT_ID);
    p1["amountType"] = PAYEE_AMOUNT_TYPE_FLATFEE;
    p1["amount"] = "0.10";
    p1["description"] = "This is a test-customcatalog payee 1.";
 
-   p2["id"] = TEST_ACCOUNT_ID;
+   BM_ID_SET(p2["id"], TEST_ACCOUNT_ID);
    p2["amountType"] = PAYEE_AMOUNT_TYPE_PTOTAL;
    p2["percentage"] = "0.10";
    p2["description"] = "This is a test-customcatalog payee 2.";
@@ -176,9 +176,9 @@ static Ware buildWare()
 {
    File file((sTestDataDir + TEST_FILENAME).c_str());
    FileInfo fi;
-   fi["id"] = TEST_FILE_ID;
+   BM_ID_SET(fi["id"], TEST_FILE_ID);
    fi["path"] = file->getAbsolutePath();
-   fi["mediaId"] = 2;
+   BM_ID_SET(fi["mediaId"], 2);
    fi["contentType"] = "audio/mpeg";
    fi["contentSize"] = TEST_CONTENT_SIZE;
    fi["size"] = (uint64_t)file->getLength();
@@ -200,8 +200,8 @@ static DynamicObject buildListing(bool removal)
 {
    File file((sTestDataDir + TEST_FILENAME).c_str());
    FileInfo fi;
-   fi["id"] = TEST_FILE_ID;
-   fi["mediaId"] = 2;
+   BM_ID_SET(fi["id"], TEST_FILE_ID);
+   BM_ID_SET(fi["mediaId"], 2);
    if(!removal)
    {
       fi["path"] = file->getAbsolutePath();
