@@ -4,7 +4,7 @@
 #ifndef bitmunk_customcatalog_CustomCatalogModule_H
 #define bitmunk_customcatalog_CustomCatalogModule_H
 
-#include "bitmunk/customcatalog/Catalog.h"
+#include "bitmunk/customcatalog/CustomCatalog.h"
 #include "bitmunk/node/BitmunkModule.h"
 
 // module logging category
@@ -27,7 +27,7 @@ protected:
    /**
     * The Catalog of Wares.
     */
-   Catalog* mCatalog;
+   CustomCatalog* mCatalog;
 
 public:
    /**

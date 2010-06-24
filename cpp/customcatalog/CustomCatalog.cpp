@@ -3,7 +3,7 @@
  */
 #define __STDC_FORMAT_MACROS
 
-#include "bitmunk/customcatalog/Catalog.h"
+#include "bitmunk/customcatalog/CustomCatalog.h"
 
 #include "bitmunk/common/TypeDefinitions.h"
 #include "bitmunk/customcatalog/CatalogDatabase.h"
@@ -58,7 +58,7 @@ using namespace bitmunk::node;
 // and also filter on the specific values in ["details"]["config"] that
 // we're interested in for autosell, etc.
 
-Catalog::Catalog() :
+CustomCatalog::CustomCatalog() :
    mNode(NULL),
    mMediaLibrary(NULL),
    mUserLoggedInObserver(NULL),
@@ -68,11 +68,11 @@ Catalog::Catalog() :
 {
 }
 
-Catalog::~Catalog()
+CustomCatalog::~CustomCatalog()
 {
 }
 
-bool Catalog::init(Node* node)
+bool CustomCatalog::init(Node* node)
 {
    bool rval = false;
 
@@ -94,8 +94,8 @@ bool Catalog::init(Node* node)
       mMediaLibrary->addMediaLibraryExtension(this);
 
       // register observer for user logged in events
-      mUserLoggedInObserver = new ObserverDelegate<Catalog>(
-         this, &Catalog::userLoggedIn);
+      mUserLoggedInObserver = new ObserverDelegate<CustomCatalog>(
+         this, &CustomCatalog::userLoggedIn);
       node->getEventController()->registerObserver(
          &(*mUserLoggedInObserver), EVENT_USER_LOGGED_IN);
       MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,
@@ -104,24 +104,24 @@ bool Catalog::init(Node* node)
       // register observer for auto-sell events
       DynamicObject filter;
       filter["details"]["userData"]["source"] = "purchase";
-      mAutoSellObserver = new ObserverDelegate<Catalog>(
-         this, &Catalog::checkAutoSell);
+      mAutoSellObserver = new ObserverDelegate<CustomCatalog>(
+         this, &CustomCatalog::checkAutoSell);
       node->getEventController()->registerObserver(
          &(*mAutoSellObserver), EVENT_AUTOSELL, &filter);
       MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,
          "Catalog registered for " EVENT_AUTOSELL);
 
       // register observer for sync listing events
-      mListingSyncDaemon = new ObserverDelegate<Catalog>(
-         this, &Catalog::syncSellerListings);
+      mListingSyncDaemon = new ObserverDelegate<CustomCatalog>(
+         this, &CustomCatalog::syncSellerListings);
       node->getEventController()->registerObserver(
          &(*mListingSyncDaemon), EVENT_SYNC_SELLER_LISTINGS);
       MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,
          "Catalog registered for " EVENT_SYNC_SELLER_LISTINGS);
 
       // register observer for testing net access
-      mNetAccessTestDaemon = new ObserverDelegate<Catalog>(
-         this, &Catalog::testNetAccess);
+      mNetAccessTestDaemon = new ObserverDelegate<CustomCatalog>(
+         this, &CustomCatalog::testNetAccess);
       node->getEventController()->registerObserver(
          &(*mNetAccessTestDaemon), EVENT_TEST_NET_ACCESS);
       MO_CAT_DEBUG(BM_CUSTOMCATALOG_CAT,
@@ -159,7 +159,7 @@ static bool _schedulePayeeSchemeUpdatedEvent(
    return rval;
 }
 
-void Catalog::cleanup(Node* node)
+void CustomCatalog::cleanup(Node* node)
 {
    if(mMediaLibrary != NULL)
    {
@@ -199,7 +199,7 @@ void Catalog::cleanup(Node* node)
    }
 }
 
-bool Catalog::mediaLibraryInitialized(
+bool CustomCatalog::mediaLibraryInitialized(
    UserId userId, Connection* conn, DatabaseClientRef& dbc)
 {
    bool rval = true;
@@ -293,7 +293,7 @@ bool Catalog::mediaLibraryInitialized(
    return rval;
 }
 
-void Catalog::mediaLibraryCleaningUp(UserId userId)
+void CustomCatalog::mediaLibraryCleaningUp(UserId userId)
 {
    // remove fiber from listing updater map
    mListingUpdaterMap.erase(userId);
@@ -317,7 +317,7 @@ void Catalog::mediaLibraryCleaningUp(UserId userId)
    }
 }
 
-bool Catalog::updateWare(UserId userId, Ware& ware)
+bool CustomCatalog::updateWare(UserId userId, Ware& ware)
 {
    bool rval = false;
 
@@ -389,7 +389,7 @@ bool Catalog::updateWare(UserId userId, Ware& ware)
    return rval;
 }
 
-bool Catalog::removeWare(UserId userId, Ware& ware)
+bool CustomCatalog::removeWare(UserId userId, Ware& ware)
 {
    bool rval = false;
 
@@ -432,7 +432,7 @@ bool Catalog::removeWare(UserId userId, Ware& ware)
    return rval;
 }
 
-bool Catalog::populateWare(UserId userId, Ware& ware)
+bool CustomCatalog::populateWare(UserId userId, Ware& ware)
 {
    bool rval = false;
 
@@ -457,7 +457,7 @@ bool Catalog::populateWare(UserId userId, Ware& ware)
    return rval;
 }
 
-bool Catalog::populateWareSet(
+bool CustomCatalog::populateWareSet(
    UserId userId, DynamicObject& query, ResourceSet& wareSet)
 {
    bool rval = false;
@@ -486,7 +486,7 @@ bool Catalog::populateWareSet(
    return rval;
 }
 
-bool Catalog::populateWareBundle(
+bool CustomCatalog::populateWareBundle(
    UserId userId, Ware& ware, MediaPreferenceList& prefs)
 {
    bool rval = false;
@@ -499,13 +499,13 @@ bool Catalog::populateWareBundle(
    return rval;
 }
 
-bool Catalog::populateFileInfo(UserId userId, FileInfo& fi)
+bool CustomCatalog::populateFileInfo(UserId userId, FileInfo& fi)
 {
    // populate file info using media library
    return mMediaLibrary->populateFile(userId, fi);
 }
 
-bool Catalog::populateFileInfos(UserId userId, Ware& ware)
+bool CustomCatalog::populateFileInfos(UserId userId, Ware& ware)
 {
    bool rval = false;
 
@@ -529,7 +529,7 @@ bool Catalog::populateFileInfos(UserId userId, Ware& ware)
    return rval;
 }
 
-bool Catalog::populateFileInfoList(UserId userId, FileInfoList& fil)
+bool CustomCatalog::populateFileInfoList(UserId userId, FileInfoList& fil)
 {
    bool rval = true;
 
@@ -575,7 +575,7 @@ bool Catalog::populateFileInfoList(UserId userId, FileInfoList& fil)
    return rval;
 }
 
-bool Catalog::updatePayeeScheme(
+bool CustomCatalog::updatePayeeScheme(
    UserId userId, PayeeSchemeId& psId,
    const char* description, PayeeList& payees)
 {
@@ -628,7 +628,7 @@ bool Catalog::updatePayeeScheme(
    return rval;
 }
 
-bool Catalog::populatePayeeSchemes(
+bool CustomCatalog::populatePayeeSchemes(
    UserId userId, DynamicObject& filters, ResourceSet& rs)
 {
    bool rval = false;
@@ -659,7 +659,7 @@ bool Catalog::populatePayeeSchemes(
    return rval;
 }
 
-bool Catalog::populatePayeeScheme(
+bool CustomCatalog::populatePayeeScheme(
    UserId userId, PayeeScheme& ps)
 {
    DynamicObject filters;
@@ -667,7 +667,7 @@ bool Catalog::populatePayeeScheme(
    return populatePayeeScheme(userId, filters, ps);
 }
 
-bool Catalog::populatePayeeScheme(
+bool CustomCatalog::populatePayeeScheme(
    UserId userId, DynamicObject& filters, PayeeScheme& ps)
 {
    bool rval = false;
@@ -689,7 +689,7 @@ bool Catalog::populatePayeeScheme(
    return rval;
 }
 
-bool Catalog::removePayeeScheme(UserId userId, PayeeSchemeId psId)
+bool CustomCatalog::removePayeeScheme(UserId userId, PayeeSchemeId psId)
 {
    bool rval = false;
 
@@ -730,7 +730,7 @@ bool Catalog::removePayeeScheme(UserId userId, PayeeSchemeId psId)
    return rval;
 }
 
-bool Catalog::updateSeller(
+bool CustomCatalog::updateSeller(
    UserId userId, Seller& seller, ServerToken serverToken)
 {
    bool rval = false;
@@ -764,13 +764,13 @@ bool Catalog::updateSeller(
    return rval;
 }
 
-bool Catalog::populateSeller(UserId userId, Seller& seller)
+bool CustomCatalog::populateSeller(UserId userId, Seller& seller)
 {
    string serverToken;
    return populateSeller(userId, seller, serverToken);
 }
 
-bool Catalog::populateSeller(
+bool CustomCatalog::populateSeller(
    UserId userId, Seller& seller, string& serverToken)
 {
    bool rval = false;
@@ -801,7 +801,7 @@ bool Catalog::populateSeller(
    return rval;
 }
 
-bool Catalog::getUpdateId(UserId userId, uint32_t& updateId)
+bool CustomCatalog::getUpdateId(UserId userId, uint32_t& updateId)
 {
    bool rval = false;
 
@@ -830,7 +830,7 @@ bool Catalog::getUpdateId(UserId userId, uint32_t& updateId)
    return rval;
 }
 
-bool Catalog::populateHeartbeatListingUpdate(
+bool CustomCatalog::populateHeartbeatListingUpdate(
    UserId userId, SellerListingUpdate& update)
 {
    bool rval = false;
@@ -882,7 +882,7 @@ bool Catalog::populateHeartbeatListingUpdate(
    return rval;
 }
 
-bool Catalog::populatePendingListingUpdate(
+bool CustomCatalog::populatePendingListingUpdate(
    UserId userId, SellerListingUpdate& update)
 {
    bool rval = false;
@@ -949,7 +949,7 @@ bool Catalog::populatePendingListingUpdate(
    return rval;
 }
 
-bool Catalog::populateNextListingUpdate(
+bool CustomCatalog::populateNextListingUpdate(
    UserId userId, SellerListingUpdate& update)
 {
    bool rval = false;
@@ -1034,7 +1034,7 @@ bool Catalog::populateNextListingUpdate(
    return rval;
 }
 
-bool Catalog::processListingUpdateResponse(
+bool CustomCatalog::processListingUpdateResponse(
    UserId userId, SellerListingUpdate update, SellerListingUpdate result)
 {
    bool rval = false;
@@ -1272,7 +1272,7 @@ bool Catalog::processListingUpdateResponse(
    return rval;
 }
 
-bool Catalog::resetListingUpdateCounter(UserId userId)
+bool CustomCatalog::resetListingUpdateCounter(UserId userId)
 {
    bool rval = false;
 
@@ -1327,7 +1327,7 @@ bool Catalog::resetListingUpdateCounter(UserId userId)
    return rval;
 }
 
-bool Catalog::setConfigValue(
+bool CustomCatalog::setConfigValue(
    UserId userId, const char* name, const char* value)
 {
    bool rval = false;
@@ -1342,7 +1342,7 @@ bool Catalog::setConfigValue(
    return rval;
 }
 
-bool Catalog::getConfigValue(UserId userId, const char* name, string& value)
+bool CustomCatalog::getConfigValue(UserId userId, const char* name, string& value)
 {
    bool rval = false;
 
@@ -1356,7 +1356,7 @@ bool Catalog::getConfigValue(UserId userId, const char* name, string& value)
    return rval;
 }
 
-void Catalog::userLoggedIn(Event& e)
+void CustomCatalog::userLoggedIn(Event& e)
 {
    // get user's config
    UserId userId = BM_USER_ID(e["details"]["userId"]);
@@ -1471,7 +1471,7 @@ void Catalog::userLoggedIn(Event& e)
    }
 }
 
-void Catalog::checkAutoSell(Event& e)
+void CustomCatalog::checkAutoSell(Event& e)
 {
    // check user's config
    UserId userId = BM_USER_ID(e["details"]["userId"]);
@@ -1515,7 +1515,7 @@ void Catalog::checkAutoSell(Event& e)
    }
 }
 
-void Catalog::syncSellerListings(monarch::event::Event& e)
+void CustomCatalog::syncSellerListings(monarch::event::Event& e)
 {
    // get ID of user with listings to sync
    UserId userId = BM_USER_ID(e["details"]["userId"]);
@@ -1531,7 +1531,7 @@ void Catalog::syncSellerListings(monarch::event::Event& e)
    }
 }
 
-void Catalog::testNetAccess(monarch::event::Event& e)
+void CustomCatalog::testNetAccess(monarch::event::Event& e)
 {
    // get ID of user
    UserId userId = BM_USER_ID(e["details"]["userId"]);

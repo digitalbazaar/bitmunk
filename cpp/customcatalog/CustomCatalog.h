@@ -1,51 +1,140 @@
 /*
  * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
-#ifndef bitmunk_customcatalog_Catalog_H
-#define bitmunk_customcatalog_Catalog_H
+#ifndef bitmunk_customcatalog_CustomCatalog_H
+#define bitmunk_customcatalog_CustomCatalog_H
 
-#include "bitmunk/common/CatalogInterface.h"
-#include "bitmunk/node/Node.h"
+#include "bitmunk/customcatalog/Catalog.h"
+#include "bitmunk/customcatalog/CatalogDatabase.h"
+#include "monarch/event/Observer.h"
+#include "monarch/kernel/MicroKernelModuleApi.h"
+#include "bitmunk/medialibrary/IMediaLibrary.h"
 
 namespace bitmunk
 {
 namespace customcatalog
 {
 
+// forward declarations
+class ListingUpdater;
+
 /**
- * A Catalog is an API for a catalog that contains custom Wares for a seller.
+ * A Catalog contains custom Wares for a seller.
  *
  * @author Dave Longley
  * @author Manu Sporny
  */
-class Catalog : public bitmunk::common::CatalogInterface
+class CustomCatalog :
+public Catalog,
+public bitmunk::medialibrary::IMediaLibraryExtension,
+public monarch::kernel::MicroKernelModuleApi
 {
+protected:
+   /**
+    * The associated Bitmunk node.
+    */
+   bitmunk::node::Node* mNode;
+
+   /**
+    * The media library interface.
+    */
+   bitmunk::medialibrary::IMediaLibrary* mMediaLibrary;
+
+   /**
+    * A map of user ID to ListingUpdater fiber ID.
+    */
+   typedef std::map<bitmunk::common::UserId, monarch::fiber::FiberId>
+   ListingUpdaterMap;
+   ListingUpdaterMap mListingUpdaterMap;
+
+   /**
+    * Observer for handling user login.
+    */
+   monarch::event::ObserverRef mUserLoggedInObserver;
+
+   /**
+    * Observer for handling auto-sell.
+    */
+   monarch::event::ObserverRef mAutoSellObserver;
+
+   /**
+    * Observer that functions as a daemon for sending seller listing updates
+    * to bitmunk.
+    */
+   monarch::event::ObserverRef mListingSyncDaemon;
+
+   /**
+    * Observer that functions as a daemon for running test access tests.
+    */
+   monarch::event::ObserverRef mNetAccessTestDaemon;
+
+   /**
+    * The catalog database that is used to modify the database entries for
+    * the media library and custom catalog.
+    */
+   bitmunk::customcatalog::CatalogDatabase mCatalogDb;
+
 public:
    /**
-    * Creates a new Catalog.
+    * Creates a new CustomCatalog.
     */
-   Catalog() {};
+   CustomCatalog();
 
    /**
-    * Destructs this Catalog.
+    * Destructs this CustomCatalog.
     */
-   virtual ~Catalog() {};
+   virtual ~CustomCatalog();
 
    /**
-    * Initializes this Catalog, creating its database and tables, etc.
+    * Initializes this CustomCatalog, creating its database and tables, etc.
     *
     * @param node the associated Bitmunk node.
     *
     * @return true if successful, false if an Exception occurred.
     */
-   virtual bool init(bitmunk::node::Node* node) = 0;
+   virtual bool init(bitmunk::node::Node* node);
 
    /**
-    * Cleans up this Catalog.
+    * Cleans up this CustomCatalog.
     *
     * @param node the associated Bitmunk node.
     */
-   virtual void cleanup(bitmunk::node::Node* node) = 0;
+   virtual void cleanup(bitmunk::node::Node* node);
+
+   /**
+    * Called when the media library has been initialized. This call may be
+    * used to perform any initialization that is required by the media
+    * library extension.
+    *
+    * This will be called when the first connection is requested to a user's
+    * media library. It will be called for each different user.
+    *
+    * @param userId the ID of the user of the media library.
+    * @param conn a connection to the media library to use to perform
+    *             any custom initialization, *MUST NOT* be closed before
+    *             returning.
+    * @param dbc a DatabaseClient to use -- but it can only use the provided
+    *            connection.
+    *
+    * @return true if successful, false if an exception occurred.
+    */
+   virtual bool mediaLibraryInitialized(
+      bitmunk::common::UserId userId, monarch::sql::Connection* conn,
+      monarch::sql::DatabaseClientRef& dbc);
+
+   /**
+    * Called when the media library is being cleaned up. This call may be
+    * used to clean up any locally cached information that is required by
+    * the media library extension.
+    *
+    * This will be called when a user logs out and their media library becomes
+    * inaccessible. It will be called for each different user.
+    *
+    * @param userId the ID of the user of the media library.
+    *
+    * @return true if successful, false if an exception occurred.
+    */
+   virtual void mediaLibraryCleaningUp(bitmunk::common::UserId userId);
 
    /**
     * Adds or updates a Ware in the catalog with the passed Ware.
@@ -57,7 +146,7 @@ public:
     */
    virtual bool updateWare(
       bitmunk::common::UserId userId,
-      bitmunk::common::Ware& w) = 0;
+      bitmunk::common::Ware& w);
 
    /**
     * Removes a Ware from the catalog, if it exists.
@@ -69,7 +158,7 @@ public:
     */
    virtual bool removeWare(
       bitmunk::common::UserId userId,
-      bitmunk::common::Ware& w) = 0;
+      bitmunk::common::Ware& w);
 
    /**
     * Populates a Ware based on its ID. Any extraneous information not
@@ -82,7 +171,7 @@ public:
     */
    virtual bool populateWare(
       bitmunk::common::UserId userId,
-      bitmunk::common::Ware& w) = 0;
+      bitmunk::common::Ware& w);
 
    /**
     * Populates a set of wares that match the given query parameters.
@@ -94,7 +183,7 @@ public:
     */
    virtual bool populateWareSet(
       bitmunk::common::UserId userId, monarch::rt::DynamicObject& query,
-      bitmunk::common::ResourceSet& wareSet) = 0;
+      bitmunk::common::ResourceSet& wareSet);
 
    /**
     * Populates a Ware bundle based on its media ID and the given
@@ -110,7 +199,7 @@ public:
    virtual bool populateWareBundle(
       bitmunk::common::UserId userId,
       bitmunk::common::Ware& w,
-      bitmunk::common::MediaPreferenceList& prefs) = 0;
+      bitmunk::common::MediaPreferenceList& prefs);
 
    /**
     * Populates a FileInfo based on its ID.
@@ -121,7 +210,7 @@ public:
     */
    virtual bool populateFileInfo(
       bitmunk::common::UserId userId,
-      bitmunk::common::FileInfo& fi) = 0;
+      bitmunk::common::FileInfo& fi);
 
    /**
     * Populates the FileInfos for a Ware.
@@ -132,7 +221,7 @@ public:
     */
    virtual bool populateFileInfos(
       bitmunk::common::UserId userId,
-      bitmunk::common::Ware& w) = 0;
+      bitmunk::common::Ware& w);
 
    /**
     * Populates a FileInfoList.
@@ -144,7 +233,7 @@ public:
     */
    virtual bool populateFileInfoList(
       bitmunk::common::UserId userId,
-      bitmunk::common::FileInfoList& fil) = 0;
+      bitmunk::common::FileInfoList& fil);
 
    /**
     * Adds or updates a payee scheme.
@@ -160,7 +249,7 @@ public:
    virtual bool updatePayeeScheme(
       bitmunk::common::UserId userId,
       bitmunk::common::PayeeSchemeId& psId, const char* description,
-      bitmunk::common::PayeeList& payees) = 0;
+      bitmunk::common::PayeeList& payees);
 
    /**
     * Populates a set of payee schemes
@@ -174,7 +263,7 @@ public:
    virtual bool populatePayeeSchemes(
       bitmunk::common::UserId userId,
       bitmunk::common::ResourceSet& rs,
-      monarch::rt::DynamicObject& filters) = 0;
+      monarch::rt::DynamicObject& filters);
 
    /**
     * Populates a payee scheme that has its "id" field set.
@@ -186,7 +275,7 @@ public:
     */
    virtual bool populatePayeeScheme(
       bitmunk::common::UserId userId,
-      bitmunk::common::PayeeScheme& ps) = 0;
+      bitmunk::common::PayeeScheme& ps);
 
    /**
     * Populates a payee scheme that has its "id" field set and uses a set
@@ -201,7 +290,7 @@ public:
    virtual bool populatePayeeScheme(
       bitmunk::common::UserId userId,
       monarch::rt::DynamicObject& filters,
-      bitmunk::common::PayeeScheme& ps) = 0;
+      bitmunk::common::PayeeScheme& ps);
 
    /**
     * Removes a payee scheme.
@@ -212,8 +301,7 @@ public:
     * @return true if successful, false if an exception occurred.
     */
    virtual bool removePayeeScheme(
-      bitmunk::common::UserId userId,
-      bitmunk::common::PayeeSchemeId psId) = 0;
+      bitmunk::common::UserId userId, bitmunk::common::PayeeSchemeId psId);
 
    /**
     * Updates the seller configuration and server token for the catalog owned
@@ -229,7 +317,7 @@ public:
    virtual bool updateSeller(
       bitmunk::common::UserId userId,
       bitmunk::common::Seller& seller,
-      bitmunk::common::ServerToken serverToken) = 0;
+      bitmunk::common::ServerToken serverToken);
 
    /**
     * Populates the seller associated with the given user ID.
@@ -241,7 +329,7 @@ public:
     */
    virtual bool populateSeller(
       bitmunk::common::UserId userId,
-      bitmunk::common::Seller& seller) = 0;
+      bitmunk::common::Seller& seller);
 
    /**
     * Gets the seller object and server token that are associated with the
@@ -256,7 +344,7 @@ public:
    virtual bool populateSeller(
       bitmunk::common::UserId userId,
       bitmunk::common::Seller& seller,
-      std::string& serverToken) = 0;
+      std::string& serverToken);
 
    /**
     * Gets the current update ID.
@@ -267,8 +355,7 @@ public:
     * @return true if successful, false if an Exception occurred.
     */
    virtual bool getUpdateId(
-      bitmunk::common::UserId userId,
-      bitmunk::common::PayeeSchemeId& updateId) = 0;
+      bitmunk::common::UserId userId, bitmunk::common::PayeeSchemeId& updateId);
 
    /**
     * Gets a heartbeat update.
@@ -280,7 +367,7 @@ public:
     */
    virtual bool populateHeartbeatListingUpdate(
       bitmunk::common::UserId userId,
-      bitmunk::common::SellerListingUpdate& update) = 0;
+      bitmunk::common::SellerListingUpdate& update);
 
    /**
     * Populates a SellerListingUpdate object with a list of listings
@@ -296,7 +383,7 @@ public:
     */
    virtual bool populatePendingListingUpdate(
       bitmunk::common::UserId userId,
-      bitmunk::common::SellerListingUpdate& update) = 0;
+      bitmunk::common::SellerListingUpdate& update);
 
    /**
     * Populates a SellerListingUpdate object with a list of listings
@@ -311,7 +398,7 @@ public:
     */
    virtual bool populateNextListingUpdate(
       bitmunk::common::UserId userId,
-      bitmunk::common::SellerListingUpdate& update) = 0;
+      bitmunk::common::SellerListingUpdate& update);
 
    /**
     * Processes a SellerListingUpdate response that was received from
@@ -327,7 +414,7 @@ public:
    virtual bool processListingUpdateResponse(
       bitmunk::common::UserId userId,
       bitmunk::common::SellerListingUpdate update,
-      bitmunk::common::SellerListingUpdate result) = 0;
+      bitmunk::common::SellerListingUpdate result);
 
    /**
     * Resets the seller listing update counter to completely re-sync all
@@ -338,7 +425,7 @@ public:
     *
     * @return true if successful, false if an Exception occurred.
     */
-   virtual bool resetListingUpdateCounter(bitmunk::common::UserId userId) = 0;
+   virtual bool resetListingUpdateCounter(bitmunk::common::UserId userId);
 
    /**
     * Sets the configuration value for the name of the given configuration
@@ -351,7 +438,7 @@ public:
     * @return true if retrieving the value was successful, false otherwise.
     */
    virtual bool setConfigValue(
-      bitmunk::common::UserId userId, const char* name, const char* value) = 0;
+      bitmunk::common::UserId userId, const char* name, const char* value);
 
    /**
     * Gets the configuration value for the name of the given configuration
@@ -364,7 +451,37 @@ public:
     * @return true if retrieving the value was successful, false otherwise.
     */
    virtual bool getConfigValue(
-      bitmunk::common::UserId userId, const char* name, std::string& value) = 0;
+      bitmunk::common::UserId userId, const char* name, std::string& value);
+
+   /**
+    * Called when a user logs in.
+    *
+    * @param e the event that occurred.
+    */
+   virtual void userLoggedIn(monarch::event::Event& e);
+
+   /**
+    * Called when a file is updated in the media library due to a purchase
+    * and the auto-sell feature must run a check.
+    *
+    * @param e the event that occurred.
+    */
+   virtual void checkAutoSell(monarch::event::Event& e);
+
+   /**
+    * Called when it is time to send a seller listing update to bitmunk.
+    *
+    * @param e the event that occurred.
+    */
+   virtual void syncSellerListings(monarch::event::Event& e);
+
+   /**
+    * Called when it is time for the listing updating to ensure that the
+    * user's catalog is accessible over the internet.
+    *
+    * @param e the event that occurred.
+    */
+   virtual void testNetAccess(monarch::event::Event& e);
 };
 
 } // end namespace customcatalog

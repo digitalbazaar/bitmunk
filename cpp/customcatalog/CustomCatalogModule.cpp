@@ -51,7 +51,7 @@ bool CustomCatalogModule::initialize(Node* node)
       NULL);
 
    // create and attempt to initialize catalog
-   mCatalog = new Catalog();
+   mCatalog = new CustomCatalog();
    if((rval = mCatalog->init(node)))
    {
       BtpServiceRef bs;
