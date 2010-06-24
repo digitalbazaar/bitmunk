@@ -33,7 +33,6 @@ using namespace monarch::rt;
 using namespace monarch::test;
 using namespace monarch::util;
 
-#define TEST_USER_ID      (uint64_t)900
 #define TEST_ACCOUNT_ID   (uint64_t)9000
 #define TEST_SERVER_ID    5
 #define TEST_FILENAME     "2.mp3"
@@ -45,6 +44,7 @@ using namespace monarch::util;
 namespace bm_tests_customcatalog
 {
 
+static UserId sUserId;
 static string sTestDataDir;
 
 /**
@@ -57,24 +57,29 @@ static void resetTestEnvironment(Node& node)
 {
    // get the path to the database file, dear sir
    Config config = node.getConfigManager()->getModuleUserConfig(
-      "bitmunk.medialibrary.MediaLibrary", TEST_USER_ID);
+      "bitmunk.medialibrary.MediaLibrary", sUserId);
+   assertNoException();
    const char* url = config["database"]["url"]->getString();
 
    // assert that the translation happened correctly
    string fullDbPath;
    assert(node.getConfigManager()->translateUrlToUserFilePath(
-      TEST_USER_ID, url, fullDbPath));
+      sUserId, url, fullDbPath));
 
    // log the user out
-   node.logout(TEST_USER_ID);
+   node.logout(sUserId);
    assertNoException();
 
    // remove the file from the filesystem
    File file(fullDbPath.c_str());
    file->remove();
 
+   Config cfg = node.getConfigManager()->getNodeConfig();
+   assertNoException();
+   cfg = cfg["login"];
+
    // log the user in
-   node.login("devuser", "password");
+   node.login(cfg["username"]->getString(), cfg["password"]->getString());
    assertNoException();
 }
 
@@ -106,7 +111,7 @@ static void populateFormatDetails(FileInfo& fi)
 static Seller buildSeller()
 {
    Seller seller;
-   seller["userId"] = TEST_USER_ID;
+   seller["userId"] = sUserId;
    seller["serverId"] = TEST_SERVER_ID;
    seller["url"] = "http://localhost:19200/";
    return seller;
@@ -147,7 +152,7 @@ static PayeeScheme buildPayeeScheme()
    PayeeScheme ps;
    ps["id"] = TEST_PS_ID;
    ps["description"] = "Test payee scheme";
-   ps["userId"] = TEST_USER_ID;
+   ps["userId"] = sUserId;
    ps["serverId"] = TEST_SERVER_ID;
 
    PayeeList payees = ps["payees"];
@@ -223,27 +228,27 @@ static DynamicObject buildListing(bool removal)
    PayeeScheme ps = buildPayeeScheme(); \
    PayeeSchemeId psId = TEST_PS_ID; \
    cat->updatePayeeScheme( \
-      TEST_USER_ID, psId, "Test payee scheme", ps["payees"]); \
+      sUserId, psId, "Test payee scheme", ps["payees"]); \
    assertNoException(); \
 }
 
 #define dirtyWare(cat) \
 { \
    Ware ware = buildWare(); \
-   cat->updateWare(TEST_USER_ID, ware); \
+   cat->updateWare(sUserId, ware); \
    assertNoException();\
 }
 
 #define deletePayeeScheme(cat) \
 { \
-   cat->removePayeeScheme(TEST_USER_ID, TEST_PS_ID); \
+   cat->removePayeeScheme(sUserId, TEST_PS_ID); \
    assertNoException(); \
 }
 
 #define deleteWare(cat) \
 { \
    Ware ware = buildWare(); \
-   cat->removeWare(TEST_USER_ID, ware); \
+   cat->removeWare(sUserId, ware); \
    assertNoException(); \
 }
 
@@ -288,7 +293,7 @@ static void runCustomCatalogTest(Node& node, TestRunner& tr)
    {
       Url filesUrl;
       filesUrl.format("%s/api/3.2/medialibrary/files?nodeuser=%" PRIu64,
-         messenger->getSelfUrl(true).c_str(), TEST_USER_ID);
+         messenger->getSelfUrl(true).c_str(), sUserId);
 
       // prepare event waiter
       EventWaiter ew(node.getEventController());
@@ -379,7 +384,7 @@ static void runCustomCatalogTest(Node& node, TestRunner& tr)
          p1["description"] = "This is a test-customcatalog payee 2.";
 
          // add the ware to the custom catalog
-         cat->updateWare(TEST_USER_ID, ware);
+         cat->updateWare(sUserId, ware);
          assertNoException();
 
          wares->append(ware);
@@ -454,7 +459,7 @@ static void runCustomCatalogTest(Node& node, TestRunner& tr)
          ps["description"] = "This ware was added by test-customcatalog";
          ps["id"] = psId;
          ps["serverId"] = TEST_SERVER_ID;
-         ps["userId"] = TEST_USER_ID;
+         ps["userId"] = sUserId;
          ps["payees"]->setType(Array);
          Payee& p1 = ps["payees"]->append();
          p1["amount"] = "0.10";
@@ -698,7 +703,7 @@ static void runCustomCatalogTest(Node& node, TestRunner& tr)
       SellerListingUpdate response = buildResponse(
          update["newUpdateId"]->getUInt32());
       PayeeScheme& ps = response["payeeSchemes"]["updates"]->append();
-      ps["userId"] = TEST_USER_ID;
+      ps["userId"] = sUserId;
       ps["serverId"] = 1;
       ps["id"] = 1;
       ExceptionRef e = new Exception(
@@ -869,7 +874,7 @@ static void initializeCatalog(Node& node, Catalog* cat)
    Messenger* messenger = node.getMessenger();
    Url filesUrl;
    filesUrl.format("%s/api/3.2/medialibrary/files?nodeuser=%" PRIu64,
-      messenger->getSelfUrl(true).c_str(), TEST_USER_ID);
+      messenger->getSelfUrl(true).c_str(), sUserId);
 
    DynamicObject in;
    DynamicObject out;
@@ -913,7 +918,7 @@ static void initializeCatalog(Node& node, Catalog* cat)
    BM_ID_SET(seller["serverId"], TEST_SERVER_ID);
    seller["url"] = "http://localhost:19200/";
    const char* serverToken = TEST_SERVER_TOKEN;
-   cat->updateSeller(TEST_USER_ID, seller, serverToken);
+   cat->updateSeller(sUserId, seller, serverToken);
    assertNoException();
 }
 
@@ -922,14 +927,14 @@ static void insertPayeeScheme(Catalog* cat)
    PayeeScheme ps = buildPayeeScheme();
    PayeeSchemeId psId = 0;
    cat->updatePayeeScheme(
-      TEST_USER_ID, psId, "Test payee scheme", ps["payees"]);
+      sUserId, psId, "Test payee scheme", ps["payees"]);
    assertNoException();
 }
 
 static void insertWare(Catalog* cat)
 {
    Ware ware = buildWare();
-   cat->updateWare(TEST_USER_ID, ware);
+   cat->updateWare(sUserId, ware);
    assertNoException();
 }
 
@@ -937,7 +942,7 @@ static void cleanPayeeScheme(Catalog* cat, uint32_t& updateId)
 {
    // get the next update
    SellerListingUpdate update;
-   cat->populateNextListingUpdate(TEST_USER_ID, update);
+   cat->populateNextListingUpdate(sUserId, update);
    assertNoException();
 
    // build the expected update
@@ -950,7 +955,7 @@ static void cleanPayeeScheme(Catalog* cat, uint32_t& updateId)
    SellerListingUpdate response = buildResponse(updateId);
 
    // process the response
-   cat->processListingUpdateResponse(TEST_USER_ID, update, response);
+   cat->processListingUpdateResponse(sUserId, update, response);
    assertNoException();
 }
 
@@ -958,7 +963,7 @@ static void cleanWare(Catalog* cat, uint32_t& updateId)
 {
    // get the next update
    SellerListingUpdate update;
-   cat->populateNextListingUpdate(TEST_USER_ID, update);
+   cat->populateNextListingUpdate(sUserId, update);
    assertNoException();
 
    // build the expected update
@@ -971,12 +976,12 @@ static void cleanWare(Catalog* cat, uint32_t& updateId)
    SellerListingUpdate response = buildResponse(updateId);
 
    // process the response
-   cat->processListingUpdateResponse(TEST_USER_ID, update, response);
+   cat->processListingUpdateResponse(sUserId, update, response);
    assertNoException();
 
    // get the next update (should be empty now)
    SellerListingUpdate empty;
-   cat->populateNextListingUpdate(TEST_USER_ID, empty);
+   cat->populateNextListingUpdate(sUserId, empty);
    assertNoException();
 
    SellerListingUpdate expectedEmpty = buildUpdate(updateId, updateId);
@@ -995,7 +1000,7 @@ static void initCleanPsCleanW(Catalog* cat, uint32_t& updateId)
 
    // get the next update
    SellerListingUpdate update;
-   cat->populateNextListingUpdate(TEST_USER_ID, update);
+   cat->populateNextListingUpdate(sUserId, update);
    assertNoException();
 
    // expect an empty update
@@ -1014,7 +1019,7 @@ static void initCleanPsDirtyW(Catalog* cat, uint32_t& updateId)
 
    // get the next update
    SellerListingUpdate update;
-   cat->populateNextListingUpdate(TEST_USER_ID, update);
+   cat->populateNextListingUpdate(sUserId, update);
    assertNoException();
 
    // expect an update with a listing
@@ -1035,7 +1040,7 @@ static void initCleanPsDeletedW(Catalog* cat, uint32_t& updateId)
 
    // get the next update
    SellerListingUpdate update;
-   cat->populateNextListingUpdate(TEST_USER_ID, update);
+   cat->populateNextListingUpdate(sUserId, update);
    assertNoException();
 
    // expect an update with a listing
@@ -1059,7 +1064,7 @@ static void initDirtyPsCleanW(Catalog* cat, uint32_t& updateId)
 
    // get the next update
    SellerListingUpdate update;
-   cat->populateNextListingUpdate(TEST_USER_ID, update);
+   cat->populateNextListingUpdate(sUserId, update);
    assertNoException();
 
    // expect an update with a payee scheme
@@ -1076,7 +1081,7 @@ static void initDirtyPsDirtyW(Catalog* cat, uint32_t& updateId)
 
    // get the next update
    SellerListingUpdate update;
-   cat->populateNextListingUpdate(TEST_USER_ID, update);
+   cat->populateNextListingUpdate(sUserId, update);
    assertNoException();
 
    // expect an update with a payee scheme
@@ -1096,7 +1101,7 @@ static void initDirtyPsDeletedW(Catalog* cat, uint32_t& updateId)
 
    // get the next update
    SellerListingUpdate update;
-   cat->populateNextListingUpdate(TEST_USER_ID, update);
+   cat->populateNextListingUpdate(sUserId, update);
    assertNoException();
 
    // expect an update with a listing
@@ -1117,7 +1122,7 @@ static void initDeletedPsDeletedW(Catalog* cat, uint32_t& updateId)
 
    // get the next update
    SellerListingUpdate update;
-   cat->populateNextListingUpdate(TEST_USER_ID, update);
+   cat->populateNextListingUpdate(sUserId, update);
    assertNoException();
 
    // expect an update with a listing
@@ -1143,7 +1148,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -1171,7 +1176,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -1185,7 +1190,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -1210,7 +1215,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1224,7 +1229,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1249,7 +1254,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1263,7 +1268,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1289,7 +1294,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -1303,7 +1308,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -1329,7 +1334,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1343,7 +1348,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1369,7 +1374,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1383,7 +1388,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1409,7 +1414,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1423,7 +1428,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1448,7 +1453,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1462,7 +1467,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1487,7 +1492,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -1515,7 +1520,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -1544,7 +1549,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -1573,7 +1578,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -1602,7 +1607,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -1631,7 +1636,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1645,7 +1650,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1670,7 +1675,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1684,7 +1689,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1709,7 +1714,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1723,7 +1728,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -1748,7 +1753,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -1777,7 +1782,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -1806,7 +1811,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -1820,7 +1825,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -1845,7 +1850,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -1873,7 +1878,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -1887,7 +1892,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -1912,7 +1917,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -1926,7 +1931,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -1952,7 +1957,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -1981,7 +1986,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -2010,7 +2015,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -2041,7 +2046,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -2055,7 +2060,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -2080,7 +2085,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -2094,7 +2099,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -2119,7 +2124,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -2133,7 +2138,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a payee scheme
@@ -2159,7 +2164,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -2188,7 +2193,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -2217,7 +2222,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -2246,7 +2251,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -2260,7 +2265,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -2285,7 +2290,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -2299,7 +2304,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -2324,7 +2329,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -2338,7 +2343,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -2363,7 +2368,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -2392,7 +2397,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an empty update
@@ -2421,7 +2426,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the next update again
       {
          SellerListingUpdate update;
-         cat->populateNextListingUpdate(TEST_USER_ID, update);
+         cat->populateNextListingUpdate(sUserId, update);
          assertNoException();
 
          // expect an update with a listing
@@ -2435,7 +2440,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
       // get the pending update
       {
          SellerListing update;
-         cat->populatePendingListingUpdate(TEST_USER_ID, update);
+         cat->populatePendingListingUpdate(sUserId, update);
          assertNoException();
 
          // expect and update with a listing
@@ -2462,24 +2467,8 @@ static bool run(TestRunner& tr)
 
       Config cfg = tr.getApp()->getConfig();
       sTestDataDir = cfg["test"]["dataPath"]->getString();
-
-      const char* profileFile = "devuser.profile";
-      string profileDir =
-         tr.getApp()->getConfig()["node"]["profilePath"]->getString();
-      string prof = File::join(profileDir.c_str(), profileFile);
-      File file(prof.c_str());
-      if(!file->exists())
-      {
-         printf(
-            "You must copy '%s' from pki to '%s' to run this. "
-            "If you're seeing security breaches, your copy may "
-            "be out of date.\n", profileFile, profileDir.c_str());
-         exit(1);
-      }
-
-      // login the devuser
-      node->login("devuser", "password");
-      assertNoException();
+      sUserId = node->getDefaultUserId();
+      assert(sUserId != 0);
 
       // run test(s):
       runCustomCatalogTest(*node, tr);
@@ -2489,9 +2478,6 @@ static bool run(TestRunner& tr)
          node->getModuleApiByType("bitmunk.catalog"));
       assert(cat != NULL);
       runUpdateCrashTest(*node, cat, tr);
-
-      // logout of client node
-      node->logout(0);
 
       // stop and unload node
       node->stop();
