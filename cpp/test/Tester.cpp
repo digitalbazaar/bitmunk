@@ -38,11 +38,6 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr, const char* unitTest)
    // save config manager state
    cm->saveState();
 
-   // set TMP_DIR keyword
-   string tmp;
-   assert(File::getTemporaryDirectory(tmp));
-   cm->setKeyword("TMP_DIR", tmp.c_str());
-
    // add test config
    cm->addConfigFile(app->getConfig()
       ["bitmunk.apps.tester.Tester"]["configPath"]->getString());

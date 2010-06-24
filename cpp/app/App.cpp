@@ -5,7 +5,9 @@
 
 #include "bitmunk/common/Logging.h"
 
+using namespace std;
 using namespace monarch::config;
+using namespace monarch::io;
 using namespace monarch::rt;
 using namespace bitmunk::app;
 using namespace bitmunk::common;
@@ -46,6 +48,13 @@ bool App::initConfigs(Config& defaults)
    ConfigManager* cm = getConfigManager();
    Config cfg = getConfig()["monarch.app.Core"];
    cm->setKeyword("BITMUNK_HOME", cfg["home"]->getString());
+
+   // set TMP_DIR keyword
+   string tmp;
+   if(File::getTemporaryDirectory(tmp))
+   {
+      cm->setKeyword("TMP_DIR", tmp.c_str());
+   }
 
    // insert Bitmunk specific config groups
    cfg = cm->getConfig("command line", true, false);
