@@ -15,7 +15,7 @@
    },
    "_merge_": {
       "monarch.app.Core": {
-         "home": "@BITMUNK_HOME_DIR@"
+         "home": "@BITMUNK_HOME_DIR@/test"
       },
       "bitmunk.apps.tester.Tester": {
          "configPath": "@BITMUNK_DIR@/configs/test.config",
