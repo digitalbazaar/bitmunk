@@ -8,6 +8,7 @@
 
 #include "bitmunk/nodemodule/NodeModule.h"
 #include "bitmunk/node/BtpServer.h"
+#include "monarch/data/json/JsonWriter.h"
 #include "monarch/validation/Validation.h"
 
 #include <algorithm>
@@ -16,6 +17,7 @@ using namespace std;
 using namespace monarch::config;
 using namespace monarch::crypto;
 using namespace monarch::event;
+using namespace monarch::data::json;
 using namespace monarch::fiber;
 using namespace monarch::io;
 using namespace monarch::kernel;
@@ -152,10 +154,42 @@ bool Node::start()
    {
       mRunning = true;
 
-      // send event that node has started
-      Event e;
-      e["type"] = "bitmunk.node.Node.started";
-      getEventController()->schedule(e);
+      // handle auto-login
+      Config cfg = getConfigManager()->getNodeConfig();
+      if(cfg["login"]["auto"]->getBoolean())
+      {
+         MO_CAT_INFO(BM_NODE_CAT, "Auto-login enabled.");
+
+         const char* username = cfg["login"]["username"]->getString();
+         const char* password = cfg["login"]["password"]->getString();
+         bool pass = login(username, password);
+         if(pass)
+         {
+            MO_CAT_INFO(BM_NODE_CAT,
+               "Auto-login complete: username=%s", username);
+         }
+         else
+         {
+            MO_CAT_ERROR(BM_NODE_CAT,
+               "Auto-login failed: username=%s, stopping..., %s",
+               username, JsonWriter::writeToString(
+                  Exception::getAsDynamicObject()).c_str());
+            rval = false;
+            stop();
+         }
+      }
+      else
+      {
+         MO_CAT_INFO(BM_NODE_CAT, "Auto-login disabled.");
+      }
+
+      if(mRunning)
+      {
+         // send event that node has started
+         Event e;
+         e["type"] = "bitmunk.node.Node.started";
+         getEventController()->schedule(e);
+      }
    }
 
    return rval;
