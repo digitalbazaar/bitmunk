@@ -15,6 +15,7 @@ using namespace bitmunk::node;
 using namespace bitmunk::test;
 using namespace monarch::app;
 using namespace monarch::config;
+using namespace monarch::data::json;
 using namespace monarch::io;
 using namespace monarch::kernel;
 using namespace monarch::rt;
@@ -58,6 +59,12 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr, const char* unitTest)
    Config cfg = app->getConfig();
    assertNoException();
    assert(!cfg.isNull());
+
+   // dump config if requested
+   if(cfg["bitmunk.apps.tester.Tester"]["dumpConfig"]->getBoolean())
+   {
+      JsonWriter::writeToStdOut(cfg);
+   }
 
    // load node module
    assert(cfg["test"]->hasMember("nodeModule"));

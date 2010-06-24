@@ -60,9 +60,30 @@ bool Tester::initConfigs(Config& defaults)
 
 DynamicObject Tester::getCommandLineSpec(Config& cfg)
 {
+   // initialize config
+   Config& c = cfg[ConfigManager::MERGE][APP_NAME];
+   c["dumpConfig"] = false;
+
    // add test loader command line options
    TestLoader loader;
-   return loader.getCommandLineSpec(cfg);
+   DynamicObject spec = loader.getCommandLineSpec(cfg);
+
+   // add option to dump config when loading node
+   string help = spec["help"]->getString();
+   help.append(
+"Bitmunk Test options:\n"
+"      --dump-node-config Dump the node configuration before loading a node.\n"
+"\n");
+   spec["help"] = help.c_str();
+
+   DynamicObject opt;
+
+   opt = spec["options"]->append();
+   opt["long"] = "--dump-node-config";
+   opt["setTrue"]["root"] = c;
+   opt["setTrue"]["path"] = "dumpConfig";
+
+   return spec;
 }
 
 bool Tester::run()
