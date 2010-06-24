@@ -19,8 +19,6 @@ using namespace monarch::io;
 using namespace monarch::kernel;
 using namespace monarch::rt;
 
-#define BITMUNK_TESTER_CONFIG_ID   "bitmunk.test.Tester.config.base"
-
 Tester::Tester()
 {
 }
@@ -40,11 +38,10 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr, const char* unitTest)
    // save config manager state
    cm->saveState();
 
-   // set TMP_DIR keyword, update BITMUNK_HOME
+   // set TMP_DIR keyword
    string tmp;
    assert(File::getTemporaryDirectory(tmp));
    cm->setKeyword("TMP_DIR", tmp.c_str());
-   cm->setKeyword("BITMUNK_HOME", File::join(tmp.c_str(), "test").c_str());
 
    // add test config
    cm->addConfigFile(app->getConfig()
