@@ -162,8 +162,7 @@ bool Node::start()
 
          const char* username = cfg["login"]["username"]->getString();
          const char* password = cfg["login"]["password"]->getString();
-         bool pass = login(username, password);
-         if(pass)
+         if(login(username, password))
          {
             MO_CAT_INFO(BM_NODE_CAT,
                "Auto-login complete: username=%s", username);
