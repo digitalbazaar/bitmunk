@@ -7,9 +7,6 @@
 #include "bitmunk/app/App.h"
 #include "bitmunk/node/Node.h"
 #include "bitmunk/test/Test.h"
-#include "monarch/test/TestRunner.h"
-
-#define BITMUNK_TESTER_CONFIG_ID   "bitmunk.test.Tester.config.base"
 
 namespace bitmunk
 {

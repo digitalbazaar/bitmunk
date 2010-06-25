@@ -6,8 +6,6 @@
 #include "bitmunk/common/Logging.h"
 #include "monarch/app/AppFactory.h"
 #include "monarch/config/ConfigManager.h"
-#include "monarch/io/File.h"
-#include "monarch/rt/Platform.h"
 #include "monarch/test/Test.h"
 #include "monarch/test/TestLoader.h"
 
