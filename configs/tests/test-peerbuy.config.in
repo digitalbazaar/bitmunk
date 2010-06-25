@@ -1,0 +1,18 @@
+{
+   "_id_": "bitmunk.tests.test-peerbuy",
+   "_version_": "Monarch Config 3.0",
+   "_group_": "after defaults",
+   "_include_": [
+      "common.config",
+      "bpe.config"
+   ],
+   "_merge_": {
+      "bitmunk.webui.WebUi": {
+         "flash": {
+            "flash": {
+               "port": 19844
+            }
+         }
+      }
+   }
+}

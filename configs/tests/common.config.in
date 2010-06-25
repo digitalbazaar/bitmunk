@@ -1,0 +1,14 @@
+{
+   "_id_": "bitmunk.tests.common",
+   "_version_": "Monarch Config 3.0",
+   "_group_": "after defaults",
+   "_merge_": {
+      "node": {
+         "login" : {
+            "auto" : true,
+            "username" : "devuser",
+            "password" : "password"
+         }
+      }
+   }
+}

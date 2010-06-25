@@ -113,6 +113,7 @@ APP_MODULES = \
 	profile-creator
 
 TEST_MODULES = \
+	bmbitmunk-unit-tests \
 	bmtest-common \
 	bmtest-config \
 	bmtest-customcatalog \
@@ -121,7 +122,6 @@ TEST_MODULES = \
 	bmtest-node-services \
 	bmtest-peerbuy \
 	bmtest-piece-upload \
-	bmtest-secure-ping \
 	bmtest-services-filesystem \
 	bmtest-services-customcatalog \
 	bmtest-services-medialibrary \

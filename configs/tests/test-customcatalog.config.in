@@ -2,6 +2,9 @@
    "_id_": "bitmunk.tests.test-customcatalog",
    "_version_": "Monarch Config 3.0",
    "_group_": "after defaults",
+   "_include_": [
+      "common.config"
+   ],
    "_append_": {
       "node": {
          "modulePath": [
@@ -15,13 +18,6 @@
    "_merge_": {
       "bitmunk.catalog.CustomCatalog": {
          "uploadListings": false
-      },
-      "node": {
-         "login" : {
-            "auto" : true,
-            "username" : "devuser",
-            "password" : "password"
-         }
       }
    }
 }

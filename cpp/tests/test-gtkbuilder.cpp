@@ -1,17 +1,18 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #include "bitmunk/test/Tester.h"
 #include "monarch/rt/DynamicObject.h"
 #include "monarch/rt/Exception.h"
 #include "monarch/test/Test.h"
-#include "monarch/test/TestRunner.h"
+#include "monarch/test/TestModule.h"
 
 #include <gtk/gtk.h>
 
 using namespace std;
 using namespace bitmunk::common;
 using namespace bitmunk::node;
+using namespace bitmunk::test;
 using namespace monarch::config;
 using namespace monarch::io;
 using namespace monarch::rt;
@@ -59,49 +60,19 @@ static void runGtkBuilderTest(TestRunner& tr)
    tr.ungroup();
 }
 
-class BmGtkBuilderTester : public bitmunk::test::Tester
+
+static bool run(TestRunner& tr)
 {
-public:
-   BmGtkBuilderTester()
+   if(tr.isTestEnabled("gtkbuilder"))
    {
-      setName("GtkBuilder");
-   }
-
-   /**
-    * Run automatic unit tests.
-    */
-   virtual int runAutomaticTests(TestRunner& tr)
-   {
-      return 0;
-   }
-
-   /**
-    * Runs interactive unit tests.
-    */
-   virtual int runInteractiveTests(TestRunner& tr)
-   {
-      // create a client node
-      Node node;
-      {
-         bool success;
-         success = setupNode(&node);
-         assertNoException();
-         assert(success);
-         Config config;
-         config["node"]["modulePath"] = BPE_MODULES_DIRECTORY;
-         success = setupPeerNode(&node, &config);
-         assertNoException();
-         assert(success);
-      }
-      if(!node.start())
-      {
-         dumpException();
-         exit(1);
-      }
-
-      // login the devuser
-      node.login("devuser", "password");
+      // load and start node
+      Node* node = Tester::loadNode(tr);
+      node->start();
       assertNoException();
+
+      // register event observer of all events
+      BmEventReactorTesterObserver obs;
+      node->getEventController()->registerObserver(&obs, "*");
 
       // run test
       runGtkBuilderTest(tr);
@@ -111,14 +82,15 @@ public:
       // wait forever
       Thread::sleep(0);
 
-      // logout of client node
-      node.logout(0);
-      node.stop();
-
-      return 0;
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
    }
+
+   return true;
 };
 
-#ifndef MO_TEST_NO_MAIN
-BM_TEST_MAIN(BmGtkBuilderTester)
-#endif
+} // end namespace
+
+MO_TEST_MODULE_FN(
+   "bitmunk.tests.eventreactor.test", "1.0", bm_tests_eventreactor::run)

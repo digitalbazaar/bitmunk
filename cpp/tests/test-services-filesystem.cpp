@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_CONSTANT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -14,11 +14,12 @@
 #include "monarch/rt/DynamicObject.h"
 #include "monarch/rt/Exception.h"
 #include "monarch/test/Test.h"
-#include "monarch/test/TestRunner.h"
+#include "monarch/test/TestModule.h"
 
 using namespace std;
 using namespace bitmunk::common;
 using namespace bitmunk::node;
+using namespace bitmunk::test;
 using namespace monarch::config;
 using namespace monarch::data::json;
 using namespace monarch::event;
@@ -29,7 +30,10 @@ using namespace monarch::test;
 
 #define TEST_USER_ID  UINT64_C(900)
 
-void fileBrowserTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
+namespace bm_tests_services_filesystem
+{
+
+static void fileBrowserTest(Node& node, TestRunner& tr)
 {
    Messenger* messenger = node.getMessenger();
    string tempDirectory;
@@ -64,68 +68,35 @@ void fileBrowserTest(Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
    tr.passIfException();
 }
 
-class BmFileBrowserServicesTester : public bitmunk::test::Tester
+static bool run(TestRunner& tr)
 {
-public:
-   BmFileBrowserServicesTester()
+   if(tr.isTestEnabled("fixme"))
    {
-      setName("Filesystem Services");
-   }
-
-   /**
-    * Run automatic unit tests.
-    */
-   virtual int runAutomaticTests(TestRunner& tr)
-   {
-      // FIXME:
-#if 0
-      // create a client node for communicating
-      Node node;
-      {
-         bool success;
-         success = setupNode(&node);
-         assertNoException();
-         assert(success);
-         Config config;
-         config["node"]["modulePath"] = BPE_MODULES_DIRECTORY;
-         config["bitmunk.catalog.CustomCatalog"]["uploadListings"] = false;
-         success = setupPeerNode(&node, &config);
-         assertNoException();
-         assert(success);
-      }
-      if(!node.start())
-      {
-         dumpException();
-         exit(1);
-      }
-
-      // login the devuser
-      node.login("devuser", "password");
+      // load and start node
+      Node* node = Tester::loadNode(tr, "bpe");
+      node->start();
       assertNoException();
 
-      // login the devuser
+      //config["bitmunk.catalog.CustomCatalog"]["uploadListings"] = false;
+
+      // login customer support
+      //node.logout(0);
       //node.login("BitmunkCustomerSupport", "password");
       //assertNoException();
 
       // run tests
-      fileBrowserTest(node, tr, *this);
+      fileBrowserTest(*node, tr);
 
-      // logout of client node
-      node.logout(0);
-      node.stop();
-#endif
-      return 0;
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
    }
 
-   /**
-    * Runs interactive unit tests.
-    */
-   virtual int runInteractiveTests(TestRunner& tr)
-   {
-      return 0;
-   }
+   return true;
 };
 
-#ifndef MO_TEST_NO_MAIN
-BM_TEST_MAIN(BmFileBrowserServicesTester)
-#endif
+} // end namespace
+
+MO_TEST_MODULE_FN(
+   "bitmunk.tests.services-filesystem.test", "1.0",
+   bm_tests_services_filesystem::run)

@@ -15,45 +15,11 @@ GTK_TESTS = \
 	test-gtkbuilder
 endif
 
-SOURCES = \
-#	bfp-file-id.cpp \
-#	format-detect.cpp \
-#	profile-creator.cpp
-#	test-common.cpp \
-#	test-config.cpp \
-#	test-customcatalog.cpp \
-#	test-download-states.cpp \
-#	test-eventreactor.cpp \
-#	test-node-services.cpp \
-#	test-peerbuy.cpp \
-#	test-piece-upload.cpp \
-#	test-secure-ping.cpp \
-#	test-services-filesystem.cpp \
-#	test-services-customcatalog.cpp \
-#	test-services-medialibrary.cpp \
-#	test-statemonitor.cpp \
-#	bitmunk-unit-tests.cpp \
-#	$(GTK_SOURCES)
-
 EXECUTABLES = \
 #	bfp-file-id \
 #	format-detect \
-#	profile-creator
-##	test-common \
-##	test-config \
-#	test-customcatalog \
-#	test-download-states \
-#	test-eventreactor \
-#	test-node-services \
-#	test-peerbuy \
-#	test-piece-upload \
+#	profile-creator \
 #	test-secure-ping \
-#	test-services-filesystem \
-#	test-services-customcatalog \
-#	test-services-medialibrary \
-#	test-statemonitor \
-#	bitmunk-unit-tests \
-#	$(GTK_TESTS)
 
 # Macro to setup building simple one source file libraries.
 define setup_test_mod
@@ -62,10 +28,21 @@ bm$(subst -,_,$(1))_SOURCES = $(1).cpp
 endef
 
 TEST_MODS = \
+	bitmunk-unit-tests \
 	test-common \
 	test-config \
 	test-customcatalog \
-	test-statemonitor
+	test-download-states \
+	test-eventreactor \
+	test-node-services \
+	test-peerbuy \
+	test-piece-upload \
+	test-portmapper \
+	test-services-customcatalog \
+	test-services-filesystem \
+	test-services-medialibrary \
+	test-statemonitor \
+	$(GTK_TESTS)
 
 $(foreach mod,$(TEST_MODS),$(eval $(call setup_test_mod,$(mod))))
 

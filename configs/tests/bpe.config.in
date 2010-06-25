@@ -1,0 +1,12 @@
+{
+   "_id_": "bitmunk.tests.bpe",
+   "_version_": "Monarch Config 3.0",
+   "_group_": "after defaults",
+   "_append_": {
+      "node": {
+         "modulePath": [
+            "@BITMUNK_DIR@/dist/modules/bpe",
+         ]
+      }
+   }
+}

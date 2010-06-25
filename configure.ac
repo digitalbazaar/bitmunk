@@ -849,7 +849,10 @@ AC_CONFIG_FILES([
 	configs/dev-bpe.config
 	configs/test.d/node.config
 	configs/test.d/test.config
+	configs/tests/bpe.config
+	configs/tests/common.config
 	configs/tests/test-customcatalog.config
+	configs/tests/test-peerbuy.config
 ])
 fi
 

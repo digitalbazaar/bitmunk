@@ -5,17 +5,18 @@
 
 #include "bitmunk/node/Node.h"
 #include "bitmunk/test/Tester.h"
+#include "monarch/data/json/JsonWriter.h"
 #include "monarch/event/EventWaiter.h"
+#include "monarch/io/File.h"
+#include "monarch/rt/DynamicObject.h"
 #include "monarch/rt/Exception.h"
 #include "monarch/test/Test.h"
-#include "monarch/test/TestRunner.h"
-#include "monarch/rt/DynamicObject.h"
-#include "monarch/data/json/JsonWriter.h"
-#include "monarch/io/File.h"
+#include "monarch/test/TestModule.h"
 
 using namespace std;
 using namespace bitmunk::common;
 using namespace bitmunk::node;
+using namespace bitmunk::test;
 using namespace monarch::config;
 using namespace monarch::data::json;
 using namespace monarch::event;
@@ -34,6 +35,9 @@ using namespace monarch::test;
 #define TEST_FILENAME_3 "3.mp3"
 #define TEST_FILE_ID_3  "5E5A503FBD8217274819616929DA1C041C30B4FC"
 #define TEST_WARE_ID_3  "3-" TEST_FILE_ID_3
+
+namespace bm_tests_services_customcatalog
+{
 
 static string sTestDataDir;
 
@@ -72,8 +76,7 @@ static void resetTestEnvironment(Node& node)
    assertNoException();
 }
 
-void customCatalogTests(
-   Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
+static void customCatalogTests(Node& node, TestRunner& tr)
 {
    resetTestEnvironment(node);
 
@@ -591,8 +594,7 @@ void customCatalogTests(
    tr.ungroup();
 }
 
-void interactiveCustomCatalogTests(
-   Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
+static void interactiveCustomCatalogTests(Node& node, TestRunner& tr)
 {
    Messenger* messenger = node.getMessenger();
 
@@ -713,110 +715,55 @@ void interactiveCustomCatalogTests(
    tr.ungroup();
 }
 
-class BmCustomCatalogServicesTester : public bitmunk::test::Tester
+static bool run(TestRunner& tr)
 {
-public:
-   BmCustomCatalogServicesTester()
+   if(tr.isTestEnabled("fixme"))
    {
-      setName("Services");
-   }
-
-   /**
-    * Run automatic unit tests.
-    */
-   virtual int runAutomaticTests(TestRunner& tr)
-   {
-      printf("Note: You may see security breaches if the user's profile \n"
-         "is not in the configured profile directory.\n");
-
-      ConfigManager* cm = tr.getApp()->getConfigManager();
-      Config cfg = cm->getConfig(BITMUNK_TESTER_CONFIG_ID);
-      sTestDataDir = cfg["test"]["dataPath"]->getString();
-
-      // FIXME:
-#if 0
-      // create a client node for communicating
-      Node node;
-      {
-         bool success;
-         success = setupNode(&node);
-         assertNoException();
-         assert(success);
-         Config config;
-         config["node"]["modulePath"] = BPE_MODULES_DIRECTORY;
-         config["bitmunk.catalog.CustomCatalog"]["uploadListings"] = false;
-         success = setupPeerNode(&node, &config);
-         assertNoException();
-         assert(success);
-      }
-      if(!node.start())
-      {
-         dumpException();
-         exit(1);
-      }
-
-      // login the devuser
-      node.login("devuser", "password");
+      // load and start node
+      Node* node = Tester::loadNode(tr, "test-services-customcatalog");
+      node->start();
       assertNoException();
 
-      // run tests
-      customCatalogTests(node, tr, *this);
-
-      // logout of client node
-      node.logout(0);
-      node.stop();
-#endif
-      return 0;
-   }
-
-   /**
-    * Runs interactive unit tests.
-    */
-   virtual int runInteractiveTests(TestRunner& tr)
-   {
-      ConfigManager* cm = tr.getApp()->getConfigManager();
-      Config cfg = cm->getConfig(BITMUNK_TESTER_CONFIG_ID);
+      Config cfg = tr.getApp()->getConfig();
       sTestDataDir = cfg["test"]["dataPath"]->getString();
 
-      printf("Note: You may see security breaches if the user's profile \n"
-         "is not in the configured profile directory.\n");
-      // FIXME:
-#if 0
-      // create a client node for communicating
-      Node node;
-      {
-         bool success;
-         success = setupNode(&node);
-         assertNoException();
-         assert(success);
-         Config config;
-         config["node"]["modulePath"] = BPE_MODULES_DIRECTORY;
-         config["bitmunk.catalog.CustomCatalog"]["uploadListings"] = true;
-         success = setupPeerNode(&node, &config);
-         assertNoException();
-         assert(success);
-      }
-      if(!node.start())
-      {
-         dumpException();
-         exit(1);
-      }
-
-      // login the devuser
-      node.login("devuser", "password");
-      assertNoException();
+      //config["node"]["modulePath"] = append BPE_MODULES_DIRECTORY;
+      //config["bitmunk.catalog.CustomCatalog"]["uploadListings"] = false;
 
       // run tests
-      interactiveCustomCatalogTests(node, tr, *this);
+      customCatalogTests(*node, tr);
 
-      // logout of client node
-      node.logout(0);
-      node.stop();
-#endif
-      return 0;
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
    }
+
+   if(tr.isTestEnabled("fixme"))
+   {
+      // load and start node
+      Node* node = Tester::loadNode(tr, "test-services-customcatalog");
+      node->start();
+      assertNoException();
+
+      Config cfg = tr.getApp()->getConfig();
+      sTestDataDir = cfg["test"]["dataPath"]->getString();
+
+      //config["node"]["modulePath"] = BPE_MODULES_DIRECTORY;
+      //config["bitmunk.catalog.CustomCatalog"]["uploadListings"] = true;
+
+      // run tests
+      interactiveCustomCatalogTests(*node, tr);
+
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
+   }
+
+   return true;
 };
 
-#ifndef MO_TEST_NO_MAIN
-BM_TEST_MAIN(BmCustomCatalogServicesTester)
-#endif
+} // end namespace
+
+MO_TEST_MODULE_FN(
+   "bitmunk.tests.services-customcatalog.test", "1.0",
+   bm_tests_services_customcatalog::run)

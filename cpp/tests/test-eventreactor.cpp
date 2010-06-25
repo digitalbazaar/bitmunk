@@ -10,24 +10,25 @@
 
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/common/Tools.h"
-#include "bitmunk/purchase/TypeDefinitions.h"
 #include "bitmunk/node/Node.h"
+#include "bitmunk/purchase/TypeDefinitions.h"
 #include "bitmunk/test/Tester.h"
-#include "monarch/event/EventWaiter.h"
-#include "monarch/rt/Exception.h"
-#include "monarch/test/Test.h"
-#include "monarch/test/TestRunner.h"
-#include "monarch/rt/DynamicObject.h"
 #include "monarch/data/json/JsonWriter.h"
+#include "monarch/event/EventWaiter.h"
 #include "monarch/io/File.h"
 #include "monarch/io/FileOutputStream.h"
 #include "monarch/io/OStreamOutputStream.h"
+#include "monarch/rt/DynamicObject.h"
+#include "monarch/rt/Exception.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
 
 using namespace std;
 using namespace bitmunk::common;
 using namespace bitmunk::protocol;
 using namespace bitmunk::purchase;
 using namespace bitmunk::node;
+using namespace bitmunk::test;
 using namespace monarch::config;
 using namespace monarch::data::json;
 using namespace monarch::event;
@@ -40,8 +41,10 @@ using namespace monarch::test;
 #define SINGLE_MEDIA_ID   UINT64_C(2)
 #define FILE_ID           "b79068aab92f78ba312d35286a77ea581037b109"
 
-void runEventReactorTest(
-   Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
+namespace bm_tests_eventreactor
+{
+
+static void runEventReactorTest(Node& node, TestRunner& tr)
 {
    tr.group("EventReactor");
    
@@ -57,6 +60,7 @@ void runEventReactorTest(
       
       Messenger* messenger = node.getMessenger();
       messenger->post(&url, NULL, &in, node.getDefaultUserId());
+      assertNoException();
       // FIXME: remove me
       dumpDynamicObject(in);
    }
@@ -110,6 +114,7 @@ void runEventReactorTest(
          
          Messenger* messenger = node.getMessenger();
          messenger->post(&url, &out, &in, node.getDefaultUserId());
+         assertNoException();
       }
       
       while(true)
@@ -150,6 +155,7 @@ void runEventReactorTest(
                out["preferences"]["accountId"] = 9000;
                out["preferences"]["sellerLimit"] = 1;
                messenger->post(&url, &out, NULL, DEVUSER_ID);
+               assertNoException();
             }
             else if(strstr(e["type"]->getString(), "assemblyCompleted") != NULL)
             {
@@ -199,8 +205,7 @@ void runEventReactorTest(
    tr.ungroup();
 }
 
-void createEventReactor(
-   Node& node, TestRunner& tr, bitmunk::test::Tester& tester)
+static void createEventReactor(Node& node, TestRunner& tr)
 {
    tr.test("create event reactor");
    {
@@ -223,141 +228,65 @@ void createEventReactor(
    tr.passIfNoException();
 }
 
-class BmEventReactorTester :
-public bitmunk::test::Tester,
-public monarch::event::Observer
+class BmEventReactorTesterObserver :
+   public monarch::event::Observer
 {
 public:
-   BmEventReactorTester()
-   {
-      setName("EventReactor Tester");
-   }
+   BmEventReactorTesterObserver() {}
+
+   virtual ~BmEventReactorTesterObserver() {}
    
    virtual void eventOccurred(Event& e)
    {
       MO_CAT_DEBUG(BM_TEST_CAT, "Got event: \n%s",
          JsonWriter::writeToString(e).c_str());
    }
-   
-   /**
-    * Run automatic unit tests.
-    */
-   virtual int runAutomaticTests(TestRunner& tr)
-   {
-      // FIXME:
-#if 0
-      // create a client node for communicating
-      Node node;
-      {
-         bool success;
-         success = setupNode(&node);
-         assertNoException();
-         assert(success);
-         success = setupPeerNode(&node);
-         assertNoException();
-         assert(success);
-      }
-      
-      if(!node.start())
-      {
-         dumpException();
-         exit(1);
-      }
-      
-      // Note: always print this out to avoid confusion
-      const char* profileFile = "devuser.profile";
-      const char* profileDir =
-         getApp()->getConfig()["node"]["profilePath"]->getString();
-      string prof = File::join(profileDir, profileFile);
-      File file(prof.c_str());
-      printf(
-         "You must copy '%s' from pki to '%s' to run this. "
-         "If you're seeing security breaches, your copy may "
-         "be out of date.\n", profileFile, profileDir);
-      if(!file->exists())
-      {
-         exit(1);
-      }
-      
-      // login the devuser
-      node.login("devuser", "password");
-      assertNoException();
-      
-      // register self as event observer of all events
-      node.getEventController()->registerObserver(this, "*");
-      
-      // run test(s)
-      runEventReactorTest(node, tr, *this);
-      
-      // logout of client node
-      node.logout(0);
-      
-      // stop node
-      node.stop();
-#endif
-      return 0;
-   }
-   
-   /**
-    * Runs interactive unit tests.
-    */
-   virtual int runInteractiveTests(TestRunner& tr)
-   {
-      // FIXME:
-#if 0
-      // create a client node for communicating
-      Node node;
-      {
-         bool success;
-         success = setupNode(&node);
-         assertNoException();
-         assert(success);
-         success = setupPeerNode(&node);
-         assertNoException();
-         assert(success);
-      }
-      
-      if(!node.start())
-      {
-         dumpException();
-         exit(1);
-      }
-      
-      // Note: always print this out to avoid confusion
-      const char* profileFile = "devuser.profile";
-      const char* profileDir =
-         getApp()->getConfig()["node"]["profilePath"]->getString();
-      string prof = File::join(profileDir, profileFile);
-      File file(prof.c_str());
-      printf(
-         "You must copy '%s' from pki to '%s' to run this. "
-         "If you're seeing security breaches, your copy may "
-         "be out of date.\n", profileFile, profileDir);
-      if(!file->exists())
-      {
-         exit(1);
-      }
-      
-      // login the devuser
-      node.login("devuser", "password");
-      assertNoException();
-      
-      // register self as event observer of all events
-      node.getEventController()->registerObserver(this, "*");
-      
-      // run test(s)
-      createEventReactor(node, tr, *this);
-      
-      // logout of client node
-      node.logout(0);
-      
-      // stop node
-      node.stop();      
-#endif
-      return 0;
-   }
 };
 
-#ifndef MO_TEST_NO_MAIN
-BM_TEST_MAIN(BmEventReactorTester)
-#endif
+static bool run(TestRunner& tr)
+{
+   if(tr.isTestEnabled("fixme"))
+   {
+      // load and start node
+      Node* node = Tester::loadNode(tr, "test-eventreactor");
+      node->start();
+      assertNoException();
+
+      // register event observer of all events
+      BmEventReactorTesterObserver obs;
+      node->getEventController()->registerObserver(&obs, "*");
+      
+      // run test
+      runEventReactorTest(*node, tr);
+      
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
+   }
+   
+   if(tr.isTestEnabled("eventreactor"))
+   {
+      // load and start node
+      Node* node = Tester::loadNode(tr, "test-eventreactor");
+      node->start();
+      assertNoException();
+      
+      // register event observer of all events
+      BmEventReactorTesterObserver obs;
+      node->getEventController()->registerObserver(&obs, "*");
+      
+      // run test
+      createEventReactor(*node, tr);
+      
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
+   }
+
+   return true;
+};
+
+} // end namespace
+
+MO_TEST_MODULE_FN(
+   "bitmunk.tests.eventreactor.test", "1.0", bm_tests_eventreactor::run)

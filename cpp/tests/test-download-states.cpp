@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_FORMAT_MACROS
 
@@ -8,24 +8,25 @@
 
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/common/Tools.h"
-#include "bitmunk/purchase/TypeDefinitions.h"
 #include "bitmunk/node/Node.h"
+#include "bitmunk/purchase/TypeDefinitions.h"
 #include "bitmunk/test/Tester.h"
-#include "monarch/event/EventWaiter.h"
-#include "monarch/rt/Exception.h"
-#include "monarch/test/Test.h"
-#include "monarch/test/TestRunner.h"
-#include "monarch/rt/DynamicObject.h"
 #include "monarch/data/json/JsonWriter.h"
+#include "monarch/event/EventWaiter.h"
 #include "monarch/io/File.h"
 #include "monarch/io/FileOutputStream.h"
 #include "monarch/io/OStreamOutputStream.h"
+#include "monarch/rt/DynamicObject.h"
+#include "monarch/rt/Exception.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
 
 using namespace std;
 using namespace bitmunk::common;
 using namespace bitmunk::protocol;
 using namespace bitmunk::purchase;
 using namespace bitmunk::node;
+using namespace bitmunk::test;
 using namespace monarch::config;
 using namespace monarch::data::json;
 using namespace monarch::event;
@@ -38,6 +39,9 @@ using namespace monarch::test;
 #define TEST_SINGLE_MEDIA_ID 2
 #define TEST_COLLECTION_MEDIA_ID 1
 
+namespace bm_tests_download_states
+{
+
 // The download state test type specifies the type of media to purchase
 enum DownloadStateTestType 
 {
@@ -45,9 +49,8 @@ enum DownloadStateTestType
    Collection
 };
 
-void runDownloadStatesTest(
-   Node& node, TestRunner& tr, bitmunk::test::Tester& tester, 
-   DownloadStateTestType testType)
+static void runDownloadStatesTest(
+   Node& node, TestRunner& tr, DownloadStateTestType testType)
 {
    MediaId mediaId = 0;
    DownloadStateId dsId = 0;
@@ -149,90 +152,47 @@ void runDownloadStatesTest(
    tr.ungroup();
 }
 
-class BmDownloadStatesTester :
-public bitmunk::test::Tester,
-public monarch::event::Observer
+class BmDownloadStatesTesterObserver :
+   public monarch::event::Observer
 {
 public:
-   BmDownloadStatesTester()
-   {
-      setName("Download States Tester");
-   }
+   BmDownloadStatesTesterObserver() {}
+
+   virtual ~BmDownloadStatesTesterObserver() {}
    
    virtual void eventOccurred(Event& e)
    {
       MO_CAT_DEBUG(BM_TEST_CAT, "Got event: \n%s",
          JsonWriter::writeToString(e).c_str());
    }
-   
-   /**
-    * Run automatic unit tests.
-    */
-   virtual int runAutomaticTests(TestRunner& tr)
-   {
-      // FIXME:
-#if 0
-      // create a client node for communicating
-      Node node;
-      {
-         bool success;
-         success = setupNode(&node);
-         assertNoException();
-         assert(success);
-         success = setupPeerNode(&node);
-         assertNoException();
-         assert(success);
-      }
-      if(!node.start())
-      {
-         dumpException();
-         exit(1);
-      }
-      
-      // Note: always print this out to avoid confusion
-      const char* profileFile = "devuser.profile";
-      const char* profilePath =
-         getApp()->getConfig()["node"]["profilePath"]->getString();
-      string prof = File::join(profilePath, profileFile);
-      File file(prof.c_str());
-      printf(
-         "You must copy '%s' from pki to '%s' to run this. "
-         "If you're seeing security breaches, your copy may "
-         "be out of date.\n", profileFile, profilePath);
-      if(!file->exists())
-      {
-         exit(1);
-      }
-      
-      // login the devuser
-      node.login("devuser", "password");
-      assertNoException();
-      
-      // register self as event observer of all events
-      node.getEventController()->registerObserver(this, "*");
-      
-      // run test
-      runDownloadStatesTest(node, tr, *this, Single);
-      //runDownloadStatesTest(node, tr, *this, Collection);
-      
-      // logout of client node
-      node.logout(0);
-      
-      // stop node
-      node.stop();
-#endif
-      return 0;
-   }
-   
-   /**
-    * Runs interactive unit tests.
-    */
-   virtual int runInteractiveTests(TestRunner& tr)
-   {
-      return 0;
-   }
 };
 
-#ifndef MO_TEST_NO_MAIN
-BM_TEST_MAIN(BmDownloadStatesTester)
-#endif
+static bool run(TestRunner& tr)
+{
+   if(tr.isTestEnabled("fixme"))
+   {
+      // load and start node
+      Node* node = Tester::loadNode(tr, "common");
+      node->start();
+      assertNoException();
+
+      // register event observer of all events
+      BmDownloadStatesTesterObserver obs;
+      node->getEventController()->registerObserver(&obs, "*");
+      
+      // run test
+      runDownloadStatesTest(*node, tr, Single);
+      //runDownloadStatesTest(*node, tr, Collection);
+      
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
+   }
+
+   return true;
+}
+
+} // end namespace
+
+MO_TEST_MODULE_FN(
+   "bitmunk.tests.download-states.test", "1.0", bm_tests_download_states::run)

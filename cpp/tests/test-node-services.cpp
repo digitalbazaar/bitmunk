@@ -6,18 +6,19 @@
 
 #include "bitmunk/node/Node.h"
 #include "bitmunk/test/Tester.h"
-#include "monarch/rt/Exception.h"
-#include "monarch/test/Test.h"
-#include "monarch/test/TestRunner.h"
-#include "monarch/rt/DynamicObject.h"
 #include "monarch/data/json/JsonWriter.h"
 #include "monarch/io/File.h"
+#include "monarch/rt/DynamicObject.h"
+#include "monarch/rt/Exception.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
 #include "monarch/util/Timer.h"
 
 using namespace std;
 using namespace bitmunk::common;
 using namespace bitmunk::protocol;
 using namespace bitmunk::node;
+using namespace bitmunk::test;
 using namespace monarch::config;
 using namespace monarch::data::json;
 using namespace monarch::io;
@@ -26,7 +27,10 @@ using namespace monarch::rt;
 using namespace monarch::test;
 using namespace monarch::util;
 
-void mediaGetTest(Node& node, TestRunner& tr)
+namespace bm_tests_node_services
+{
+
+static void mediaGetTest(Node& node, TestRunner& tr)
 {
    tr.group("media");
    
@@ -151,7 +155,7 @@ void mediaGetTest(Node& node, TestRunner& tr)
    tr.ungroup();
 }
 
-void userGetTest(Node& node, TestRunner& tr)
+static void userGetTest(Node& node, TestRunner& tr)
 {
    tr.group("user");
    
@@ -257,7 +261,7 @@ void userGetTest(Node& node, TestRunner& tr)
    tr.ungroup();
 }
 
-void userAddTest(Node& node, TestRunner& tr)
+static void userAddTest(Node& node, TestRunner& tr)
 {
    tr.group("user add");
    
@@ -286,7 +290,7 @@ void userAddTest(Node& node, TestRunner& tr)
    tr.ungroup();
 }
 
-void userUpdateTest(Node& node, TestRunner& tr)
+static void userUpdateTest(Node& node, TestRunner& tr)
 {
    tr.group("user update");
    
@@ -473,7 +477,7 @@ void userUpdateTest(Node& node, TestRunner& tr)
    tr.ungroup();
 }
 
-void accountGetTest(Node& node, TestRunner& tr)
+static void accountGetTest(Node& node, TestRunner& tr)
 {
    tr.group("accounts");
    
@@ -515,7 +519,7 @@ void accountGetTest(Node& node, TestRunner& tr)
    tr.ungroup();
 }
 
-void contributorGetTest(Node& node, TestRunner& tr)
+static void contributorGetTest(Node& node, TestRunner& tr)
 {
    tr.group("contributors");
    
@@ -566,7 +570,7 @@ void contributorGetTest(Node& node, TestRunner& tr)
    tr.ungroup();
 }
 
-void permissionGetTest(Node& node, TestRunner& tr)
+static void permissionGetTest(Node& node, TestRunner& tr)
 {
    tr.group("permissions");
    
@@ -590,7 +594,7 @@ void permissionGetTest(Node& node, TestRunner& tr)
    tr.ungroup();
 }
 
-void reviewGetTest(Node& node, TestRunner& tr)
+static void reviewGetTest(Node& node, TestRunner& tr)
 {
    tr.group("reviews");
    
@@ -629,7 +633,7 @@ void reviewGetTest(Node& node, TestRunner& tr)
    tr.ungroup();
 }
 
-void acquireLicenseTest(Node& node, TestRunner& tr)
+static void acquireLicenseTest(Node& node, TestRunner& tr)
 {
    tr.group("media license");
    
@@ -654,15 +658,16 @@ void acquireLicenseTest(Node& node, TestRunner& tr)
    tr.ungroup();   
 }
 
-void pingPerfTest(Node& node, TestRunner& tr, bitmunk::test::Tester* tester)
+static void pingPerfTest(Node& node, TestRunner& tr)
 {
    tr.group("ping perf");
    
    Messenger* messenger = node.getMessenger();
    
    // number of loops for each test
-   Config cfg = node.getConfigManager()->getConfig(
-      tester->getApp()->getMetaConfig()["groups"]["main"]->getString());
+   Config cfg = tr.getApp()->getConfig();
+   //node.getConfigManager()->getConfig(
+   //   tester->getApp()->getMetaConfig()["groups"]["main"]->getString());
    int n = cfg->hasMember("loops") ? cfg["loops"]->getInt32() : 50;
    
    tr.test("insecure get");
@@ -698,7 +703,7 @@ void pingPerfTest(Node& node, TestRunner& tr, bitmunk::test::Tester* tester)
    tr.ungroup();
 }
 
-void accountGetPerfTest(Node& node, TestRunner& tr)
+static void accountGetPerfTest(Node& node, TestRunner& tr)
 {
    tr.group("accounts perf");
    
@@ -740,56 +745,20 @@ void accountGetPerfTest(Node& node, TestRunner& tr)
    tr.ungroup();
 }
 
-class BmNodeServiceTester : public bitmunk::test::Tester
+static bool run(TestRunner& tr)
 {
-public:
-   BmNodeServiceTester()
+   if(tr.isTestEnabled("fixme"))
    {
-      setName("Node Services");
-   }
+      // load and start node
+      Node* node = Tester::loadNode(tr/*, "test-node-services"*/);
+      node->start();
+      assertNoException();
 
-   /**
-    * Run automatic unit tests.
-    */
-   virtual int runAutomaticTests(TestRunner& tr)
-   {
-      // FIXME:
-#if 0
-      // create a client node for communicating
-      Node node;
-      {
-         bool success;
-         success = setupNode(&node);
-         assertNoException();
-         assert(success);
-         success = setupPeerNode(&node);
-         assertNoException();
-         assert(success);
-
-         // Note: always print this out to avoid confusion
-         const char* profileFile = "devuser.profile";
-         const char* profileDir =
-            getApp()->getConfig()["node"]["profilePath"]->getString();
-         string prof = File::join(profileDir, profileFile);
-         File file(prof.c_str());
-         cout << "You must copy " << profileFile << " from pki to " <<
-            profileDir << " to run this. If you're seeing security breaches, " <<
-            "your copy may be out of date." << endl;
-         cout << "You may need to remove testuser5.profile from /tmp/ to "
-            "run the password update test." << endl;
-         if(!file->exists())
-         {
-            exit(1);
-         }
-      }
-      if(!node.start())
-      {
-         dumpException();
-         exit(1);
-      }
+      //cout << "You may need to remove testuser5.profile from /tmp/ to "
+      //   "run the password update test." << endl;
       
       // login the devuser
-      node.login("devuser", "password");
+      //node.login("devuser", "password");
       //node.login("testuser5", "password");
       assertNoException();
       
@@ -807,58 +776,41 @@ public:
       // performance tests
       //accountGetPerfTest(node, tr);
       
-      // logout of client node
-      node.logout(0);
-      node.stop();
-#endif
-      return 0;
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
    }
 
-   /**
-    * Runs interactive unit tests.
-    */
-   virtual int runInteractiveTests(TestRunner& tr)
+   if(tr.isTestEnabled("fixme"))
    {
-      // FIXME:
-#if 0
-      Node node;
-      {
-         bool success;
-         success = setupNode(&node);
-         assertNoException();
-         assert(success);
-         success = setupPeerNode(&node);
-         assertNoException();
-         assert(success);
-      }
-      if(!node.start())
-      {
-         dumpException();
-         exit(1);
-      }
-      
+      // load and start node
+      Node* node = Tester::loadNode(tr/*, "test-node-services"*/);
+      node->start();
+      assertNoException();
+
       // login the devuser
-      node.login("devuser", "password");
+      //node.login("devuser", "password");
       //node.login("testuser5", "password");
       assertNoException();
       
-      Config cfg = getApp()->getConfig();
+      Config cfg = tr.getApp()->getConfig();
       const char* test = cfg["monarch.test.Tester"]["test"]->getString();
       bool all = (strcmp(test, "all") == 0);
       
       if(all || (strcmp(test, "ping") == 0))
       {
-         pingPerfTest(node, tr, this);
+         pingPerfTest(*node, tr);
       }
       
-      // logout of client node
-      node.logout(0);
-      node.stop();
-#endif
-      return 0;
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
    }
+
+   return true;
 };
 
-#ifndef MO_TEST_NO_MAIN
-BM_TEST_MAIN(BmNodeServiceTester)
-#endif
+} // end namespace
+
+MO_TEST_MODULE_FN(
+   "bitmunk.tests.node-services.test", "1.0", bm_tests_node_services::run)

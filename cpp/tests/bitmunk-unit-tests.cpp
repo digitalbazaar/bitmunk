@@ -1,11 +1,19 @@
 /*
- * Copyright (c) 2007-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2007-2010 Digital Bazaar, Inc. All rights reserved.
  */
 #define __STDC_FORMAT_MACROS
 
 #include <iostream>
 #include <sstream>
 
+#include "bitmunk/common/CatalogInterface.h"
+#include "bitmunk/common/Logging.h"
+#include "bitmunk/common/Profile.h"
+#include "bitmunk/common/Tools.h"
+#include "bitmunk/data/Id3v2TagWriter.h"
+#include "bitmunk/data/MpegAudioTimeParser.h"
+#include "bitmunk/node/Node.h"
+#include "bitmunk/test/Tester.h"
 #include "monarch/config/ConfigManager.h"
 #include "monarch/crypto/AsymmetricKeyFactory.h"
 #include "monarch/data/DynamicObjectInputStream.h"
@@ -18,6 +26,7 @@
 #include "monarch/event/EventController.h"
 #include "monarch/event/Observer.h"
 #include "monarch/event/ObserverDelegate.h"
+#include "monarch/http/HttpConnectionServicer.h"
 #include "monarch/io/FileInputStream.h"
 #include "monarch/io/FileOutputStream.h"
 #include "monarch/io/MutatorInputStream.h"
@@ -26,26 +35,21 @@
 #include "monarch/logging/OutputStreamLogger.h"
 #include "monarch/modest/Kernel.h"
 #include "monarch/net/Server.h"
-#include "monarch/http/HttpConnectionServicer.h"
 #include "monarch/test/Test.h"
-#include "monarch/test/Tester.h"
-#include "monarch/test/TestRunner.h"
+#include "monarch/test/TestModule.h"
 #include "monarch/util/Convert.h"
-#include "bitmunk/common/Logging.h"
-#include "bitmunk/common/Profile.h"
-#include "bitmunk/common/Tools.h"
-#include "bitmunk/data/Id3v2TagWriter.h"
-#include "bitmunk/data/MpegAudioTimeParser.h"
-#include "bitmunk/node/Node.h"
-#include "bitmunk/common/CatalogInterface.h"
-#include "bitmunk/test/Tester.h"
 
 using namespace std;
+using namespace bitmunk::common;
+using namespace bitmunk::data;
+using namespace bitmunk::node;
+using namespace bitmunk::protocol;
+using namespace bitmunk::test;
 using namespace monarch::config;
 using namespace monarch::crypto;
-using namespace monarch::data;
 using namespace monarch::data::json;
 using namespace monarch::data::xml;
+using namespace monarch::data;
 using namespace monarch::event;
 using namespace monarch::http;
 using namespace monarch::io;
@@ -55,48 +59,43 @@ using namespace monarch::net;
 using namespace monarch::rt;
 using namespace monarch::test;
 using namespace monarch::util;
-using namespace bitmunk::common;
-using namespace bitmunk::data;
-using namespace bitmunk::protocol;
-using namespace bitmunk::node;
 
-void runNodeTest(TestRunner& tr, bitmunk::test::Tester& tester)
+namespace bm_tests_unit
+{
+
+static void runNodeTest(TestRunner& tr)
 {
    tr.test("Node Initialization");
-   // FIXME:
-#if 0
-   Node node;
    {
-      bool setup = tester.setupNode(&node);
+      // load and start node
+      Node* node = Tester::loadNode(tr);
+      node->start();
       assertNoException();
-      assert(setup);
-      bool started = node.start();
-      assertNoException();
-      assert(started);
+
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
    }
-#endif
    tr.passIfNoException();
 }
 
-void runNodeConfigTest(TestRunner& tr, bitmunk::test::Tester& tester)
+void runNodeConfigTest(TestRunner& tr)
 {
    tr.test("Node config");
-   // FIXME:
-#if 0
-   Node node;
    {
-      bool setup = tester.setupNode(&node);
+      // load and start node
+      Node* node = Tester::loadNode(tr, "common");
+      node->start();
       assertNoException();
-      assert(setup);
-      bool started = node.start();
-      assertNoException();
-      assert(started);
+
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
    }
-#endif
    tr.passIfNoException();
 }
 
-void assertSameExceptions(ExceptionRef& e0, ExceptionRef& e1)
+static void assertSameExceptions(ExceptionRef& e0, ExceptionRef& e1)
 {
    // assert both are NULL or not NULL
    assert((e0.isNull() && e1.isNull()) ||
@@ -116,7 +115,7 @@ void assertSameExceptions(ExceptionRef& e0, ExceptionRef& e1)
    }
 }
 
-void runBtpExceptionTest_XML_1(ExceptionRef& e)
+static void runBtpExceptionTest_XML_1(ExceptionRef& e)
 {
    // write out exception
    DynamicObject dyno = Exception::convertToDynamicObject(e);
@@ -168,7 +167,7 @@ void runBtpExceptionTest_XML_1(ExceptionRef& e)
    assertSameExceptions(e, e2);
 }
 
-void runBtpExceptionTest_JSON_1(ExceptionRef& e)
+static void runBtpExceptionTest_JSON_1(ExceptionRef& e)
 {
    // write out exception
    DynamicObject dyno = Exception::convertToDynamicObject(e);
@@ -220,7 +219,7 @@ void runBtpExceptionTest_JSON_1(ExceptionRef& e)
    assertSameExceptions(e, e2);
 }
 
-void runBtpExceptionTypeTest(TestRunner& tr,
+static void runBtpExceptionTypeTest(TestRunner& tr,
    const char* type, void (*runTestFunc)(ExceptionRef&))
 {
    tr.group(type);
@@ -240,7 +239,7 @@ void runBtpExceptionTypeTest(TestRunner& tr,
    tr.ungroup();
 }
 
-void runBtpExceptionTest(TestRunner& tr)
+static void runBtpExceptionTest(TestRunner& tr)
 {
    tr.group("Btp exception");
 
@@ -250,65 +249,47 @@ void runBtpExceptionTest(TestRunner& tr)
    tr.ungroup();
 }
 
-void runLoginTest(TestRunner& tr, bitmunk::test::Tester& tester)
+static void runLoginTest(TestRunner& tr)
 {
    tr.group("Login");
-   // FIXME:
-#if 0
-   Node node;
    {
-      bool setup = tester.setupNode(&node);
+      bool success;
+      // load and start node
+      Node* node = Tester::loadNode(tr, "common");
+      node->start();
       assertNoException();
-      assert(setup);
-      bool started = node.start();
-      assertNoException();
-      assert(started);
-   }
-   
-   tr.test("login success");
-   node.login("devuser", "password");
-   tr.passIfNoException();
-   
-   // logout
-   node.logout(0);
-   
-   tr.test("login failure (invalid short password)");
-   node.login("devuser", "");
-   tr.passIfException();
-   
-   tr.test("login failure (invalid long password)");
-   node.login("devuser", "badpassword");
-   tr.passIfException();
-   
-   // logout
-   node.logout(0);
-#endif
-   tr.ungroup();
-}
 
-void runLoadModulesTest(TestRunner &tr, bitmunk::test::Tester& tester)
-{
-   tr.test("load modules");
-   // FIXME:
-#if 0
-   Node node;
-   {
-      bool setup = tester.setupNode(&node);
-      assertNoException();
-      assert(setup);
-      bool started = node.start();
-      assertNoException();
-      assert(started);
+      // NOTE: some of these are redundant with what load/unloadNode do.
+
+      // logout
+      node->logout(0);
+
+      tr.test("login success");
+      success = node->login("devuser", "password");
+      assert(success);
+      tr.passIfNoException();
+
+      // logout
+      node->logout(0);
+
+      tr.test("login failure (invalid short password)");
+      success = node->login("devuser", "");
+      assert(!success);
+      tr.passIfException();
+
+      tr.test("login failure (invalid long password)");
+      success = node->login("devuser", "badpassword");
+      assert(!success);
+      tr.passIfException();
+ 
+      // logout
+      node->logout(0);
+
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
    }
-   
-   // login
-   node.login("devuser", "password");
-   assertNoException();
-   
-   // logout
-   node.logout(0);
-#endif
-   tr.pass();
+   tr.ungroup();
 }
 
 class NodeStopEventObserver : public Observer
@@ -329,43 +310,38 @@ public:
    }
 };
 
-void runNodeStopEventTest(TestRunner& tr, bitmunk::test::Tester& tester)
+static void runNodeStopEventTest(TestRunner& tr)
 {
    tr.test("NodeStopEvent bug check");
-   // FIXME:
-#if 0
-   // heap allocate so we can check cleanup worked
-   Node* node = new Node();
    {
-      bool setup = tester.setupNode(node);
+      // load and start node
+      Node* node = Tester::loadNode(tr, "common");
+      node->start();
       assertNoException();
-      assert(setup);
-      bool started = node->start();
-      assertNoException();
-      assert(started);
+
+      ExclusiveLock waiter;
+      NodeStopEventObserver o(&waiter);
+
+      EventController* ec = node->getEventController();
+      const char* name = "NodeStopEvent";
+
+      ec->registerObserver(&o, name);
+
+      Event e;
+      e["type"] = name;
+      ec->schedule(e);
+
+      // wait for event
+      waiter.wait();
+
+      // stop and unload node
+      node->stop();
+      Tester::unloadNode(tr);
    }
-
-   ExclusiveLock waiter;
-   NodeStopEventObserver o(&waiter);
-
-   EventController* ec = node->getEventController();
-   const char* name = "NodeStopEvent";
-
-   ec->registerObserver(&o, name);
-
-   Event e;
-   e["type"] = name;
-   ec->schedule(e);
-
-   // wait for event 
-   waiter.wait();
-
-   delete node;
-#endif
    tr.passIfNoException();
 }
 
-void runSampleTest(TestRunner& tr, bitmunk::test::Tester& tester)
+static void runSampleTest(TestRunner& tr)
 {
    tr.group("Sample");
    
@@ -443,47 +419,26 @@ void runSampleTest(TestRunner& tr, bitmunk::test::Tester& tester)
    tr.ungroup();
 }
 
-#define MO_TEST_NO_MAIN
-#include "test-common.cpp"
-#include "test-config.cpp"
-#include "test-statemonitor.cpp"
-#undef MO_TEST_NO_MAIN
-
-class BmAllTester : public bitmunk::test::Tester
+static bool run(TestRunner& tr)
 {
-public:
-   BmAllTester()
+   if(tr.isDefaultEnabled())
    {
-      setName("bitmunk");
-      addTester(new BmCommonTester());
-      addTester(new BmStateMonitorTester());
-   }
-
-   ~BmAllTester() {}
-
-   /**
-    * Runs automatic unit tests.
-    */
-   virtual int runAutomaticTests(TestRunner& tr)
-   {
-      runNodeTest(tr, *this);
-      runNodeConfigTest(tr, *this);
+      runNodeTest(tr);
+      runNodeConfigTest(tr);
       runBtpExceptionTest(tr);
-      runLoginTest(tr, *this);
-      runNodeStopEventTest(tr, *this);
-      //runSampleTest(tr, *this);
-      
-      return 0;
+      runLoginTest(tr);
+      runNodeStopEventTest(tr);
    }
 
-   /**
-    * Runs interactive unit tests.
-    */
-   virtual int runInteractiveTests(TestRunner& tr)
+   if(tr.isTestEnabled("sample-test"))
    {
-      //runLoadModulesTest(tr, *this);
-      return 0;
+      runSampleTest(tr);
    }
+
+   return true;
 };
 
-BM_TEST_MAIN(BmAllTester)
+} // end namespace
+
+MO_TEST_MODULE_FN(
+   "bitmunk.tests.unit.test", "1.0", bm_tests_unit::run)
