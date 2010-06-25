@@ -59,46 +59,6 @@ public:
     * @return true on success, false and exception set on failure.
     */
    virtual bool run();
-
-   /**
-    * Adds the Bitmunk test configuration. Optional config merge data may be
-    * provided.
-    *
-    * @param tr the test's TestRunner.
-    * @param extraMerge optional config data to add to the merge section.
-    *
-    * @return true if succesful, false if an exception occurred.
-    */
-   static bool loadConfig(
-      monarch::test::TestRunner& tr,
-      monarch::config::Config* extraMerge = NULL);
-
-   /**
-    * Removes the Bitmunk test configuration.
-    *
-    * @param tr the test's TestRunner.
-    *
-    * @return true if succesful, false if an exception occurred.
-    */
-   static bool unloadConfig(monarch::test::TestRunner& tr);
-
-   /**
-    * Loads a Node.
-    *
-    * @param tr the test's TestRunner.
-    *
-    * @return the loaded Node if successful, NULL if not.
-    */
-   static bitmunk::node::Node* loadNode(monarch::test::TestRunner& tr);
-
-   /**
-    * Unloads a previously loaded Node.
-    *
-    * @param tr the test's TestRunner.
-    *
-    * @return true if successful, false if an exception occurred.
-    */
-   static bool unloadNode(monarch::test::TestRunner& tr);
 };
 
 } // end namespace tester
