@@ -56,9 +56,9 @@ DynamicObject BfpFileIdApp::getCommandLineSpec(Config& cfg)
    DynamicObject spec;
    spec["help"] =
 "BfpFileId options\n"
-"      --bfp-module             The path to the BFP factory module to use.\n"
-"      --bfp-id                 The BFP ID to use.\n"
-"      --show-details           Print file info details.\n"
+"      --bfp-module   The path to the BFP factory module to use.\n"
+"      --bfp-id       The BFP ID to use.\n"
+"      --show-details Print file info details.\n"
 "\n";
 
    DynamicObject opt;

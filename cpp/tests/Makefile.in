@@ -16,7 +16,6 @@ GTK_TESTS = \
 endif
 
 EXECUTABLES = \
-#	format-detect \
 #	profile-creator \
 #	test-secure-ping \
 

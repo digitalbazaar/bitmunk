@@ -793,6 +793,7 @@ AC_CONFIG_FILES([
    cpp/app/Makefile
    cpp/apps/bitmunk/Makefile
    cpp/apps/bfp-file-id/Makefile
+   cpp/apps/format-detect/Makefile
    cpp/apps/tester/Makefile
    cpp/apps/firefox/Makefile
    cpp/apps/firefox/Makefile.common
@@ -839,6 +840,7 @@ else
 AC_CONFIG_FILES([
 	configs/apps/bpe.config
 	configs/apps/bfp-file-id.config
+	configs/apps/format-detect.config
 	configs/apps/test.config
 	configs/dev.d/bitmunk.bfp.Bfp.config
 	configs/dev.d/bitmunk.catalog.CustomCatalog.config

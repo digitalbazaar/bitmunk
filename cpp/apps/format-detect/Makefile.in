@@ -1,0 +1,16 @@
+# Makefile to compile the module in this directory
+
+MODULES = format-detect
+format_detect_HEADERS = $(wildcard *.h)
+format_detect_SOURCES = $(wildcard *.cpp)
+format_detect_MOD_DIR = apps
+
+HEADER_DIST_DIR = dist/include/bitmunk/apps/format-detect
+
+DYNAMIC_LINK_LIBRARIES = mort modata moapp moconfig bmapp bmdata
+
+DYNAMIC_MACOS_LINK_LIBRARIES = mofiber moio moutil mologging monet mocompress momodest moevent mocrypto movalidation mokernel moapp
+DYNAMIC_WINDOWS_LINK_LIBRARIES = mofiber moio moutil mologging monet mocompress momodest moevent mocrypto movalidation mokernel moapp
+
+# ----------- Standard Makefile
+include @BITMUNK_DIR@/setup/Makefile.base

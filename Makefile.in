@@ -40,6 +40,7 @@ SUBDIRS := \
 	cpp/test \
 	cpp/apps/bitmunk \
 	cpp/apps/bfp-file-id \
+	cpp/apps/format-detect \
 	cpp/apps/tester \
 	$(EXECUTABLE_SUBDIRS)
 
