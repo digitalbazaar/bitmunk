@@ -1,6 +1,13 @@
 /*
  * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
+#define __STDC_FORMAT_MACROS
+
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
+
 #include "bitmunk/node/Node.h"
 #include "bitmunk/test/Tester.h"
 #include "monarch/test/Test.h"
@@ -24,7 +31,7 @@ namespace bm_tests_statemonitor
 static void runNodeMonitorTest(TestRunner& tr)
 {
    tr.group("NodeMonitor");
-   
+
    tr.test("empty");
    {
       NodeMonitor nm;
@@ -34,7 +41,7 @@ static void runNodeMonitorTest(TestRunner& tr)
       assertDynoCmp(expect, all);
    }
    tr.passIfNoException();
-   
+
    tr.test("add1 init");
    {
       bool r;
@@ -43,15 +50,15 @@ static void runNodeMonitorTest(TestRunner& tr)
       si["init"] = "foo";
       r = nm.addState("s", si);
       assert(r);
-      
+
       DynamicObject expect;
       expect["s"] = "foo";
-      
+
       DynamicObject all = nm.getAll();
       assertDynoCmp(expect, all);
    }
    tr.passIfNoException();
-   
+
    tr.test("addN init");
    {
       bool r;
@@ -63,18 +70,18 @@ static void runNodeMonitorTest(TestRunner& tr)
       si["d"]["init"] = 0.;
       r = nm.addStates(si);
       assert(r);
-      
+
       DynamicObject expect;
       expect["s"] = "foo";
       expect["u"] = (uint64_t)0;
       expect["i"] = (int64_t)0;
       expect["d"] = 0.;
-      
+
       DynamicObject all = nm.getAll();
       assertDynoCmp(expect, all);
    }
    tr.passIfNoException();
-   
+
    tr.test("remove");
    {
       bool r;
@@ -84,20 +91,20 @@ static void runNodeMonitorTest(TestRunner& tr)
       si["rem"]["init"] = (uint64_t)0;
       r = nm.addStates(si);
       assert(r);
-      
+
       DynamicObject s;
       s["rem"].setNull();
       r = nm.removeStates(s);
       assert(r);
-      
+
       DynamicObject expect;
       expect["n"] = (uint64_t)0;
-      
+
       DynamicObject all = nm.getAll();
       assertDynoCmp(expect, all);
    }
    tr.passIfNoException();
-   
+
    tr.test("set");
    {
       bool r;
@@ -106,20 +113,20 @@ static void runNodeMonitorTest(TestRunner& tr)
       si["n"]["init"] = (uint64_t)0;
       r = nm.addStates(si);
       assert(r);
-      
+
       DynamicObject s;
       s["n"] = (uint64_t)123;
       r = nm.setStates(s);
       assert(r);
-      
+
       DynamicObject expect;
       expect["n"] = (uint64_t)123;
-      
+
       DynamicObject all = nm.getAll();
       assertDynoCmp(expect, all);
    }
    tr.passIfNoException();
-   
+
    tr.test("adj");
    {
       bool r;
@@ -128,7 +135,7 @@ static void runNodeMonitorTest(TestRunner& tr)
       si["n"]["init"] = (uint64_t)0;
       r = nm.addStates(si);
       assert(r);
-      
+
       DynamicObject s;
       s["n"] = (uint64_t)1;
       r = nm.adjustStates(s);
@@ -137,15 +144,15 @@ static void runNodeMonitorTest(TestRunner& tr)
       assert(r);
       r = nm.adjustStates(s);
       assert(r);
-      
+
       DynamicObject expect;
       expect["n"] = (uint64_t)3;
-      
+
       DynamicObject all = nm.getAll();
       assertDynoCmp(expect, all);
    }
    tr.passIfNoException();
-   
+
    tr.test("reset");
    {
       bool r;
@@ -154,22 +161,22 @@ static void runNodeMonitorTest(TestRunner& tr)
       si["n"]["init"] = (uint64_t)100;
       r = nm.addStates(si);
       assert(r);
-      
+
       DynamicObject s;
       s["n"] = (uint64_t)123;
       r = nm.setStates(s);
       assert(r);
       r = nm.resetStates(s);
       assert(r);
-      
+
       DynamicObject expect;
       expect["n"] = (uint64_t)100;
-      
+
       DynamicObject all = nm.getAll();
       assertDynoCmp(expect, all);
    }
    tr.passIfNoException();
-   
+
    tr.test("adj neg");
    {
       bool r;
@@ -178,20 +185,20 @@ static void runNodeMonitorTest(TestRunner& tr)
       si["n"]["init"] = (uint64_t)100;
       r = nm.addStates(si);
       assert(r);
-      
+
       DynamicObject s;
       s["n"] = (int64_t)-1;
       r = nm.adjustStates(s);
       assert(r);
-      
+
       DynamicObject expect;
       expect["n"] = (uint64_t)99;
-      
+
       DynamicObject all = nm.getAll();
       assertDynoCmp(expect, all);
    }
    tr.passIfNoException();
-   
+
    tr.test("getN");
    {
       bool r;
@@ -202,21 +209,21 @@ static void runNodeMonitorTest(TestRunner& tr)
       si["c"]["init"] = "c";
       r = nm.addStates(si);
       assert(r);
-      
+
       DynamicObject s;
       s["b"].setNull();
       s["c"].setNull();
       r = nm.getStates(s);
       assert(r);
-      
+
       DynamicObject expect;
       expect["b"] = "b";
       expect["c"] = "c";
-      
+
       assertDynoCmp(expect, s);
    }
    tr.passIfNoException();
-   
+
    tr.test("add ex");
    {
       bool r;
@@ -229,7 +236,7 @@ static void runNodeMonitorTest(TestRunner& tr)
       Exception::clear();
    }
    tr.passIfNoException();
-   
+
    tr.test("rem ex");
    {
       bool r;
@@ -242,7 +249,7 @@ static void runNodeMonitorTest(TestRunner& tr)
       Exception::clear();
    }
    tr.passIfNoException();
-   
+
    // Not for use with async StateMonitor implementation.
    /*
    tr.test("set ex");
@@ -258,7 +265,7 @@ static void runNodeMonitorTest(TestRunner& tr)
    }
    tr.passIfNoException();
    */
-   
+
    tr.test("get ex");
    {
       bool r;
@@ -271,7 +278,7 @@ static void runNodeMonitorTest(TestRunner& tr)
       Exception::clear();
    }
    tr.passIfNoException();
-   
+
    tr.test("adj ex");
    {
       bool r;
@@ -284,7 +291,7 @@ static void runNodeMonitorTest(TestRunner& tr)
       Exception::clear();
    }
    tr.passIfNoException();
-   
+
    tr.test("adj type ex");
    {
       bool r;
@@ -293,7 +300,7 @@ static void runNodeMonitorTest(TestRunner& tr)
       si["a"]["init"] = (uint64_t)0;
       r = nm.addStates(si);
       assert(r);
-      
+
       // Not for use with async StateMonitor implementation.
       /*
       DynamicObject s;
@@ -305,7 +312,7 @@ static void runNodeMonitorTest(TestRunner& tr)
       */
    }
    tr.passIfNoException();
-   
+
    tr.test("txn adj ex");
    {
       // check bad transaction doesn't change values
@@ -316,7 +323,7 @@ static void runNodeMonitorTest(TestRunner& tr)
       si["b"]["init"] = (uint64_t)10;
       r = nm.addStates(si);
       assert(r);
-      
+
       // Not for use with async StateMonitor implementation.
       /*
       DynamicObject s;
@@ -327,16 +334,16 @@ static void runNodeMonitorTest(TestRunner& tr)
       assertException();
       Exception::clear();
       */
-      
+
       DynamicObject expect;
       expect["a"] = (uint64_t)10;
       expect["b"] = (uint64_t)10;
-      
+
       DynamicObject all = nm.getAll();
       assertDynoCmp(expect, all);
    }
    tr.passIfNoException();
-   
+
    tr.test("no ex");
    {
       bool r;
@@ -345,22 +352,22 @@ static void runNodeMonitorTest(TestRunner& tr)
       si["a"]["init"] = (uint64_t)10;
       r = nm.addStates(si);
       assert(r);
-      
+
       DynamicObject s;
       s["bad"] = (int64_t)-1;
       r = nm.adjustStates(s);
       assert(!r);
       assertException();
       Exception::clear();
-      
+
       DynamicObject expect;
       expect["a"] = (uint64_t)10;
-      
+
       DynamicObject all = nm.getAll();
       assertDynoCmp(expect, all);
    }
    tr.passIfNoException();
-   
+
    tr.ungroup();
 }
 

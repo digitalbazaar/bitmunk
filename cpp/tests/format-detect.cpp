@@ -1,8 +1,12 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
-#include <iostream>
-#include <sstream>
+#define __STDC_FORMAT_MACROS
+
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
 
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/data/FormatDetectorInputStream.h"

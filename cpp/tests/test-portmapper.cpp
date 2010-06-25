@@ -1,6 +1,13 @@
 /*
  * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
+#define __STDC_FORMAT_MACROS
+
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
+
 #include "bitmunk/portmapper/IPortMapper.h"
 #include "bitmunk/test/Tester.h"
 #include "monarch/rt/DynamicObject.h"
@@ -24,13 +31,13 @@ namespace bm_tests_portmapper
 static void runPortMapperTest(IPortMapper* ipm, TestRunner& tr)
 {
    tr.group("portmapper");
-   
+
    tr.test("add port mapping");
    {
       // FIXME:
    }
    tr.passIfNoException();
-   
+
    tr.ungroup();
 }
 
@@ -47,7 +54,7 @@ static bool run(TestRunner& tr)
       IPortMapper* ipm = dynamic_cast<IPortMapper*>(
          node->getModuleApiByType("bitmunk.portmapper"));
       assert(ipm != NULL);
-      
+
       // run test
       runPortMapperTest(ipm, tr);
 

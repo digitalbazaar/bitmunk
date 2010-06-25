@@ -3,8 +3,10 @@
  */
 #define __STDC_FORMAT_MACROS
 
-#include <iostream>
-#include <sstream>
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
 
 #include "bitmunk/common/CatalogInterface.h"
 #include "bitmunk/common/Logging.h"
@@ -95,160 +97,6 @@ void runNodeConfigTest(TestRunner& tr)
    tr.passIfNoException();
 }
 
-static void assertSameExceptions(ExceptionRef& e0, ExceptionRef& e1)
-{
-   // assert both are NULL or not NULL
-   assert((e0.isNull() && e1.isNull()) ||
-          (!e0.isNull() && !e1.isNull()));
-
-   // check contents if both not NULL
-   if(!e0.isNull() && !e1.isNull())
-   {
-      // compare basic elements
-      assertStrCmp(e0->getMessage(), e1->getMessage());
-      assertStrCmp(e0->getType(), e1->getType());
-      assert(e0->getCode() == e1->getCode());
-      
-      // recursively check cause chain
-      // FIXME enable cause checking
-      assertSameExceptions(e0->getCause(), e1->getCause());
-   }
-}
-
-static void runBtpExceptionTest_XML_1(ExceptionRef& e)
-{
-   // write out exception
-   DynamicObject dyno = Exception::convertToDynamicObject(e);
-   ostringstream oss;
-   OStreamOutputStream os(&oss);
-   XmlWriter writer;
-   writer.setIndentation(0, 1);
-   DynamicObjectInputStream dois(dyno, &writer, false);
-   
-   char b[1024];
-   int numBytes;
-   while((numBytes = dois.read(b, 1024)) > 0)
-   {
-      os.write(b, numBytes);
-      assertNoException();
-   }
-   assertNoException();
-   
-   string xml1 = oss.str();
-   //cout << "XML1=\n" << oss.str() << endl;
-   
-   // read exception back in
-   DynamicObject dyno2;
-   XmlReader reader;
-   DynamicObjectOutputStream doos(dyno2, &reader, false);
-   doos.write(oss.str().c_str(), oss.str().length());
-   assertNoException();
-   ExceptionRef e2 = Exception::convertToException(dyno2);
-   
-   // write exception back out
-   DynamicObject dyno3 = Exception::convertToDynamicObject(e2);
-   DynamicObjectInputStream dois2(dyno3, &writer, false);
-   ostringstream oss2;
-   OStreamOutputStream os2(&oss2);
-   
-   char b2[1024];
-   int numBytes2;
-   while((numBytes2 = dois2.read(b2, 1024)) > 0)
-   {
-      os2.write(b2, numBytes2);
-      assertNoException();
-   }
-   assertNoException();
-   
-   string xml2 = oss2.str();
-   //cout << endl << "XML2=\n" << xml2 << endl;
-   
-   assertStrCmp(xml1.c_str(), xml2.c_str());
-   assertSameExceptions(e, e2);
-}
-
-static void runBtpExceptionTest_JSON_1(ExceptionRef& e)
-{
-   // write out exception
-   DynamicObject dyno = Exception::convertToDynamicObject(e);
-   ostringstream oss;
-   OStreamOutputStream os(&oss);
-   JsonWriter writer;
-   writer.setIndentation(0, 1);
-   DynamicObjectInputStream dois(dyno, &writer, false);
-   
-   char b[1024];
-   int numBytes;
-   while((numBytes = dois.read(b, 1024)) > 0)
-   {
-      os.write(b, numBytes);
-      assertNoException();
-   }
-   assertNoException();
-   
-   string json1 = oss.str();
-   //cout << "JSON1=\n" << oss.str() << endl;
-   
-   // read exception back in
-   DynamicObject dyno2;
-   JsonReader reader;
-   DynamicObjectOutputStream doos(dyno2, &reader, false);
-   doos.write(oss.str().c_str(), oss.str().length());
-   assertNoException();
-   ExceptionRef e2 = Exception::convertToException(dyno2);
-   
-   // write exception back out
-   DynamicObject dyno3 = Exception::convertToDynamicObject(e2);
-   DynamicObjectInputStream dois2(dyno3, &writer, false);
-   ostringstream oss2;
-   OStreamOutputStream os2(&oss2);
-   
-   char b2[1024];
-   int numBytes2;
-   while((numBytes2 = dois2.read(b2, 1024)) > 0)
-   {
-      os2.write(b2, numBytes2);
-      assertNoException();
-   }
-   assertNoException();
-   
-   string json2 = oss2.str();
-   //cout << endl << "JSON2=\n" << json2 << endl;
-   
-   assertStrCmp(json1.c_str(), json2.c_str());
-   assertSameExceptions(e, e2);
-}
-
-static void runBtpExceptionTypeTest(TestRunner& tr,
-   const char* type, void (*runTestFunc)(ExceptionRef&))
-{
-   tr.group(type);
-   
-   tr.test("simple serialize/deserialize");
-   ExceptionRef e = new Exception("e name", "e type", 0);
-   runTestFunc(e);
-   tr.pass();
-   
-   tr.test("simple serialize/deserialize w/ a cause");
-   ExceptionRef e2 = new Exception("e2 name", "e2 type", 0);
-   ExceptionRef e0 = new Exception("e0 name", "e0 type", 0);
-   e2->setCause(e0);
-   runTestFunc(e2);
-   tr.pass();
-   
-   tr.ungroup();
-}
-
-static void runBtpExceptionTest(TestRunner& tr)
-{
-   tr.group("Btp exception");
-
-   runBtpExceptionTypeTest(tr, "XML", &runBtpExceptionTest_XML_1);
-   runBtpExceptionTypeTest(tr, "JSON", &runBtpExceptionTest_JSON_1);
-
-   tr.ungroup();
-}
-
 static void runLoginTest(TestRunner& tr)
 {
    tr.group("Login");
@@ -281,7 +129,7 @@ static void runLoginTest(TestRunner& tr)
       success = node->login("devuser", "badpassword");
       assert(!success);
       tr.passIfException();
- 
+
       // logout
       node->logout(0);
 
@@ -344,7 +192,7 @@ static void runNodeStopEventTest(TestRunner& tr)
 static void runSampleTest(TestRunner& tr)
 {
    tr.group("Sample");
-   
+
    const char* format = "mp3";
    char filename[100];
    snprintf(filename, 100, "/tmp/bmtestfile.%s", format);
@@ -362,17 +210,17 @@ static void runSampleTest(TestRunner& tr)
          // create time parser to produce 30 second sample
          MpegAudioTimeParser matp;
          matp.addTimeSet(10, 40);
-         
+
          File inputFile("/tmp/bmtestfile.mp3");
          FileInputStream fis(inputFile);
-         
+
          File sampleFile("/tmp/bmsample-mis.mp3");
          FileOutputStream fos(sampleFile);
-         
+
          Id3v2TagWriter stripper(NULL);
          MutatorInputStream stripStream(&fis, false, &stripper, false);
          MutatorInputStream mis(&stripStream, false, &matp, false);
-         
+
          char b[2048];
          int numBytes;
          while((numBytes = mis.read(b, 2048)) > 0)
@@ -380,7 +228,7 @@ static void runSampleTest(TestRunner& tr)
             fos.write(b, numBytes);
          }
          mis.close();
-         
+
          assert(sampleFile->getLength() > 100000);
       }
       tr.passIfNoException();
@@ -390,17 +238,17 @@ static void runSampleTest(TestRunner& tr)
          // create time parser to produce 30 second sample
          MpegAudioTimeParser matp;
          matp.addTimeSet(10, 40);
-         
+
          File inputFile("/tmp/bmtestfile.mp3");
          FileInputStream fis(inputFile);
-         
+
          File sampleFile("/tmp/bmsample-mos.mp3");
          FileOutputStream fos(sampleFile);
-         
+
          Id3v2TagWriter stripper(NULL);
          MutatorOutputStream mos(&fos, false, &matp, false);
          MutatorOutputStream stripStream(&mos, false, &stripper, false);
-         
+
          char b[2048];
          int numBytes;
          while((numBytes = fis.read(b, 2048)) > 0)
@@ -415,7 +263,7 @@ static void runSampleTest(TestRunner& tr)
       tr.passIfNoException();
 
    }
-   
+
    tr.ungroup();
 }
 
@@ -425,7 +273,6 @@ static bool run(TestRunner& tr)
    {
       runNodeTest(tr);
       runNodeConfigTest(tr);
-      runBtpExceptionTest(tr);
       runLoginTest(tr);
       runNodeStopEventTest(tr);
    }

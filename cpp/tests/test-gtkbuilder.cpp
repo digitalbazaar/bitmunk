@@ -1,6 +1,13 @@
 /*
  * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
+#define __STDC_FORMAT_MACROS
+
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
+
 #include "bitmunk/test/Tester.h"
 #include "monarch/rt/DynamicObject.h"
 #include "monarch/rt/Exception.h"

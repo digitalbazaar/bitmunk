@@ -3,6 +3,11 @@
  */
 #define __STDC_FORMAT_MACROS
 
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
+
 #include "bitmunk/node/NodeConfigManager.h"
 #include "bitmunk/node/Node.h"
 #include "bitmunk/test/Tester.h"

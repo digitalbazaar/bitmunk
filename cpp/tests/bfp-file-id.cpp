@@ -1,8 +1,11 @@
 /*
- * Copyright (c) 2008-2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
-#include <iostream>
-#include <cstdio>
+#define __STDC_FORMAT_MACROS
+
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
 
 #include "bitmunk/bfp/BfpFactory.h"
 #include "bitmunk/common/TypeDefinitions.h"
@@ -30,7 +33,7 @@ protected:
     * "files": files to process
     */
    DynamicObject mOptions;
-   
+
 public:
    BfpFileIdApp()
    {
@@ -40,7 +43,7 @@ public:
       mOptions["allInfo"] = false;
       mOptions["files"]->setType(Array);
    };
-   
+
    virtual ~BfpFileIdApp() {};
 
    virtual DynamicObject getCommandLineSpecs()
@@ -50,27 +53,27 @@ public:
 "BfpFileId options\n"
 "  -a, --all           Print all file info.\n"
 "\n";
-      
+
       DynamicObject opt;
-      
+
       opt = spec["options"]->append();
       opt["short"] = "-a";
       opt["long"] = "--all";
       opt["argError"] = "No files specified.";
       opt["setTrue"]["target"] = mOptions["allInfo"];
-      
+
       spec["args"] = mOptions["files"];
-      
+
       DynamicObject specs;
       specs->setType(Array);
       specs->append(spec);
       return specs;
    };
-   
+
    virtual bool processFile(Bfp* bfp, const char* filename)
    {
       bool rval = true;
-      
+
       string _;
       string ext;
       File::splitext(filename, _, ext);
@@ -99,15 +102,15 @@ public:
          Exception::set(e);
          rval = false;
       }
-      
+
       return rval;
    };
-   
+
    virtual bool run()
    {
       // bfp library to use
       const char* bfplib = "libbmbfp-1.so";
-   
+
       // load bfp module
       Kernel k;
       Module* m = k.getModuleLibrary()->loadModule(bfplib);
@@ -139,7 +142,7 @@ public:
                      success = processFile(bfp, i->next()->getString());
                   }
                }
-               
+
                // clean up bfp
                f->freeBfp(bfp);
             }
@@ -149,7 +152,7 @@ public:
                Exception::set(e);
             }
          }
-         
+
          // unload module
          k.getModuleLibrary()->unloadAllModules();
       }

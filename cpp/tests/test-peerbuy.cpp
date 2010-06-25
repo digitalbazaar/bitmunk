@@ -3,11 +3,13 @@
  */
 #define __STDC_FORMAT_MACROS
 
-#include <iostream>
-#include <sstream>
-
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/common/Tools.h"
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
+
 #include "bitmunk/node/Node.h"
 #include "bitmunk/purchase/TypeDefinitions.h"
 #include "bitmunk/test/Tester.h"
@@ -59,7 +61,7 @@ static struct testIds_s testIds[] =
 };
 
 // The peerbuy test type specifies the type of media to purchase
-enum PeerBuyTestType 
+enum PeerBuyTestType
 {
    Single,
    Collection
@@ -76,7 +78,7 @@ static void runPeerBuyTest(
    const char* price;
    // for tester
    DynamicObject groupName;
-   
+
    // check the type of peerbuy test to perform and output type to tester
    Ware ware;
    ware["id"] = "bitmunk:bundle";
@@ -88,7 +90,7 @@ static void runPeerBuyTest(
          groupName->format("PeerBuy Single (mediaId:%" PRIu64 ")",
             testIds[testIdIndex].mediaId);
          price = "0.90";//1.00";
-         
+
          ware["mediaId"] = testIds[testIdIndex].mediaId;
          FileInfo& fi = ware["fileInfos"]->append();
          fi["id"] = testIds[testIdIndex].fileId;
@@ -99,7 +101,7 @@ static void runPeerBuyTest(
       {
          groupName = "PeerBuy Collection";
          price = "8.00";
-         
+
          ware["mediaId"] = 1;
          for(int i = 0; testIds[i].fileId != NULL; ++i)
          {
@@ -115,29 +117,29 @@ static void runPeerBuyTest(
          price = "0.00";
       }
    }
-   
+
    tr.group(groupName->getString());
-   
+
    tr.test("create download state");
    {
       DynamicObject in;
       DynamicObject out;
       out["ware"] = ware;
-      
+
       // hit self to create download state
       Url url;
       url.format(
          "%s/api/3.0/purchase/contracts/downloadstates?nodeuser=900",
          "https://localhost:19200");
-      
+
       // create download state
       Messenger* messenger = node.getMessenger();
       messenger->post(&url, &out, &in, node.getDefaultUserId());
       assertNoException();
-      
+
       // get the download state ID
       dsId = in["downloadStateId"]->getUInt64();
-      
+
       // FIXME: temp code to test download progress polling
       /*
       {
@@ -149,36 +151,36 @@ static void runPeerBuyTest(
       */
    }
    tr.passIfNoException();
-   
+
    tr.test("initialize download state");
    if(!Exception::isSet())
    {
       // create event waiter
       EventWaiter ew(node.getEventController());
-      
+
       // create specific conditional filter to wait for
       EventFilter ef;
       ef["details"]["downloadStateId"] = dsId;
-      
+
       // start listening to events
       ew.start("bitmunk.purchase.DownloadState.initialized", &ef);
       ew.start("bitmunk.purchase.DownloadState.exception", &ef);
-      
+
       // hit self to initialize download state
       Url url;
       url.format("%s/api/3.0/purchase/contracts/initialize?nodeuser=900",
          "https://localhost:19200");
-      
+
       // initialize state by posting download state ID
       DynamicObject out;
       out["downloadStateId"] = dsId;
       Messenger* messenger = node.getMessenger();
       messenger->post(&url, &out, NULL, node.getDefaultUserId());
       assertNoException();
-      
+
       // wait for event
       ew.waitForEvent();
-      
+
       // handle exception event
       Event e = ew.popEvent();
       if(strstr(e["type"]->getString(), "exception") != NULL)
@@ -187,43 +189,43 @@ static void runPeerBuyTest(
             Exception::convertToException(e["details"]["exception"]);
          Exception::set(ex);
       }
-      
+
       tr.passIfNoException();
    }
    else
    {
       tr.fail("Exception in previous test.");
    }
-   
+
    tr.test("acquire license");
    if(!Exception::isSet())
    {
       // create event waiter
       EventWaiter ew(node.getEventController());
-      
+
       // create specific conditional filter to wait for
       EventFilter ef;
       ef["details"]["downloadStateId"] = dsId;
-      
+
       // start listening to events
       ew.start("bitmunk.purchase.DownloadState.licenseAcquired", &ef);
       ew.start("bitmunk.purchase.DownloadState.exception", &ef);
-      
+
       // hit self to acquire license
       Url url;
       url.format("%s/api/3.0/purchase/contracts/license?nodeuser=900",
          "https://localhost:19200");
-      
+
       // acquire license by posting download state ID
       DynamicObject out;
       out["downloadStateId"] = dsId;
       Messenger* messenger = node.getMessenger();
       messenger->post(&url, &out, NULL, node.getDefaultUserId());
       assertNoException();
-      
+
       // wait for event
       ew.waitForEvent();
-      
+
       // handle exception event
       Event e = ew.popEvent();
       if(strstr(e["type"]->getString(), "exception") != NULL)
@@ -232,34 +234,34 @@ static void runPeerBuyTest(
             Exception::convertToException(e["details"]["exception"]);
          Exception::set(ex);
       }
-      
+
       tr.passIfNoException();
    }
    else
    {
       tr.fail("Exception in previous test.");
    }
-   
+
    tr.test("download");
    if(!Exception::isSet())
    {
       // create event waiter
       EventWaiter ew(node.getEventController());
-      
+
       // create specific conditional filter to wait for
       EventFilter ef;
       ef["details"]["downloadStateId"] = dsId;
-      
+
       // start listening to events
       ew.start("bitmunk.purchase.DownloadState.downloadCompleted", &ef);
       ew.start("bitmunk.purchase.DownloadState.downloadInterrupted", &ef);
       ew.start("bitmunk.purchase.DownloadState.exception", &ef);
-      
+
       // hit self to start download
       Url url;
       url.format("%s/api/3.0/purchase/contracts/download?nodeuser=900",
          "https://localhost:19200");
-      
+
       // start download by posting download state ID and preferences
       DynamicObject out;
       out["downloadStateId"] = dsId;
@@ -270,7 +272,7 @@ static void runPeerBuyTest(
       Messenger* messenger = node.getMessenger();
       messenger->post(&url, &out, NULL, node.getDefaultUserId());
       assertNoException();
-      
+
       // FIXME: here to test pausing a download
       if(false)
       {
@@ -278,17 +280,17 @@ static void runPeerBuyTest(
          Url url2;
          url2.format("%s/api/3.0/purchase/contracts/pause?nodeuser=900",
             "https://localhost:19200");
-         
+
          // pause download by posting download state ID
          DynamicObject out2;
          out2["downloadStateId"] = dsId;
          messenger->post(&url2, &out2, NULL, node.getDefaultUserId());
          assertNoException();
       }
-      
+
       // wait for event
       ew.waitForEvent();
-      
+
       // handle exception event
       Event e = ew.popEvent();
       if(strstr(e["type"]->getString(), "exception") != NULL)
@@ -303,43 +305,43 @@ static void runPeerBuyTest(
             new Exception("Download interrupted via 'pause' in peerbuy test.");
          Exception::set(ex);
       }
-      
+
       tr.passIfNoException();
    }
    else
    {
       tr.fail("Exception in previous test.");
    }
-   
+
    tr.test("purchase");
    if(!Exception::isSet())
    {
       // create event waiter
       EventWaiter ew(node.getEventController());
-      
+
       // create specific conditional filter to wait for
       EventFilter ef;
       ef["details"]["downloadStateId"] = dsId;
-      
+
       // start listening to events
       ew.start("bitmunk.purchase.DownloadState.purchaseCompleted", &ef);
       ew.start("bitmunk.purchase.DownloadState.exception", &ef);
-      
+
       // hit self to start purchase
       Url url;
       url.format("%s/api/3.0/purchase/contracts/purchase?nodeuser=900",
          "https://localhost:19200");
-      
+
       // start purchase by posting download state ID
       DynamicObject out;
       out["downloadStateId"] = dsId;
       Messenger* messenger = node.getMessenger();
       messenger->post(&url, &out, NULL, node.getDefaultUserId());
       assertNoException();
-      
+
       // wait for event
       ew.waitForEvent();
-      
+
       // handle exception event
       Event e = ew.popEvent();
       if(strstr(e["type"]->getString(), "exception") != NULL)
@@ -348,7 +350,7 @@ static void runPeerBuyTest(
             Exception::convertToException(e["details"]["exception"]);
          Exception::set(ex);
       }
-      
+
       tr.passIfNoException();
    }
    else
@@ -361,30 +363,30 @@ static void runPeerBuyTest(
    {
       // create event waiter
       EventWaiter ew(node.getEventController());
-      
+
       // create specific conditional filter to wait for
       EventFilter ef;
       ef["details"]["downloadStateId"] = dsId;
-      
+
       // start listening to events
       ew.start("bitmunk.purchase.DownloadState.assemblyCompleted", &ef);
       ew.start("bitmunk.purchase.DownloadState.exception", &ef);
-      
+
       // hit self to start file assembly
       Url url;
       url.format("%s/api/3.0/purchase/contracts/assemble?nodeuser=900",
          "https://localhost:19200");
-      
+
       // start file assembly by posting download state ID
       DynamicObject out;
       out["downloadStateId"] = dsId;
       Messenger* messenger = node.getMessenger();
       messenger->post(&url, &out, NULL, node.getDefaultUserId());
       assertNoException();
-      
+
       // wait for event
       ew.waitForEvent();
-      
+
       // handle exception event
       Event e = ew.popEvent();
       if(strstr(e["type"]->getString(), "exception") != NULL)
@@ -393,14 +395,14 @@ static void runPeerBuyTest(
             Exception::convertToException(e["details"]["exception"]);
          Exception::set(ex);
       }
-      
+
       tr.passIfNoException();
    }
    else
    {
       tr.fail("Exception in previous test.");
    }
-   
+
    tr.ungroup();
 }
 
@@ -411,7 +413,7 @@ public:
    BmPeerBuyTesterObserver() {}
 
    virtual ~BmPeerBuyTesterObserver() {}
-   
+
    virtual void eventOccurred(Event& e)
    {
       MO_CAT_DEBUG(BM_TEST_CAT, "Got event: \n%s",
@@ -431,19 +433,19 @@ static bool run(TestRunner& tr)
       // register event observer of all events
       BmPeerBuyTesterObserver obs;
       node->getEventController()->registerObserver(&obs, "*");
-      
+
       // buy just one
       //runPeerBuyTest(node, tr, Single);
-      
+
       // buy all individual singles
       for(int i = 0; testIds[i].fileId != NULL; ++i)
       {
          runPeerBuyTest(*node, tr, Single, i);
       }
-      
+
       // buy all as a collection
       runPeerBuyTest(*node, tr, Collection);
-      
+
       // stop and unload node
       node->stop();
       Tester::unloadNode(tr);

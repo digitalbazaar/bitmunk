@@ -3,8 +3,10 @@
  */
 #define __STDC_FORMAT_MACROS
 
-#include <iostream>
-#include <sstream>
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
 
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/common/Tools.h"
@@ -43,7 +45,7 @@ namespace bm_tests_download_states
 {
 
 // The download state test type specifies the type of media to purchase
-enum DownloadStateTestType 
+enum DownloadStateTestType
 {
    Single,
    Collection
@@ -55,7 +57,7 @@ static void runDownloadStatesTest(
    MediaId mediaId = 0;
    DownloadStateId dsId = 0;
    const char* price;
-   
+
    // check the type of peerbuy test to perform and output the type to the
    // tester
    if(testType == Single)
@@ -70,7 +72,7 @@ static void runDownloadStatesTest(
       mediaId = TEST_COLLECTION_MEDIA_ID;
       price = "8.00";
    }
-   
+
    tr.test("create download state 1");
    {
       DynamicObject in;
@@ -78,17 +80,17 @@ static void runDownloadStatesTest(
       out["mediaId"] = mediaId;
       // FIXME: id needs to be a hexadecimal ware ID
       out["wareId"] = out["mediaId"]->getString();
-      
+
       // hit self to create download state
       Url url;
       url.format(
          "%s/api/3.0/purchase/contracts/downloadstates?nodeuser=900",
          "https://localhost:19200");
-      
+
       // start download
       Messenger* messenger = node.getMessenger();
       messenger->post(&url, &out, &in, node.getDefaultUserId());
-      
+
       // get the download state ID
       dsId = in["downloadStateId"]->getUInt64();
    }
@@ -98,13 +100,13 @@ static void runDownloadStatesTest(
    {
       DynamicObject out;
       out["downloadStateId"] = dsId;
-      
+
       // hit self to delete the download state
       Url url;
       url.format(
          "%s/api/3.0/purchase/contracts/downloadstates/delete?nodeuser=900",
          "https://localhost:19200");
-      
+
       // delete the download
       Messenger* messenger = node.getMessenger();
       messenger->post(&url, &out, NULL, node.getDefaultUserId());
@@ -118,17 +120,17 @@ static void runDownloadStatesTest(
       out["mediaId"] = mediaId;
       // FIXME: id needs to be a hexadecimal ware ID
       out["wareId"] = out["mediaId"]->getString();
-      
+
       // hit self to create download state
       Url url;
       url.format(
          "%s/api/3.0/purchase/contracts/downloadstates?nodeuser=900",
          "https://localhost:19200");
-      
+
       // start download
       Messenger* messenger = node.getMessenger();
       messenger->post(&url, &out, &in, node.getDefaultUserId());
-      
+
       // get the download state ID
       dsId = in["downloadStateId"]->getUInt64();
    }
@@ -142,7 +144,7 @@ static void runDownloadStatesTest(
          "%s/api/3.0/purchase/contracts/downloadstates/%" PRIu64
          "?nodeuser=900",
          "https://localhost:19200", dsId);
-      
+
       // delete the download
       Messenger* messenger = node.getMessenger();
       messenger->deleteResource(&url, NULL, node.getDefaultUserId());
@@ -159,7 +161,7 @@ public:
    BmDownloadStatesTesterObserver() {}
 
    virtual ~BmDownloadStatesTesterObserver() {}
-   
+
    virtual void eventOccurred(Event& e)
    {
       MO_CAT_DEBUG(BM_TEST_CAT, "Got event: \n%s",
@@ -179,11 +181,11 @@ static bool run(TestRunner& tr)
       // register event observer of all events
       BmDownloadStatesTesterObserver obs;
       node->getEventController()->registerObserver(&obs, "*");
-      
+
       // run test
       runDownloadStatesTest(*node, tr, Single);
       //runDownloadStatesTest(*node, tr, Collection);
-      
+
       // stop and unload node
       node->stop();
       Tester::unloadNode(tr);

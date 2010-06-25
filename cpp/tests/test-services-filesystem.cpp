@@ -4,7 +4,10 @@
 #define __STDC_CONSTANT_MACROS
 #define __STDC_FORMAT_MACROS
 
-#include <inttypes.h>
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
 
 #include "bitmunk/node/Node.h"
 #include "bitmunk/test/Tester.h"

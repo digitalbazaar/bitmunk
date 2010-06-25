@@ -4,9 +4,10 @@
 #define __STDC_CONSTANT_MACROS
 #define __STDC_FORMAT_MACROS
 
-#include <iostream>
-#include <sstream>
-#include <inttypes.h>
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
 
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/common/Tools.h"
@@ -47,17 +48,17 @@ namespace bm_tests_eventreactor
 static void runEventReactorTest(Node& node, TestRunner& tr)
 {
    tr.group("EventReactor");
-   
+
    tr.test("create event reactor");
    {
       DynamicObject in;
-      
+
       // hit self to create event reactor
       Url url;
       url.format(
          "%s/api/3.0/eventreactor/users/900/downloadstate?nodeuser=900",
          "https://localhost:19200");
-      
+
       Messenger* messenger = node.getMessenger();
       messenger->post(&url, NULL, &in, node.getDefaultUserId());
       assertNoException();
@@ -71,10 +72,10 @@ static void runEventReactorTest(Node& node, TestRunner& tr)
    {
       // create event waiters to notify that events are successfully being
       // processed through the system via the event reactor
-      
+
       // create event waiter
       EventWaiter ew(node.getEventController());
-      
+
       // start listening to events
       ew.start("bitmunk.system.Directive.processed");
       ew.start("bitmunk.purchase.DownloadState.initialized");
@@ -85,7 +86,7 @@ static void runEventReactorTest(Node& node, TestRunner& tr)
       ew.start("bitmunk.purchase.DownloadState.purchaseCompleted");
       ew.start("bitmunk.purchase.DownloadState.assemblyCompleted");
       ew.start("bitmunk.purchase.DownloadState.exception");
-      
+
       // create bitmunk peerbuy directive
       DynamicObject directive;
       directive["version"] = "3.0";
@@ -96,11 +97,11 @@ static void runEventReactorTest(Node& node, TestRunner& tr)
       FileInfo& fi = ware["fileInfos"]->append();
       fi["id"] = FILE_ID;
       fi["mediaId"] = SINGLE_MEDIA_ID;
-      
+
       DynamicObject in;
       DynamicObject out;
       out = directive;
-      
+
       // FIXME: use this loop to run concurrent downloads,
       // simply change "count" to the number of concurrent downloads
       int count = 1;
@@ -111,17 +112,17 @@ static void runEventReactorTest(Node& node, TestRunner& tr)
          url.format(
             "%s/api/3.0/system/directives?nodeuser=900",
             "https://localhost:19200");
-         
+
          Messenger* messenger = node.getMessenger();
          messenger->post(&url, &out, &in, node.getDefaultUserId());
          assertNoException();
       }
-      
+
       while(true)
       {
          // wait for event
          ew.waitForEvent();
-         
+
          // handle exception event
          Event e = ew.popEvent();
          if(strstr(e["type"]->getString(), "exception") != NULL)
@@ -137,16 +138,16 @@ static void runEventReactorTest(Node& node, TestRunner& tr)
             {
                printf("EVENT OCCURRED: '%s'\n", e["type"]->getString());
             }
-            
+
             if(strstr(e["type"]->getString(), "licenseAcquired") != NULL)
             {
                // start download manually here
                Messenger* messenger = node.getMessenger();
-               
+
                Url url;
                url.format("%s/api/3.0/purchase/contracts/%s?nodeuser=%" PRIu64,
                   messenger->getSelfUrl(true).c_str(), "download", DEVUSER_ID);
-               
+
                // start download by posting download state ID and preferences
                DynamicObject out;
                out["downloadStateId"] = e["details"]["downloadStateId"];
@@ -177,7 +178,7 @@ static void runEventReactorTest(Node& node, TestRunner& tr)
             }
          }
       }
-      
+
       tr.passIfNoException();
    }
    else
@@ -188,20 +189,20 @@ static void runEventReactorTest(Node& node, TestRunner& tr)
    tr.test("delete event reactor");
    {
       DynamicObject in;
-      
+
       // hit self to delete event reactor
       Url url;
       url.format(
          "%s/api/3.0/eventreactor/users/900?nodeuser=900",
          "https://localhost:19200");
-      
+
       Messenger* messenger = node.getMessenger();
       messenger->deleteResource(&url, &in, node.getDefaultUserId());
       // FIXME: remove me
       dumpDynamicObject(in);
    }
    tr.passIfNoException();
-   
+
    tr.ungroup();
 }
 
@@ -210,12 +211,12 @@ static void createEventReactor(Node& node, TestRunner& tr)
    tr.test("create event reactor");
    {
       DynamicObject in;
-      
+
       // hit self to create event reactor
       Url url;
       url.format(
          "/api/3.0/eventreactor/users/900/downloadstate?nodeuser=900");
-      
+
       printf("\nCreating DownloadStateEventReactor:\n");
       Messenger* messenger = node.getMessenger();
       if(messenger->postSecureToBitmunk(
@@ -235,7 +236,7 @@ public:
    BmEventReactorTesterObserver() {}
 
    virtual ~BmEventReactorTesterObserver() {}
-   
+
    virtual void eventOccurred(Event& e)
    {
       MO_CAT_DEBUG(BM_TEST_CAT, "Got event: \n%s",
@@ -255,29 +256,29 @@ static bool run(TestRunner& tr)
       // register event observer of all events
       BmEventReactorTesterObserver obs;
       node->getEventController()->registerObserver(&obs, "*");
-      
+
       // run test
       runEventReactorTest(*node, tr);
-      
+
       // stop and unload node
       node->stop();
       Tester::unloadNode(tr);
    }
-   
+
    if(tr.isTestEnabled("eventreactor"))
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "test-eventreactor");
       node->start();
       assertNoException();
-      
+
       // register event observer of all events
       BmEventReactorTesterObserver obs;
       node->getEventController()->registerObserver(&obs, "*");
-      
+
       // run test
       createEventReactor(*node, tr);
-      
+
       // stop and unload node
       node->stop();
       Tester::unloadNode(tr);

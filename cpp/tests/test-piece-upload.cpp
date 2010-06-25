@@ -3,8 +3,10 @@
  */
 #define __STDC_FORMAT_MACROS
 
-#include <iostream>
-#include <sstream>
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
 
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/node/Node.h"
@@ -141,7 +143,7 @@ public:
    BmPieceUploadTesterObserver() {}
 
    virtual ~BmPieceUploadTesterObserver() {}
-   
+
    virtual void eventOccurred(Event& e)
    {
       MO_CAT_DEBUG(BM_TEST_CAT, "Got event: \n%s",

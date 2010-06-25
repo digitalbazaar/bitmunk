@@ -3,6 +3,11 @@
  */
 #define __STDC_FORMAT_MACROS
 
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
+
 #include "bitmunk/common/Logging.h"
 #include "bitmunk/customcatalog/Catalog.h"
 #include "bitmunk/data/FormatDetectorInputStream.h"

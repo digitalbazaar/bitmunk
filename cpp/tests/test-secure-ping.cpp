@@ -5,6 +5,12 @@
 
 #include <iostream>
 
+
+#include "bitmunk/test/Tester.h"
+#include "monarch/test/Test.h"
+#include "monarch/test/TestModule.h"
+
+
 #include "bitmunk/bfp/BfpFactory.h"
 #include "bitmunk/common/TypeDefinitions.h"
 #include "bitmunk/protocol/BtpClient.h"
