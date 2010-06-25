@@ -1,0 +1,10 @@
+{
+   "_id_": "bitmunk.apps.format-detect",
+   "_version_": "Monarch Config 3.0",
+   "_group_": "after defaults",
+   "_append_": {
+      "monarch.app.Kernel": {
+         "appPath": "@BITMUNK_DIR@/dist/modules/apps/@LIB_PREFIX@format-detect.@DYNAMIC_LIB_EXT@"
+      }
+   }
+}
