@@ -7,7 +7,7 @@ format_detect_MOD_DIR = apps
 
 HEADER_DIST_DIR = dist/include/bitmunk/apps/format-detect
 
-DYNAMIC_LINK_LIBRARIES = mort modata moapp moconfig bmapp bmdata
+DYNAMIC_LINK_LIBRARIES = mort modata moapp moconfig bmapp bmdata bmcommon
 
 DYNAMIC_MACOS_LINK_LIBRARIES = mofiber moio moutil mologging monet mocompress momodest moevent mocrypto movalidation mokernel moapp
 DYNAMIC_WINDOWS_LINK_LIBRARIES = mofiber moio moutil mologging monet mocompress momodest moevent mocrypto movalidation mokernel moapp
