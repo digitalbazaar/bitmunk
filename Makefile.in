@@ -39,6 +39,7 @@ SUBDIRS := \
 	$(GTKUI_SUBDIR) \
 	cpp/test \
 	cpp/apps/bitmunk \
+	cpp/apps/bfp-file-id \
 	cpp/apps/tester \
 	$(EXECUTABLE_SUBDIRS)
 

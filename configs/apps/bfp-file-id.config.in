@@ -1,0 +1,35 @@
+{
+   "_id_": "bitmunk.apps.bfp-file-id",
+   "_version_": "Monarch Config 3.0",
+   "_group_": "after defaults",
+   "_append_": {
+      "monarch.app.Kernel": {
+         "appPath": "@BITMUNK_DIR@/dist/modules/apps/@LIB_PREFIX@bfp-file-id.@DYNAMIC_LIB_EXT@",
+         "modulePath": [
+            "@BITMUNK_DIR@/dist/lib/@LIB_PREFIX@bmnodemodule.@DYNAMIC_LIB_EXT@",
+            "@BITMUNK_DIR@/dist/lib/@LIB_PREFIX@bmbfp.@DYNAMIC_LIB_EXT@"
+         ]
+      }
+   },
+   "_merge_" : {
+      "bitmunk.apps.tools.BfpFileId": {
+         "bfpId": 1,
+         "bfpModule": "@BITMUNK_DIR@/../bitmunk-auth/dist/lib/@LIB_PREFIX@bmbfp-1.@DYNAMIC_LIB_EXT@"
+      },
+      "#node": "node isn't started, just requires config to init",
+      "node": {
+         "bitmunkUrl": "http://@BITMUNK_API_HOST@:@BITMUNK_API_PORT@",
+         "secureBitmunkUrl": "https://@BITMUNK_API_HOST@:@BITMUNK_API_PORT@",
+         "host": "0.0.0.0",
+         "port": 19101,
+         "domains": ["*"],
+         "modulePath": [],
+         "profilePath": "@BITMUNK_PROFILES_DIR@",
+         "usersPath": "@BITMUNK_USERS_DIR@",
+         "sslGenerate": true,
+         "sslCertificate": "@NODE_SSL_CERTIFICATE@",
+         "sslPrivateKey": "@NODE_SSL_KEY@",
+         "sslCAFile":  "@NODE_SSL_CA_FILE@"
+      }
+   }
+}

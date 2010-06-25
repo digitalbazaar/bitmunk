@@ -792,6 +792,7 @@ AC_CONFIG_FILES([
    setup/docs.doxygen
    cpp/app/Makefile
    cpp/apps/bitmunk/Makefile
+   cpp/apps/bfp-file-id/Makefile
    cpp/apps/tester/Makefile
    cpp/apps/firefox/Makefile
    cpp/apps/firefox/Makefile.common
@@ -837,6 +838,7 @@ AC_CONFIG_FILES([
 else
 AC_CONFIG_FILES([
 	configs/apps/bpe.config
+	configs/apps/bfp-file-id.config
 	configs/apps/test.config
 	configs/dev.d/bitmunk.bfp.Bfp.config
 	configs/dev.d/bitmunk.catalog.CustomCatalog.config
