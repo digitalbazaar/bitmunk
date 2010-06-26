@@ -521,129 +521,128 @@
    /**
     * The tls implementation.
     */
-   var tls =
+   var tls = {};
+   
+   /**
+    * Version: TLS 1.2 = 3.3, TLS 1.1 = 3.2, TLS 1.0 = 3.1. Both TLS 1.1
+    * and TLS 1.2 were still too new (ie: openSSL didn't implement them) at
+    * the time of this implementation so TLS 1.0 was implemented instead. 
+    */
+   tls.Version =
    {
-      /**
-       * Version: TLS 1.2 = 3.3, TLS 1.1 = 3.2, TLS 1.0 = 3.1. Both TLS 1.1
-       * and TLS 1.2 were still too new (ie: openSSL didn't implement them) at
-       * the time of this implementation so TLS 1.0 was implemented instead. 
-       */
-      Version:
-      {
-         major: 3,
-         minor: 1
-      },
-      
-      /**
-       * Maximum fragment size.
-       */
-      MaxFragment: 16384,
-      
-      /**
-       * Whether this entity is considered the "client" or "server".
-       * enum { server, client } ConnectionEnd;
-       */
-      ConnectionEnd:
-      {
-         server: 0,
-         client: 1
-      },
-      
-      /**
-       * Pseudo-random function algorithm used to generate keys from the
-       * master secret.
-       * enum { tls_prf_sha256 } PRFAlgorithm;
-       */
-      PRFAlgorithm:
-      {
-         tls_prf_sha256: 0
-      },
-      
-      /**
-       * Bulk encryption algorithms.
-       * enum { null, rc4, des3, aes } BulkCipherAlgorithm;
-       */
-      BulkCipherAlgorithm:
-      {
-         none: null,
-         rc4: 0,
-         des3: 1,
-         aes: 2
-      },
-      
-      /**
-       * Cipher types.
-       * enum { stream, block, aead } CipherType;
-       */
-      CipherType:
-      {
-         stream: 0,
-         block: 1,
-         aead: 2
-      },
-      
-      /**
-       * MAC (Message Authentication Code) algorithms.
-       * enum { null, hmac_md5, hmac_sha1, hmac_sha256,
-       *        hmac_sha384, hmac_sha512} MACAlgorithm;
-       */
-      MACAlgorithm:
-      {
-         none: null,
-         hmac_md5: 0,
-         hmac_sha1: 1,
-         hmac_sha256: 2,
-         hmac_sha384: 3,
-         hmac_sha512: 4
-      },
-      
-      /**
-       * Compression algorithms.
-       * enum { null(0), (255) } CompressionMethod;
-       */
-      CompressionMethod:
-      {
-         none: 0
-      },
-      
-      /**
-       * TLS record content types.
-       * enum {
-       *    change_cipher_spec(20), alert(21), handshake(22),
-       *    application_data(23), (255)
-       * } ContentType;
-       */
-      ContentType:
-      {
-         change_cipher_spec: 20,
-         alert: 21,
-         handshake: 22,
-         application_data: 23
-      },
-      
-      /**
-       * TLS handshake types.
-       * enum {
-       *    hello_request(0), client_hello(1), server_hello(2),
-       *    certificate(11), server_key_exchange (12),
-       *    certificate_request(13), server_hello_done(14),
-       *    certificate_verify(15), client_key_exchange(16),
-       *    finished(20), (255)
-       * } HandshakeType;
-       */
-      HandshakeType:
-      {
-         hello_request: 0,
-         client_hello: 1,
-         server_hello: 2,
-         certificate: 11,
-         server_key_exchange: 12,
-         certificate_request: 13,
-         server_hello_done: 14,
-         certificate_verify: 15,
-         client_key_exchange: 16,
-         finished: 20
-      }
+      major: 3,
+      minor: 1
+   };
+   
+   /**
+    * Maximum fragment size.
+    */
+   tls.MaxFragment = 16384;
+   
+   /**
+    * Whether this entity is considered the "client" or "server".
+    * enum { server, client } ConnectionEnd;
+    */
+   tls.ConnectionEnd =
+   {
+      server: 0,
+      client: 1
+   };
+   
+   /**
+    * Pseudo-random function algorithm used to generate keys from the
+    * master secret.
+    * enum { tls_prf_sha256 } PRFAlgorithm;
+    */
+   tls.PRFAlgorithm =
+   {
+      tls_prf_sha256: 0
+   };
+   
+   /**
+    * Bulk encryption algorithms.
+    * enum { null, rc4, des3, aes } BulkCipherAlgorithm;
+    */
+   tls.BulkCipherAlgorithm =
+   {
+      none: null,
+      rc4: 0,
+      des3: 1,
+      aes: 2
+   };
+   
+   /**
+    * Cipher types.
+    * enum { stream, block, aead } CipherType;
+    */
+   tls.CipherType =
+   {
+      stream: 0,
+      block: 1,
+      aead: 2
+   };
+   
+   /**
+    * MAC (Message Authentication Code) algorithms.
+    * enum { null, hmac_md5, hmac_sha1, hmac_sha256,
+    *        hmac_sha384, hmac_sha512} MACAlgorithm;
+    */
+   tls.MACAlgorithm =
+   {
+      none: null,
+      hmac_md5: 0,
+      hmac_sha1: 1,
+      hmac_sha256: 2,
+      hmac_sha384: 3,
+      hmac_sha512: 4
+   };
+   
+   /**
+    * Compression algorithms.
+    * enum { null(0), (255) } CompressionMethod;
+    */
+   tls.CompressionMethod =
+   {
+      none: 0
+   };
+   
+   /**
+    * TLS record content types.
+    * enum {
+    *    change_cipher_spec(20), alert(21), handshake(22),
+    *    application_data(23), (255)
+    * } ContentType;
+    */
+   tls.ContentType =
+   {
+      change_cipher_spec: 20,
+      alert: 21,
+      handshake: 22,
+      application_data: 23
+   };
+   
+   /**
+    * TLS handshake types.
+    * enum {
+    *    hello_request(0), client_hello(1), server_hello(2),
+    *    certificate(11), server_key_exchange (12),
+    *    certificate_request(13), server_hello_done(14),
+    *    certificate_verify(15), client_key_exchange(16),
+    *    finished(20), (255)
+    * } HandshakeType;
+    */
+   tls.HandshakeType =
+   {
+      hello_request: 0,
+      client_hello: 1,
+      server_hello: 2,
+      certificate: 11,
+      server_key_exchange: 12,
+      certificate_request: 13,
+      server_hello_done: 14,
+      certificate_verify: 15,
+      client_key_exchange: 16,
+      finished: 20
    };
    
    /**
