@@ -1041,7 +1041,7 @@
          record = tls.createRecord(
          {
             type: tls.ContentType.handshake,
-            data: tls.createFinished()
+            data: tls.createFinished(c)
          });
          console.log('TLS finished record created');
          tls.queue(c, record);
@@ -1966,13 +1966,15 @@
     *    This is the concatenation of all the Handshake structures as
     *    defined in 7.4 exchanged thus far.
     * 
-    * @param certs the certificates to use.
+    * @param c the connection.
     * 
-    * @return the Certificate byte buffer.
+    * @return the Finished byte buffer.
     */
-   tls.createFinished = function(certs)
+   tls.createFinished = function(c)
    {
-      
+      var rval = krypto.util.createBuffer();
+      // FIXME: generate verify_data
+      return rval;
    };
    
    /**
@@ -2010,7 +2012,7 @@
             records.push(tls.createRecord(
             {
                type: record.type,
-               data: krypto.util.createBuffer(data);
+               data: krypto.util.createBuffer(data)
             }));
          }
       }
