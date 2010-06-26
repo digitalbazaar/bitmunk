@@ -1,13 +1,9 @@
 /**
- * API for Transport Layer Security (TLS)
+ * A Javascript implementation of Transport Layer Security (TLS).
  *
  * @author Dave Longley
  *
  * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
- * 
- * An API for using TLS.
- * 
- * FIXME: more docs here
  * 
  * The TLS Handshake Protocol involves the following steps:
  *
@@ -58,10 +54,9 @@
  * 5. Client sends ChangeCipherSpec.
  * 6. Client sends Finished.
  * 
- * Note: Client ignores HelloRequest if in the middle of a
- * handshake.
+ * Note: Client ignores HelloRequest if in the middle of a handshake.
  * 
- * FIXME: title this doc section
+ * Record Layer:
  * 
  * The record layer fragments information blocks into TLSPlaintext
  * records carrying data in chunks of 2^14 bytes or less. Client message
@@ -113,10 +108,6 @@
  * application layer traffic during handshakes subsequent to the first
  * one on a connection.
  * 
- * FIXME: Might to need to stuff received TLS records into a queue
- * according to sequence number ... and process them accordingly, without
- * doing evil, slow, gross setTimeout() business.
- * 
  * struct {
  *    ContentType type;       // same as TLSPlaintext.type
  *    ProtocolVersion version;// same as TLSPlaintext.version
@@ -136,7 +127,7 @@
  * is supported, uncompressed records are always the same as compressed
  * records.
  * 
- * FIXME: title encryption section
+ * Encryption Information:
  * 
  * The encryption and MAC functions translate a TLSCompressed structure
  * into a TLSCiphertext. The decryption functions reverse the process. 
@@ -183,7 +174,6 @@
  * } GenericBlockCipher;
  * 
  * The MAC is generated as described in Section 6.2.3.1.
- * FIXME: grab that text and put it here
  * 
  * IV:
  *    The Initialization Vector (IV) SHOULD be chosen at random, and
@@ -247,16 +237,6 @@
  * but it is not believed to be large enough to be exploitable, due to
  * the large block size of existing MACs and the small size of the
  * timing signal.
- * 
- * FIXME: title data types
- * 
- * Variable-length vectors are defined by specifying a subrange of legal
- * lengths, inclusively, using the notation <floor..ceiling>. When these are
- * encoded, the actual length precedes the vector's contents in the byte
- * stream. The length will be in the form of a number consuming as many bytes
- * as required to hold the vector's specified maximum (ceiling) length. A
- * variable-length vector with an actual length field of zero is referred to
- * as an empty vector.
  */
 (function()
 {
@@ -485,6 +465,14 @@
    
    /**
     * Reads a TLS variable-length vector from a byte buffer.
+    * 
+    * Variable-length vectors are defined by specifying a subrange of legal
+    * lengths, inclusively, using the notation <floor..ceiling>. When these
+    * are encoded, the actual length precedes the vector's contents in the byte
+    * stream. The length will be in the form of a number consuming as many
+    * bytes as required to hold the vector's specified maximum (ceiling)
+    * length. A variable-length vector with an actual length field of zero is
+    * referred to as an empty vector.
     * 
     * @param b the byte buffer.
     * @param lenBytes the number of bytes required to store the length.
@@ -1989,7 +1977,7 @@
    };
    
    /**
-    * Compresses, encrypts, and queues a record for delivery.
+    * Fragments, compresses, encrypts, and queues a record for delivery.
     * 
     * @param c the connection.
     * @param record the record to queue.
@@ -1998,21 +1986,56 @@
    {
       console.log('queuing TLS record', record);
       
-      // compress and encrypt the record using current state
-      var s = c.state.current;
-      if(s === null || (s.compress(record, s) && s.encrypt(record, s)))
+      // handle record fragmentation
+      var records;
+      if(record.fragment.length() <= tls.MaxFragment)
       {
-         console.log('TLS record queued');
-         // store record
-         c.records.push(record);
+         records = [record];
       }
-      // fatal error
       else
       {
-         // FIXME: pass on errors from encryption/compression?
-         c.error(c, {
-            message: 'Could not compress and encrypt record.'
-         });
+         // fragment data as long as it is too long
+         records = [];
+         var data = record.fragment.bytes();
+         while(data.length > tls.MaxFragment)
+         {
+            records.push(tls.createRecord(
+            {
+               type: record.type,
+               data: krypto.util.createBuffer(data.splice(0, tls.MaxFragment))
+            }));
+         }
+         // add last record
+         if(data.length > 0)
+         {
+            records.push(tls.createRecord(
+            {
+               type: record.type,
+               data: krypto.util.createBuffer(data);
+            }));
+         }
+      }
+      
+      // compress and encrypt all fragmented records
+      for(var i = 0; i < records.length && !c.fail; ++i)
+      {
+         // compress and encrypt the record using current state
+         var rec = records[i];
+         var s = c.state.current;
+         if(s === null || (s.compress(rec, s) && s.encrypt(rec, s)))
+         {
+            console.log('TLS record queued');
+            // store record
+            c.records.push(rec);
+         }
+         // fatal error
+         else
+         {
+            // FIXME: pass on errors from encryption/compression?
+            c.error(c, {
+               message: 'Could not compress and encrypt record.'
+            });
+         }
       }
    };
    
@@ -2262,34 +2285,12 @@
        */
       c.prepare = function(data)
       {
-         // only fragment data as necessary
-         if(data.length <= tls.MaxFragment)
+         var record = tls.createRecord(
          {
-            var record = tls.createRecord(
-            {
-               type: tls.ContentType.application_data,
-               data: krypto.util.createBuffer(data)
-            });
-            tls.queue(c, record);
-         }
-         else
-         {
-            var tmp;
-            do
-            {
-               tmp = data.slice(0, tls.MaxFragment);
-               data = data.slice(tls.MaxFragment);
-               var record = tls.createRecord(
-               {
-                  type: tls.ContentType.application_data,
-                  data: krypto.util.createBuffer(tmp)
-               });
-               tls.queue(c, record);
-            }
-            while(data.length > tls.MaxFragment);
-         }
-         
-         // flush queued records
+            type: tls.ContentType.application_data,
+            data: krypto.util.createBuffer(data)
+         });
+         tls.queue(c, record);
          tls.flush(c);
       };
       
@@ -2352,7 +2353,7 @@
    krypto.tls.createConnection = function(options)
    {
       return tls.createConnection(options);
-   },
+   };
    
    /**
     * Wraps a krypto.net socket with a TLS layer.
