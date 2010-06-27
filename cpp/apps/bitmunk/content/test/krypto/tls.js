@@ -952,6 +952,15 @@
             certificate_list: readVector(b, 3)
          };
          
+         /* The sender's certificate will be first in the list (chain), each
+            subsequent one that follows will certify the previous one, but
+            root certificates (self-signed) that specify the certificate
+            authority may be omitted under the assumption that the client must
+            already possess it.
+          */
+         // FIXME: parse cert from ASN.1
+         throw 'foo';
+         
          // FIXME: check server certificate, save in handshake state
          
          // expect a ServerKeyExchange message next

@@ -1,9 +1,9 @@
 /**
- * API for Abstract Syntax Notation Number One
+ * Javscript implementation of Abstract Syntax Notation Number One.
  *
  * @author Dave Longley
  *
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * An API for storing data using the Abstract Syntax Notation Number One
  * format using DER (Distinguished Encoding Rules) encoding. This encoding is
@@ -81,8 +81,9 @@
  * 127 octets (bytes) are used to store the "long form" length. The first
  * byte's 8th bit is set to 1 to indicate the length is "long form." Bits 7-1
  * give the number of additional octets. All following octets are in base 256
- * with the most significant digit first. So, for instance, if the length of a
- * value was 257, the first byte would be set to:
+ * with the most significant digit first (typical big-endian binary unsigned
+ * integer storage). So, for instance, if the length of a value was 257, the
+ * first byte would be set to:
  *
  * 10000010 = 130 = 0x82.
  *
@@ -100,21 +101,9 @@
  * bytes[0] = (value >> 8) & 0xFF; // most significant byte first
  * bytes[1] = value & 0xFF;        // least significant byte last
  *
- * or in the general case (naive implementation):
- * 
- * var value = x;  // some integer x
- * var bytes = [];
- * do
- * {
- *    bytes.push(value & 0xFF);
- *    value = value >> 8;
- * }
- * while(value > 0);
- * bytes.reverse();  // swap from little-endian to big-endian
- * 
  * On the ASN.1 UNIVERSAL Object Identifier (OID) type:
  * 
- * An OID can be written like: "value1.value2.value3...valuen"
+ * An OID can be written like: "value1.value2.value3...valueN"
  * 
  * The DER encoding rules:
  * 
@@ -136,256 +125,298 @@
  */
 (function()
 {
-   crypto = crypto || {};
-   crypto.asn1 =
+   // local alias for krypto stuff
+   var krypto = window.krypto;
+   
+   /**
+    * ASN.1 implementation.
+    */
+   var asn1 = {};
+   
+   /**
+    * ASN.1 types. Not all types are supported by this implementation, only
+    * those necessary to implement a simple PKI are implemented.
+    */
+   asn1.Type =
+   {
+      NONE:         0,
+      BOOLEAN:      1,
+      BITSTRING:    2,
+      INTEGER:      3,
+      OCTETSTRING:  4,
+      NULL:         5,
+      OID:          6,
+      SEQUENCE:    16,
+      SET:         17
+   };
+   
+   /**
+    * Creates a new asn1 object.
+    * 
+    * @param type the UNIVERSAL data type (tag number) for the object.
+    * @param constructed true if the asn1 object is constructed from other
+    *           asn1 objects, false if not.
+    * @param value the value for the object, if it is not constructed.
+    * 
+    * @return the asn1 object.
+    */
+   asn1.create = function(type, constructed, value)
    {
       /**
-       * ASN.1 types. Not all types are supported by this implementation, only
-       * those necessary to implement a simple PKI are implemented.
+       * An asn1 object has a type, a constructed flag, and a value. The
+       * value's type depends on the constructed flag. If constructed, it
+       * will contain a list of other asn1 objects. If not, it will contain
+       * the ASN.1 value as an array of bytes formatted according to the
+       * ASN.1 data type.
        */
-      TYPE_NONE:        0,
-      TYPE_BOOLEAN:     1,
-      TYPE_INTEGER:     2,
-      TYPE_BITSTRING:   3,
-      TYPE_OCTETSTRING: 4,
-      TYPE_NULL:        5,
-      TYPE_OID:         6,
-      TYPE_SEQUENCE:    16,
-      TYPE_SET:         17,
-  
-      /**
-       * Creates a new asn1 object.
-       * 
-       * @param type the UNIVERSAL data type (tag number) for the object.
-       * @param constructed true if the asn1 object is constructed from other
-       *           asn1 objects, false if not.
-       * @param value the value for the object, if it is not constructed.
-       * 
-       * @return the asn1 object.
-       */
-      create: function(type, constructed, value)
-      {
-         /**
-          * An asn1 object has a type, a constructed flag, and a value. The
-          * value's type depends on the constructed flag. If constructed, it
-          * will contain a list of other asn1 objects. If not, it will contain
-          * the ASN.1 value as an array of bytes formatted according to the
-          * ASN.1 data type.
-          */
-         var asn1 =
-         {
-            type: type,
-            constructed: constructed,
-            value: value
-         };
-         
-         return asn1;
-      },
-      
-      /**
-       * Parses an asn1 object from an array of bytes in DER format.
-       * 
-       * @param bytes the bytes to parse from.
-       * @param remainder an object to set any remainder 'bytes' in.
-       * 
-       * @return the asn1 object or a map with 'asn1' and 'bytes' for remaining
-       *         bytes.
-       */
-      fromDer: function(bytes, remainder)
-      {
-         // minimum length for ASN.1 DER structure is 2
-         if(bytes.length < 2)
-         {
-            throw 'Invalid DER length: ' + bytes.length;
-         }
-         
-         // classes other than UNIVERSAL not supported, check bits 7-8 for 0
-         if(bytes[0] & 0xC0)
-         {
-            throw 'Unsupported ASN.1 class: ' + (bytes[0] & 0xC0);
-         }
-         
-         // get the type (bits 1-5)
-         var type = bytes[0] & 0x1F;
-         
-         // see if the length is "short form" or "long form" (bit 8 set)
-         var longForm = bytes[1] & 0x80;
-         var valueStart;
-         var length;
-         if(!longForm)
-         {
-            // length is just the first byte
-            length = bytes[1];
-            valueStart = 2;
-         }
-         else
-         {
-            // length is stored in # bytes (bits 7-1) in base 256
-            // value starts at 2 + # bytes
-            length = 0;
-            var lenBytes = bytes[1] & 0x7F;
-            var valueStart = lenBytes + 2;
-            for(var i = 2; i < valueStart; i++)
-            {
-               length += bytes[i] << (8 * lenBytes);
-               lenBytes--;
-            }
-         }
-         
-         // get the value
-         var value = bytes.splice(valueStart, length);
-         if(value.length != length)
-         {
-            throw 'ASN.1 value length does not match: ' +
-               value.length + ' != ' + length; 
-         }
-         
-         // get the remaining bytes
-         if(remainder)
-         {
-            if(bytes.length > (valueStart + length))
-            {
-               remainder.bytes = bytes.splice(valueStart + length);
-            }
-            else
-            {
-               remainder.bytes = [];
-            }
-         }
-         
-         // constructed is bit 6 (32 = 0x20)
-         var constructed = bytes[0] & 0x20;
-         if(constructed)
-         {
-            // parse child asn1 objects
-            var tmp = value;
-            value = [];
-            var remainder = {};
-            do
-            {
-               value.push(crypto.asn1.fromDer(tmp, remainder));
-               tmp = remainder.bytes;
-            }
-            while(tmp.length > 0);
-         }
-         
-         // create and return asn1 object
-         return crypto.asn1.create(type, constructed, value);
-      },
-      
-      /**
-       * Converts the given asn1 object to an array of bytes in DER format.
-       * 
-       * @param asn1 the asn1 object to convert to bytes.
-       * 
-       * @return the array of bytes.
-       */
-      toDer: function(asn1)
-      {
-         var bytes = [];
-         
-         // build the tag
-         bytes[0] = asn1.type & 0xFF;
-         
-         // for storing the ASN.1 value
-         var value;
-         
-         // if constructed, use each child asn1 object's DER bytes as value
-         if(asn1.constructed)
-         {
-            // turn on 6th bit (0x20 = 32) to indicate asn1 is constructed
-            // from other asn1 objects
-            bytes[0] |= 0x20;
-            
-            // concatenate all child DER bytes together
-            value = [];
-            for(var i = 0; i < asn1.value.length; i++)
-            {
-               value = value.concat(crypto.asn1.toDer(asn1.value[i]));
-            }
-         }
-         // use asn1.value directly
-         else
-         {
-            value = asn1.value;
-         }
-         
-         // use "short form" encoding
-         if(value.length <= 127)
-         {
-            // one byte describes the length
-            // bit 8 = 0 and bits 7-1 = length
-            bytes[1] = value.length & 0x7F;
-         }
-         // use "long form" encoding
-         else
-         {
-            // 2 to 127 bytes describe the length
-            // first byte: bit 8 = 1 and bits 7-1 = # of additional bytes
-            // other bytes: length in base 256, big-endian
-            var len = value.length;
-            var lenBytes = [];
-            do
-            {
-               lenBytes.push(value & 0xFF);
-               len = len >> 8;
-            }
-            while(len > 0);
-            lenBytes.reverse();
-            
-            // set first byte to # of additional bytes and turn on bit 8
-            // concatenate length bytes
-            bytes[1] = (len.length & 0xFF) | 0x80;
-            bytes = bytes.concat(lenBytes);
-         }
-         
-         // concatenate value bytes
-         bytes = bytes.concat(value);
-         
-         return bytes;
-      },
-      
-      /**
-       * Converts an OID dot-separated string to a byte array. The byte array
-       * contains only the DER-encoded value, not any tag or length bytes.
-       * 
-       * @param oid the OID dot-separated string.
-       * 
-       * @return the byte array.
-       */
-      oidToDer: function(oid)
-      {
-         // split OID into individual values
-         var values = oid.split('.');
-         var bytes = [];
-         
-         // first byte is 40 * value1 + value2
-         bytes[0] = 40 * oarseInt(values[0]) + parseInt(values[1]);
-         // other bytes are each value in base 128 with 8th bit set except for
-         // the last byte for each value
-         for(var i = 2; i < values.length; i++)
-         {
-            // we reverse the value bytes so last is true to begin with
-            var last = true;
-            var valueBytes = [];
-            var value = parseInt(values[i]);
-            do
-            {
-               var byte = value & 0x7F;
-               value = value >> 7;
-               if(!last)
-               {
-                  byte |= 0x80;
-               }
-               valueBytes.push(byte);
-               last = false;
-            }
-            while(value > 0);
-            valueBytes.reverse();
-            bytes = bytes.concat(valueBytes);
-         }
-         
-         return bytes;
-      }
+      return {
+         type: type,
+         constructed: constructed,
+         value: value
+      };
    };
+   
+   /**
+    * Parses an asn1 object from a byte buffer in DER format.
+    * 
+    * @param bytes the byte buffer to parse from.
+    * 
+    * @return the parsed asn1 object.
+    */
+   asn1.fromDer = function(bytes)
+   {
+      var rval = null;
+      
+      // minimum length for ASN.1 DER structure is 2
+      if(bytes.length() < 2)
+      {
+         throw 'Invalid DER length: ' + bytes.length;
+      }
+      
+      // get the first byte
+      var b1 = bytes.getByte();
+      
+      // classes other than UNIVERSAL not supported, check bits 7-8 for 0
+      if(b1 & 0xC0)
+      {
+         throw 'Unsupported ASN.1 class: ' + (b & 0xC0);
+      }
+      
+      // get the type (bits 1-5)
+      var type = b1 & 0x1F;
+      
+      // see if the length is "short form" or "long form" (bit 8 set)
+      var b2 = bytes.getByte();
+      var longForm = b2 & 0x80;
+      var length;
+      if(!longForm)
+      {
+         // length is just the first byte
+         length = b2;
+      }
+      else
+      {
+         // the number of bytes the length is stored in is specified in bits
+         // 7 through 1 and each length byte is in big-endian base-256
+         length = bytes.getInt((b2 & 0x7F) << 3);
+      }
+      
+      // ensure there are enough bytes to get the value
+      if(bytes.length() < length)
+      {
+         throw 'Not enough bytes to read ASN.1 value: ' +
+            bytes.length() + ' < ' + length; 
+      }
+      
+      // prepare to get value
+      var value;
+      
+      // constructed flag is bit 6 (32 = 0x20) of the first byte
+      var constructed = b1 & 0x20;
+      if(constructed)
+      {
+         // parse child asn1 objects from the value
+         value = [];
+         value.push(asn1.fromDer(bytes));
+      }
+      else
+      {
+         // asn1 not constructed, get raw value
+         value = bytes.getBytes(length);
+      }
+      
+      // create and return asn1 object
+      return asn1.create(type, constructed, value);
+   };
+   
+   /**
+    * Converts the given asn1 object to a buffer of bytes in DER format.
+    * 
+    * @param asn1 the asn1 object to convert to bytes.
+    * 
+    * @return the buffer of bytes.
+    */
+   asn1.toDer = function(asn1)
+   {
+      var bytes = krypto.util.createBuffer();
+      
+      // build the first byte
+      var b1 = asn1.type;
+      
+      // for storing the ASN.1 value
+      var value = krypto.util.createBuffer();
+      
+      // if constructed, use each child asn1 object's DER bytes as value
+      if(asn1.constructed)
+      {
+         // turn on 6th bit (0x20 = 32) to indicate asn1 is constructed
+         // from other asn1 objects
+         b1 |= 0x20;
+         
+         // add all of the child DER bytes together
+         for(var i = 0; i < asn1.value.length; ++i)
+         {
+            value.putBuffer(asn1.toDer(asn1.value[i]));
+         }
+      }
+      // use asn1.value directly
+      else
+      {
+         value.putBytes(asn1.value);
+      }
+      
+      // add tag byte
+      bytes.putByte(b1);
+      
+      // use "short form" encoding
+      if(value.length <= 127)
+      {
+         // one byte describes the length
+         // bit 8 = 0 and bits 7-1 = length
+         bytes.putByte(value.length & 0x7F);
+      }
+      // use "long form" encoding
+      else
+      {
+         // 2 to 127 bytes describe the length
+         // first byte: bit 8 = 1 and bits 7-1 = # of additional bytes
+         // other bytes: length in base 256, big-endian
+         var len = value.length;
+         var lenBytes = '';
+         do
+         {
+            lenBytes += String.fromCharCode(len & 0xFF);
+            len = len >> 8;
+         }
+         while(len > 0);
+         
+         // set first byte to # of additional bytes and turn on bit 8
+         // concatenate length bytes in reverse since they were generated
+         // little endian and we need big endian
+         bytes.putByte(lenBytes.length | 0x80);
+         for(var i = lenBytes.length - 1; i >= 0; --i)
+         {
+            bytes.putByte(lenBytes[i]);
+         }
+      }
+      
+      // concatenate value bytes
+      bytes.putBuffer(value);
+      return bytes;
+   };
+   
+   /**
+    * Converts an OID dot-separated string to a byte buffer. The byte buffer
+    * contains only the DER-encoded value, not any tag or length bytes.
+    * 
+    * @param oid the OID dot-separated string.
+    * 
+    * @return the byte buffer.
+    */
+   asn1.oidToDer = function(oid)
+   {
+      // split OID into individual values
+      var values = oid.split('.');
+      var bytes = krypto.util.createBuffer();
+      
+      // first byte is 40 * value1 + value2
+      bytes.putByte(40 * parseInt(values[0]) + parseInt(values[1]));
+      // other bytes are each value in base 128 with 8th bit set except for
+      // the last byte for each value
+      var last, valueBytes, value, byte;
+      for(var i = 2; i < values.length; ++i)
+      {
+         // produce value bytes in reverse because we don't know how many
+         // bytes it will take to store the value
+         last = true;
+         valueBytes = [];
+         value = parseInt(values[i]);
+         do
+         {
+            byte = value & 0x7F;
+            value = value >> 7;
+            // if value is not last, then turn on 8th bit
+            if(!last)
+            {
+               byte |= 0x80;
+            }
+            valueBytes.push(byte);
+            last = false;
+         }
+         while(value > 0);
+         
+         // add value bytes in reverse (needs to be in big endian)
+         for(var n = valueBytes.length - 1; n >= 0; --n)
+         {
+            bytes.putByte(valueBytes[n]);
+         }
+      }
+      
+      return bytes;
+   };
+   
+   /**
+    * Converts a DER-encoded byte buffer to an OID dot-separated string. The
+    * byte buffer should contain only the DER-encoded value, not any tag or
+    * length bytes.
+    * 
+    * @param bytes the byte buffer.
+    * 
+    * @return the OID dot-separated string.
+    */
+   asn1.derToOid = function(bytes)
+   {
+      var oid;
+      
+      // first byte is 40 * value1 + value2
+      var b = bytes.getByte();
+      oid = Math.floor(b / 40) + '.' + (b % 40);
+      
+      // other bytes are each value in base 128 with 8th bit set except for
+      // the last byte for each value
+      var value = 0;
+      while(bytes.length() > 0)
+      {
+         b = bytes.getByte();
+         value = value << 7;
+         // not the last byte for the value
+         if(b & 0x80)
+         {
+            value += b & 0x7F;
+         }
+         // last byte
+         else
+         {
+            oid += '.' + (value + b);
+            value = 0;
+         }
+      }
+      
+      return oid;
+   };
+   
+   /**
+    * The asn.1 API.
+    */
+   window.krypto.asn1 = asn1;
 })();

@@ -16,6 +16,7 @@
       <script type="text/javascript" src="/bitmunk/test/krypto/sha1.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/hmac.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/aes.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/asn1.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/tls.js"></script>
       <script type="text/javascript" src="/bitmunk/test/pidcrypt/string_extend.js"></script>
       <script type="text/javascript" src="/bitmunk/test/pidcrypt/pidcrypt.js"></script>
@@ -437,6 +438,23 @@
          console.log('sha-1 with 80-byte key', mac.toHex() === expect);
       };
 
+      var test_oid = function()
+      {
+         var asn1 = krypto.asn1;
+         var oid, der, expect;
+         
+         oid = '1.2.840.113549';
+         der = asn1.oidToDer(oid);
+         expect = '2a864886f70d';
+         //console.log('hex', der.toHex());
+         console.log('assert', expect === der.toHex());
+
+         expect = oid;
+         oid = asn1.derToOid(der);
+         //console.log('oid', oid);
+         console.log('assert', expect === oid);
+      };
+      
       // 128-bit test keys
       var aesKeys = [
          '00010203050607080A0B0C0D0F101112',
@@ -1100,6 +1118,9 @@
          <button id="sha1" onclick="javascript:return test_sha1();">sha1</button>
          <button id="sha1_speed" onclick="javascript:return test_sha1_speed();">sha1 speed</button>
          <button id="hmac" onclick="javascript:return test_hmac();">hmac</button>
+      </div>
+      <div id="asn1">
+         <button id="oid" onclick="javascript:return test_oid();">asn.1 oid</button>
       </div>
       <div id="flashTest">
          <p>Could not load the flash Test.</p>

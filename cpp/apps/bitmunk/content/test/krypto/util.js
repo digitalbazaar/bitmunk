@@ -256,6 +256,25 @@
       };
       
       /**
+       * Gets an n-bit integer from this buffer in big-endian order and
+       * advances the read pointer by n/8.
+       * 
+       * @param n the number of bits in the integer.
+       * 
+       * @return the integer.
+       */
+      buf.getInt = function(i, n)
+      {
+         var rval = 0;
+         do
+         {
+            rval += (buf.data.charCodeAt(buf.read++) << n);
+            n -= 8;
+         }
+         while(n > 0);
+      };
+      
+      /**
        * Reads bytes out into a string and clears them from the buffer.
        * 
        * @param count the number of bytes to read, undefined, null or 0
