@@ -387,11 +387,11 @@
     * @param record the TLSCompressed record to encrypt.
     * @param s the ConnectionState to use.
     * 
-    * @return the TLSCipherText record on success, null on failure.
+    * @return true on success, false on failure.
     */
    var encrypt_aes_128_cbc_sha1 = function(record, s)
    {
-      var rval = null;
+      var rval = false;
       
       // append MAC to fragment
       var mac = s.macFunction(s.macKey, s.sequenceNumber++, record);
@@ -414,7 +414,8 @@
       cipher.output.putBytes(iv);
       
       // do encryption (default padding is appropriate)
-      if(cipher.update(record.fragment) && cipher.finish())
+      cipher.update(record.fragment);
+      if(cipher.finish())
       {
          /* The encrypted data length (TLSCiphertext.length) is one more than
          the sum of SecurityParameters.block_length, TLSCompressed.length,
@@ -428,7 +429,7 @@
          // set record fragment to encrypted output
          record.fragment = cipher.output;
          record.length = record.fragment.length();
-         rval = record;
+         rval = true;
       }
       
       return rval;
@@ -473,11 +474,11 @@
     * @param record the TLSCipherText record to decrypt.
     * @param s the ConnectionState to use.
     * 
-    * @return the TLSCompressed record on success, null on failure.
+    * @return true on success, false on failure.
     */
    var decrypt_aes_128_cbc_sha1 = function(record, s)
    {
-      var rval = null;
+      var rval = false;
       
       // FIXME: TLS 1.1 & 1.2 use an explicit IV every time to protect
       // against CBC attacks
@@ -493,8 +494,8 @@
       cipher.start(iv);
       
       // do decryption
-      if(cipher.update(record.fragment) &&
-         cipher.finish(decrypt_aes_128_cbc_sha1_padding))
+      cipher.update(record.fragment);
+      if(cipher.finish(decrypt_aes_128_cbc_sha1_padding))
       {
          // decrypted data:
          // first (len - 20) bytes = application data
@@ -526,7 +527,7 @@
          var mac2 = s.macFunction(s.macKey, s.sequenceNumber++, record);
          if(mac2 === mac)
          {
-            rval = record;
+            rval = true;
          }
       }
       
@@ -1230,6 +1231,9 @@
          console.log('TLS finished record created');
          tls.queue(c, record);
          
+         // send records
+         tls.flush(c);
+         
          // expect a server ChangeCipherSpec message next
          c.expect = SCC;
       }
@@ -1875,7 +1879,7 @@
       // update function in write mode will compress then encrypt a record
       state.write.update = function(c, record)
       {
-         if(!state.write.compressFunction(record, state.read))
+         if(!state.write.compressFunction(record, state.write))
          {
             // error, but do not send alert since it would require
             // compression as well
@@ -1888,7 +1892,7 @@
                }
             });
          }
-         else if(!state.write.cipherFunction(record, state.read))
+         else if(!state.write.cipherFunction(record, state.write))
          {
             // error, but do not send alert since it would require
             // encryption as well
@@ -1935,6 +1939,7 @@
                      keys.server_write_key),
                   iv: keys.server_write_IV
                };
+               console.log('CREATING ENCRYPTION CIPHER');
                state.write.cipherState =
                {
                   init: false,
