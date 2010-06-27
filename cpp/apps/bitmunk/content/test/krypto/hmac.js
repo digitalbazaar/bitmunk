@@ -47,32 +47,30 @@
        */
       ctx.start = function(md, key)
       {
-         if(md === null)
+         if(md !== null)
          {
-            // reuse previous message digest
-            md = _md;
-         }
-         else if(md.constructor == String)
-         {
-            // create builtin message digest
-            md = md.toLowerCase();
-            if(md == 'md5')
+            if(md.constructor == String)
             {
-               _md = krypto.md.md5.create();
-            }
-            else if(md == 'sha1' || md == 'sha-1')
-            {
-               _md = krypto.md.sha1.create();
+               // create builtin message digest
+               md = md.toLowerCase();
+               if(md == 'md5')
+               {
+                  _md = krypto.md.md5.create();
+               }
+               else if(md == 'sha1' || md == 'sha-1')
+               {
+                  _md = krypto.md.sha1.create();
+               }
+               else
+               {
+                  throw 'Unknown hash algorithm "' + md + '"'; 
+               }
             }
             else
             {
-               throw 'Unknown hash algorithm "' + md + '"'; 
+               // store message digest
+               _md = md;
             }
-         }
-         else
-         {
-            // store message digest
-            _md = md;
          }
          
          if(key === null)

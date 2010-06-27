@@ -366,7 +366,8 @@
             TLSCompressed.length +
             TLSCompressed.fragment)
       */
-      var hmac = krypto.hmac.create('SHA1', key);
+      var hmac = krypto.hmac.create();
+      hmac.start('SHA1', key);
       var b = krypto.util.createBuffer();
       b.putInt32(0);
       b.putInt32(seqNum);
@@ -795,7 +796,7 @@
       // error case
       c.error(c, {
          message: 'Unexpected message. Received TLS record out of order.',
-         client: true,
+         send: true,
          alert: {
             level: tls.Alert.Level.fatal,
             description: tls.Alert.Description.unexpected_message
@@ -861,7 +862,7 @@
       {
          c.error(c, {
             message: 'Invalid ServerHello message. Message too short.',
-            client: true,
+            send: true,
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unexpected_message
@@ -935,7 +936,7 @@
       {
          c.error(c, {
             message: 'Invalid Certificate message. Message too short.',
-            client: true,
+            send: true,
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unexpected_message
@@ -1019,7 +1020,7 @@
       {
          c.error(c, {
             message: 'Invalid key parameters. Only RSA is supported.',
-            client: true,
+            send: true,
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unsupported_certificate
@@ -1070,7 +1071,7 @@
       {
          c.error(c, {
             message: 'Invalid CertificateRequest. Message too short.',
-            client: true,
+            send: true,
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unexpected_message
@@ -1127,7 +1128,7 @@
       {
          c.error(c, {
             message: 'Invalid ServerHelloDone message. Invalid length.',
-            client: true,
+            send: true,
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unexpected_message
@@ -1248,7 +1249,7 @@
       {
          c.error(c, {
             message: 'Invalid ChangeCipherSpec message received.',
-            client: true,
+            send: true,
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unexpected_message
@@ -1315,7 +1316,7 @@
       {
          c.error(c, {
             message: 'Invalid Finished message. Invalid length.',
-            client: true,
+            send: true,
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unexpected_message
@@ -1510,7 +1511,7 @@
             // invalid handshake type
             c.error(c, {
                message: 'Invalid handshake type.',
-               client: true,
+               send: true,
                alert: {
                   level: fatal,
                   description: illegal_parameter
@@ -1850,7 +1851,7 @@
          {
             c.error(c, {
                message: 'Could not decrypt record.',
-               client: true,
+               send: true,
                alert: {
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.decryption_failed
@@ -1861,7 +1862,7 @@
          {
             c.error(c, {
                message: 'Could not decompress record.',
-               client: true,
+               send: true,
                alert: {
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.decompression_failure
@@ -1876,9 +1877,11 @@
       {
          if(!state.write.compressFunction(record, state.read))
          {
+            // error, but do not send alert since it would require
+            // compression as well
             c.error(c, {
                message: 'Could not compress record.',
-               client: true,
+               send: false,
                alert: {
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.internal_error
@@ -1887,9 +1890,11 @@
          }
          else if(!state.write.cipherFunction(record, state.read))
          {
+            // error, but do not send alert since it would require
+            // encryption as well
             c.error(c, {
                message: 'Could not encrypt record.',
-               client: true,
+               send: false,
                alert: {
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.internal_error
@@ -2474,8 +2479,8 @@
          closed: options.closed,
          error: function(c, ex)
          {
-            // send TLS alert if origin is client
-            if(ex.client)
+            // send TLS alert
+            if(ex.send)
             {
                var record = tls.createAlert(ex.alert);
                tls.queue(c, record);
@@ -2602,7 +2607,7 @@
                {
                   c.error(c, {
                      message: 'Incompatible TLS version.',
-                     client: true,
+                     send: true,
                      alert: {
                         level: tls.Alert.Level.fatal,
                         description: tls.Alert.Description.protocol_version
@@ -2639,7 +2644,7 @@
                         // error, invalid fragmented record
                         c.error(c, {
                            message: 'Invalid fragmented record.',
-                           client: true,
+                           send: true,
                            alert: {
                               level: tls.Alert.Level.fatal,
                               description:
@@ -2688,7 +2693,7 @@
       };
       
       /**
-       * Closes the connection (sends a close_notify message).
+       * Closes the connection (sends a close_notify alert).
        */
       c.close = function()
       {
@@ -2703,10 +2708,10 @@
             console.log('TLS close_notify alert record created');
             tls.queue(c, record);
             tls.flush(c);
+            
+            // call handler
+            c.closed(c);
          }
-         
-         // call handler
-         c.closed(c);
          
          // reset TLS engine state
          c = null;
