@@ -159,7 +159,8 @@
       NULL:         5,
       OID:          6,
       SEQUENCE:    16,
-      SET:         17
+      SET:         17,
+      UTCTIME:     23
    };
    
    /**
@@ -442,6 +443,63 @@
       }
       
       return oid;
+   };
+   
+   /**
+    * Validates the that given ASN.1 object is at least a super set of the
+    * given ASN.1 structure. Only tag classes and types are checked. An
+    * optional map may also be provided to capture ASN.1 values while the
+    * structure is checked. To capture an ASN.1 value, set an object in the
+    * validator's 'capture' parameter to the key to use in the capture map.
+    * 
+    * Objects in the validator may set a field 'optional' to true to indicate
+    * that it isn't necessary to pass validation.
+    * 
+    * @param obj the ASN.1 object to validate.
+    * @param v the ASN.1 structure validator.
+    * @param capture an optional map to capture values in.
+    * 
+    * @return true on success, false on failure.
+    */
+   asn1.validate = function(obj, v, capture)
+   {
+      var rval = false;
+      if((obj.tagClass === v.tagClass) && (obj.type === v.type))
+      {
+         if(obj.constructed && v.constructed)
+         {
+            if(capture && v.capture)
+            {
+               capture[v.capture] = obj.value;
+            }
+            
+            rval = true;
+            if(v.value)
+            {
+               for(var i = 0; rval && i < v.value.length; ++i)
+               {
+                  if(i < obj.value.length)
+                  {
+                     rval = asn1.validate(obj.value[i], v.value[i]);
+                  }
+                  else if(!v.value[i].optional)
+                  {
+                     rval = false;
+                  }
+               }
+            }
+         }
+         else if(!obj.constructed && !v.constructed)
+         {
+            if(capture && v.capture)
+            {
+               capture[v.capture] = obj.value;
+            }
+            
+            rval = true;
+         }
+      }
+      return rval;
    };
    
    /**
