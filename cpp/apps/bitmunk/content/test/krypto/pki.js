@@ -307,14 +307,76 @@
       return rval;
    };
    
+   // regex for stripping PEM header and footer
+   var _pemRegex = new RegExp(
+      '-----BEGIN [^-]+-----([A-Za-z0-9+\/=\s]+)-----END [^-]+-----');
+   
    /**
-    * Converts an X.509 certificate from an ASN.1 object.
+    * Converts PEM-formatted data into an certificate or key.
     * 
-    * @param obj the asn1 representation of of a SubjectPublicKeyInfo.
+    * @param pem the PEM-formatted data.
+    * @param func the certificate or key function to convert from ASN.1.
+    * 
+    * @return the certificate or key.
+    */
+   var _fromPem = function(pem, func)
+   {
+      var rval = null;
+      
+      // get matching base64
+      var m = _pemRegex.exec(pem);
+      if(m)
+      {
+         // base64 decode to get DER
+         var der = krypto.util.createBuffer(krypto.util.decode64(m[1]));
+         
+         // parse DER into asn.1 object
+         var obj = asn1.fromDer(der);
+         
+         // convert from asn.1
+         rval = func(obj);
+      }
+      else
+      {
+         throw 'Invalid PEM format';
+      }
+      
+      return rval;
+   };
+   
+   
+   /**
+    * Converts an X.509 certificate from PEM format.
+    * 
+    * @param pem the PEM-formatted certificate.
+    * 
+    * @return the certificate.
+    */
+   pki.certificateFromPem = function(pem)
+   {
+      return _fromPem(pem, pki.certificateFromAsn1);
+   };
+   
+   /**
+    * Converts an RSA public key from PEM format.
+    * 
+    * @param pem the PEM-formatted public key.
     * 
     * @return the public key.
     */
-   pki.publicKeyFromAsn1 = function(obj)
+   pki.publicKeyFromPem = function(pem)
+   {
+      return _fromPem(pem, pki.publicKeyFromAsn1);
+   };
+   
+   /**
+    * Converts an X.509v3 RSA certificate from an ASN.1 object.
+    * 
+    * @param obj the asn1 representation of an X.509v3 RSA certificate.
+    * 
+    * @return the certificate.
+    */
+   pki.certificateFromAsn1 = function(obj)
    {
       // validate certificate and capture data
       var capture = {};
