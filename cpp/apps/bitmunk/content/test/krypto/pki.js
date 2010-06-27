@@ -114,8 +114,10 @@
    /**
     * Public Key Infrastructure (PKI) implementation.
     */
-   var pki = krypto.pki || {};
-   var oids = krypto.oids || {};
+   krypto.pki = {};
+   var pki = krypto.pki;
+   krypto.oids = krypto.oids || {};
+   var oids = krypto.oids;
    
    /**
     * Known OIDs.
@@ -123,12 +125,14 @@
    oids['RSA'] = '1.2.840.113549.1.1.1';
    oids['1.2.840.113549.1.1.1'] = 'RSA';
    
-   // validator for an RSA SubjectPublicKeyInfo structure
-   var rsaPublicKeyValidator = {
+   // validator for an SubjectPublicKeyInfo structure
+   // Note: Currently only works with an RSA public key 
+   var publicKeyValidator = {
       // SubjectPublicKeyInfo
       tagClass: asn1.Class.UNIVERSAL,
       type: asn1.Type.SEQUENCE,
       constructed: true,
+      captureAsn1: 'subjectPublicKeyInfo',
       value: [{
          // AlgorithmIdentifier
          tagClass: asn1.Class.UNIVERSAL,
@@ -144,25 +148,41 @@
       }, {
          // subjectPublicKey
          tagClass: asn1.Class.UNIVERSAL,
-         type: asn1.Type.SEQUENCE,
-         constructed: true,
+         type: asn1.Type.BITSTRING,
+         constructed: false,
          value: [{
-            // modulus (n)
+            // rsaPublicKey
             tagClass: asn1.Class.UNIVERSAL,
-            type: asn1.Type.INTEGER,
-            constructed: false,
-            capture: 'publicKeyModulus'
-         }, {
-            // publicExponent (e)
-            tagClass: asn1.Class.UNIVERSAL,
-            type: asn1.Type.INTEGER,
-            constructed: false,
-            capture: 'publicKeyExponent'
+            type: asn1.Type.SEQUENCE,
+            constructed: true,
+            optional: true,
+            captureAsn1: 'rsaPublicKey'
          }]
       }]
    };
    
-   // validator for an X.509v3 certificate with an RSA public key
+   // validator for an RSA public key
+   var rsaPublicKeyValidator = {
+      // subjectPublicKey
+      tagClass: asn1.Class.UNIVERSAL,
+      type: asn1.Type.SEQUENCE,
+      constructed: true,
+      value: [{
+         // modulus (n)
+         tagClass: asn1.Class.UNIVERSAL,
+         type: asn1.Type.INTEGER,
+         constructed: false,
+         capture: 'publicKeyModulus'
+      }, {
+         // publicExponent (e)
+         tagClass: asn1.Class.UNIVERSAL,
+         type: asn1.Type.INTEGER,
+         constructed: false,
+         capture: 'publicKeyExponent'
+      }]
+   };
+   
+   // validator for an X.509v3 certificate
    var x509CertificateValidator = {
       // Certificate
       tagClass: asn1.Class.UNIVERSAL,
@@ -175,14 +195,21 @@
          constructed: true,
          value: [{
             // Version
-            tagClass: asn1.Class.UNIVERSAL,
-            type: asn1.Type.INTEGER,
-            constructed: false,
-            capture: 'certVersion'
+            tagClass: asn1.Class.CONTEXT_SPECIFIC,
+            type: 0,
+            constructed: true,
+            optional: true,
+            value: [{
+               // Integer (actual version)
+               tagClass: asn1.Class.UNIVERSAL,
+               type: asn1.Type.BIT_STRING,
+               constructed: false,
+               capture: 'certVersion'
+            }]
          }, {
             // CertificateSerialNumber
             tagClass: asn1.Class.UNIVERSAL,
-            type: asn1.Type.INTEGER,
+            type: asn1.Type.BIT_STRING,
             constructed: false,
             capture: 'certSerialNumber'
          }, {
@@ -202,13 +229,7 @@
             tagClass: asn1.Class.UNIVERSAL,
             type: asn1.Type.SEQUENCE,
             constructed: true,
-            value: [{
-               // RelativeDistinguishedName (SET OF AttributeTypeAndValue)
-               tagClass: asn1.Class.UNIVERSAL,
-               type: asn1.Type.SET,
-               constructed: true,
-               capture: 'certIssuer'
-            }]
+            capture: 'certIssuer'
          }, {
             // Validity
             tagClass: asn1.Class.UNIVERSAL,
@@ -232,14 +253,11 @@
             tagClass: asn1.Class.UNIVERSAL,
             type: asn1.Type.SEQUENCE,
             constructed: true,
-            value: [{
-               // RelativeDistinguishedName (SET OF AttributeTypeAndValue)
-               tagClass: asn1.Class.UNIVERSAL,
-               type: asn1.Type.SET,
-               constructed: true,
-               capture: 'certSubject'
-            }]
-         }, rsaPublicKeyValidator /* SubjectPublicKeyInfo */, {
+            capture: 'certSubject'
+         }, 
+            // SubjectPublicKeyInfo
+            publicKeyValidator
+         , {
             // issuerUniqueID (optional)
             tagClass: asn1.Class.UNIVERSAL,
             type: asn1.Type.BITSTRING,
@@ -255,8 +273,8 @@
             optional: true
          }, {
             // Extensions (optional)
-            tagClass: asn1.Class.UNIVERSAL,
-            type: asn1.Type.SEQUENCE,
+            tagClass: asn1.Class.CONTEXT_SPECIFIC,
+            type: 3,
             constructed: true,
             capture: 'certExtensions',
             optional: true
@@ -283,25 +301,33 @@
    };
    
    /**
-    * Converts a set of ASN.1 DER-encoded AttributeTypeAndValues into an
-    * array with objects that have type and value properties.
+    * Converts an RDNSequence of ASN.1 DER-encoded RelativeDistinguishedName
+    * sets into an array with objects that have type and value properties.
     * 
-    * @param set the ASN.1 set to convert.
+    * @param rdn the RDNSequence to convert.
     */
-   var _getAttributesAsArray = function(set)
+   var _getAttributesAsArray = function(rdn)
    {
       var rval = [];
       
-      // each value is an AttributeTypeAndValue sequence containing
-      // first a type (an OID) and second a value (defined by the OID)
-      var attr, obj;
-      for(var i = 0; i < set.value.length; ++i)
+      // each value in 'rdn' in is a SET of RelativeDistinguishedName
+      var set, attr, obj;
+      for(var si = 0; si < rdn.value.length; ++si)
       {
-         obj = {};
-         attr = set.value[i];
-         obj.type = asn1.derToOid(attr.value[0].value);
-         obj.value = asn1.attr.value[1].value;
-         rval.push(obj);
+         // get the RelativeDistinguishedName set
+         set = rdn.value[si];
+         
+         // each value in the SET is an AttributeTypeAndValue sequence
+         // containing first a type (an OID) and second a value (defined by
+         // the OID)
+         for(var i = 0; i < set.value.length; ++i)
+         {
+            obj = {};
+            attr = set.value[i];
+            obj.type = asn1.derToOid(attr.value[0].value);
+            obj.value = asn1.attr.value[1].value;
+            rval.push(obj);
+         }
       }
       
       return rval;
@@ -332,6 +358,8 @@
          
          // parse DER into asn.1 object
          var obj = asn1.fromDer(der);
+         console.log('obj', asn1.prettyPrint(obj));
+         console.log(obj);
          
          // convert from asn.1
          rval = func(obj);
@@ -378,8 +406,6 @@
     */
    pki.certificateFromAsn1 = function(obj)
    {
-      console.log('obj', asn1.prettyPrint(obj));
-      
       // validate certificate and capture data
       var capture = {};
       var errors = [];
@@ -403,7 +429,7 @@
       
       // start building cert
       var cert = {};
-      cert.version = capture.certVersion;
+      cert.version = capture.certVersion || 0;
       var tmp = krypto.util.createBuffer(capture.certSerialNumber);
       cert.serialNumber = tmp.getInt(tmp.length() << 3);
       cert.signatureOid = krypto.asn1.derToOid(capture.certSignatureOid);
@@ -451,10 +477,8 @@
          }
       }
       
-      // create public key
-      cert.publicKey = createRsaPublicKey(
-         new BigInteger(capture.publicKeyModulus, 256),
-         new BigInteger(capture.publicKeyExponent, 256));
+      // convert RSA public key from ASN.1
+      cert.publicKey = pki.publicKeyFromAsn1(capture.subjectPublicKeyInfo);
       
       return cert;
    };
@@ -471,7 +495,7 @@
       // validate subject public key info and capture data
       var capture = {};
       var errors = [];
-      if(!asn1.validate(obj, rsaPublicKeyValidator, capture, errors))
+      if(!asn1.validate(obj, publicKeyValidator, capture, errors))
       {
          throw {
             message: 'Cannot read public key. ' +
@@ -490,8 +514,20 @@
          };
       }
       
+      // get RSA params
+      errors = [];
+      if(!asn1.validate(
+         capture.rsaPublicKey, rsaPublicKeyValidator, capture, errors))
+      {
+         throw {
+            message: 'Cannot read public key. ' +
+               'ASN.1 object is not an RSAPublicKey.',
+            errors: errors
+         };
+      }
+      
       // create public key
-      return createRsaPublicKey(
+      return pki.createRsaPublicKey(
          new BigInteger(capture.publicKeyModulus, 256),
          new BigInteger(capture.publicKeyExponent, 256));
    };
@@ -506,7 +542,7 @@
     */
    pki.createRsaPublicKey = function(modulus, exponent)
    {
-      var pk = 
+      var key = 
       {
          modulus: modulus,
          exponent: exponent
@@ -517,10 +553,12 @@
        * 
        * @param b the byte buffer of data to encrypt.
        */
-      pk.encrypt = function(b)
+      key.encrypt = function(b)
       {
          // FIXME: implement me
       };
+      
+      return key;
    };
    
    /**

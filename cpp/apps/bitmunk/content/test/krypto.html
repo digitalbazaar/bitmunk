@@ -457,6 +457,14 @@
          console.log('assert', expect === oid);
       };
 
+      var sPublicKey =
+      '-----BEGIN PUBLIC KEY-----\r\n' +
+      'MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDL0EugUiNGMWscLAVM0VoMdhDZ\r\n' +
+      'EJOqdsUMpx9U0YZI7szokJqQNIwokiQ6EonNnWSMlIvy46AhnlRYn+ezeTeU7eMG\r\n' +
+      'TkP3VF29vXBo+dLq5e+8VyAyQ3FzM1wI4ts4hRACF8w6mqygXQ7i/SDu8/rXqRGt\r\n' +
+      'vnM+z0MYDdKo80efzwIDAQAB\r\n' +
+      '-----END PUBLIC KEY-----';
+         
       var sCertPem =
       '-----BEGIN CERTIFICATE-----\r\n' +
       'MIIDIjCCAougAwIBAgIJANE2aHSbwpaRMA0GCSqGSIb3DQEBBQUAMGoxCzAJBgNV\r\n' +
@@ -477,6 +485,19 @@
       'Y6FdybcyDLSxKn9id+g9229ci9/s9PI+QmD5vXd8yZyScLc2JkYB4GC6+9D1+/+x\r\n' +
       's2hzMxuK6kzZlP+0l9LGcraMQPGRydjCARZZm4Uegln9rh85XFQ=\r\n' +
       '-----END CERTIFICATE-----';
+
+      var test_public_key_from_pem = function()
+      {
+         try
+         {
+            var publicKey = krypto.pki.publicKeyFromPem(sPublicKey);
+            console.log('publicKey', publicKey);
+         }
+         catch(ex)
+         {
+            console.log(ex);
+         }
+      };
 
       var test_cert_from_pem = function()
       {
@@ -1157,6 +1178,7 @@
       </div>
       <div id="pki">
          <button id="oid" onclick="javascript:return test_oid();">asn.1 oid</button>
+         <button id="public_key_pem" onclick="javascript:return test_public_key_from_pem();">public key from pem</button>
          <button id="cert_pem" onclick="javascript:return test_cert_from_pem();">cert from pem</button>
       </div>
       <div id="flashTest">

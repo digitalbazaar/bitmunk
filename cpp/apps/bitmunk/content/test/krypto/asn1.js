@@ -153,8 +153,8 @@
    {
       NONE:         0,
       BOOLEAN:      1,
-      BITSTRING:    2,
-      INTEGER:      3,
+      INTEGER:      2,
+      BITSTRING:    3,
       OCTETSTRING:  4,
       NULL:         5,
       OID:          6,
@@ -175,8 +175,7 @@
     * 
     * @param tagClass the tag class for the object.
     * @param type the data type (tag number) for the object.
-    * @param constructed true if the asn1 object is constructed from other
-    *           asn1 objects, false if not.
+    * @param constructed true if the asn1 object is in constructed form.
     * @param value the value for the object, if it is not constructed.
     * 
     * @return the asn1 object.
@@ -193,8 +192,36 @@
          tagClass: tagClass,
          type: type,
          constructed: constructed,
+         composed: (value.constructor == Array),
          value: value
       };
+   };
+   
+   /**
+    * Gets the length of an ASN.1 value.
+    * 
+    * @param b the ASN.1 byte buffer.
+    * 
+    * @return the length of the ASN.1 value.
+    */
+   var _getValueLength = function(b)
+   {
+      // see if the length is "short form" or "long form" (bit 8 set)
+      var b2 = b.getByte();
+      var length;
+      var longForm = b2 & 0x80;
+      if(!longForm)
+      {
+         // length is just the first byte
+         length = b2;
+      }
+      else
+      {
+         // the number of bytes the length is stored in is specified in bits
+         // 7 through 1 and each length byte is in big-endian base-256
+         length = b.getInt((b2 & 0x7F) << 3);
+      }
+      return length;
    };
    
    /**
@@ -206,6 +233,12 @@
     */
    asn1.fromDer = function(bytes)
    {
+      // wrap in buffer if needed
+      if(bytes.constructor == String)
+      {
+         bytes = krypto.util.createBuffer(bytes);
+      }
+      
       // minimum length for ASN.1 DER structure is 2
       if(bytes.length() < 2)
       {
@@ -224,21 +257,8 @@
       // get the type (bits 1-5)
       var type = b1 & 0x1F;
       
-      // see if the length is "short form" or "long form" (bit 8 set)
-      var b2 = bytes.getByte();
-      var longForm = b2 & 0x80;
-      var length;
-      if(!longForm)
-      {
-         // length is just the first byte
-         length = b2;
-      }
-      else
-      {
-         // the number of bytes the length is stored in is specified in bits
-         // 7 through 1 and each length byte is in big-endian base-256
-         length = bytes.getInt((b2 & 0x7F) << 3);
-      }
+      // get the value length
+      var length = _getValueLength(bytes);
       
       // ensure there are enough bytes to get the value
       if(bytes.length() < length)
@@ -254,7 +274,48 @@
       
       // constructed flag is bit 6 (32 = 0x20) of the first byte
       var constructed = ((b1 & 0x20) == 0x20);
-      if(constructed)
+      
+      // determine if the value is composed of other ASN.1 objects (if its
+      // constructed it will be and if its a BITSTRING it may be)
+      var composed = constructed;
+      if(!composed && tagClass === asn1.Class.UNIVERSAL &&
+         type === asn1.Type.BITSTRING && length > 1)
+      {
+         /* The first octet gives the number of bits by which the length of the
+            bit string is less than the next multiple of eight (this is called
+            the "number of unused bits").
+            
+            The second and following octets give the value of the bit string
+            converted to an octet string.
+          */
+         // if there are no unused bits, maybe the bitstring holds ASN.1 objs
+         var read = bytes.read;
+         var unused = bytes.getByte();
+         if(unused == 0)
+         {
+            // if the first byte indicates UNIVERSAL or CONTEXT_SPECIFIC,
+            // and the length is valid, assume we've got an ASN.1 object
+            b1 = bytes.getByte();
+            var tc = (b1 & 0xC0);
+            if(tc === asn1.Class.UNIVERSAL ||
+               tc === asn1.Class.CONTEXT_SPECIFIC)
+            {
+               try
+               {
+                  var len = _getValueLength(bytes);
+                  composed = (len === length - (bytes.read - read));
+                  // adjust read/length to account for unused bits byte
+                  ++read;
+                  --length;
+               }
+               catch(ex) {}
+            }
+         }
+         // restore read pointer
+         bytes.read = read;
+      }
+      
+      if(composed)
       {
          // parse child asn1 objects from the value
          value = [];
@@ -268,7 +329,7 @@
       }
       else
       {
-         // asn1 not constructed, get raw value
+         // asn1 not composed, get raw value
          value = bytes.getBytes(length);
       }
       
@@ -293,12 +354,15 @@
       // for storing the ASN.1 value
       var value = krypto.util.createBuffer();
       
-      // if constructed, use each child asn1 object's DER bytes as value
-      if(asn1.constructed)
+      // if composed, use each child asn1 object's DER bytes as value
+      if(asn1.composed)
       {
          // turn on 6th bit (0x20 = 32) to indicate asn1 is constructed
          // from other asn1 objects
-         b1 |= 0x20;
+         if(asn1.constructed)
+         {
+            b1 |= 0x20;
+         }
          
          // add all of the child DER bytes together
          for(var i = 0; i < asn1.value.length; ++i)
@@ -415,6 +479,12 @@
    {
       var oid;
       
+      // wrap in buffer if needed
+      if(bytes.constructor == String)
+      {
+         bytes = krypto.util.createBuffer(bytes);
+      }
+      
       // first byte is 40 * value1 + value2
       var b = bytes.getByte();
       oid = Math.floor(b / 40) + '.' + (b % 40);
@@ -446,8 +516,11 @@
     * Validates the that given ASN.1 object is at least a super set of the
     * given ASN.1 structure. Only tag classes and types are checked. An
     * optional map may also be provided to capture ASN.1 values while the
-    * structure is checked. To capture an ASN.1 value, set an object in the
-    * validator's 'capture' parameter to the key to use in the capture map.
+    * structure is checked.
+    * 
+    * To capture an ASN.1 value, set an object in the validator's 'capture'
+    * parameter to the key to use in the capture map. To capture the full
+    * ASN.1 object, specify 'captureAsn1'.
     * 
     * Objects in the validator may set a field 'optional' to true to indicate
     * that it isn't necessary to pass validation.
@@ -463,24 +536,26 @@
    {
       var rval = false;
       
-      if((obj.tagClass === v.tagClass) && (obj.type === v.type))
+      // ensure tag class and type are the same if specified
+      if((obj.tagClass === v.tagClass || typeof(v.tagClass) === 'undefined') &&
+         (obj.type === v.type || typeof(v.type) === 'undefined'))
       {
-         if(obj.constructed && v.constructed)
+         // ensure constructed flag is the same if specified
+         if(obj.constructed === v.constructed ||
+            typeof(v.constructed) === 'undefined')
          {
-            if(capture && v.capture)
-            {
-               capture[v.capture] = obj.value;
-            }
-            
             rval = true;
-            if(v.value)
+            
+            // handle sub values
+            if(v.value && v.value.constructor == Array)
             {
+               var j = 0;
                for(var i = 0; rval && i < v.value.length; ++i)
                {
-                  if(i < obj.value.length)
+                  if(obj.value[j])
                   {
                      rval = asn1.validate(
-                        obj.value[i], v.value[i], capture, errors);
+                        obj.value[j++], v.value[i], capture, errors);
                   }
                   else if(!v.value[i].optional)
                   {
@@ -496,15 +571,18 @@
                   }
                }
             }
-         }
-         else if(!obj.constructed && !v.constructed)
-         {
-            if(capture && v.capture)
-            {
-               capture[v.capture] = obj.value;
-            }
             
-            rval = true;
+            if(rval && capture)
+            {
+               if(v.capture)
+               {
+                  capture[v.capture] = obj.value;
+               }
+               if(v.captureAsn1)
+               {
+                  capture[v.captureAsn1] = obj;
+               }
+            }
          }
          else if(errors)
          {
@@ -529,6 +607,9 @@
       }
       return rval;
    };
+   
+   // regex for testing for non-latin characters
+   var _nonLatinRegex = /[^\\u0000-\\u00ff]/;
    
    /**
     * Pretty prints an ASN.1 object to a string.
@@ -561,7 +642,7 @@
       }
       
       // print class:type
-      rval += indent;
+      rval += indent + 'Tag: ';
       switch(obj.tagClass)
       {
          case asn1.Class.UNIVERSAL:
@@ -638,24 +719,35 @@
       }
       else
       {
-         rval += asn1.type;
+         rval += obj.type;
       }
       
       rval += '\n';
       rval += indent + 'Constructed: ' + obj.constructed + '\n';
       
-      if(obj.constructed)
+      if(obj.composed)
       {
          rval += indent + 'Sub values: ' + obj.value.length;
          for(var i = 0; i < obj.value.length; ++i)
          {
             rval += asn1.prettyPrint(obj.value[i], level + 1, indentation);
+            if((i + 1) < obj.value.length)
+            {
+               rval += ',';
+            }
          }
       }
       else
       {
-         rval += indent + 'Value: ' +
-            krypto.util.createBuffer(obj.value).toHex();
+         rval += indent + 'Value: '
+         if(_nonLatinRegex.test(obj.value))
+         {
+            rval += '0x' + krypto.util.createBuffer(obj.value).toHex();
+         }
+         else
+         {
+            rval += obj.value;
+         }
       }
       
       return rval;
