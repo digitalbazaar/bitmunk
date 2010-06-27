@@ -958,7 +958,17 @@
             authority may be omitted under the assumption that the client must
             already possess it.
           */
-         // FIXME: parse cert from ASN.1
+         // each entry in msg.certificate_list is itself a vector with 3 length
+         // bytes
+         var cert, asn1;
+         var certs = [];
+         while(msg.certificate_list.length() > 0)
+         {
+            cert = readVector(msg.certificate_list, 3);
+            asn1 = krypto.asn1.fromDer(cert);
+            console.log('asn1', asn1);
+         }
+         // FIXME: remove me
          throw 'foo';
          
          // FIXME: check server certificate, save in handshake state

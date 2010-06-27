@@ -40,10 +40,11 @@
  * be two or more octets, but that is not supported by this class. A tag is
  * only 1 byte. Bits 1-5 give the tag number (ie the data type within a
  * particular 'class'), 6 indicates whether or not the ASN.1 value is
- * constructed from other ASN.1 values, and bits 7 and 8 give the 'class'. This
- * this particular implementation only works with a 'class' of UNIVERSAL. The
- * UNIVERSAL class has bits 7 and 8 set to 0. The tag numbers for the data
- * types for the class UNIVERSAL are listed below:
+ * constructed from other ASN.1 values, and bits 7 and 8 give the 'class'. If
+ * bits 7 and 8 are both zero, the class is UNIVERSAL. If only bit 7 is set,
+ * then the class is APPLICATION. If only bit 8 is set, then the class is
+ * CONTEXT_SPECIFIC. If both bits 7 and 8 are set, then the class is PRIVATE.
+ * The tag numbers for the data types for the class UNIVERSAL are listed below:
  *
  * UNIVERSAL 0 Reserved for use by the encoding rules
  * UNIVERSAL 1 Boolean type
@@ -134,6 +135,17 @@
    var asn1 = {};
    
    /**
+    * ASN.1 classes.
+    */
+   asn1.Class =
+   {
+      UNIVERSAL:        0,
+      APPLICATION:      1,
+      CONTEXT_SPECIFIC: 2,
+      PRIVATE:          3
+   };
+   
+   /**
     * ASN.1 types. Not all types are supported by this implementation, only
     * those necessary to implement a simple PKI are implemented.
     */
@@ -153,23 +165,24 @@
    /**
     * Creates a new asn1 object.
     * 
-    * @param type the UNIVERSAL data type (tag number) for the object.
+    * @param tagClass the tag class for the object.
+    * @param type the data type (tag number) for the object.
     * @param constructed true if the asn1 object is constructed from other
     *           asn1 objects, false if not.
     * @param value the value for the object, if it is not constructed.
     * 
     * @return the asn1 object.
     */
-   asn1.create = function(type, constructed, value)
+   asn1.create = function(tagClass, type, constructed, value)
    {
-      /**
-       * An asn1 object has a type, a constructed flag, and a value. The
-       * value's type depends on the constructed flag. If constructed, it
-       * will contain a list of other asn1 objects. If not, it will contain
-       * the ASN.1 value as an array of bytes formatted according to the
-       * ASN.1 data type.
+      /* An asn1 object has a tagClass, a type, a constructed flag, and a
+         value. The value's type depends on the constructed flag. If
+         constructed, it will contain a list of other asn1 objects. If not,
+         it will contain the ASN.1 value as an array of bytes formatted
+         according to the ASN.1 data type.
        */
       return {
+         tagClass: tagClass,
          type: type,
          constructed: constructed,
          value: value
@@ -185,21 +198,31 @@
     */
    asn1.fromDer = function(bytes)
    {
-      var rval = null;
-      
       // minimum length for ASN.1 DER structure is 2
       if(bytes.length() < 2)
       {
-         throw 'Invalid DER length: ' + bytes.length;
+         throw 'Invalid DER length: ' + bytes.length();
       }
       
       // get the first byte
       var b1 = bytes.getByte();
       
-      // classes other than UNIVERSAL not supported, check bits 7-8 for 0
-      if(b1 & 0xC0)
+      // get the tag class
+      var tagClass;
+      switch(b1 & 0xC0)
       {
-         throw 'Unsupported ASN.1 class: ' + (b & 0xC0);
+         case 0x00:
+            tagClass = asn1.Class.UNIVERSAL;
+            break;
+         case 0x40:
+            tagClass = asn1.Class.APPLICATION;
+            break;
+         case 0x80:
+            tagClass = asn1.Class.CONTEXT_SPECIFIC;
+            break;
+         case 0xC0:
+            tagClass = asn1.Class.PRIVATE;
+            break;
       }
       
       // get the type (bits 1-5)
@@ -232,12 +255,18 @@
       var value;
       
       // constructed flag is bit 6 (32 = 0x20) of the first byte
-      var constructed = b1 & 0x20;
+      var constructed = ((b1 & 0x20) == 0x20);
       if(constructed)
       {
          // parse child asn1 objects from the value
          value = [];
-         value.push(asn1.fromDer(bytes));
+         var start = bytes.length();
+         while(length > 0)
+         {
+            value.push(asn1.fromDer(bytes));
+            length -= start - bytes.length();
+            start = bytes.length();
+         }
       }
       else
       {
@@ -246,7 +275,7 @@
       }
       
       // create and return asn1 object
-      return asn1.create(type, constructed, value);
+      return asn1.create(tagClass, type, constructed, value);
    };
    
    /**
