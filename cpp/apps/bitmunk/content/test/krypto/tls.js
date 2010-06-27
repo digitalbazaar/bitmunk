@@ -250,32 +250,101 @@
     * prf_TLS1(secret, label, seed) =
     *    P_MD5(S1, label + seed) XOR P_SHA-1(S2, label + seed);
     * 
-    * @param ms the master secret.
-    * @param label the label to use.
-    * @param seed the seed to use.
+    * Each P_hash function functions as follows:
     * 
-    * @return the pseudo random bytes.
+    * P_hash(secret, seed) = HMAC_hash(secret, A(1) + seed) +
+    *                        HMAC_hash(secret, A(2) + seed) +
+    *                        HMAC_hash(secret, A(3) + seed) + ...
+    * A() is defined as:
+    *   A(0) = seed
+    *   A(i) = HMAC_hash(secret, A(i-1))
+    * 
+    * The '+' operator denotes concatenation.
+    * 
+    * As many iterations A(N) as are needed are performed to generate enough
+    * pseudo random byte output. If an iteration creates more data than is
+    * necessary, then it is truncated.
+    * 
+    * Therefore:
+    * A(1) = HMAC_hash(secret, A(0))
+    *      = HMAC_hash(secret, seed)
+    * A(2) = HMAC_hash(secret, A(1))
+    *      = HMAC_hash(secret, HMAC_hash(secret, seed)) 
+    * 
+    * @param secret the secret to use.
+    * @param label the label to use.
+    * @param seed the seed value to use.
+    * @param length the number of bytes to generate.
+    * 
+    * @return the pseudo random bytes in a byte buffer.
     */
-   var prf_TLS1 = function(ms, label, seed)
+   var prf_TLS1 = function(secret, label, seed, length)
    {
-      // FIXME: implement me
+      var rval = krypto.util.createBuffer();
       
-      // FIXME: do 5 iterations of md5
-      // FIXME: do 4 iterations of sha1
+      /* For TLS 1.0, the secret is split, in half, into two secrets of equal
+         length. If the secret has an odd length then the last byte of the
+         first half will be the same as the first byte of the second. The
+         length of the two secrets is half of the secret rounded up.
+       */
+      var slen = Math.ceil(secret.length / 2);
+      var s1 = secret.substr(0, slen);
+      var s2 = secret.substr(slen - 1, slen);
+      var seed = krypto.util.createBuffer();
+      var hmac = krypto.hmac.create();
+      
+      // determine the number of iterations that must be performed to generate
+      // enough output bytes, md5 creates 16 byte hashes, sha1 creates 20
+      var md5itr = Math.ceil(length / 16);
+      var sha1itr = Math.ceil(length / 20);
+      
+      // do md5 iterations
+      hmac.start('MD5', s1);
+      var md5bytes = krypto.util.createBuffer();
+      seed.putBytes(label + seed);
+      for(var i = 0; i < md5itr; ++i)
+      {
+         hmac.start(null, null);
+         hmac.update(seed.getBytes());
+         seed.putBuffer(hmac.digest());
+         md5bytes.putBytes(seed.bytes());
+      }
+      
+      // do sha1 iterations
+      hmac.start('SHA1', s2);
+      var sha1bytes = krypto.util.createBuffer();
+      seed.clear();
+      seed.putBytes(label + seed);
+      for(var i = 0; i < md5itr; ++i)
+      {
+         hmac.start(null, null);
+         hmac.update(seed.getBytes());
+         seed.putBuffer(hmac.digest());
+         sha1bytes.putBytes(seed.bytes());
+      }
+      
+      // XOR the md5 bytes with the sha1 bytes
+      for(var i = 0; i < length; ++i)
+      {
+         rval.putByte(md5bytes.getByte() ^ sha1bytes.getByte());
+      }
+      
+      return rval;
    };
    
    /**
     * Generates pseudo random bytes using a SHA256 algorithm. For TLS 1.2.
     * 
-    * @param ms the master secret.
-    * @param ke the key expansion.
-    * @param r the server random concatenated with the client random.
+    * @param secret the secret to use.
+    * @param label the label to use.
+    * @param seed the seed value to use.
+    * @param length the number of bytes to generate.
     * 
-    * @return the pseudo random bytes.
+    * @return the pseudo random bytes in a byte buffer.
     */
-   var prf_sha256 = function(ms, ke, r)
+   var prf_sha256 = function(secret, label, seed, length)
    {
-      // FIXME: implement me
+      // FIXME: implement me for TLS 1.2
    };
    
    /**
@@ -297,7 +366,7 @@
             TLSCompressed.length +
             TLSCompressed.fragment)
       */
-      
+      var hmac = krypto.hmac.create('SHA1', key);
       var b = krypto.util.createBuffer();
       b.putInt32(0);
       b.putInt32(seqNum);
@@ -306,8 +375,8 @@
       b.putByte(record.version.minor);
       b.putByte(record.length);
       b.putBytes(record.fragment.bytes());
-      
-      // FIXME: calculate MAC
+      hmac.update(b.bytes());
+      return hmac.digest();
    };
    
    /**
@@ -383,7 +452,7 @@
          // checking all bytes even if one is bad to keep time consistent
          var len = output.length();
          var count = output.at(len - 1) + 1;
-         for(var i = len - count; i < len; i++)
+         for(var i = len - count; i < len; ++i)
          {
             rval = rval && (output.at(i) == count);
          }
@@ -433,7 +502,7 @@
          
          // create a zero'd out mac
          var mac = '';
-         for(var i = 0; i < macLen; i++)
+         for(var i = 0; i < macLen; ++i)
          {
             mac += String.fromCharCode(0);
          }
@@ -1095,7 +1164,7 @@
             prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
             bulk_cipher_algorithm: tls.BulkCipherAlgorithm.aes,
             cipher_type: tls.CipherType.block,
-            enc_key_length: 128,
+            enc_key_length: 16,
             block_length: 16,
             fixed_iv_length: 16,
             record_iv_length: 16,
@@ -1670,28 +1739,23 @@
       }
       
       // concatenate server and client random
-      var random = sp.server_random.concat(sp.client_random);
+      var random = sp.server_random + sp.client_random;
       
       // create master secret, clean up pre-master secret
-      prf(sp.pre_master_secret, 'master secret', random);
+      sp.master_secret =
+         prf(sp.pre_master_secret, 'master secret', random, 48).bytes();
       sp.pre_master_secret = null;
       
       // generate the amount of key material needed
-      var len = 2 * sp.mac_key_length + 2 * sp.enc_key_length;
-      var key_block;
-      var km = [];
-      while(km.length < len)
-      {
-         key_block = prf(sp.master_secret, 'key expansion', random);
-         km = km.concat(key_block);
-      }
+      var length = 2 * sp.mac_key_length + 2 * sp.enc_key_length;
+      var km = prf(sp.master_secret.bytes(), 'key expansion', random, length);
       
       // split the key material into the MAC and encryption keys
       return {
-         client_write_MAC_key: km.splice(0, sp.mac_key_length),
-         server_write_MAC_key: km.splice(0, sp.mac_key_length),
-         client_write_key: km.splice(0, sp.enc_key_length),
-         server_write_key: km.splice(0, sp.enc_key_length)
+         client_write_MAC_key: km.getBytes(sp.mac_key_length),
+         server_write_MAC_key: km.getBytes(sp.mac_key_length),
+         client_write_key: km.getBytes(sp.enc_key_length),
+         server_write_key: km.getBytes(sp.enc_key_length)
       };
       */
       
@@ -1699,33 +1763,28 @@
       var prf = prf_TLS1;
       
       // concatenate server and client random
-      var random = sp.server_random.concat(sp.client_random);
+      var random = sp.server_random + sp.client_random;
       
       // create master secret, clean up pre-master secret
-      prf(sp.pre_master_secret, 'master secret', random);
+      sp.master_secret =
+         prf(sp.pre_master_secret, 'master secret', random, 48).bytes();
       sp.pre_master_secret = null;
       
       // generate the amount of key material needed
-      var len =
+      var length =
          2 * sp.mac_key_length +
          2 * sp.enc_key_length +
          2 * sp.fixed_iv_length;
-      var key_block;
-      var km = [];
-      while(km.length < len)
-      {
-         key_block = prf(sp.master_secret, 'key expansion', random);
-         km = km.concat(key_block);
-      }
+      var km = prf(sp.master_secret, 'key expansion', random, length);
       
       // split the key material into the MAC and encryption keys
       return {
-         client_write_MAC_key: km.splice(0, sp.mac_key_length),
-         server_write_MAC_key: km.splice(0, sp.mac_key_length),
-         client_write_key: km.splice(0, sp.enc_key_length),
-         server_write_key: km.splice(0, sp.enc_key_length),
-         client_write_IV: km.splice(0, sp.fixed_iv_length),
-         server_write_IV: km.splice(0, sp.fixed_iv_length)
+         client_write_MAC_key: km.getBytes(sp.mac_key_length),
+         server_write_MAC_key: km.getBytes(sp.mac_key_length),
+         client_write_key: km.getBytes(sp.enc_key_length),
+         server_write_key: km.getBytes(sp.enc_key_length),
+         client_write_IV: km.getBytes(sp.fixed_iv_length),
+         server_write_IV: km.getBytes(sp.fixed_iv_length)
       };
    };
 
@@ -2172,7 +2231,7 @@
       // generate and add 46 random bytes
       b.putBytes(krypto.random.getBytes(46));
       
-      // save pre_master_secret
+      // save pre-master secret
       sp.pre_master_secret = b.bytes();
       
       // FIXME: do RSA encryption
@@ -2362,7 +2421,7 @@
    tls.flush = function(c)
    {
       console.log('flushing TLS records');
-      for(var i = 0; i < c.records.length; i++)
+      for(var i = 0; i < c.records.length; ++i)
       {
          var record = c.records[i];
          console.log('flushing TLS record', record);
