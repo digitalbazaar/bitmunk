@@ -263,15 +263,16 @@
        * 
        * @return the integer.
        */
-      buf.getInt = function(i, n)
+      buf.getInt = function(n)
       {
          var rval = 0;
          do
          {
-            rval += (buf.data.charCodeAt(buf.read++) << n);
+            rval = (rval << n) + buf.data.charCodeAt(buf.read++);
             n -= 8;
          }
          while(n > 0);
+         return rval;
       };
       
       /**
