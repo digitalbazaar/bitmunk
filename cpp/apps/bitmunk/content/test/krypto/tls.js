@@ -259,6 +259,9 @@
    var prf_TLS1 = function(ms, label, seed)
    {
       // FIXME: implement me
+      
+      // FIXME: do 5 iterations of md5
+      // FIXME: do 4 iterations of sha1
    };
    
    /**
@@ -267,11 +270,10 @@
     * @param ms the master secret.
     * @param ke the key expansion.
     * @param r the server random concatenated with the client random.
-    * @param cr the client random bytes.
     * 
     * @return the pseudo random bytes.
     */
-   var prf_sha256 = function(ms, ke, sr, cr)
+   var prf_sha256 = function(ms, ke, r)
    {
       // FIXME: implement me
    };
@@ -313,30 +315,29 @@
     * AES-128 in CBC mode.
     * 
     * @param record the TLSCompressed record to encrypt.
-    * @param state the ConnectionState to use.
+    * @param s the ConnectionState to use.
     * 
     * @return the TLSCipherText record on success, null on failure.
     */
-   var encrypt_aes_128_cbc_sha1 = function(record, state)
+   var encrypt_aes_128_cbc_sha1 = function(record, s)
    {
       var rval = null;
       
       // append MAC to fragment
-      var mac = state.macFunction(
-         state.clientMacKey, state.clientSequenceNumber++, record);
+      var mac = s.macFunction(s.macKey, s.sequenceNumber++, record);
       record.fragment.putBytes(mac);
       
       // FIXME: TLS 1.1 & 1.2 use an explicit IV every time to protect
       // against CBC attacks
       // var iv = krypto.random.getBytes(16);
       
-      // only generate a new IV when initializing for TLS 1.0, otherwise
+      // use the pre-generated IV when initializing for TLS 1.0, otherwise
       // use the residue from the previous encryption
-      var iv = state.cipherState.eInit ? null : state.cipherState.eIV;
-      state.cipherState.eInit = true;
+      var iv = s.cipherState.init ? null : s.cipherState.iv;
+      s.cipherState.init = true;
       
       // start cipher
-      var cipher = state.cipherState.eCipher;
+      var cipher = s.cipherState.cipher;
       cipher.start(iv);
       
       // write IV into output
@@ -400,11 +401,11 @@
     * AES-128 in CBC mode.
     * 
     * @param record the TLSCipherText record to decrypt.
-    * @param state the ConnectionState to use.
+    * @param s the ConnectionState to use.
     * 
     * @return the TLSCompressed record on success, null on failure.
     */
-   var decrypt_aes_128_cbc_sha1 = function(record, state)
+   var decrypt_aes_128_cbc_sha1 = function(record, s)
    {
       var rval = null;
       
@@ -412,13 +413,13 @@
       // against CBC attacks
       //var iv = record.fragment.getBytes(16);
       
-      // use first-time IV when initializing for TLS 1.0, otherwise
+      // use pre-generated IV when initializing for TLS 1.0, otherwise
       // use the residue from the previous decryption
-      var iv = state.cipherState.dInit ? null : state.cipherState.dIV;
-      state.cipherState.dInit = true;
+      var iv = s.cipherState.init ? null : s.cipherState.iv;
+      s.cipherState.init = true;
       
       // start cipher
-      var cipher = state.cipherState.dCipher;
+      var cipher = s.cipherState.cipher;
       cipher.start(iv);
       
       // do decryption
@@ -428,7 +429,7 @@
          // decrypted data:
          // first (len - 20) bytes = application data
          // last 20 bytes          = MAC
-         var macLen = state.macLength;
+         var macLen = s.macLength;
          
          // create a zero'd out mac
          var mac = '';
@@ -452,8 +453,7 @@
          record.length = record.fragment.length();
          
          // see if data integrity checks out
-         var mac2 = state.macFunction(
-            state.serverMacKey, state.serverSequenceNumber++, record);
+         var mac2 = s.macFunction(s.macKey, s.sequenceNumber++, record);
          if(mac2 === mac)
          {
             rval = record;
@@ -646,6 +646,76 @@
    };
    
    /**
+    * TLS Alert Protocol.
+    * 
+    * enum { warning(1), fatal(2), (255) } AlertLevel;
+    * 
+    * enum {
+    *    close_notify(0),
+    *    unexpected_message(10),
+    *    bad_record_mac(20),
+    *    decryption_failed(21),
+    *    record_overflow(22),
+    *    decompression_failure(30),
+    *    handshake_failure(40),
+    *    bad_certificate(42),
+    *    unsupported_certificate(43),
+    *    certificate_revoked(44),
+    *    certificate_expired(45),
+    *    certificate_unknown(46),
+    *    illegal_parameter(47),
+    *    unknown_ca(48),
+    *    access_denied(49),
+    *    decode_error(50),
+    *    decrypt_error(51),
+    *    export_restriction(60),
+    *    protocol_version(70),
+    *    insufficient_security(71),
+    *    internal_error(80),
+    *    user_canceled(90),
+    *    no_renegotiation(100),
+    *    (255)
+    * } AlertDescription;
+    *
+    * struct {
+    *    AlertLevel level;
+    *    AlertDescription description;
+    * } Alert;   
+    */
+   tls.Alert = {};
+   tls.Alert.Level =
+   {
+      warning: 1,
+      fatal: 2
+   };
+   tls.Alert.Description =
+   {
+      close_notify: 0,
+      unexpected_message: 10,
+      bad_record_mac: 20,
+      decryption_failed: 21,
+      record_overflow: 22,
+      decompression_failure: 30,
+      handshake_failure: 40,
+      bad_certificate: 42,
+      unsupported_certificate: 43,
+      certificate_revoked: 44,
+      certificate_expired: 45,
+      certificate_unknown: 46,
+      illegal_parameter: 47,
+      unknown_ca: 48,
+      access_denied: 49,
+      decode_error: 50,
+      decrypt_error: 51,
+      export_restriction: 60,
+      protocol_version: 70,
+      insufficient_security: 71,
+      internal_error: 80,
+      user_canceled: 90,
+      no_renegotiation: 100
+   };
+   
+   /**
     * Called when an invalid record is encountered.
     * 
     * @param c the connection.
@@ -653,11 +723,14 @@
     */
    tls.handleInvalid = function(c, record)
    {
-      // FIXME: send alert and close connection?
-      
       // error case
       c.error(c, {
-         message: 'Unexpected message. Received TLS record out of order.'
+         message: 'Unexpected message. Received TLS record out of order.',
+         client: true,
+         alert: {
+            level: tls.Alert.Level.fatal,
+            description: tls.Alert.Description.unexpected_message
+         }
       });
    };
    
@@ -666,11 +739,20 @@
     * 
     * @param c the connection.
     * @param record the record.
+    * @param length the length of the handshake message.
     */
-   tls.handleHelloRequest = function(c, record)
+   tls.handleHelloRequest = function(c, record, length)
    {
       // ignore renegotiation requests from the server
       console.log('got HelloRequest');
+      
+      // send alert warning
+      var record = tls.createAlert({
+         level: tls.Alert.Level.warning,
+         description: tls.Alert.Description.no_renegotiation
+      });
+      tls.queue(c, record);
+      tls.flush(c);
    };
    
    /**
@@ -699,26 +781,27 @@
     * 
     * @param c the connection.
     * @param record the record.
+    * @param length the length of the handshake message.
     */
-   tls.handleServerHello = function(c, record)
+   tls.handleServerHello = function(c, record, length)
    {
       console.log('got ServerHello');
-      // save a copy of the message, get its length
-      var b = record.fragment;
-      c.handshakeMsgs[0].serverHello = b.copy();
-      var len = b.getInt24();
       
       // minimum of 38 bytes in message
-      if(len < 38)
+      if(length < 38)
       {
-         // FIXME: send TLS alert
-         
          c.error(c, {
-            message: 'Invalid ServerHello message. Message too short.'
+            message: 'Invalid ServerHello message. Message too short.',
+            client: true,
+            alert: {
+               level: tls.Alert.Level.fatal,
+               description: tls.Alert.Description.unexpected_message
+            }
          });
       }
       else
       {
+         var b = record.fragment;
          var msg =
          {
             version:
@@ -726,16 +809,16 @@
                major: b.getByte(),
                minor: b.getByte()
             },
-            random:
-            {
-               gmt_unix_time: b.getInt32(),
-               random_bytes: b.getBytes(28)
-            },
+            random: krypto.util.createBuffer(b.getBytes(32)),
             session_id: readVector(b, 1),
             cipher_suite: b.getBytes(2),
             compression_methods: b.getByte(),
             extensions: []
          };
+         
+         // save server hello
+         c.handshakeState.serverHello = msg;
+         c.handshakeState.serverRandom = msg.random;
          
          // read extensions if there are any
          if(b.length() > 0)
@@ -772,32 +855,33 @@
     * 
     * @param c the connection.
     * @param record the record.
+    * @param length the length of the handshake message.
     */
-   tls.handleCertificate = function(c, record)
+   tls.handleCertificate = function(c, record, length)
    {
       console.log('got Certificate');
-      // save a copy of the message, get its length
-      var b = record.fragment;
-      c.handshakeMsgs[0].serverCertificate = b.copy();
-      var len = b.getInt24();
       
       // minimum of 3 bytes in message
-      if(len < 3)
+      if(length < 3)
       {
-        // FIXME: send TLS alert
-         
          c.error(c, {
-            message: 'Invalid Certificate message. Message too short.'
+            message: 'Invalid Certificate message. Message too short.',
+            client: true,
+            alert: {
+               level: tls.Alert.Level.fatal,
+               description: tls.Alert.Description.unexpected_message
+            }
          });
       }
       else
       {
+         var b = record.fragment;
          var msg =
          {
             certificate_list: readVector(b, 3)
          };
          
-         // FIXME: check server certificate
+         // FIXME: check server certificate, save in handshake state
          
          // expect a ServerKeyExchange message next
          c.expect = SKE;
@@ -854,23 +938,23 @@
     * 
     * @param c the connection.
     * @param record the record.
+    * @param length the length of the handshake message.
     */
-   tls.handleServerKeyExchange = function(c, record)
+   tls.handleServerKeyExchange = function(c, record, length)
    {
       console.log('got ServerKeyExchange');
-      // save a copy of the message, get its length
-      var b = record.fragment;
-      c.handshakeMsgs[0].serverKeyExchange = b.copy();
-      var len = b.getInt24();
       
       // this implementation only supports RSA, no Diffie-Hellman support
       // so any length > 0 is invalid
-      if(len > 0)
+      if(length > 0)
       {
-         // FIXME: send TLS alert
-         
          c.error(c, {
-            message: 'Invalid key parameters. Only RSA is supported.'
+            message: 'Invalid key parameters. Only RSA is supported.',
+            client: true,
+            alert: {
+               level: tls.Alert.Level.fatal,
+               description: tls.Alert.Description.unsupported_certificate
+            }
          });
       }
       else
@@ -906,26 +990,27 @@
     * 
     * @param c the connection.
     * @param record the record.
+    * @param length the length of the handshake message.
     */
-   tls.handleCertificateRequest = function(c, record)
+   tls.handleCertificateRequest = function(c, record, length)
    {
       console.log('got CertificateRequest');
-      // save a copy of the message, get its length
-      var b = record.fragment;
-      c.handshakeMsgs[0].serverCertificateRequest = b.copy();
-      var len = b.getInt24();
       
       // minimum of 5 bytes in message
       if(len < 5)
       {
-         // FIXME: send TLS alert
-         
          c.error(c, {
-            message: 'Invalid CertificateRequest. Message too short.'
+            message: 'Invalid CertificateRequest. Message too short.',
+            client: true,
+            alert: {
+               level: tls.Alert.Level.fatal,
+               description: tls.Alert.Description.unexpected_message
+            }
          });
       }
       else
       {
+         var b = record.fragment;
          var msg =
          {
             certificate_types: readVector(b, 1),
@@ -933,8 +1018,8 @@
             certificate_authorities: readVector(b, 2)
          };
          
-         // FIXME: this implementation doesn't support client certs
-         // FIXME: prepare a client certificate/indicate there isn't one
+         // save certificate request
+         c.handshakeState.certificateRequest = msg;
          
          // expect a ServerHelloDone message next
          c.expect = SHD;
@@ -962,30 +1047,31 @@
     * 
     * @param c the connection.
     * @param record the record.
+    * @param length the length of the handshake message.
     */
-   tls.handleServerHelloDone = function(c, record)
+   tls.handleServerHelloDone = function(c, record, length)
    {
       console.log('got ServerHelloDone');
-      // save a copy of the message, get its length
-      var b = record.fragment;
-      c.handshakeMsgs[0].serverHelloDone = b.copy();
-      var len = b.getInt24();
       
       // len must be 0 bytes
-      if(len != 0)
+      if(length != 0)
       {
-         // FIXME: send TLS alert
-         
          c.error(c, {
-            message: 'Invalid ServerHelloDone message. Invalid length.'
+            message: 'Invalid ServerHelloDone message. Invalid length.',
+            client: true,
+            alert: {
+               level: tls.Alert.Level.fatal,
+               description: tls.Alert.Description.unexpected_message
+            }
          });
       }
       else
       {
          // create all of the client response records:
+         record = null;
          
          // create client certificate message if requested
-         if(c.handshakeMsgs[0].serverCertificateRequest !== null)
+         if(c.handshakeState.certificateRequest !== null)
          {
             // FIXME: determine cert to send
             // FIXME: client-side certs not implemented yet, so send none
@@ -998,26 +1084,52 @@
             tls.queue(c, record);
          }
          
+         // FIXME: security params are from TLS 1.2, some values like
+         // prf_algorithm are ignored for TLS 1.0 and the builtin as specified
+         // in the spec is used
+         
+         // create security parameters
+         var sp =
+         {
+            entity: tls.ConnectionEnd.client,
+            prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
+            bulk_cipher_algorithm: tls.BulkCipherAlgorithm.aes,
+            cipher_type: tls.CipherType.block,
+            enc_key_length: 128,
+            block_length: 16,
+            fixed_iv_length: 16,
+            record_iv_length: 16,
+            mac_algorithm: tls.MACAlgorithm.hmac_sha1,
+            mac_length: 80,
+            mac_key_length: 20,
+            compression_algorithm: tls.CompressionMethod.none,
+            pre_master_secret: null,
+            master_secret: null,
+            client_random: c.handshakeState.clientRandom.bytes(),
+            server_random: c.handshakeState.serverRandom.bytes()
+         };
+         
          // FIXME: get public key from server RSA cert
+         // c.handshakeState.serverCertificate
          var pubKey = null;
          
          // create client key exchange message
          record = tls.createRecord(
          {
             type: tls.ContentType.handshake,
-            data: tls.createClientKeyExchange(pubKey)
+            data: tls.createClientKeyExchange(pubKey, sp)
          });
          console.log('TLS client key exchange record created');
          tls.queue(c, record);
          
-         if(c.handshakeMsgs[0].serverCertificateRequest !== null)
+         if(c.handshakeState.certificateRequest !== null)
          {
             /* FIXME: client certs not yet implemented
             // create certificate verify message
             record = tls.createRecord(
             {
                type: tls.ContentType.handshake,
-               data: tls.createCertificateVerify(c.handshakeMsgs[0])
+               data: tls.createCertificateVerify(c.handshakeState)
             });
             console.log('TLS certificate verify record created');
             tls.queue(c, record);
@@ -1033,9 +1145,11 @@
          console.log('TLS change cipher spec record created');
          tls.queue(c, record);
          
-         // FIXME: change pending state to current before sending finish
-         // FIXME: problematic ... need to change outgoing state only, not
-         // incoming state and current implementation combines them
+         // create pending state
+         c.state.pending = tls.createConnectionState(c, sp);
+         
+         // change current write state to pending write state
+         c.state.current.write = c.state.pending.write;
          
          // create finished message
          record = tls.createRecord(
@@ -1045,9 +1159,6 @@
          });
          console.log('TLS finished record created');
          tls.queue(c, record);
-         
-         // clear server-side handshake messages
-         c.handshakeMsgs.shift();
          
          // expect a server ChangeCipherSpec message next
          c.expect = SCC;
@@ -1063,8 +1174,24 @@
    tls.handleChangeCipherSpec = function(c, record)
    {
       console.log('got ChangeCipherSpec');
-      // FIXME: handle server has changed their cipher spec, change read
-      // pending state to current, get ready for finished record
+      
+      if(record.fragment.getByte() != 0x01)      
+      {
+         c.error(c, {
+            message: 'Invalid ChangeCipherSpec message received.',
+            client: true,
+            alert: {
+               level: tls.Alert.Level.fatal,
+               description: tls.Alert.Description.unexpected_message
+            }
+         });
+      }
+      else
+      {
+         // change current read state to pending read state
+         c.state.current.read = c.state.pending.read;
+         c.state.pending = null;
+      }
       
       // expect a Finished record next
       c.expect = SFI;
@@ -1107,32 +1234,41 @@
     * 
     * @param c the connection.
     * @param record the record.
+    * @param length the length of the handshake message.
     */
-   tls.handleFinished = function(c, record)
+   tls.handleFinished = function(c, record, length)
    {
       console.log('got Finished');
-      // get the length of the message
-      var b = record.fragment;
-      var len = b.getInt24();
       
       // FIXME: for TLS 1.2 check length against expected verify_data_length
       var vdl = 12;
-      if(len != vdl)
+      if(length != vdl)
       {
-         // FIXME: send TLS alert
-         
          c.error(c, {
-            message: 'Invalid Finished message. Invalid length.'
+            message: 'Invalid Finished message. Invalid length.',
+            client: true,
+            alert: {
+               level: tls.Alert.Level.fatal,
+               description: tls.Alert.Description.unexpected_message
+            }
          });
       }
       else
       {
+         var b = record.fragment;
          var msg =
          {
-            verify_data: b.getBytes(len)
+            verify_data: b.getBytes()
          };
          
          // FIXME: ensure verify data is correct
+         
+         // FIXME: when creating a new session:
+         // FIXME: verify_data should be the same as the one previously
+         // calculated when sending Finished message?
+         
+         // FIXME: when resuming a session:
+         // FIXME: calculate verify_data
          // FIXME: create client change cipher spec record and
          // finished record
          
@@ -1157,7 +1293,103 @@
    tls.handleAlert = function(c, record)
    {
       console.log('got Alert');
-      // FIXME: handle alert, determine if connection must end
+      
+      // read alert
+      var b = record.fragment;
+      var alert =
+      {
+         level: b.getByte(),
+         description: b.getByte()
+      };
+      
+      // FIXME: consider using a table?
+      // get appropriate message
+      var msg;
+      switch(alert.description)
+      {
+         case tls.Alert.Description.close_notify:
+            msg = 'Connection closed.';
+            break;
+         case tls.Alert.Description.unexpected_message:
+            msg = 'Unexpected message.';
+            break;
+         case tls.Alert.Description.bad_record_mac:
+            msg = 'Bad record MAC.';
+            break;
+         case tls.Alert.Description.decryption_failed:
+            msg = 'Decryption failed.';
+            break;
+         case tls.Alert.Description.record_overflow:
+            msg = 'Record overflow.';
+            break;
+         case tls.Alert.Description.decompression_failure:
+            msg = 'Decompression failed.';
+            break;
+         case tls.Alert.Description.handshake_failure:
+            msg = 'Handshake failure.';
+            break;
+         case tls.Alert.Description.bad_certificate:
+            msg = 'Bad certificate.';
+            break;
+         case tls.Alert.Description.unsupported_certificate:
+            msg = 'Unsupported certificate.';
+            break;
+         case tls.Alert.Description.certificate_revoked:
+            msg = 'Certificate revoked.';
+            break;
+         case tls.Alert.Description.certificate_expired:
+            msg = 'Certificate expired.';
+            break;
+         case tls.Alert.Description.certificate_unknown:
+            msg = 'Certificate unknown.';
+            break;
+         case tls.Alert.Description.illegal_parameter:
+            msg = 'Illegal parameter.';
+            break;
+         case tls.Alert.Description.unknown_ca:
+            msg = 'Unknown certificate authority.';
+            break;
+         case tls.Alert.Description.access_denied:
+            msg = 'Access denied.';
+            break;
+         case tls.Alert.Description.decode_error:
+            msg = 'Decode error.';
+            break;
+         case tls.Alert.Description.decrypt_error:
+            msg = 'Decrypt error.';
+            break;
+         case tls.Alert.Description.export_restriction:
+            msg = 'Export restriction.';
+            break;
+         case tls.Alert.Description.protocol_version:
+            msg = 'Unsupported protocol version.';
+            break;
+         case tls.Alert.Description.insufficient_security:
+            msg = 'Insufficient security.';
+            break;
+         case tls.Alert.Description.internal_error:
+            msg = 'Internal error.';
+            break;
+         case tls.Alert.Description.user_canceled:
+            msg = 'User canceled.';
+            break;
+         case tls.Alert.Description.no_renegotiation:
+            msg = 'Renegotiation not supported.';
+            break;
+         default:
+            msg = 'Unknown error.';
+            break;
+      };
+      
+      // call error handler
+      c.error(c, {
+         message: msg,
+         client: false,
+         alert: alert
+      });
+      
+      // close connection
+      c.close();
    };
    
    /**
@@ -1169,38 +1401,51 @@
    tls.handleHandshake = function(c, record)
    {
       console.log('got Handshake message');
-      // get the handshake type
-      var type = record.fragment.getByte();
       
-      // get the length of the message
+      // get the handshake type and message length
       var b = record.fragment;
-      var len = b.getInt24();
+      var type = b.getByte();
+      var length = b.getInt24();
       
       // see if the record fragment doesn't yet contain the full message
-      if(len > b.length())
+      if(length > b.length())
       {
-         // cache the record and reset the buffer read pointer
+         // cache the record and reset the buffer read pointer before
+         // the type and length were read
          c.fragmented = record;
          b.read -= 4;
       }
       else
       {
-         // full message now available, clear cache, reset read pointer for len
+         // full message now available, clear cache, reset read pointer to
+         // before type and length
          c.fragmented = null;
-         b.read -= 3;
+         b.read -= 4;
+         
+         // update handshake hashes (includes type and length of handshake msg)
+         var bytes = b.bytes();
+         c.handshakeState.md5.update(bytes);
+         c.handshakeState.sha1.update(bytes);
+         
+         // restore read pointer
+         b.read += 4;
          
          // handle message
-         var f = hsTable[c.expect][type];
-         if(f)
+         if(type in hsTable[c.expect])
          {
             // handle specific handshake type record
-            f(c, record);
+            hsTable[c.expect][type](c, record, length);
          }
          else
          {
             // invalid handshake type
             c.error(c, {
-               message: 'Invalid handshake type.'
+               message: 'Invalid handshake type.',
+               client: true,
+               alert: {
+                  level: fatal,
+                  description: illegal_parameter
+               }
             });
          }
       }
@@ -1324,8 +1569,7 @@
    ];
    
    /**
-    * Creates new initialized SecurityParameters. No compression, encryption,
-    * or MAC algorithms will be specified.
+    * Generates the master_secret and keys using the given security parameters.
     * 
     * The security parameters for a TLS connection state are defined as
     * such:
@@ -1348,51 +1592,29 @@
     *    opaque                 server_random[32];
     * } SecurityParameters;
     * 
-    * @param options:
-    *    
-    * @return FIXME:
-    */
-   tls.createSecurityParameters = function()
-   {
-      // new parameters have no compression, encryption, or MAC algorithms
-      var securityParams =
-      {
-         entity: tls.ConnectionEnd.client,
-         prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
-         bulk_cipher_algorithm: tls.BulkCipherAlgorithm.none,
-         cipher_type: tls.CipherType.block,
-         enc_key_length: 0,
-         block_length: 0,
-         fixed_iv_length: 0,
-         record_iv_length: 0,
-         mac_algorithm: tls.MACAlgorithm.none,
-         mac_length: 0,
-         mac_key_length: 0,
-         compression_algorithm: tls.CompressionMethod.none,
-         master_secret: null,
-         client_random: null,
-         server_random: null
-      };
-      return securityParams;
-   };
-   
-   /**
-    * Generates keys using the given security parameters.
+    * Note that this definition is from TLS 1.2. In TLS 1.0 some of these
+    * parameters are ignored because, for instance, the PRFAlgorithm is a
+    * builtin-fixed algorithm combining iterations of MD5 and SHA-1 in
+    * TLS 1.0.
     * 
     * The Record Protocol requires an algorithm to generate keys required
     * by the current connection state.
     * 
     * The master secret is expanded into a sequence of secure bytes, which
     * is then split to a client write MAC key, a server write MAC key, a
-    * client write encryption key, and a server write encryption key. Each
+    * client write encryption key, and a server write encryption key. In TLS
+    * 1.0 a client write IV and server write IV are also generated. Each
     * of these is generated from the byte sequence in that order. Unused
-    * values are empty. Some AEAD ciphers may additionally require a
-    * client write IV and a server write IV (see Section 6.2.3.3).
+    * values are empty. In TLS 1.2, some AEAD ciphers may additionally require
+    * a client write IV and a server write IV (see Section 6.2.3.3).
     *
-    * When keys and MAC keys are generated, the master secret is used as an
-    * entropy source.
+    * When keys, MAC keys, and IVs are generated, the master secret is used as
+    * an entropy source.
     *
     * To generate the key material, compute:
+    * 
+    * master_secret = PRF(pre_master_secret, "master secret",
+    *                     ClientHello.random + ServerHello.random)
     *
     * key_block = PRF(SecurityParameters.master_secret,
     *                 "key expansion",
@@ -1409,15 +1631,15 @@
     * client_write_IV[SecurityParameters.fixed_iv_length]
     * server_write_IV[SecurityParameters.fixed_iv_length]
     *
-    * Currently, the client_write_IV and server_write_IV are only generated
+    * In TLS 1.2, the client_write_IV and server_write_IV are only generated
     * for implicit nonce techniques as described in Section 3.2.1 of
-    * [AEAD]. This implementation does not use AEAD, so these are not
-    * generated.
+    * [AEAD]. This implementation uses TLS 1.0 so IVs are generated.
     *
     * Implementation note: The currently defined cipher suite which
     * requires the most material is AES_256_CBC_SHA256. It requires 2 x 32
     * byte keys and 2 x 32 byte MAC keys, for a total 128 bytes of key
-    * material.
+    * material. In TLS 1.0 it also requires 2 x 16 byte IVs, so it actually
+    * takes 160 bytes of key material.
     * 
     * @param sp the security parameters to use.
     * 
@@ -1447,16 +1669,20 @@
             break;
       }
       
+      // concatenate server and client random
+      var random = sp.server_random.concat(sp.client_random);
+      
+      // create master secret, clean up pre-master secret
+      prf(sp.pre_master_secret, 'master secret', random);
+      sp.pre_master_secret = null;
+      
       // generate the amount of key material needed
       var len = 2 * sp.mac_key_length + 2 * sp.enc_key_length;
       var key_block;
       var km = [];
       while(km.length < len)
       {
-         key_block = prf(
-            sp.master_secret,
-            'key expansion',
-            sp.server_random.concat(sp.client_random));
+         key_block = prf(sp.master_secret, 'key expansion', random);
          km = km.concat(key_block);
       }
       
@@ -1472,16 +1698,23 @@
       // TLS 1.0 implementation
       var prf = prf_TLS1;
       
+      // concatenate server and client random
+      var random = sp.server_random.concat(sp.client_random);
+      
+      // create master secret, clean up pre-master secret
+      prf(sp.pre_master_secret, 'master secret', random);
+      sp.pre_master_secret = null;
+      
       // generate the amount of key material needed
-      var len = 2 * sp.mac_key_length + 2 * sp.enc_key_length;
+      var len =
+         2 * sp.mac_key_length +
+         2 * sp.enc_key_length +
+         2 * sp.fixed_iv_length;
       var key_block;
       var km = [];
       while(km.length < len)
       {
-         key_block = prf(
-            sp.master_secret,
-            'key expansion',
-            sp.server_random.concat(sp.client_random));
+         key_block = prf(sp.master_secret, 'key expansion', random);
          km = km.concat(key_block);
       }
       
@@ -1490,12 +1723,15 @@
          client_write_MAC_key: km.splice(0, sp.mac_key_length),
          server_write_MAC_key: km.splice(0, sp.mac_key_length),
          client_write_key: km.splice(0, sp.enc_key_length),
-         server_write_key: km.splice(0, sp.enc_key_length)
+         server_write_key: km.splice(0, sp.enc_key_length),
+         client_write_IV: km.splice(0, sp.fixed_iv_length),
+         server_write_IV: km.splice(0, sp.fixed_iv_length)
       };
    };
 
    /**
-    * Creates a new initialized TLS connection state.
+    * Creates a new initialized TLS connection state. A connection state has
+    * a read mode and a write mode.
     * 
     * compression state:
     *    The current state of the compression algorithm.
@@ -1520,63 +1756,104 @@
     *    record: specifically, the first record transmitted under a
     *    particular connection state MUST use sequence number 0.
     * 
+    * @param c the connection.
     * @param sp the security parameters used to initialize the state.
     * 
     * @return the new initialized TLS connection state.
     */
-   tls.createConnectionState = function(sp)
+   tls.createConnectionState = function(c, sp)
    {
-      /* Note: In this implementation a connection state applies to both
-         incoming and outgoing messages (not just one or the other).
-       */
-      
+      var createMode = function()
+      {
+         var mode =
+         {
+            sequenceNumber: 0,
+            macKey: null,
+            macLength: 0,
+            macFunction: null,
+            cipherState: null,
+            cipherFunction: function(record){return true;},
+            compressionState: null,
+            compressFunction: function(record){return true;}
+         };
+         return mode;
+      };
       var state =
       {
-         clientSequenceNumber: 0,
-         serverSequenceNumber: 0,
-         clientMacKey: null,
-         serverMacKey: null,
-         macLength: 0,
-         macFunction: null,
-         cipherState: null,
-         encrypt: function(record){return record;},
-         decrypt: function(record){return record;},
-         compressionState: null,
-         compress: function(record){return record;},
-         decompress: function(record){return record;}
+         read: createMode(),
+         write: createMode()
       };
       
-      /* security parameters:
-         
-         entity: tls.ConnectionEnd.client,
-         prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
-         bulk_cipher_algorithm: tls.BulkCipherAlgorithm.none,
-         cipher_type: tls.CipherType.block,
-         enc_key_length: 0,
-         block_length: 0,
-         fixed_iv_length: 0,
-         record_iv_length: 0,
-         mac_algorithm: tls.MACAlgorithm.none,
-         mac_length: 0,
-         mac_key_length: 0,
-         compression_algorithm: tls.CompressionMethod.none,
-         master_secret: null,
-         client_random: null,
-         server_random: null
-      */
+      // update function in read mode will decrypt then decompress a record
+      state.read.update = function(c, record)
+      {
+         if(!state.read.cipherFunction(record, state.read))
+         {
+            c.error(c, {
+               message: 'Could not decrypt record.',
+               client: true,
+               alert: {
+                  level: tls.Alert.Level.fatal,
+                  description: tls.Alert.Description.decryption_failed
+               }
+            });
+         }
+         else if(!state.read.compressFunction(record, state.read))
+         {
+            c.error(c, {
+               message: 'Could not decompress record.',
+               client: true,
+               alert: {
+                  level: tls.Alert.Level.fatal,
+                  description: tls.Alert.Description.decompression_failure
+               }
+            });
+         }
+         return !c.fail;
+      };
+      
+      // update function in write mode will compress then encrypt a record
+      state.write.update = function(c, record)
+      {
+         if(!state.write.compressFunction(record, state.read))
+         {
+            c.error(c, {
+               message: 'Could not compress record.',
+               client: true,
+               alert: {
+                  level: tls.Alert.Level.fatal,
+                  description: tls.Alert.Description.internal_error
+               }
+            });
+         }
+         else if(!state.write.cipherFunction(record, state.read))
+         {
+            c.error(c, {
+               message: 'Could not encrypt record.',
+               client: true,
+               alert: {
+                  level: tls.Alert.Level.fatal,
+                  description: tls.Alert.Description.internal_error
+               }
+            });
+         }
+         return !c.fail;
+      };
+      
+      // handle security parameters
       if(sp)
       {
          // generate keys
-         state.keys = tls.generateKeys(sp);
+         var keys = tls.generateKeys(sp);
          
          // mac setup
-         state.serverMacKey = keys.server_write_MAC_key;
-         state.clientMacKey = keys.client_write_MAC_key;
-         state.macLength = sp.mac_length;
+         state.read.macKey = keys.server_write_MAC_key;
+         state.write.macKey = keys.client_write_MAC_key;
+         state.read.macLength = state.write.macLength = sp.mac_length;
          switch(sp.mac_algorithm)
          {
             case tls.MACAlgorithm.hmac_sha1:
-               state.macFunction = hmac_sha1;
+               state.read.macFunction = state.write.macFunction = hmac_sha1;
                break;
              default:
                 throw 'Unsupported MAC algorithm';
@@ -1586,17 +1863,23 @@
          switch(sp.bulk_cipher_algorithm)
          {
             case tls.BulkCipherAlgorithm.aes:
-               cipherState =
+               console.log('creating aes cipher');
+               state.read.cipherState =
                {
-                  eInit: false,
-                  eCipher: krypto.aes.createEncryptionCipher(
-                     keys.client_write_key),
-                  dInit: false,
-                  dCipher: krypto.aes.createDecryptionCipher(
-                     keys.server_write_key)
+                  init: false,
+                  cipher: krypto.aes.createDecryptionCipher(
+                     keys.server_write_key),
+                  iv: keys.server_write_IV
                };
-               state.encrypt = encrypt_aes_128_cbc_sha1;
-               state.decrypt = decrypt_aes_128_cbc_sha1;
+               state.write.cipherState =
+               {
+                  init: false,
+                  cipher: krypto.aes.createEncryptionCipher(
+                     keys.client_write_key),
+                  iv: keys.client_write_IV
+               };
+               state.read.cipherFunction = decrypt_aes_128_cbc_sha1;
+               state.write.cipherFunction = encrypt_aes_128_cbc_sha1;
                break;
             default:
                throw 'Unsupported cipher algorithm';
@@ -1618,6 +1901,8 @@
                throw 'Unsupported compression algorithm';
          }
       }
+      
+      console.log('CREATED STATE', state);
       
       return state;
    };
@@ -1642,21 +1927,21 @@
     * random_bytes:
     *    28 bytes generated by a secure random number generator.
     * 
-    * @return the Random structure.
+    * @return the Random structure as a byte array.
     */
    tls.createRandom = function()
    {
       // get UTC milliseconds
       var d = new Date();
       var utc = +d + d.getTimezoneOffset() * 60000;
-      return {
-         gmt_unix_time: utc,
-         random_bytes: krypto.random.getBytes(28)
-      };
+      var rval = krypto.util.createBuffer();
+      rval.putInt32(utc);
+      rval.putBytes(krypto.random.getBytes(28));
+      return rval;
    };
    
    /**
-    * Creates an empty TLS record.
+    * Creates a TLS record with the given type and data.
     * 
     * @param options:
     *    type: the record type.
@@ -1675,10 +1960,32 @@
             major: tls.Version.major,
             minor: tls.Version.minor
          },
-         length: options.data.length,
+         length: options.data.length(),
          fragment: options.data
       };
       return record;
+   };
+   
+   /**
+    * Creates a TLS alert record.
+    * 
+    * @param alert:
+    *    level: the TLS alert level.
+    *    description: the TLS alert description.
+    * 
+    * @return the created alert record.
+    */
+   tls.createAlert = function(alert)
+   {
+      console.log('creating TLS alert record', alert);
+      
+      var b = krypto.util.createBuffer();
+      b.putByte(alert.level);
+      b.putByte(alert.description);
+      return tls.createRecord({
+         type: tls.ContentType.alert,
+         data: b
+      });
    };
    
    /* The structure of a TLS handshake message.
@@ -1723,10 +2030,11 @@
     * } ClientHello;
     * 
     * @param sessionId the session ID to use.
+    * @param random the client random structure to use.
     * 
     * @return the ClientHello byte buffer.
     */
-   tls.createClientHello = function(sessionId)
+   tls.createClientHello = function(sessionId, random)
    {
       // determine length of the handshake message
       // cipher suites and compression methods size will need to be
@@ -1738,9 +2046,6 @@
          2 + 2 +                // cipher suites vector (1 supported)
          1 + 1 +                // compression methods vector
          0;                     // no extensions (FIXME: add TLS SNI)
-      
-      // create random
-      var random = tls.createRandom();
       
       // create supported cipher suites, only 1 at present
       // TLS_RSA_WITH_AES_128_CBC_SHA = { 0x00,0x2F }
@@ -1758,8 +2063,7 @@
       rval.putInt24(length);               // handshake length
       rval.putByte(tls.Version.major);     // major version
       rval.putByte(tls.Version.minor);     // minor version
-      rval.putInt32(random.gmt_unix_time); // random time
-      rval.putBytes(random.random_bytes);  // random bytes
+      rval.putBytes(random.bytes());       // random time + bytes
       writeVector(rval, 1, krypto.util.createBuffer(sessionId));
       writeVector(rval, 2, cipherSuites);
       writeVector(rval, 1, compressionMethods);
@@ -1851,10 +2155,11 @@
     * } EncryptedPreMasterSecret;
     * 
     * @param pubKey the RSA public key to use to encrypt the pre-master secret.
+    * @param sp the security parameters to set the pre_master_secret in.
     * 
     * @return the ClientKeyExchange byte buffer.
     */
-   tls.createClientKeyExchange = function(pubKey)
+   tls.createClientKeyExchange = function(pubKey, sp)
    {
       // create buffer to encrypt
       var b = krypto.util.createBuffer();
@@ -1867,7 +2172,11 @@
       // generate and add 46 random bytes
       b.putBytes(krypto.random.getBytes(46));
       
+      // save pre_master_secret
+      sp.pre_master_secret = b.bytes();
+      
       // FIXME: do RSA encryption
+      console.log('FIXME: do RSA encryption');
       
       // determine length of the handshake message
       var length = b.length();
@@ -1875,7 +2184,7 @@
       // build record fragment
       var rval = krypto.util.createBuffer();
       rval.putByte(tls.HandshakeType.client_key_exchange);
-      rval.putInt24(length);               // handshake length
+      rval.putInt24(length);
       rval.putBuffer(b);
       return rval;
    };
@@ -1913,13 +2222,15 @@
     * messages.
     * 
     * @param privKey the private key to sign with.
-    * @param msgs the handshake messages to use.
+    * @param hs the current handshake state.
     * 
     * @return the CertificateVerify byte buffer.
     */
-   tls.createCertificateVerify = function(privKey, msgs)
+   tls.createCertificateVerify = function(privKey, hs)
    {
-      // FIXME: sign all handshake messages, including type and length
+      // FIXME: not used because client-side certificates not implemented
+      // FIXME: combine hs.md5.digest() and hs.sha1.digest() to produce
+      // signature
    };
    
    /**
@@ -1987,6 +2298,14 @@
    {
       console.log('queuing TLS record', record);
       
+      // if the record is a handshake record, update handshake hashes
+      if(record.type === tls.ContentType.handshake)
+      {
+         var bytes = record.fragment.bytes();
+         c.handshakeState.md5.update(bytes);
+         c.handshakeState.sha1.update(bytes);
+      }
+      
       // handle record fragmentation
       var records;
       if(record.fragment.length() <= tls.MaxFragment)
@@ -2020,22 +2339,14 @@
       // compress and encrypt all fragmented records
       for(var i = 0; i < records.length && !c.fail; ++i)
       {
-         // compress and encrypt the record using current state
+         // update the record using current write state
          var rec = records[i];
-         var s = c.state.current;
-         if(s === null || (s.compress(rec, s) && s.encrypt(rec, s)))
+         var s = c.state.current.write;
+         if(s.update(c, rec))
          {
             console.log('TLS record queued');
             // store record
             c.records.push(rec);
-         }
-         // fatal error
-         else
-         {
-            // FIXME: pass on errors from encryption/compression?
-            c.error(c, {
-               message: 'Could not compress and encrypt record.'
-            });
          }
       }
    };
@@ -2085,14 +2396,14 @@
          sessionId: options.sessionId,
          state:
          {
-            pending: tls.createConnectionState(),
-            current: null
+            pending: null,
+            current: tls.createConnectionState(c)
          },
          expect: SHE,
          fragmented: null,
          records: [],
          initHandshake: false,
-         handshakeMsgs: [],
+         handshakeState: null,
          isConnected: false,
          fail: false,
          input: krypto.util.createBuffer(),
@@ -2102,11 +2413,19 @@
          tlsDataReady: options.tlsDataReady,
          dataReady: options.dataReady,
          closed: options.closed,
-         error: function(c)
+         error: function(c, ex)
          {
+            // send TLS alert if origin is client
+            if(ex.client)
+            {
+               var record = tls.createAlert(ex.alert);
+               tls.queue(c, record);
+               tls.flush(c);
+            }
+            
             // set fail flag
             c.fail = true;
-            options.error(c);
+            options.error(c, ex);
          }
       };
       
@@ -2137,28 +2456,33 @@
        */
       c.handshake = function(sessionId)
       {
+         // FIXME: make sure handshake doesn't take place in the middle of
+         // another handshake ... either fail if one is in process or
+         // schedule it for later?
+         
+         // create random
+         var random = tls.createRandom();
+         
          // FIXME: remove try/catch
          try{
          console.log('doing TLS handshake');
          var record = tls.createRecord(
          {
             type: tls.ContentType.handshake,
-            data: tls.createClientHello(sessionId || '')
+            data: tls.createClientHello(sessionId || '', random)
          });
          
-         // store handshake messages
-         c.handshakeMsgs.push({
-            clientHello: record.data,
-            serverHello: null,
-            serverCertificate: null,
-            serverKeyExchange: null,
-            serverCertificateRequest: null,
-            serverHelloDone: null,
-            clientCertificate: null,
-            clientKeyExchange: null
-         });
+         // create handshake state
+         c.handshakeState =
+         {
+            certificateRequest: null,
+            clientRandom: random,
+            serverRandom: null,
+            md5: krypto.md.md5.create(),
+            sha1: krypto.md.sha1.create()
+         };
          
-         console.log('TLS handshake record created');
+         console.log('TLS client hello record created');
          tls.queue(c, record);
          tls.flush(c);
          }
@@ -2218,9 +2542,13 @@
                   _record.version.minor != tls.Version.minor)
                {
                   c.error(c, {
-                     message: 'Incompatible TLS version.'
+                     message: 'Incompatible TLS version.',
+                     client: true,
+                     alert: {
+                        level: tls.Alert.Level.fatal,
+                        description: tls.Alert.Description.protocol_version
+                     }
                   });
-                  // FIXME: send TLS alert
                   c.close();
                }
             }
@@ -2232,10 +2560,9 @@
                // fill record fragment
                _record.fragment.putBytes(b.getBytes(_record.length));
                
-               // decrypt and decompress record using current state
-               var s = c.state.current;
-               if(s === null ||
-                  (s.decrypt(_record, s) && s.decompress(_record, s)))
+               // update record using current read state
+               var s = c.state.current.read;
+               if(s.update(c, _record));
                {
                   // if the record type matches a previously fragmented
                   // record, append the record fragment to it
@@ -2252,7 +2579,13 @@
                      {
                         // error, invalid fragmented record
                         c.error(c, {
-                           message: 'Invalid fragmented record.'
+                           message: 'Invalid fragmented record.',
+                           client: true,
+                           alert: {
+                              level: tls.Alert.Level.fatal,
+                              description:
+                                 tls.Alert.Description.unexpected_message
+                           }
                         });
                      }
                   }
@@ -2302,7 +2635,15 @@
       {
          if(c.isConnected)
          {
-            // FIXME: send shutdown alert, etc.
+            // send close_notify alert
+            var record = tls.createAlert(
+            {
+               level: tls.Alert.Level.fatal,
+               description: tls.Alert.Description.close_notify
+            });
+            console.log('TLS close_notify alert record created');
+            tls.queue(c, record);
+            tls.flush(c);
          }
          
          // call handler
