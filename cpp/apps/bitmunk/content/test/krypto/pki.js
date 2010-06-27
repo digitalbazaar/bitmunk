@@ -309,7 +309,7 @@
    
    // regex for stripping PEM header and footer
    var _pemRegex = new RegExp(
-      '-----BEGIN [^-]+-----([A-Za-z0-9+\/=\s]+)-----END [^-]+-----');
+      '-----BEGIN [^-]+-----([A-Za-z0-9+\/=\s/\r/\n]+)-----END [^-]+-----');
    
    /**
     * Converts PEM-formatted data into an certificate or key.
@@ -378,19 +378,27 @@
     */
    pki.certificateFromAsn1 = function(obj)
    {
+      console.log('obj', asn1.prettyPrint(obj));
+      
       // validate certificate and capture data
       var capture = {};
-      if(!asn1.validate(obj, x509CertificateValidator, capture))
+      var errors = [];
+      if(!asn1.validate(obj, x509CertificateValidator, capture, errors))
       {
-         throw 'Cannot read X.509 certificate. ' +
-            'ASN.1 object is not an X509v3 Certificate.';
+         throw {
+            message: 'Cannot read X.509 certificate. ' +
+               'ASN.1 object is not an X509v3 Certificate.',
+            errors: errors
+         };
       }
       
       // get oid
       var oid = asn1.derToOid(capture.publicKeyOid);
       if(oid !== krypto.oids['RSA'])
       {
-         throw 'Cannot read public key. OID is not RSA.';
+         throw {
+            message: 'Cannot read public key. OID is not RSA.'
+         };
       }
       
       // start building cert
@@ -462,17 +470,24 @@
    {
       // validate subject public key info and capture data
       var capture = {};
-      if(!asn1.validate(obj, rsaPublicKeyValidator, capture))
+      var errors = [];
+      if(!asn1.validate(obj, rsaPublicKeyValidator, capture, errors))
       {
-         throw 'Cannot read public key. ' +
-            'ASN.1 object is not a SubjectPublicKeyInfo.';
+         throw {
+            message: 'Cannot read public key. ' +
+               'ASN.1 object is not a SubjectPublicKeyInfo.',
+            errors: errors
+         };
       }
       
       // get oid
       var oid = asn1.derToOid(capture.publicKeyOid);
       if(oid !== krypto.oids['RSA'])
       {
-         throw 'Cannot read public key. OID is not RSA.';
+         throw {
+            message: 'Cannot read public key. Unknown OID.',
+            oid: oid
+         };
       }
       
       // create public key

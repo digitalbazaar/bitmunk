@@ -139,10 +139,10 @@
     */
    asn1.Class =
    {
-      UNIVERSAL:        0,
-      APPLICATION:      1,
-      CONTEXT_SPECIFIC: 2,
-      PRIVATE:          3
+      UNIVERSAL:        0x00,
+      APPLICATION:      0x40,
+      CONTEXT_SPECIFIC: 0x80,
+      PRIVATE:          0xC0
    };
    
    /**
@@ -158,6 +158,13 @@
       OCTETSTRING:  4,
       NULL:         5,
       OID:          6,
+      ODESC:        7,
+      EXTERNAL:     8,
+      REAL:         9,
+      ENUMERATED:  10,
+      EMBEDDED:    11,
+      UTF8:        12,
+      ROID:        13,
       SEQUENCE:    16,
       SET:         17,
       UTCTIME:     23
@@ -202,29 +209,17 @@
       // minimum length for ASN.1 DER structure is 2
       if(bytes.length() < 2)
       {
-         throw 'Invalid DER length: ' + bytes.length();
+         throw {
+            message: 'Too few bytes to parse DER.',
+            bytes: bytes.length()
+         };
       }
       
       // get the first byte
       var b1 = bytes.getByte();
       
       // get the tag class
-      var tagClass;
-      switch(b1 & 0xC0)
-      {
-         case 0x00:
-            tagClass = asn1.Class.UNIVERSAL;
-            break;
-         case 0x40:
-            tagClass = asn1.Class.APPLICATION;
-            break;
-         case 0x80:
-            tagClass = asn1.Class.CONTEXT_SPECIFIC;
-            break;
-         case 0xC0:
-            tagClass = asn1.Class.PRIVATE;
-            break;
-      }
+      var tagClass = (b1 & 0xC0);
       
       // get the type (bits 1-5)
       var type = b1 & 0x1F;
@@ -248,8 +243,10 @@
       // ensure there are enough bytes to get the value
       if(bytes.length() < length)
       {
-         throw 'Not enough bytes to read ASN.1 value: ' +
-            bytes.length() + ' < ' + length; 
+         throw {
+            message: 'Too few bytes to read ASN.1 value.',
+            detail: bytes.length() + ' < ' + length
+         };
       }
       
       // prepare to get value
@@ -458,12 +455,14 @@
     * @param obj the ASN.1 object to validate.
     * @param v the ASN.1 structure validator.
     * @param capture an optional map to capture values in.
+    * @param errors an optional array for storing validation errors.
     * 
     * @return true on success, false on failure.
     */
-   asn1.validate = function(obj, v, capture)
+   asn1.validate = function(obj, v, capture, errors)
    {
       var rval = false;
+      
       if((obj.tagClass === v.tagClass) && (obj.type === v.type))
       {
          if(obj.constructed && v.constructed)
@@ -480,11 +479,20 @@
                {
                   if(i < obj.value.length)
                   {
-                     rval = asn1.validate(obj.value[i], v.value[i]);
+                     rval = asn1.validate(
+                        obj.value[i], v.value[i], capture, errors);
                   }
                   else if(!v.value[i].optional)
                   {
                      rval = false;
+                     if(errors)
+                     {
+                        errors.push(
+                           'Tag class "' + v.tagClass + '", type "' +
+                           v.type + '" expected value length "' +
+                           v.value.length + '", got "' +
+                           obj.value.length + '"');
+                     }
                   }
                }
             }
@@ -498,7 +506,158 @@
             
             rval = true;
          }
+         else if(errors)
+         {
+            errors.push(
+               'Expected constructed "' + v.constructed + '", got "' +
+               obj.constructed + '"');
+         }
       }
+      else if(errors)
+      {
+         if(obj.tagClass !== v.tagClass)
+         {
+            errors.push(
+               'Expected tag class "' + v.tagClass + '", got "' +
+               obj.tagClass + '"');
+         }
+         if(obj.type !== v.type)
+         {
+            errors.push(
+               'Expected type "' + v.type + '", got "' + obj.type + '"');
+         }
+      }
+      return rval;
+   };
+   
+   /**
+    * Pretty prints an ASN.1 object to a string.
+    * 
+    * @param obj the object to write out.
+    * @param level the level in the tree.
+    * @param indentation the indentation to use.
+    * 
+    * @return the string.
+    */
+   asn1.prettyPrint = function(obj, level, indentation)
+   {
+      var rval = new String();
+      
+      // set default level and indentation
+      level = level || 0;
+      indentation = indentation || 2;
+      
+      // start new line for deep levels
+      if(level > 0)
+      {
+         rval += '\n';
+      }
+      
+      // create indent
+      var indent = new String();
+      for(var i = 0; i < level * indentation; ++i)
+      {
+         indent += ' ';
+      }
+      
+      // print class:type
+      rval += indent;
+      switch(obj.tagClass)
+      {
+         case asn1.Class.UNIVERSAL:
+            rval += 'Universal:';
+            break;
+         case asn1.Class.APPLICATION:
+            rval += 'Application:';
+            break;
+         case asn1.Class.CONTEXT_SPECIFIC:
+            rval += 'Context-Specific:';
+            break;
+         case asn1.Class.PRIVATE:
+            rval += 'Private:';
+            break;
+      }
+      
+      if(obj.tagClass === asn1.Class.UNIVERSAL)
+      {
+         // known types
+         switch(obj.type)
+         {
+            case asn1.Type.NONE:
+               rval += 'None';
+               break;
+            case asn1.Type.BOOLEAN:
+               rval += 'Boolean';
+               break;
+            case asn1.Type.BITSTRING:
+               rval += 'Bit string';
+               break;
+            case asn1.Type.INTEGER:
+               rval += 'Integer';
+               break;
+            case asn1.Type.OCTETSTRING:
+               rval += 'Octet string';
+               break;
+            case asn1.Type.NULL:
+               rval += 'Null';
+               break;
+            case asn1.Type.OID:
+               rval += 'Object Identifier';
+               break;
+            case asn1.Type.ODESC:
+               rval += 'Object Descriptor';
+               break;
+            case asn1.Type.EXTERNAL:
+               rval += 'External or Instance of';
+               break;
+            case asn1.Type.REAL:
+               rval += 'Real';
+               break;
+            case asn1.Type.ENUMERATED:
+               rval += 'Enumerated';
+               break;
+            case asn1.Type.EMBEDDED:
+               rval += 'Embedded PDV';
+               break;
+            case asn1.Type.ROID:
+               rval += 'Relative Object Identifier';
+               break;
+            case asn1.Type.SEQUENCE:
+               rval += 'Sequence';
+               break;
+            case asn1.Type.SET:
+               rval += 'Set';
+               break;
+            case asn1.Type.UTCTIME:
+               rval += 'UTC time';
+               break;
+            default:
+               rval += obj.type;
+               break;
+         }
+      }
+      else
+      {
+         rval += asn1.type;
+      }
+      
+      rval += '\n';
+      rval += indent + 'Constructed: ' + obj.constructed + '\n';
+      
+      if(obj.constructed)
+      {
+         rval += indent + 'Sub values: ' + obj.value.length;
+         for(var i = 0; i < obj.value.length; ++i)
+         {
+            rval += asn1.prettyPrint(obj.value[i], level + 1, indentation);
+         }
+      }
+      else
+      {
+         rval += indent + 'Value: ' +
+            krypto.util.createBuffer(obj.value).toHex();
+      }
+      
       return rval;
    };
    
