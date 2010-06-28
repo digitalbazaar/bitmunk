@@ -513,6 +513,41 @@
    };
    
    /**
+    * Converts a UTCTime value to a date.
+    * 
+    * @param utc the UTCTime value to convert.
+    * 
+    * @return the date.
+    */
+   asn1.utcTimeToDate = function(utc)
+   {
+      /* The following formats can be used:
+         
+         YYMMDDhhmmZ
+         YYMMDDhhmm+hh'mm'
+         YYMMDDhhmm-hh'mm'
+         YYMMDDhhmmssZ
+         YYMMDDhhmmss+hh'mm'
+         YYMMDDhhmmss-hh'mm'
+         
+         Where:
+         
+         YY is the least significant two digits of the year
+         MM is the month (01 to 12)
+         DD is the day (01 to 31)
+         hh is the hour (00 to 23)
+         mm are the minutes (00 to 59)
+         ss are the seconds (00 to 59)
+         Z indicates that local time is GMT, + indicates that local time is
+         later than GMT, and - indicates that local time is earlier than GMT
+         hh' is the absolute value of the offset from GMT in hours
+         mm' is the absolute value of the offset from GMT in minutes
+      */
+      
+      // FIXME: implement me
+   };
+   
+   /**
     * Validates the that given ASN.1 object is at least a super set of the
     * given ASN.1 structure. Only tag classes and types are checked. An
     * optional map may also be provided to capture ASN.1 values while the
@@ -552,22 +587,28 @@
                var j = 0;
                for(var i = 0; rval && i < v.value.length; ++i)
                {
+                  rval = v.value[i].optional || false;
                   if(obj.value[j])
                   {
                      rval = asn1.validate(
-                        obj.value[j++], v.value[i], capture, errors);
-                  }
-                  else if(!v.value[i].optional)
-                  {
-                     rval = false;
-                     if(errors)
+                        obj.value[j], v.value[i], capture, errors);
+                     if(rval)
                      {
-                        errors.push(
-                           'Tag class "' + v.tagClass + '", type "' +
-                           v.type + '" expected value length "' +
-                           v.value.length + '", got "' +
-                           obj.value.length + '"');
+                        ++j;
                      }
+                     else if(v.value[i].optional)
+                     {
+                        rval = true;
+                     }
+                  }
+                  if(!rval && errors)
+                  {
+                     errors.push(
+                        '[' + v.name + '] ' +
+                        'Tag class "' + v.tagClass + '", type "' +
+                        v.type + '" expected value length "' +
+                        v.value.length + '", got "' +
+                        obj.value.length + '"');
                   }
                }
             }
@@ -587,6 +628,7 @@
          else if(errors)
          {
             errors.push(
+               '[' + v.name + '] ' +
                'Expected constructed "' + v.constructed + '", got "' +
                obj.constructed + '"');
          }
@@ -596,12 +638,14 @@
          if(obj.tagClass !== v.tagClass)
          {
             errors.push(
+               '[' + v.name + '] ' +
                'Expected tag class "' + v.tagClass + '", got "' +
                obj.tagClass + '"');
          }
          if(obj.type !== v.type)
          {
             errors.push(
+               '[' + v.name + '] ' +
                'Expected type "' + v.type + '", got "' + obj.type + '"');
          }
       }

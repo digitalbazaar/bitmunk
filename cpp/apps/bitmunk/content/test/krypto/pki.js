@@ -119,27 +119,97 @@
    krypto.oids = krypto.oids || {};
    var oids = krypto.oids;
    
-   /**
-    * Known OIDs.
-    */
-   oids['RSA'] = '1.2.840.113549.1.1.1';
+   // algorithm OIDs
    oids['1.2.840.113549.1.1.1'] = 'RSA';
+   oids['RSA'] = '1.2.840.113549.1.1.1';
+   
+   // certificate issuer/subject OIDs
+   oids['2.5.4.3'] = 'commonName';
+   oids['commonName'] = '2.5.4.3';
+   oids['2.5.4.5'] = 'serialName';
+   oids['serialName'] = '2.5.4.5';
+   oids['2.5.4.6'] = 'countryName';
+   oids['countryName'] = '2.5.4.6';
+   oids['2.5.4.7'] = 'localityName';
+   oids['localityName'] = '2.5.4.7';
+   oids['2.5.4.8'] = 'stateOrProvinceName';
+   oids['stateOrProvinceName'] = '2.5.4.9';
+   oids['2.5.4.10'] = 'organizationName';
+   oids['organizationName'] = '2.5.4.10';
+   oids['2.5.4.11'] = 'organizationalUnitName';
+   oids['organizationalUnitName'] = '2.5.4.11';
+   
+   // short name OID mappings
+   var _shortNames = {};
+   _shortNames['CN'] = oids['commonName'];
+   _shortNames['commonName'] = 'CN';
+   _shortNames['C'] = oids['countryName'];
+   _shortNames['countryName'] = 'C';
+   _shortNames['L'] = oids['localityName'];
+   _shortNames['localityName'] = 'L';
+   _shortNames['ST'] = oids['stateOrProvinceName'];
+   _shortNames['stateOrProvinceName'] = 'ST';
+   _shortNames['O'] = oids['organizationName'];
+   _shortNames['organizationName'] = 'O';
+   _shortNames['OU'] = oids['organizationalUnitName'];
+   _shortNames['organizationalUnitName'] = 'OU';
+   
+   // X.509 extension OIDs
+   oids['2.5.29.1'] = 'authorityKeyIdentifier'; // deprecated, use .35
+   oids['2.5.29.2'] = 'keyAttributes'; // obsolete use .37 or .15
+   oids['2.5.29.3'] = 'certificatePolicies'; // deprecated, use .32
+   oids['2.5.29.4'] = 'keyUsageRestriction'; // obsolete use .37 or .15
+   oids['2.5.29.5'] = 'policyMapping'; // deprecated use .33
+   oids['2.5.29.6'] = 'subtreesConstraint'; // obsolete use .30 
+   oids['2.5.29.7'] = 'subjectAltName'; // deprecated use .17
+   oids['2.5.29.8'] = 'issuerAltName'; // deprecated use .18
+   oids['2.5.29.9'] = 'subjectDirectoryAttributes'; 
+   oids['2.5.29.10'] = 'basicConstraints'; // deprecated use .19
+   oids['2.5.29.11'] = 'nameConstraints'; // deprecated use .30
+   oids['2.5.29.12'] = 'policyConstraints'; // deprecated use .36
+   oids['2.5.29.13'] = 'basicConstraints'; // deprecated use .19 
+   oids['2.5.29.14'] = 'subjectKeyIdentifier';
+   oids['2.5.29.15'] = 'keyUsage';
+   oids['2.5.29.16'] = 'privateKeyUsagePeriod';
+   oids['2.5.29.17'] = 'subjectAltName';
+   oids['2.5.29.18'] = 'issuerAltName';
+   oids['2.5.29.19'] = 'basicConstraints';
+   oids['2.5.29.20'] = 'cRLNumber';
+   oids['2.5.29.21'] = 'cRLReason';
+   oids['2.5.29.22'] = 'expirationDate';
+   oids['2.5.29.23'] = 'instructionCode';
+   oids['2.5.29.24'] = 'invalidityDate';
+   oids['2.5.29.25'] = 'cRLDistributionPoints'; // deprecated use .31
+   oids['2.5.29.26'] = 'issuingDistributionPoint'; // deprecated use .28
+   oids['2.5.29.27'] = 'deltaCRLIndicator';
+   oids['2.5.29.28'] = 'issuingDistributionPoint';
+   oids['2.5.29.29'] = 'certificateIssuer';
+   oids['2.5.29.30'] = 'nameConstraints';
+   oids['2.5.29.31'] = 'cRLDistributionPoints';
+   oids['2.5.29.32'] = 'certificatePolicies';
+   oids['2.5.29.33'] = 'policyMappings';
+   oids['2.5.29.34'] = 'policyConstraints'; // deprecated use .36
+   oids['2.5.29.35'] = 'authorityKeyIdentifier';
+   oids['2.5.29.36'] = 'policyConstraints';
+   oids['2.5.29.37'] = 'extKeyUsage';
+   oids['2.5.29.46'] = 'freshestCRL';
+   oids['2.5.29.54'] = 'inhibitAnyPolicy';
    
    // validator for an SubjectPublicKeyInfo structure
    // Note: Currently only works with an RSA public key 
    var publicKeyValidator = {
-      // SubjectPublicKeyInfo
+      name: 'SubjectPublicKeyInfo',
       tagClass: asn1.Class.UNIVERSAL,
       type: asn1.Type.SEQUENCE,
       constructed: true,
       captureAsn1: 'subjectPublicKeyInfo',
       value: [{
-         // AlgorithmIdentifier
+         name: 'SubjectPublicKeyInfo.AlgorithmIdentifier',
          tagClass: asn1.Class.UNIVERSAL,
          type: asn1.Type.SEQUENCE,
          constructed: true,
          value: [{
-            // algorithm
+            name: 'AlgorithmIdentifier.algorithm',
             tagClass: asn1.Class.UNIVERSAL,
             type: asn1.Type.OID,
             constructed: false,
@@ -147,11 +217,13 @@
          }]
       }, {
          // subjectPublicKey
+         name: 'SubjectPublicKeyInfo.subjectPublicKey',
          tagClass: asn1.Class.UNIVERSAL,
          type: asn1.Type.BITSTRING,
          constructed: false,
          value: [{
-            // rsaPublicKey
+            // RSAPublicKey
+            name: 'SubjectPublicKeyInfo.subjectPublicKey.RSAPublicKey',
             tagClass: asn1.Class.UNIVERSAL,
             type: asn1.Type.SEQUENCE,
             constructed: true,
@@ -163,18 +235,21 @@
    
    // validator for an RSA public key
    var rsaPublicKeyValidator = {
-      // subjectPublicKey
+      // RSAPublicKey
+      name: 'RSAPublicKey',
       tagClass: asn1.Class.UNIVERSAL,
       type: asn1.Type.SEQUENCE,
       constructed: true,
       value: [{
          // modulus (n)
+         name: 'RSAPublicKey.modulus',
          tagClass: asn1.Class.UNIVERSAL,
          type: asn1.Type.INTEGER,
          constructed: false,
          capture: 'publicKeyModulus'
       }, {
          // publicExponent (e)
+         name: 'RSAPublicKey.exponent',
          tagClass: asn1.Class.UNIVERSAL,
          type: asn1.Type.INTEGER,
          constructed: false,
@@ -184,65 +259,67 @@
    
    // validator for an X.509v3 certificate
    var x509CertificateValidator = {
-      // Certificate
+      name: 'Certificate',
       tagClass: asn1.Class.UNIVERSAL,
       type: asn1.Type.SEQUENCE,
       constructed: true,
       value: [{
-         // TBSCertificate
+         name: 'Certificate.TBSCertificate',
          tagClass: asn1.Class.UNIVERSAL,
          type: asn1.Type.SEQUENCE,
          constructed: true,
          value: [{
-            // Version
+            name: 'Certificate.TBSCertificate.version',
             tagClass: asn1.Class.CONTEXT_SPECIFIC,
             type: 0,
             constructed: true,
             optional: true,
             value: [{
-               // Integer (actual version)
+               name: 'Certificate.TBSCertificate.version.integer',
                tagClass: asn1.Class.UNIVERSAL,
                type: asn1.Type.BIT_STRING,
                constructed: false,
                capture: 'certVersion'
             }]
          }, {
-            // CertificateSerialNumber
+            name: 'Certificate.TBSCertificate.serialNumber',
             tagClass: asn1.Class.UNIVERSAL,
             type: asn1.Type.BIT_STRING,
             constructed: false,
             capture: 'certSerialNumber'
          }, {
-            // AlgorithmIdentifier (signature)
+            name: 'Certificate.TBSCertificate.signature',
             tagClass: asn1.Class.UNIVERSAL,
             type: asn1.Type.SEQUENCE,
             constructed: true,
             value: [{
-               // algorithm
+               name: 'Certificate.TBSCertificate.signature.algorithm',
                tagClass: asn1.Class.UNIVERSAL,
                type: asn1.Type.OID,
                constructed: false,
                capture: 'certSignatureOid'
             }]
          }, {
-            // Name (issuer) (RDNSequence)
+            name: 'Certificate.TBSCertificate.issuer',
             tagClass: asn1.Class.UNIVERSAL,
             type: asn1.Type.SEQUENCE,
             constructed: true,
-            capture: 'certIssuer'
+            captureAsn1: 'certIssuer'
          }, {
-            // Validity
+            name: 'Certificate.TBSCertificate.validity',
             tagClass: asn1.Class.UNIVERSAL,
             type: asn1.Type.SEQUENCE,
             constructed: true,
             value: [{
                // notBefore (Time) (only UTC time is supported)
+               name: 'Certificate.TBSCertificate.validity.notBefore',
                tagClass: asn1.Class.UNIVERSAL,
                type: asn1.Type.UTCTIME,
                constructed: false,
                capture: 'certNotBefore'
             }, {
                // notAfter (Time) (only UTC time is supported)
+               name: 'Certificate.TBSCertificate.validity.notAfter',
                tagClass: asn1.Class.UNIVERSAL,
                type: asn1.Type.UTCTIME,
                constructed: false,
@@ -250,42 +327,48 @@
             }]
          }, {
             // Name (subject) (RDNSequence)
+            name: 'Certificate.TBSCertificate.subject',
             tagClass: asn1.Class.UNIVERSAL,
             type: asn1.Type.SEQUENCE,
             constructed: true,
-            capture: 'certSubject'
+            captureAsn1: 'certSubject'
          }, 
             // SubjectPublicKeyInfo
             publicKeyValidator
          , {
             // issuerUniqueID (optional)
-            tagClass: asn1.Class.UNIVERSAL,
-            type: asn1.Type.BITSTRING,
+            name: 'Certificate.TBSCertificate.issuerUniqueID',
+            tagClass: asn1.Class.CONTEXT_SPECIFIC,
+            type: 1,
             constructed: false,
             capture: 'certIssuerUniqueId',
             optional: true
          }, {
             // subjectUniqueID (optional)
-            tagClass: asn1.Class.UNIVERSAL,
-            type: asn1.Type.BITSTRING,
+            name: 'Certificate.TBSCertificate.subjectUniqueID',
+            tagClass: asn1.Class.CONTEXT_SPECIFIC,
+            type: 2,
             constructed: false,
             capture: 'certSubjectUniqueId',
             optional: true
          }, {
             // Extensions (optional)
+            name: 'Certificate.TBSCertificate.extensions',
             tagClass: asn1.Class.CONTEXT_SPECIFIC,
             type: 3,
             constructed: true,
-            capture: 'certExtensions',
+            captureAsn1: 'certExtensions',
             optional: true
          }]
       }, {
          // AlgorithmIdentifier (signature algorithm)
+         name: 'Certificate.signatureAlgorithm',
          tagClass: asn1.Class.UNIVERSAL,
          type: asn1.Type.SEQUENCE,
          constructed: true,
          value: [{
             // algorithm
+            name: 'Certificate.signatureAlgorithm.algorithm',
             tagClass: asn1.Class.UNIVERSAL,
             type: asn1.Type.OID,
             constructed: false,
@@ -293,6 +376,7 @@
          }],
       }, {
          // SignatureValue
+         name: 'Certificate.signatureValue',
          tagClass: asn1.Class.UNIVERSAL,
          type: asn1.Type.BITSTRING,
          constructed: false,
@@ -325,7 +409,16 @@
             obj = {};
             attr = set.value[i];
             obj.type = asn1.derToOid(attr.value[0].value);
-            obj.value = asn1.attr.value[1].value;
+            obj.value = attr.value[1].value;
+            // if the OID is known, get its name and short name
+            if(obj.type in oids)
+            {
+               obj.name = oids[obj.type];
+               if(obj.name in _shortNames)
+               {
+                  obj.shortName = _shortNames[obj.name];
+               }
+            }
             rval.push(obj);
          }
       }
@@ -358,8 +451,6 @@
          
          // parse DER into asn.1 object
          var obj = asn1.fromDer(der);
-         console.log('obj', asn1.prettyPrint(obj));
-         console.log(obj);
          
          // convert from asn.1
          rval = func(obj);
@@ -429,19 +520,33 @@
       
       // start building cert
       var cert = {};
-      cert.version = capture.certVersion || 0;
-      var tmp = krypto.util.createBuffer(capture.certSerialNumber);
-      cert.serialNumber = tmp.getInt(tmp.length() << 3);
+      cert.version = capture.certVersion ?
+         capture.certVersion.charCodeAt(0) : 0;
+      var serial = krypto.util.createBuffer(capture.certSerialNumber);
+      cert.serialNumber = serial.toHex();
       cert.signatureOid = krypto.asn1.derToOid(capture.certSignatureOid);
       cert.signature = capture.certSignature;
       cert.validity = {};
-      cert.notBefore = new Date();
-      cert.notBefore.setTime(parseInt(capture.certNotBefore));
-      cert.notAfter = new Date();
-      cert.notAfter.setTime(parseInt(capture.certNotAfter));
+      cert.validity.notBefore = asn1.utcTimeToDate(capture.certNotBefore);
+      cert.validity.notAfter = asn1.utcTimeToDate(capture.certNotAfter);
       
       // handle issuer
       cert.issuer = {};
+      cert.issuer.getField = function(sn)
+      {
+         var rval = null;
+         var attr;
+         for(var i = 0; i < cert.issuer.attributes.length; ++i)
+         {
+            attr = cert.issuer.attributes[i];
+            if(attr.shortName && attr.shortName === sn)
+            {
+               rval = attr.value;
+               break;
+            }
+         }
+         return rval;
+      };
       cert.issuer.attributes = _getAttributesAsArray(capture.certIssuer);
       if(capture.certIssuerUniqueId)
       {
@@ -450,6 +555,21 @@
       
       // handle subject
       cert.subject = {};
+      cert.subject.getField = function(sn)
+      {
+         var rval = null;
+         var attr;
+         for(var i = 0; i < cert.subject.attributes.length; ++i)
+         {
+            attr = cert.subject.attributes[i];
+            if(attr.shortName && attr.shortName === sn)
+            {
+               rval = attr.value;
+               break;
+            }
+         }
+         return rval;
+      };
       cert.subject.attributes = _getAttributesAsArray(capture.certSubject);
       if(capture.certSubjectUniqueId)
       {
@@ -460,20 +580,37 @@
       cert.extensions = [];
       if(capture.certExtensions)
       {
-         // an extension has:
-         // [0] extnID      OBJECT IDENTIFIER
-         // [1] critical    BOOLEAN DEFAULT FALSE
-         // [2] extnValue   OCTET STRING
-         var e;
-         var ext;
+         var e, ext, extseq;
          for(var i = 0; i < capture.certExtensions.value.length; ++i)
          {
-            e = {};
-            ext = capture.certExtensions.value[i];
-            e.id = asn1.derToOid(ext.value[0].value);
-            e.critical = (ext.value[1].value == 1);
-            e.value = ext.value[2].value;
-            cert.extensions.push(e);
+            // get extension sequence
+            extseq = capture.certExtensions.value[i];
+            for(var ei = 0; ei < extseq.value.length; ++ei)
+            {
+               // an extension has:
+               // [0] extnID      OBJECT IDENTIFIER
+               // [1] critical    BOOLEAN DEFAULT FALSE
+               // [2] extnValue   OCTET STRING
+               ext = extseq.value[ei];
+               e = {};
+               e.id = asn1.derToOid(ext.value[0].value);
+               e.critical = false;
+               if(ext.value[1].type === asn1.Type.BOOLEAN)
+               {
+                  e.critical = (ext.value[1].value == 1);
+                  e.value = ext.value[2].value;
+               }
+               else
+               {
+                  e.value = ext.value[1].value;
+               }
+               // if the oid is known, get its name
+               if(e.id in oids)
+               {
+                  e.name = oids[e.id];
+               }
+               cert.extensions.push(e);
+            }
          }
       }
       
