@@ -523,13 +523,9 @@
       {
          try
          {
-            var tmp = krypto.util.createBuffer('0123456789abcdef');
-            console.log('message', tmp.toHex());
-            
             var key = krypto.pki.publicKeyFromPem(sPublicKey);
             var md = krypto.md.sha1.create();
             md.update('0123456789abcdef');
-            console.log(sSignature); 
             var signature = krypto.util.hexToBytes(sSignature);
             var success = key.verify(md.digest().getBytes(), signature);
             console.log('assert', success === true);
