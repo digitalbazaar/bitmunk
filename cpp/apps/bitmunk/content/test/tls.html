@@ -1,0 +1,118 @@
+<html>
+   <head>
+      <style> 
+      canvas {
+        background: black;
+      }
+      </style> 
+      <script type="text/javascript" src="/bitmunk/js/swfobject/swfobject.js"></script>
+      <script type="text/javascript" src="/bitmunk/js/jquery.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/socket.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/util.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/random.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/md5.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/sha1.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/hmac.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/aes.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/asn1.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/jsbn.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/pki.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/tls.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/http.js"></script>
+      
+      <script type="text/javascript">
+      var flashvars = {};
+      var params = {};
+      var attributes = {};
+      
+      params.allowscriptaccess = "always";
+      
+      swfobject.embedSWF(
+         "/bitmunk/SocketPool.swf", "socketPool", "400", "224", "9.0.0",
+         "/bitmunk/js/swfobject/expressInstall.swf",
+         flashvars, params, attributes);
+      
+      // local aliases
+      var net = window.krypto.net;
+      var http = window.krypto.http;
+      var util = window.krypto.util;
+
+      var client;
+      
+      function client_init()
+      {
+         var sp = net.createSocketPool({
+            flashId: 'socketPool',
+            policyPort: 19845,
+            msie: false
+         });
+         client = http.createClient({
+            url: 'https://localhost:4433',
+            socketPool: sp,
+            connections: 1
+         });
+         document.getElementById('feedback').innerHTML = 'http client created';
+         return false;
+      }
+      
+      function client_cleanup()
+      {
+         var sp = client.socketPool;
+         client.destroy();
+         sp.destroy();
+         document.getElementById('feedback').innerHTML =
+            'http client cleaned up';
+         return false;
+      }
+
+      function client_send()
+      {
+         var request = http.createRequest({
+            method: 'POST',
+            path: '/api/3.0/system/test/echo',
+            body: 'echo=foo',
+            headers: [{'Content-Type': 'application/x-www-form-urlencoded'}]
+         });
+         
+         client.send({
+            request: request,
+            connected: function(e)
+            {
+               console.log('connected', e);
+            },
+            headerReady: function(e)
+            {
+               console.log('header ready', e);
+            },
+            bodyReady: function(e)
+            {
+               console.log('body ready', e);
+            },
+            error: function(e)
+            {
+               console.log('error', e);
+            }
+         });
+         document.getElementById('feedback').innerHTML =
+            'http request sent';
+         return false;
+      }
+      
+      </script>
+   </head>
+   <body>
+      <div id="socketPool">
+         <p>Could not load the flash SocketPool.</p>
+      </div>
+      <p>Use the controls below to test the http client.</p>
+      <div id="controls">
+         <button id="init" onclick="javascript:return client_init();">init</button>
+         <button id="cleanup" onclick="javascript:return client_cleanup();">cleanup</button>
+         <button id="send" onclick="javascript:return client_send();">send</button>
+      </div>
+      <p>Feedback from the flash SocketPool:</p>
+      <div id="feedback">
+      None
+      </div>
+   </body>
+</html>
