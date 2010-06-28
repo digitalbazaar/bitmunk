@@ -219,6 +219,7 @@ function bnToString(b) {
   if(this.s < 0) return "-"+this.negate().toString(b);
   var k;
   if(b == 16) k = 4;
+  else if(b == 256) k = 8;
   else if(b == 8) k = 3;
   else if(b == 2) k = 1;
   else if(b == 32) k = 5;

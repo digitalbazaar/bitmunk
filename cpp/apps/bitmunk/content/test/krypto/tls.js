@@ -967,15 +967,31 @@
             cert = readVector(msg.certificate_list, 3);
             asn1 = krypto.asn1.fromDer(cert);
             cert = krypto.pki.certificateFromAsn1(asn1);
-            console.log('cert', cert);
+            certs.push(cert);
          }
-         // FIXME: remove me
-         throw 'Not yet implemented';
          
-         // FIXME: check server certificate, save in handshake state
-         
-         // expect a ServerKeyExchange message next
-         c.expect = SKE;
+         // ensure at least 1 certificate was provided
+         if(certs.length === 0)
+         {
+            // error, no server certificate
+            c.error(c, {
+               message: 'No server certificate provided.',
+               send: true,
+               alert: {
+                  level: tls.Alert.Level.fatal,
+                  description: tls.Alert.Description.certificate_unknown
+               }
+            });
+         }
+         // check certificate chain
+         else if(tls.verifyCertificateChain(c, certs))
+         {
+            // save server certificate handshake state
+            c.handshakeState.serverCertificate = certs[0];
+            
+            // expect a ServerKeyExchange message next
+            c.expect = SKE;
+         }
       }
    };
    
@@ -2469,6 +2485,111 @@
    };
    
    /**
+    * Verifies a certificate chain against the given connection's
+    * Certificate Authority store.
+    * 
+    * @param c the TLS connection.
+    * @param chain the certificate chain to verify, with the root or highest
+    *           authority at the end.
+    * 
+    * @return true if successful, false if not.
+    */
+   tls.verifyCertificateChain = function(c, chain)
+   {
+      // FIXME: remove me
+      throw 'Not yet implemented';
+      
+      // copy cert chain references to another array
+      chain = chain.slice(0);
+      
+      // get current date
+      var date = +new Date();
+      
+      // verify each cert in the chain using its parent, if available
+      var cert, parent;
+      do
+      {
+         cert = chain.shift();
+         
+         // check valid time
+         if(+cert.validity.notBefore > date || +cert.validity.notAfter < date)
+         {
+            c.error(c, {
+               message: 'Certificate not valid yet or has expired.',
+               send: true,
+               alert: {
+                  level: tls.Alert.Level.fatal,
+                  description: tls.Alert.Description.certificate_expired
+               }
+            });
+         }
+         else if(chain.length > 0)
+         {
+            parent = chain[0];
+            if(!parent.verify(cert))
+            {
+               c.error(c, {
+                  message: 'Certificate signature invalid.',
+                  send: true,
+                  alert: {
+                     level: tls.Alert.Level.fatal,
+                     description: tls.Alert.Description.bad_certificate
+                  }
+               });
+            }
+         }
+      }
+      while(!c.fail && chain.length > 0);
+      
+      // verify the last certificate in the chain using the CA store
+      if(!c.fail)
+      {
+         // FIXME: check cert extensions to see who the parent is
+         // FIXME: if no cert extensions just try all certs? if that's really
+         // how its done then save the digest to prevent duplicate work
+         var authorityKey = null;
+         
+         // get CA store
+         var root = null;
+         var caStore = c.caStore;
+         for(var i = 0; i < root === null && caStore.length; ++i)
+         {
+            // FIXME: get subjectKey, compare against authorityKey
+         }
+         
+         if(root === null)
+         {
+            // certificate not trusted
+            c.error(c, {
+               message: 'Untrusted certificate.',
+               send: true,
+               alert: {
+                  level: tls.Alert.Level.fatal,
+                  description: tls.Alert.Description.certificate_unknown
+               }
+            });
+         }
+         else if(!root.verify(cert))
+         {
+            // signature verify failed
+            c.error(c, {
+               message: 'Certificate signature invalid.',
+               send: true,
+               alert: {
+                  level: tls.Alert.Level.fatal,
+                  description: tls.Alert.Description.bad_certificate
+               }
+            });
+         }
+      }
+      
+      // FIXME: remove me
+      throw 'Not yet implemented';
+      
+      return !c.fail;
+   };
+   
+   /**
     * Creates a new TLS connection.
     * 
     * See public createConnection() docs for more details.
@@ -2491,6 +2612,7 @@
          expect: SHE,
          fragmented: null,
          records: [],
+         caStore: options.caStore || [],
          initHandshake: false,
          handshakeState: null,
          isConnected: false,
@@ -2768,6 +2890,7 @@
     * 
     * @param options the options for this connection:
     *    sessionId: a session ID to reuse, null for a new connection.
+    *    caStore: an array of certificates to trust.
     *    connected: function(conn) called when the first handshake completes.
     *    tlsDataReady: function(conn) called when TLS protocol data has
     *       been prepared and is ready to be used (typically sent over a

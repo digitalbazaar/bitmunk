@@ -120,8 +120,17 @@
    var oids = krypto.oids;
    
    // algorithm OIDs
-   oids['1.2.840.113549.1.1.1'] = 'RSA';
-   oids['RSA'] = '1.2.840.113549.1.1.1';
+   oids['1.2.840.113549.1.1.1'] = 'rsaEncryption';
+   oids['rsaEncryption'] = '1.2.840.113549.1.1.1';
+   // Note: md2 & md4 not implemented
+   //oids['1.2.840.113549.1.1.1'] = 'md2withRSAEncryption';
+   //oids['md2withRSAEncryption'] = '1.2.840.113549.1.1.1';
+   //oids['1.2.840.113549.1.1.1'] = 'md4withRSAEncryption';
+   //oids['md4withRSAEncryption'] = '1.2.840.113549.1.1.1';
+   oids['1.2.840.113549.1.1.1'] = 'md5withRSAEncryption';
+   oids['md5withRSAEncryption'] = '1.2.840.113549.1.1.1';
+   oids['1.2.840.113549.1.1.1'] = 'sha1withRSAEncryption';
+   oids['sha1withRSAEncryption'] = '1.2.840.113549.1.1.1';
    
    // certificate issuer/subject OIDs
    oids['2.5.4.3'] = 'commonName';
@@ -511,7 +520,7 @@
       
       // get oid
       var oid = asn1.derToOid(capture.publicKeyOid);
-      if(oid !== krypto.oids['RSA'])
+      if(oid !== krypto.oids['rsaEncryption'])
       {
          throw {
             message: 'Cannot read public key. OID is not RSA.'
@@ -525,7 +534,10 @@
       var serial = krypto.util.createBuffer(capture.certSerialNumber);
       cert.serialNumber = serial.toHex();
       cert.signatureOid = krypto.asn1.derToOid(capture.certSignatureOid);
-      cert.signature = capture.certSignature;
+      // skip "unused bits" in signature value BITSTRING
+      var signature = krypto.util.createBuffer(capture.certSignature);
+      ++signature.read;
+      cert.signature = signature.getBytes();
       cert.validity = {};
       cert.validity.notBefore = asn1.utcTimeToDate(capture.certNotBefore);
       cert.validity.notAfter = asn1.utcTimeToDate(capture.certNotAfter);
@@ -617,6 +629,45 @@
       // convert RSA public key from ASN.1
       cert.publicKey = pki.publicKeyFromAsn1(capture.subjectPublicKeyInfo);
       
+      /**
+       * Attempts verify the signature on the passed certificate using this
+       * certificate's public key.
+       * 
+       * @param child the certificate to verify.
+       * 
+       * @return true if verified, false if not.
+       */
+      cert.verify = function(child)
+      {
+         var rval = false;
+         
+         // check OID for supported signature types
+         var md = null;
+         if(child.signatureOid in oids)
+         {
+            var oid = oids[child.signatureOid];
+            if(oid === 'sha1withRSAEncryption')
+            {
+               md = krypto.md.sha1.create();
+            }
+            else if(oid === 'md5withRSAEncryption')
+            {
+               md = krypto.md.md5.create();
+            }
+         }
+         
+         if(md !== null)
+         {
+            // FIXME: update digest with child cert data
+            
+            // verify signature on cert using public key
+            rval = cert.publicKey.verify(
+               md.digest().getBytes(), cert.signature);
+         }
+         
+         return rval;
+      };
+      
       return cert;
    };
    
@@ -643,7 +694,7 @@
       
       // get oid
       var oid = asn1.derToOid(capture.publicKeyOid);
-      if(oid !== krypto.oids['RSA'])
+      if(oid !== krypto.oids['rsaEncryption'])
       {
          throw {
             message: 'Cannot read public key. Unknown OID.',
@@ -688,14 +739,249 @@
       /**
        * Encrypts the given data with this public key.
        * 
-       * @param b the byte buffer of data to encrypt.
+       * @param data the byte string to encrypt.
+       * 
+       * @return the encrypted byte string.
        */
-      key.encrypt = function(b)
+      key.encrypt = function(data)
       {
-         // FIXME: implement me
+         return pki.rsa.encrypt(data, key.modulus, key.exponent, 0x02);
+      };
+      
+      /**
+       * Verifies the given signature against the given digest.
+       * 
+       * Once RSA-decrypted, the signature is an OCTET STRING that holds
+       * a DigestInfo.
+       * 
+       * DigestInfo ::= SEQUENCE {
+       *    digestAlgorithm DigestAlgorithmIdentifier,
+       *    digest Digest
+       * }
+       * DigestAlgorithmIdentifier ::= AlgorithmIdentifier
+       * Digest ::= OCTET STRING
+       * 
+       * @param digest the message digest hash to compare against the signature.
+       * @param signature the signature to verify.
+       * 
+       * @return true if the signature was verified, false if not.
+       */
+      key.verify = function(digest, signature)
+      {
+         // do rsa decryption
+         var d = pki.rsa.decrypt(signature, key.modulus, key.exponent, 0x02);
+         
+         // d is ASN.1 BER-encoded DigestInfo
+         var obj = asn1.fromDer(d);
+         console.log('DigestInfo', asn1.prettyPrint(obj));
+         
+         // compare the given digest to the decrypted one
+         return digest === obj.value[1].value;
       };
       
       return key;
+   };
+   
+   /**
+    * RSA encryption and decryption, see RFC 2313.
+    */ 
+   pki.rsa = {};
+   
+   /**
+    * Performs RSA encryption.
+    * 
+    * @param m the message to encrypt as a byte string.
+    * @param n the modulus to use.
+    * @param c the exponent to use.
+    * @param bt the block type to use (0x01 for private key, 0x02 for public).
+    * 
+    * @return the encrypted bytes as a string.
+    */
+   pki.rsa.encrypt = function(m, n, c, bt)
+   {
+      // get the length of the modulus in bytes
+      var k = n.bitLength() << 3;
+      
+      if(m.length > k - 11)
+      {
+         throw {
+            message: 'Message is too long to encrypt.',
+            length: m.length,
+            max: (k - 11)
+         };
+      }
+      
+      /* A block type BT, a padding string PS, and the data D shall be
+         formatted into an octet string EB, the encryption block:
+         
+         EB = 00 || BT || PS || 00 || D
+         
+         The block type BT shall be a single octet indicating the structure of
+         the encryption block. For this version of the document it shall have
+         value 00, 01, or 02. For a private-key operation, the block type
+         shall be 00 or 01. For a public-key operation, it shall be 02.
+         
+         The padding string PS shall consist of k-3-||D|| octets. For block
+         type 00, the octets shall have value 00; for block type 01, they
+         shall have value FF; and for block type 02, they shall be
+         pseudorandomly generated and nonzero. This makes the length of the
+         encryption block EB equal to k.
+       */
+      
+      // build the encryption block
+      var eb = krypto.util.createBuffer();
+      eb.putByte(0x00);
+      eb.putByte(bt);
+      
+      // create the padding
+      var padNum = k - 3 - m.length();
+      var padByte;
+      if(bt === 0x00 || bt === 0x01)
+      {
+         padByte = (bt === 0x00) ? 0x00 : 0xFF;
+         for(var i = 0; i < padNum; ++i)
+         {
+            eb.putByte(padByte);
+         }
+      }
+      else
+      {
+         for(var i = 0; i < padNum; ++i)
+         {
+            padByte = Math.floor(Math.random() * 255) + 1;
+            eb.putByte(padByte);
+         }
+      }
+      
+      eb.putByte(0x00);
+      eb.putBytes(m);
+      
+      // load encryption block as big integer 'x'
+      var x = new BigInteger(eb.getBytes(), 256);
+      
+      // do RSA encryption
+      var y = x.modPowInt(c, n);
+      
+      // convert y into byte string
+      return y.toString(256);
+   };
+   
+   /**
+    * Performs RSA decryption.
+    * 
+    * @param ed the encrypted data to decrypt in as a byte string.
+    * @param n the modulus to use.
+    * @param c the exponent to use.
+    * @param pub true for a public key operation, false for private.
+    * @param ml the message length, if known.
+    * 
+    * @return the decrypted message in as a byte string.
+    */
+   pki.rsa.decrypt = function(ed, n, c, pub, ml)
+   {
+      var m = krypto.util.createBuffer();
+      
+      // get the length of the modulus in bytes
+      var k = n.bitLength() << 3;
+      
+      // error if the length of the encrypted data ED is not k
+      if(ed.length != k)
+      {
+         throw {
+            message: 'Encrypted message length is invalid.',
+            length: m.length,
+            expected: k
+         };
+      }
+      
+      // convert encrypted data into a big integer
+      var y = new BigInteger(ed, 256);
+      
+      // do RSA decryption
+      var x = y.modPowInt(c, n);
+      
+      // create the encryption block
+      var eb = krypto.util.createBuffer(x.toString(256));
+      
+      /* It is an error if any of the following conditions occurs:
+      
+         1. The encryption block EB cannot be parsed unambiguously.
+         2. The padding string PS consists of fewer than eight octets
+            or is inconsisent with the block type BT.
+         3. The decryption process is a public-key operation and the block
+            type BT is not 00 or 01, or the decryption process is a
+            private-key operation and the block type is not 02.
+       */
+      
+      // parse the encryption block
+      var first = eb.getByte();
+      var bt = eb.getByte();
+      if(first !== 0x00 ||
+         (pub && bt !== 0x00 && bt !== 0x01) ||
+         (!pub && bt != 0x02) ||
+         (pub && bt === 0x00 && typeof(ml) === 'undefined'))
+      {
+         throw {
+            message: 'Encryption block is invalid.'
+         };
+      }
+      
+      var padNum = 0;
+      if(bt === 0x00)
+      {
+         // check all padding bytes for 0x00
+         var padNum = k - 3 - ml;
+         for(var i = 0; i < padNum; ++i)
+         {
+            if(eb.getByte() !== 0x00)
+            {
+               throw {
+                  message: 'Encryption block is invalid.'
+               };
+            }
+         }
+      }
+      else if(bt === 0x01)
+      {
+         // check all padding bytes for 0xFF up to 0x00
+         var padNum = 0;
+         while(eb.length() > 1)
+         {
+            if(eb.getByte() !== 0xFF)
+            {
+               throw {
+                  message: 'Encryption block is invalid.'
+               };
+            }
+            ++padNum;
+         }
+      }
+      else if(bt === 0x02)
+      {
+         // look for 0x00 byte
+         var padNum = 0;
+         while(eb.length() > 1)
+         {
+            if(eb.getByte() === 0x00)
+            {
+               --eb.read;
+               break;
+            }
+            ++padNum;
+         }
+      }
+      
+      // zero must be 0x00 and padNum must be (k - 3 - message length)
+      var zero = eb.getByte();
+      if(zero !== 0x00 || padNum !== (k - 3 - eb.length()))
+      {
+         throw {
+            message: 'Encryption block is invalid.'
+         };
+      }
+      
+      // return message
+      return eb.getBytes();
    };
    
    /**
