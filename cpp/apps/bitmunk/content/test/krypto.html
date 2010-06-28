@@ -18,6 +18,7 @@
       <script type="text/javascript" src="/bitmunk/test/krypto/aes.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/asn1.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/jsbn.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/jsbn2.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/pki.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/tls.js"></script>
       <script type="text/javascript" src="/bitmunk/test/pidcrypt/string_extend.js"></script>
@@ -522,13 +523,16 @@
       {
          try
          {
+            var tmp = krypto.util.createBuffer('0123456789abcdef');
+            console.log('message', tmp.toHex());
+            
             var key = krypto.pki.publicKeyFromPem(sPublicKey);
             var md = krypto.md.sha1.create();
             md.update('0123456789abcdef');
             console.log(sSignature); 
             var signature = krypto.util.hexToBytes(sSignature);
             var success = key.verify(md.digest().getBytes(), signature);
-            assert('assert', success === true);
+            console.log('assert', success === true);
          }
          catch(ex)
          {

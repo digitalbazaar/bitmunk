@@ -777,7 +777,6 @@
          
          // d is ASN.1 BER-encoded DigestInfo
          var obj = asn1.fromDer(d);
-         console.log('DigestInfo', asn1.prettyPrint(obj));
          
          // compare the given digest to the decrypted one
          return digest === obj.value[1].value;
@@ -868,9 +867,19 @@
       // do RSA encryption
       var y = x.modPowInt(c, n);
       
-      // convert y into byte string
+      // convert y into the encrypted data byte string, if y is shorter in
+      // bytes than k, then prepend zero bytes to fill up ed
       // FIXME: hex conversion inefficient, get BigInteger w/byte strings
-      return krypto.util.hexToBytes(y.toString(16));
+      var yhex = y.toString(16);
+      var ed = krypto.util.createBuffer();
+      var zeros = k - Math.ceil(yhex.length / 2);
+      while(zeros > 0)
+      {
+         ed.putByte(0x00);
+         --zeros;
+      }
+      ed.putBytes(krypto.util.hexToBytes(yhex));
+      return ed.getBytes();
    };
    
    /**
@@ -889,10 +898,7 @@
       var m = krypto.util.createBuffer();
       
       // get the length of the modulus in bytes
-      console.log('bit length', n.bitLength());
       var k = n.bitLength() >>> 3;
-      console.log('k', k);
-      console.log('ed.length', ed.length);
       
       // error if the length of the encrypted data ED is not k
       if(ed.length != k)
@@ -911,9 +917,18 @@
       // do RSA decryption
       var x = y.modPowInt(c, n);
       
-      // create the encryption block
+      // create the encryption block, if x is shorter in bytes than k, then
+      // prepend zero bytes to fill up eb
       // FIXME: hex conversion inefficient, get BigInteger w/byte strings
-      var eb = krypto.util.createBuffer(krypto.util.hexToBytes(x.toString(16)));
+      var xhex = x.toString(16);
+      var eb = krypto.util.createBuffer();
+      var zeros = k - Math.ceil(xhex.length / 2);
+      while(zeros > 0)
+      {
+         eb.putByte(0x00);
+         --zeros;
+      }
+      eb.putBytes(krypto.util.hexToBytes(xhex));
       
       /* It is an error if any of the following conditions occurs:
       
@@ -955,15 +970,14 @@
       }
       else if(bt === 0x01)
       {
-         // check all padding bytes for 0xFF up to 0x00
+         // find the first byte that isn't 0xFF, should be after all padding
          var padNum = 0;
          while(eb.length() > 1)
          {
             if(eb.getByte() !== 0xFF)
             {
-               throw {
-                  message: 'Encryption block is invalid.'
-               };
+               --eb.read;
+               break;
             }
             ++padNum;
          }
