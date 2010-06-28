@@ -516,7 +516,7 @@
     * Converts a UTCTime value to a date.
     * 
     * Note: GeneralizedTime has 4 digits for the year and is used for X.509
-    * dates passed 2050. Parsing that structure hasn't been implemented yet.
+    * dates passed 2049. Parsing that structure hasn't been implemented yet.
     * 
     * @param utc the UTCTime value to convert.
     * 

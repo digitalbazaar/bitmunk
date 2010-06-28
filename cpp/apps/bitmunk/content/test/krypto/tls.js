@@ -970,7 +970,7 @@
             console.log('cert', cert);
          }
          // FIXME: remove me
-         throw 'foo';
+         throw 'Not yet implemented';
          
          // FIXME: check server certificate, save in handshake state
          
