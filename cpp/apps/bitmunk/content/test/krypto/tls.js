@@ -966,7 +966,8 @@
          {
             cert = readVector(msg.certificate_list, 3);
             asn1 = krypto.asn1.fromDer(cert);
-            console.log('asn1', asn1);
+            cert = krypto.pki.certificateFromAsn1(asn1);
+            console.log('cert', cert);
          }
          // FIXME: remove me
          throw 'foo';

@@ -515,6 +515,9 @@
    /**
     * Converts a UTCTime value to a date.
     * 
+    * Note: GeneralizedTime has 4 digits for the year and is used for X.509
+    * dates passed 2050. Parsing that structure hasn't been implemented yet.
+    * 
     * @param utc the UTCTime value to convert.
     * 
     * @return the date.
@@ -543,8 +546,61 @@
          hh' is the absolute value of the offset from GMT in hours
          mm' is the absolute value of the offset from GMT in minutes
       */
+      var date = new Date();
       
-      // FIXME: implement me
+      // if YY >= 50 use 19xx, if YY < 50 use 20xx
+      var year = parseInt(utc.substr(0, 2));
+      year = (year >= 50) ? 1900 + year : 2000 + year;
+      var MM = parseInt(utc.substr(2, 2));
+      var DD = parseInt(utc.substr(4, 2));
+      var hh = parseInt(utc.substr(6, 2));
+      var mm = parseInt(utc.substr(8, 2));
+      var ss = 0;
+      
+      // not just YYMMDDhhmmZ
+      if(utc.length > 11)
+      {
+         // get character after minutes
+         var c = utc.charAt(10);
+         var end = 10;
+         
+         // see if seconds are present
+         if(c !== '+' && c !== '-')
+         {
+            // get seconds
+            ss = parseInt(utc.substr(10, 2));
+            end += 2;
+         }
+         
+         // update date
+         date.setUTCFullYear(year, MM, DD);
+         date.setUTCHours(hh, mm, ss, 0);
+         
+         // get +/- after end of time
+         c = utc.charAt(end);
+         if(c === '+' || c === '-')
+         {
+            // get hours+minutes offset
+            var hhoffset = parseInt(utc.substr(end + 1, 2));
+            var mmoffset = parseInt(utc.substr(end + 4, 2));
+            
+            // calculate offset in milliseconds
+            var offset = hhoffset * 360 + mmoffset;
+            offset *= 60000;
+            
+            // apply offset
+            if(c === '+')
+            {
+               date.setTime(+date + offset);
+            }
+            else
+            {
+               date.setTime(+date - offset);
+            }
+         }
+      }
+      
+      return date;
    };
    
    /**
