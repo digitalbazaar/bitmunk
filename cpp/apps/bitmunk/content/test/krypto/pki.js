@@ -6,7 +6,8 @@
  *
  * Copyright (c) 2010 Digital Bazaar, Inc. All rights reserved.
  * 
- * The ASN.1 representation of an X.509v3 certificate is as follows:
+ * The ASN.1 representation of an X.509v3 certificate is as follows
+ * (see RFC 2459):
  * 
  * Certificate ::= SEQUENCE {
  *    tbsCertificate       TBSCertificate,
@@ -117,7 +118,7 @@
  *    coefficient INTEGER -- (inverse of q) mod p
  * }
  *
- * Version ::= INTEGER * 
+ * Version ::= INTEGER
  * 
  * The OID for the RSA key algorithm is: 1.2.840.113549.1.1.1
  */
