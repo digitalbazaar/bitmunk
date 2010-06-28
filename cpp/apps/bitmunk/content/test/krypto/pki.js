@@ -714,10 +714,14 @@
          };
       }
       
+      // FIXME: very inefficient, get a BigInteger that uses byte strings
+      var n = krypto.util.createBuffer(capture.publicKeyModulus).toHex();
+      var e = krypto.util.createBuffer(capture.publicKeyExponent).toHex();
+      
       // create public key
       return pki.createRsaPublicKey(
-         new BigInteger(capture.publicKeyModulus, 256),
-         new BigInteger(capture.publicKeyExponent, 256));
+         new BigInteger(n, 16),
+         new BigInteger(e, 16));
    };
    
    /**
@@ -730,7 +734,7 @@
     */
    pki.createRsaPublicKey = function(modulus, exponent)
    {
-      var key = 
+      var key =
       {
          modulus: modulus,
          exponent: exponent
@@ -800,7 +804,7 @@
    pki.rsa.encrypt = function(m, n, c, bt)
    {
       // get the length of the modulus in bytes
-      var k = n.bitLength() << 3;
+      var k = n.bitLength() >>> 3;
       
       if(m.length > k - 11)
       {
@@ -853,17 +857,20 @@
          }
       }
       
+      // zero followed by message
       eb.putByte(0x00);
       eb.putBytes(m);
       
       // load encryption block as big integer 'x'
-      var x = new BigInteger(eb.getBytes(), 256);
+      // FIXME: hex conversion inefficient, get BigInteger w/byte strings
+      var x = new BigInteger(eb.toHex(), 16);
       
       // do RSA encryption
       var y = x.modPowInt(c, n);
       
       // convert y into byte string
-      return y.toString(256);
+      // FIXME: hex conversion inefficient, get BigInteger w/byte strings
+      return krypto.util.hexToBytes(y.toString(16));
    };
    
    /**
@@ -882,26 +889,31 @@
       var m = krypto.util.createBuffer();
       
       // get the length of the modulus in bytes
-      var k = n.bitLength() << 3;
+      console.log('bit length', n.bitLength());
+      var k = n.bitLength() >>> 3;
+      console.log('k', k);
+      console.log('ed.length', ed.length);
       
       // error if the length of the encrypted data ED is not k
       if(ed.length != k)
       {
          throw {
             message: 'Encrypted message length is invalid.',
-            length: m.length,
+            length: ed.length,
             expected: k
          };
       }
       
       // convert encrypted data into a big integer
-      var y = new BigInteger(ed, 256);
+      // FIXME: hex conversion inefficient, get BigInteger w/byte strings
+      var y = new BigInteger(krypto.util.createBuffer(ed).toHex(), 16);
       
       // do RSA decryption
       var x = y.modPowInt(c, n);
       
       // create the encryption block
-      var eb = krypto.util.createBuffer(x.toString(256));
+      // FIXME: hex conversion inefficient, get BigInteger w/byte strings
+      var eb = krypto.util.createBuffer(krypto.util.hexToBytes(x.toString(16)));
       
       /* It is an error if any of the following conditions occurs:
       

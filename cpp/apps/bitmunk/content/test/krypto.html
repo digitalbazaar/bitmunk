@@ -511,6 +511,30 @@
             console.log(ex);
          }
       };
+
+      var sSignature =
+         '9200ece65cdaed36bcc20b94c65af852e4f88f0b4fe5b249d54665f815992ac4' +
+         '3a1399e65d938c6a7f16dd39d971a53ca66523209dbbfbcb67afa579dbb0c220' +
+         '672813d9e6f4818f29b9becbb29da2032c5e422da97e0c39bfb7a2e7d568615a' +
+         '5073af0337ff215a8e1b2332d668691f4fb731440055420c24ac451dd3c913f4';
+
+      var test_verify_signature = function()
+      {
+         try
+         {
+            var key = krypto.pki.publicKeyFromPem(sPublicKey);
+            var md = krypto.md.sha1.create();
+            md.update('0123456789abcdef');
+            console.log(sSignature); 
+            var signature = krypto.util.hexToBytes(sSignature);
+            var success = key.verify(md.digest().getBytes(), signature);
+            assert('assert', success === true);
+         }
+         catch(ex)
+         {
+            console.log(ex);
+         }
+      };
       
       // 128-bit test keys
       var aesKeys = [
@@ -1180,6 +1204,7 @@
          <button id="oid" onclick="javascript:return test_oid();">asn.1 oid</button>
          <button id="public_key_pem" onclick="javascript:return test_public_key_from_pem();">public key from pem</button>
          <button id="cert_pem" onclick="javascript:return test_cert_from_pem();">cert from pem</button>
+         <button id="verify_signature" onclick="javascript:return test_verify_signature();">verify signature</button>
       </div>
       <div id="flashTest">
          <p>Could not load the flash Test.</p>

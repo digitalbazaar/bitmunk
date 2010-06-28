@@ -171,7 +171,6 @@ function nbv(i) { var r = nbi(); r.fromInt(i); return r; }
 // (protected) set from string and radix
 function bnpFromString(s,b) {
   var k;
-  var isString = (s.constructor == String);
   if(b == 16) k = 4;
   else if(b == 8) k = 3;
   else if(b == 256) k = 8; // byte array
@@ -183,7 +182,7 @@ function bnpFromString(s,b) {
   this.s = 0;
   var i = s.length, mi = false, sh = 0;
   while(--i >= 0) {
-    var x = (k==8 && !isString)?s[i]&0xff:intAt(s,i);
+    var x = (k==8)?s[i]&0xff:intAt(s,i);
     if(x < 0) {
       if(s.charAt(i) == "-") mi = true;
       continue;
@@ -219,7 +218,6 @@ function bnToString(b) {
   if(this.s < 0) return "-"+this.negate().toString(b);
   var k;
   if(b == 16) k = 4;
-  else if(b == 256) k = 8;
   else if(b == 8) k = 3;
   else if(b == 2) k = 1;
   else if(b == 32) k = 5;
