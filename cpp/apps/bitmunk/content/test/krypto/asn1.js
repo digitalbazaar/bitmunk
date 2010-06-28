@@ -99,7 +99,7 @@
  *
  * var value = 257;
  * var bytes = [];
- * bytes[0] = (value >> 8) & 0xFF; // most significant byte first
+ * bytes[0] = (value >>> 8) & 0xFF; // most significant byte first
  * bytes[1] = value & 0xFF;        // least significant byte last
  *
  * On the ASN.1 UNIVERSAL Object Identifier (OID) type:
@@ -192,7 +192,7 @@
          tagClass: tagClass,
          type: type,
          constructed: constructed,
-         composed: (value.constructor == Array),
+         composed: constructed || (value.constructor == Array),
          value: value
       };
    };
@@ -344,47 +344,47 @@
     * 
     * @return the buffer of bytes.
     */
-   asn1.toDer = function(asn1)
+   asn1.toDer = function(obj)
    {
       var bytes = krypto.util.createBuffer();
       
       // build the first byte
-      var b1 = asn1.type;
+      var b1 = obj.type;
       
       // for storing the ASN.1 value
       var value = krypto.util.createBuffer();
       
       // if composed, use each child asn1 object's DER bytes as value
-      if(asn1.composed)
+      if(obj.composed)
       {
          // turn on 6th bit (0x20 = 32) to indicate asn1 is constructed
          // from other asn1 objects
-         if(asn1.constructed)
+         if(obj.constructed)
          {
             b1 |= 0x20;
          }
          
          // add all of the child DER bytes together
-         for(var i = 0; i < asn1.value.length; ++i)
+         for(var i = 0; i < obj.value.length; ++i)
          {
-            value.putBuffer(asn1.toDer(asn1.value[i]));
+            value.putBuffer(asn1.toDer(obj.value[i]));
          }
       }
       // use asn1.value directly
       else
       {
-         value.putBytes(asn1.value);
+         value.putBytes(obj.value);
       }
       
       // add tag byte
       bytes.putByte(b1);
       
       // use "short form" encoding
-      if(value.length <= 127)
+      if(value.length() <= 127)
       {
          // one byte describes the length
          // bit 8 = 0 and bits 7-1 = length
-         bytes.putByte(value.length & 0x7F);
+         bytes.putByte(value.length() & 0x7F);
       }
       // use "long form" encoding
       else
@@ -392,12 +392,12 @@
          // 2 to 127 bytes describe the length
          // first byte: bit 8 = 1 and bits 7-1 = # of additional bytes
          // other bytes: length in base 256, big-endian
-         var len = value.length;
+         var len = value.length();
          var lenBytes = '';
          do
          {
             lenBytes += String.fromCharCode(len & 0xFF);
-            len = len >> 8;
+            len = len >>> 8;
          }
          while(len > 0);
          
@@ -445,7 +445,7 @@
          do
          {
             byte = value & 0x7F;
-            value = value >> 7;
+            value = value >>> 7;
             // if value is not last, then turn on 8th bit
             if(!last)
             {
@@ -843,6 +843,10 @@
          if(_nonLatinRegex.test(obj.value))
          {
             rval += '0x' + krypto.util.createBuffer(obj.value).toHex();
+         }
+         else if(obj.value.length === 0)
+         {
+            rval += '[null]';
          }
          else
          {

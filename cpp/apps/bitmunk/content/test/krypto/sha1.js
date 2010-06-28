@@ -155,6 +155,7 @@
       // message digest object
       var md =
       {
+         algorithm: 'sha1',
          blockLength: 64,
          digestLength: 20
       };

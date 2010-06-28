@@ -170,6 +170,7 @@
       // message digest object
       var md =
       {
+         algorithm: 'md5',
          blockLength: 64,
          digestLength: 16
       };

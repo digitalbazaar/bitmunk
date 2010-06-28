@@ -103,6 +103,22 @@
  *    publicExponent     INTEGER     -- e
  * }
  * 
+ * An RSA private key as the following structure:
+ * 
+ * RSAPrivateKey ::= SEQUENCE {
+ *    version Version,
+ *    modulus INTEGER, -- n
+ *    publicExponent INTEGER, -- e
+ *    privateExponent INTEGER, -- d
+ *    prime1 INTEGER, -- p
+ *    prime2 INTEGER, -- q
+ *    exponent1 INTEGER, -- d mod (p-1)
+ *    exponent2 INTEGER, -- d mod (q-1)
+ *    coefficient INTEGER -- (inverse of q) mod p
+ * }
+ *
+ * Version ::= INTEGER * 
+ * 
  * The OID for the RSA key algorithm is: 1.2.840.113549.1.1.1
  */
 (function()
@@ -131,6 +147,10 @@
    oids['md5withRSAEncryption'] = '1.2.840.113549.1.1.1';
    oids['1.2.840.113549.1.1.1'] = 'sha1withRSAEncryption';
    oids['sha1withRSAEncryption'] = '1.2.840.113549.1.1.1';
+   oids['1.3.14.3.2.26'] = 'sha1';
+   oids['sha1'] = '1.3.14.3.2.26';
+   oids['1.2.840.113549.2.5'] = 'md5';
+   oids['md5'] = '1.2.840.113549.2.5';
    
    // certificate issuer/subject OIDs
    oids['2.5.4.3'] = 'commonName';
@@ -393,6 +413,79 @@
       }]
    };
    
+   // validator for an RSA private key
+   var rsaPrivateKeyValidator = {
+      // RSAPrivateKey
+      name: 'RSAPrivateKey',
+      tagClass: asn1.Class.UNIVERSAL,
+      type: asn1.Type.SEQUENCE,
+      constructed: true,
+      value: [{
+         // Version (INTEGER)
+         name: 'RSAPrivateKey.version',
+         tagClass: asn1.Class.UNIVERSAL,
+         type: asn1.Type.INTEGER,
+         constructed: false,
+         capture: 'privateKeyVersion'
+      }, {
+         // modulus (n)
+         name: 'RSAPrivateKey.modulus',
+         tagClass: asn1.Class.UNIVERSAL,
+         type: asn1.Type.INTEGER,
+         constructed: false,
+         capture: 'privateKeyModulus'
+      }, {
+         // publicExponent (e)
+         name: 'RSAPrivateKey.publicExponent',
+         tagClass: asn1.Class.UNIVERSAL,
+         type: asn1.Type.INTEGER,
+         constructed: false,
+         capture: 'privateKeyPublicExponent'
+      }, {
+         // privateExponent (d)
+         name: 'RSAPrivateKey.privateExponent',
+         tagClass: asn1.Class.UNIVERSAL,
+         type: asn1.Type.INTEGER,
+         constructed: false,
+         capture: 'privateKeyPrivateExponent'
+      }, {
+         // prime1 (p)
+         name: 'RSAPrivateKey.prime1',
+         tagClass: asn1.Class.UNIVERSAL,
+         type: asn1.Type.INTEGER,
+         constructed: false,
+         capture: 'privateKeyPrime1'
+      }, {
+         // prime2 (q)
+         name: 'RSAPrivateKey.prime2',
+         tagClass: asn1.Class.UNIVERSAL,
+         type: asn1.Type.INTEGER,
+         constructed: false,
+         capture: 'privateKeyPrime2'
+      }, {
+         // exponent1 (d mod (p-1))
+         name: 'RSAPrivateKey.exponent1',
+         tagClass: asn1.Class.UNIVERSAL,
+         type: asn1.Type.INTEGER,
+         constructed: false,
+         capture: 'privateKeyExponent1'
+      }, {
+         // exponent2 (d mod (q-1))
+         name: 'RSAPrivateKey.exponent2',
+         tagClass: asn1.Class.UNIVERSAL,
+         type: asn1.Type.INTEGER,
+         constructed: false,
+         capture: 'privateKeyExponent1'
+      }, {
+         // coefficient ((inverse of q) mod p)
+         name: 'RSAPrivateKey.coefficient',
+         tagClass: asn1.Class.UNIVERSAL,
+         type: asn1.Type.INTEGER,
+         constructed: false,
+         capture: 'privateKeyCoefficient'
+      }]
+   };
+   
    /**
     * Converts an RDNSequence of ASN.1 DER-encoded RelativeDistinguishedName
     * sets into an array with objects that have type and value properties.
@@ -472,7 +565,6 @@
       return rval;
    };
    
-   
    /**
     * Converts an X.509 certificate from PEM format.
     * 
@@ -495,6 +587,18 @@
    pki.publicKeyFromPem = function(pem)
    {
       return _fromPem(pem, pki.publicKeyFromAsn1);
+   };
+   
+   /**
+    * Converts an RSA private key from PEM format.
+    * 
+    * @param pem the PEM-formatted private key.
+    * 
+    * @return the private key.
+    */
+   pki.privateKeyFromPem = function(pem)
+   {
+      return _fromPem(pem, pki.privateKeyFromAsn1);
    };
    
    /**
@@ -674,7 +778,7 @@
    /**
     * Converts a public key from an ASN.1 object.
     * 
-    * @param obj the asn1 representation of of a SubjectPublicKeyInfo.
+    * @param obj the asn1 representation of a SubjectPublicKeyInfo.
     * 
     * @return the public key.
     */
@@ -714,7 +818,7 @@
          };
       }
       
-      // FIXME: very inefficient, get a BigInteger that uses byte strings
+      // FIXME: inefficient, get a BigInteger that uses byte strings
       var n = krypto.util.createBuffer(capture.publicKeyModulus).toHex();
       var e = krypto.util.createBuffer(capture.publicKeyExponent).toHex();
       
@@ -725,19 +829,65 @@
    };
    
    /**
+    * Converts a private key from an ASN.1 object.
+    * 
+    * @param obj the asn1 representation of an RSAPrivateKey.
+    * 
+    * @return the private key.
+    */
+   pki.privateKeyFromAsn1 = function(obj)
+   {
+      // get RSAPrivateKey
+      var capture = {};
+      var errors = [];
+      if(!asn1.validate(obj, rsaPrivateKeyValidator, capture, errors))
+      {
+         throw {
+            message: 'Cannot read private key. ' +
+               'ASN.1 object is not an RSAPrivateKey.',
+            errors: errors
+         };
+      }
+      
+      // Note: Version is currently ignored.
+      // capture.privateKeyVersion
+      // FIXME: inefficient, get a BigInteger that uses byte strings
+      var n, e, d, p, q, e1, e2, c;
+      n = krypto.util.createBuffer(capture.privateKeyModulus).toHex();
+      e = krypto.util.createBuffer(capture.privateKeyPublicExponent).toHex();
+      d = krypto.util.createBuffer(capture.privateKeyPrivateExponent).toHex();
+      p = krypto.util.createBuffer(capture.privateKeyPrime1).toHex();
+      q = krypto.util.createBuffer(capture.privateKeyPrime2).toHex();
+      e1 = krypto.util.createBuffer(capture.privateKeyExponent1).toHex();
+      e2 = krypto.util.createBuffer(capture.privateKeyExponent2).toHex();
+      c = krypto.util.createBuffer(capture.privateKeyCoefficient).toHex();
+      
+      // create private key
+      return pki.createRsaPrivateKey(
+         new BigInteger(n, 16),
+         new BigInteger(e, 16),
+         new BigInteger(d, 16),
+         new BigInteger(p, 16),
+         new BigInteger(q, 16),
+         new BigInteger(e1, 16),
+         new BigInteger(e2, 16),
+         new BigInteger(c, 16));
+   };
+   
+   /**
     * Creates an RSA public key from BigIntegers modulus and exponent.
     * 
-    * @param modulus the modulus.
-    * @param exponent the exponent.
+    * @param n the modulus.
+    * @param e the exponent.
     * 
     * @return the public key.
     */
-   pki.createRsaPublicKey = function(modulus, exponent)
+   pki.createRsaPublicKey = function(n, e)
    {
       var key =
       {
-         modulus: modulus,
-         exponent: exponent
+         n: n,
+         e: e
       };
       
       /**
@@ -749,7 +899,7 @@
        */
       key.encrypt = function(data)
       {
-         return pki.rsa.encrypt(data, key.modulus, key.exponent, 0x02);
+         return pki.rsa.encrypt(data, key.n, key.e, 0x02);
       };
       
       /**
@@ -773,13 +923,112 @@
       key.verify = function(digest, signature)
       {
          // do rsa decryption
-         var d = pki.rsa.decrypt(signature, key.modulus, key.exponent, 0x02);
+         var d = pki.rsa.decrypt(signature, key.n, key.e, true);
          
          // d is ASN.1 BER-encoded DigestInfo
          var obj = asn1.fromDer(d);
          
          // compare the given digest to the decrypted one
          return digest === obj.value[1].value;
+      };
+      
+      return key;
+   };
+   
+   /**
+    * Creates an RSA private key from BigIntegers modulus and exponent.
+    * 
+    * @param n the modulus.
+    * @param e the public exponent.
+    * @param d the private exponent.
+    * @param p the first prime.
+    * @param q the second prime.
+    * @param e1 exponent1 (d mod (p-1)).
+    * @param e2 exponent2 (d mod (q-1)).
+    * @param c ((inverse of q) mod p)
+    * 
+    * @return the private key.
+    */
+   pki.createRsaPrivateKey = function(n, e, d, p, q, e1, e2, c)
+   {
+      var key =
+      {
+         n: n,
+         e: e,
+         d: d,
+         p: p,
+         q: q,
+         e1: e1,
+         e2: e2,
+         c: c
+      };
+      
+      /**
+       * Decrypts the given data with this private key.
+       * 
+       * @param data the byte string to decrypt.
+       * 
+       * @return the decrypted byte string.
+       */
+      key.decrypt = function(data)
+      {
+         return pki.rsa.decrypt(data, key.n, key.d, false);
+      };
+      
+      /**
+       * Signs the given digest, producing a signature.
+       * 
+       * First the digest is stored in a DigestInfo object. Then that object
+       * is RSA-encrypted to produce the signature.
+       * 
+       * DigestInfo ::= SEQUENCE {
+       *    digestAlgorithm DigestAlgorithmIdentifier,
+       *    digest Digest
+       * }
+       * DigestAlgorithmIdentifier ::= AlgorithmIdentifier
+       * Digest ::= OCTET STRING
+       * 
+       * @param md the message digest object with the hash to sign.
+       * 
+       * @return the signature as a byte string.
+       */
+      key.sign = function(md)
+      {
+         // get the oid for the algorithm
+         var oid;
+         if(md.algorithm in oids)
+         {
+            oid = oids[md.algorithm];
+         }
+         else
+         {
+            throw {
+               message: 'Unknown message digest algorithm',
+               algorithm: md.algorithm
+            };
+         }
+         oidBytes = asn1.oidToDer(oid).getBytes();
+         
+         // create the digest info
+         var digestInfo = asn1.create(
+            asn1.Class.UNIVERSAL, asn1.Type.SEQUENCE, true, []);
+         var digestAlgorithm = asn1.create(
+            asn1.Class.UNIVERSAL, asn1.Type.SEQUENCE, true, []);
+         digestAlgorithm.value.push(asn1.create(
+            asn1.Class.UNIVERSAL, asn1.Type.OID, false, oidBytes));
+         digestAlgorithm.value.push(asn1.create(
+            asn1.Class.UNIVERSAL, asn1.Type.NULL, false, ''));
+         var digest = asn1.create(
+            asn1.Class.UNIVERSAL, asn1.Type.OCTETSTRING,
+            false, md.digest().getBytes());
+         digestInfo.value.push(digestAlgorithm);
+         digestInfo.value.push(digest);
+         
+         // encode digest info
+         var d = asn1.toDer(digestInfo).getBytes();
+         
+         // do rsa encryption
+         return pki.rsa.encrypt(d, key.n, key.d, 0x01);
       };
       
       return key;
@@ -837,7 +1086,7 @@
       eb.putByte(bt);
       
       // create the padding
-      var padNum = k - 3 - m.length();
+      var padNum = k - 3 - m.length;
       var padByte;
       if(bt === 0x00 || bt === 0x01)
       {
@@ -865,7 +1114,7 @@
       var x = new BigInteger(eb.toHex(), 16);
       
       // do RSA encryption
-      var y = x.modPowInt(c, n);
+      var y = x.modPow(c, n);
       
       // convert y into the encrypted data byte string, if y is shorter in
       // bytes than k, then prepend zero bytes to fill up ed
@@ -915,7 +1164,7 @@
       var y = new BigInteger(krypto.util.createBuffer(ed).toHex(), 16);
       
       // do RSA decryption
-      var x = y.modPowInt(c, n);
+      var x = y.modPow(c, n);
       
       // create the encryption block, if x is shorter in bytes than k, then
       // prepend zero bytes to fill up eb
