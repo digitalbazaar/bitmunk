@@ -140,14 +140,15 @@
    oids['1.2.840.113549.1.1.1'] = 'rsaEncryption';
    oids['rsaEncryption'] = '1.2.840.113549.1.1.1';
    // Note: md2 & md4 not implemented
-   //oids['1.2.840.113549.1.1.1'] = 'md2withRSAEncryption';
-   //oids['md2withRSAEncryption'] = '1.2.840.113549.1.1.1';
-   //oids['1.2.840.113549.1.1.1'] = 'md4withRSAEncryption';
-   //oids['md4withRSAEncryption'] = '1.2.840.113549.1.1.1';
-   oids['1.2.840.113549.1.1.1'] = 'md5withRSAEncryption';
-   oids['md5withRSAEncryption'] = '1.2.840.113549.1.1.1';
-   oids['1.2.840.113549.1.1.1'] = 'sha1withRSAEncryption';
-   oids['sha1withRSAEncryption'] = '1.2.840.113549.1.1.1';
+   //oids['1.2.840.113549.1.1.2'] = 'md2withRSAEncryption';
+   //oids['md2withRSAEncryption'] = '1.2.840.113549.1.1.2';
+   //oids['1.2.840.113549.1.1.3'] = 'md4withRSAEncryption';
+   //oids['md4withRSAEncryption'] = '1.2.840.113549.1.1.3';
+   oids['1.2.840.113549.1.1.4'] = 'md5withRSAEncryption';
+   oids['md5withRSAEncryption'] = '1.2.840.113549.1.1.4';
+   oids['1.2.840.113549.1.1.5'] = 'sha1withRSAEncryption';
+   oids['sha1withRSAEncryption'] = '1.2.840.113549.1.1.5';
+   
    oids['1.3.14.3.2.26'] = 'sha1';
    oids['sha1'] = '1.3.14.3.2.26';
    oids['1.2.840.113549.2.5'] = 'md5';
@@ -298,6 +299,7 @@
          tagClass: asn1.Class.UNIVERSAL,
          type: asn1.Type.SEQUENCE,
          constructed: true,
+         captureAsn1: 'certTbs',
          value: [{
             name: 'Certificate.TBSCertificate.version',
             tagClass: asn1.Class.CONTEXT_SPECIFIC,
@@ -569,13 +571,22 @@
    /**
     * Converts an X.509 certificate from PEM format.
     * 
+    * Note: If the certificate is to be verified then compute hash should
+    * be set to true. There is currently no implementation for converting
+    * a certificate back to ASN.1 so the TBSCertificate part of the ASN.1
+    * object needs to be scanned before the cert object is created.
+    * 
     * @param pem the PEM-formatted certificate.
+    * @param computeHash true to compute the hash for verification.
     * 
     * @return the certificate.
     */
-   pki.certificateFromPem = function(pem)
+   pki.certificateFromPem = function(pem, computeHash)
    {
-      return _fromPem(pem, pki.certificateFromAsn1);
+      return _fromPem(pem, function(obj)
+      {
+         return pki.certificateFromAsn1(obj, computeHash);
+      });
    };
    
    /**
@@ -605,11 +616,17 @@
    /**
     * Converts an X.509v3 RSA certificate from an ASN.1 object.
     * 
+    * Note: If the certificate is to be verified then compute hash should
+    * be set to true. There is currently no implementation for converting
+    * a certificate back to ASN.1 so the TBSCertificate part of the ASN.1
+    * object needs to be scanned before the cert object is created.
+    * 
     * @param obj the asn1 representation of an X.509v3 RSA certificate.
+    * @param computeHash true to compute the hash for verification.
     * 
     * @return the certificate.
     */
-   pki.certificateFromAsn1 = function(obj)
+   pki.certificateFromAsn1 = function(obj, computeHash)
    {
       // validate certificate and capture data
       var capture = {};
@@ -646,6 +663,36 @@
       cert.validity = {};
       cert.validity.notBefore = asn1.utcTimeToDate(capture.certNotBefore);
       cert.validity.notAfter = asn1.utcTimeToDate(capture.certNotAfter);
+      
+      if(computeHash)
+      {
+         // check signature OID for supported signature types
+         cert.md = null;
+         if(cert.signatureOid in oids)
+         {
+            var oid = oids[cert.signatureOid];
+            if(oid === 'sha1withRSAEncryption')
+            {
+               cert.md = krypto.md.sha1.create();
+            }
+            else if(oid === 'md5withRSAEncryption')
+            {
+               cert.md = krypto.md.md5.create();
+            }
+         }
+         if(cert.md === null)
+         {
+            throw {
+               message: 'Could not compute certificate digest. ' +
+                  'Unknown signature OID.',
+               signatureOid: cert.signatureOid
+            };
+         }
+         
+         // produce DER formatted TBSCertificate and digest it
+         var bytes = asn1.toDer(capture.certTbs);
+         cert.md.update(bytes.getBytes());
+      }
       
       // handle issuer
       cert.issuer = {};
@@ -746,28 +793,11 @@
       {
          var rval = false;
          
-         // check OID for supported signature types
-         var md = null;
-         if(child.signatureOid in oids)
+         if(child.md !== null)
          {
-            var oid = oids[child.signatureOid];
-            if(oid === 'sha1withRSAEncryption')
-            {
-               md = krypto.md.sha1.create();
-            }
-            else if(oid === 'md5withRSAEncryption')
-            {
-               md = krypto.md.md5.create();
-            }
-         }
-         
-         if(md !== null)
-         {
-            // FIXME: update digest with child cert data
-            
             // verify signature on cert using public key
             rval = cert.publicKey.verify(
-               md.digest().getBytes(), cert.signature);
+               child.md.digest().getBytes(), cert.signature);
          }
          
          return rval;

@@ -594,6 +594,21 @@
          }
       };
       
+      var test_cert_verify = function()
+      {
+         try
+         {
+            var cert = krypto.pki.certificateFromPem(sCertPem, true);
+            console.log('cert', cert);
+            var success = cert.verify(cert);
+            console.log('assert', success === true);
+         }
+         catch(ex)
+         {
+            console.log(ex);
+         }
+      };
+      
       // 128-bit test keys
       var aesKeys = [
          '00010203050607080A0B0C0D0F101112',
@@ -1265,6 +1280,7 @@
          <button id="cert_pem" onclick="javascript:return test_cert_from_pem();">cert from pem</button>
          <button id="verify_signature" onclick="javascript:return test_verify_signature();">verify signature</button>
          <button id="sign_verify" onclick="javascript:return test_sign_verify();">sign and verify signature</button>
+         <button id="verify_cert" onclick="javascript:return test_cert_verify();">verify cert</button>
       </div>
       <div id="flashTest">
          <p>Could not load the flash Test.</p>

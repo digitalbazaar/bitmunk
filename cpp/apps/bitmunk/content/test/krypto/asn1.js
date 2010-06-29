@@ -1,5 +1,5 @@
 /**
- * Javscript implementation of Abstract Syntax Notation Number One.
+ * Javascript implementation of Abstract Syntax Notation Number One.
  *
  * @author Dave Longley
  *
@@ -217,8 +217,8 @@
       }
       else
       {
-         // the number of bytes the length is stored in is specified in bits
-         // 7 through 1 and each length byte is in big-endian base-256
+         // the number of bytes the length is specified in bits 7 through 1
+         // and each length byte is in big-endian base-256
          length = b.getInt((b2 & 0x7F) << 3);
       }
       return length;
@@ -349,7 +349,7 @@
       var bytes = krypto.util.createBuffer();
       
       // build the first byte
-      var b1 = obj.type;
+      var b1 = obj.tagClass | obj.type;
       
       // for storing the ASN.1 value
       var value = krypto.util.createBuffer();
@@ -362,6 +362,11 @@
          if(obj.constructed)
          {
             b1 |= 0x20;
+         }
+         // if type is a bit string, add unused bits of 0x00
+         else
+         {
+            value.putByte(0x00);
          }
          
          // add all of the child DER bytes together
@@ -401,13 +406,15 @@
          }
          while(len > 0);
          
-         // set first byte to # of additional bytes and turn on bit 8
+         // set first byte to # bytes used to store the length and turn on
+         // bit 8 to indicate long-form length is used
+         bytes.putByte(lenBytes.length | 0x80);
+         
          // concatenate length bytes in reverse since they were generated
          // little endian and we need big endian
-         bytes.putByte(lenBytes.length | 0x80);
          for(var i = lenBytes.length - 1; i >= 0; --i)
          {
-            bytes.putByte(lenBytes[i]);
+            bytes.putByte(lenBytes.charCodeAt(i));
          }
       }
       

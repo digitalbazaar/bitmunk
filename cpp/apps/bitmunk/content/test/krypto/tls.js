@@ -2499,6 +2499,10 @@
       // FIXME: remove me
       throw 'Not yet implemented';
       
+      // FIXME: only rudimentary checks implemented yet
+      // FIXME: see section 6 of RFC 3280 for best explanation of full
+      // trust path processing
+      
       // copy cert chain references to another array
       chain = chain.slice(0);
       
@@ -2914,6 +2918,7 @@
     * 
     * @param options:
     *    sessionId: a session ID to reuse, null for a new connection.
+    *    caStore: an array of certificates to trust.
     *    socket: the socket to wrap.
     * 
     * @return the TLS-wrapped socket.
@@ -2937,6 +2942,7 @@
       // create TLS connection
       var c = krypto.tls.createConnection({
          sessionId: options.sessionId || null,
+         caStore: caStore,
          connected: function(c)
          {
             console.log('TLS connected');

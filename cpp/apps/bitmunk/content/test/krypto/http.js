@@ -91,11 +91,36 @@
     *           url: the url to connect to (scheme://host:port).
     *           socketPool: the flash socket pool to use.
     *           connections: number of connections to use to handle requests.
+    *           caStore: an array of certificates to trust for TLS, certs may
+    *              be PEM-formatted or cert objects produced via krypto.pki.
     * 
     * @return the client.
     */
    http.createClient = function(options)
    {
+      // parse PEM-formatted caStore certificates
+      var caStore = null;
+      if(options.caStore)
+      {
+         var len = options.caStore.length;
+         var certOrPem;
+         caStore = new Array(len);
+         for(var i = 0; i < len; ++i)
+         {
+            certOrPem = options.caStore[i];
+            if(certOrPem.constructor == String)
+            {
+               // convert from pem
+               caStore.push(krypto.pki.certificateFromPem(certOrPem));
+            }
+            else
+            {
+               // assume krypto.pki cert just add it
+               caStore.push(certOrPem);
+            }
+         }
+      }
+      
       // get scheme, host, and port from url
       var url = _parseUrl(options.url);
       if(!url.scheme || !url.host || !url.port)
@@ -144,6 +169,7 @@
             // FIXME: add TLS session cache
             socket = window.krypto.tls.wrapSocket({
                sessionId: null,
+               caStore: caStore,
                socket: socket
             });
          }
