@@ -435,6 +435,18 @@
       return rval;
    };
    
+   /**
+    * Converts a byte string into a string of hexadecimal characters.
+    * 
+    * @param bytes the byte string to convert.
+    * 
+    * @return the string of hexadecimal characters.
+    */
+   util.bytesToHex = function(bytes)
+   {
+      return util.createBuffer(bytes).toHex();
+   };
+   
    // base64 characters, reverse mapping
    var _base64 =
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';

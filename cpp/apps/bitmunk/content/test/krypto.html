@@ -536,6 +536,13 @@
          {
             var cert = krypto.pki.certificateFromPem(sCertPem);
             console.log('cert', cert);
+            console.log('CN', cert.subject.getField('CN').value);
+            console.log('C', cert.subject.getField(
+               {shortName: 'C'}).value);
+            console.log('stateOrProvinceName', cert.subject.getField(
+               {name: 'stateOrProvinceName'}).value);
+            console.log('2.5.4.7', cert.subject.getField(
+               {type: '2.5.4.7'}).value);
          }
          catch(ex)
          {

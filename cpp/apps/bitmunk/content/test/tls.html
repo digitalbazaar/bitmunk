@@ -16,6 +16,7 @@
       <script type="text/javascript" src="/bitmunk/test/krypto/aes.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/asn1.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/jsbn.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/jsbn2.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/pki.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/tls.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/http.js"></script>
@@ -71,7 +72,8 @@
          client = http.createClient({
             url: 'https://localhost:4433',
             socketPool: sp,
-            connections: 1
+            connections: 1,
+            caCerts: [certificatePem]
          });
          document.getElementById('feedback').innerHTML = 'http client created';
          return false;

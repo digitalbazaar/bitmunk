@@ -76,21 +76,6 @@
  *    extnValue   OCTET STRING
  * }
  * 
- * The key usage extension is supported by this implementation:
- * 
- * id-ce-keyUsage OBJECT IDENTIFIER ::=  { id-ce 15 }
- * KeyUsage ::= BIT STRING {
- *    digitalSignature        (0),
- *    nonRepudiation          (1),
- *    keyEncipherment         (2),
- *    dataEncipherment        (3),
- *    keyAgreement            (4),
- *    keyCertSign             (5),
- *    cRLSign                 (6),
- *    encipherOnly            (7),
- *    decipherOnly            (8)
- * }
- * 
  * The only algorithm currently supported for PKI is RSA.
  * 
  * An RSA key is often stored in ASN.1 DER format. The SubjectPublicKeyInfo
@@ -559,8 +544,70 @@
    };
    
    /**
+    * Gets an issuer or subject attribute from its name, type, or short name.
+    * 
+    * @param obj the issuer or subject object.
+    * @param options a short name string or an object with:
+    *           shortName the short name for the attribute.
+    *           name the name for the attribute.
+    *           type the type for the attribute.
+    * 
+    * @return the attribute.
+    */
+   var _getAttribute = function(obj, options)
+   {
+      if(options.constructor == String)
+      {
+         options = {
+            shortName: options
+         };
+      }
+      
+      var rval = null;
+      var attr;
+      for(var i = 0; rval === null && i < obj.attributes.length; ++i)
+      {
+         attr = obj.attributes[i];
+         if(options.type && options.type === attr.type)
+         {
+            rval = attr;
+         }
+         else if(options.name && options.name === attr.name)
+         {
+            rval = attr;
+         }
+         else if(options.shortName && options.shortName === attr.shortName)
+         {
+            rval = attr;
+         }
+      }
+      return rval;
+   };
+   
+   /**
     * Converts an ASN.1 extensions object (with extension sequences as its
     * values) into an array of extension objects with types and values.
+    * 
+    * Supported extensions:
+    * 
+    * id-ce-keyUsage OBJECT IDENTIFIER ::=  { id-ce 15 }
+    * KeyUsage ::= BIT STRING {
+    *    digitalSignature        (0),
+    *    nonRepudiation          (1),
+    *    keyEncipherment         (2),
+    *    dataEncipherment        (3),
+    *    keyAgreement            (4),
+    *    keyCertSign             (5),
+    *    cRLSign                 (6),
+    *    encipherOnly            (7),
+    *    decipherOnly            (8)
+    * }
+    * 
+    * id-ce-basicConstraints OBJECT IDENTIFIER ::=  { id-ce 19 }
+    * BasicConstraints ::= SEQUENCE {
+    *    cA                      BOOLEAN DEFAULT FALSE,
+    *    pathLenConstraint       INTEGER (0..MAX) OPTIONAL
+    * }
     * 
     * @param exts the extensions ASN.1 with extension sequences to parse.
     * 
@@ -603,16 +650,16 @@
                if(e.name === 'keyUsage')
                {
                   // get value as BIT STRING
-                  var bs = asn1.fromDer(e.value);
+                  var ev = asn1.fromDer(e.value);
                   var b2 = 0x00;
                   var b3 = 0x00;
-                  if(bs.value.length > 1)
+                  if(ev.value.length > 1)
                   {
                      // skip first byte, just indicates unused bits which
                      // will be padded with 0s anyway
                      // get bytes with flag bits
-                     b2 = bs.value.charCodeAt(1);
-                     b3 = bs.value.length > 2 ? bs.value.charCodeAt(2) : 0;
+                     b2 = ev.value.charCodeAt(1);
+                     b3 = ev.value.length > 2 ? ev.value.charCodeAt(2) : 0;
                   }
                   // set flags
                   e.digitalSignature = (b2 & 0x80) == 0x80;
@@ -624,6 +671,20 @@
                   e.cRLSign = (b2 & 0x02) == 0x02;
                   e.encipherOnly = (b2 & 0x01) == 0x01;
                   e.decipherOnly = (b3 & 0x80) == 0x80;
+               }
+               // handle basic constraints
+               if(e.name === 'basicConstraints')
+               {
+                  // get value as SEQUENCE
+                  var ev = asn1.fromDer(e.value);
+                  // get cA BOOLEAN flag
+                  e.cA = (ev.value[0].value.charCodeAt(0) != 0x00);
+                  // get path length constraint
+                  if(ev.value.length > 1)
+                  {
+                     var tmp = krypto.util.createBuffer(ev.value[1].value);
+                     e.pathLenConstraint = tmp.getInt(tmp.length() << 3);
+                  }
                }
             }
             rval.push(e);
@@ -801,18 +862,7 @@
       cert.issuer = {};
       cert.issuer.getField = function(sn)
       {
-         var rval = null;
-         var attr;
-         for(var i = 0; i < cert.issuer.attributes.length; ++i)
-         {
-            attr = cert.issuer.attributes[i];
-            if(attr.shortName && attr.shortName === sn)
-            {
-               rval = attr.value;
-               break;
-            }
-         }
-         return rval;
+         return _getAttribute(cert.issuer, sn);
       };
       cert.issuer.attributes = _getAttributesAsArray(capture.certIssuer, imd);
       if(capture.certIssuerUniqueId)
@@ -826,18 +876,7 @@
       cert.subject = {};
       cert.subject.getField = function(sn)
       {
-         var rval = null;
-         var attr;
-         for(var i = 0; i < cert.subject.attributes.length; ++i)
-         {
-            attr = cert.subject.attributes[i];
-            if(attr.shortName && attr.shortName === sn)
-            {
-               rval = attr.value;
-               break;
-            }
-         }
-         return rval;
+         return _getAttribute(cert.subject, sn);
       };
       cert.subject.attributes = _getAttributesAsArray(capture.certSubject, smd);
       if(capture.certSubjectUniqueId)
@@ -855,6 +894,41 @@
       {
          cert.extensions = [];
       }
+      
+      /**
+       * Gets an extension by its name or id.
+       * 
+       * @param options the name to use or an object with:
+       *           name the name to use.
+       *           id the id to use.
+       * 
+       * @return the extension or null if not found.
+       */
+      cert.getExtension = function(options)
+      {
+         if(options.constructor == String)
+         {
+            options = {
+               name: options
+            };
+         }
+         
+         var rval = null;
+         var ext;
+         for(var i = 0; rval === null && i < cert.extensions; ++i)
+         {
+            ext = cert.extensions[i];
+            if(options.id && ext.id === options.id)
+            {
+               rval = ext;
+            }
+            else if(options.name && ext.name === options.name)
+            {
+               rval = ext;
+            }
+         }
+         return rval;
+      };
       
       // convert RSA public key from ASN.1
       cert.publicKey = pki.publicKeyFromAsn1(capture.subjectPublicKeyInfo);
@@ -923,6 +997,108 @@
       };
       
       return cert;
+   };
+   
+   /**
+    * Creates a CA store.
+    * 
+    * @param certs an optional array of certificate objects or PEM-formatted
+    *           certificate strings to add to the CA store.
+    * 
+    * @return the CA store.
+    */
+   pki.createCaStore = function(certs)
+   {
+      // stored certificates
+      var _certs = {};
+      
+      // create CA store
+      var caStore = {};
+      
+      /**
+       * Gets the certificate that issued the passed certificate or its
+       * 'parent'.
+       * 
+       * @param cert the certificate to get the parent for.
+       * 
+       * @return the parent certificate or null if none was found.
+       */
+      caStore.getIssuer = function(cert)
+      {
+         var rval = null;
+         
+         console.log('looking for certificate, subject.hash', cert.issuer.hash);
+         
+         // TODO: produce issuer hash if it doesn't exist
+         
+         // get the entry using the cert's issuer hash
+         if(cert.issuer.hash in _certs)
+         {
+            rval = _certs[cert.issuer.hash];
+            
+            // see if there are multiple matches
+            if(rval.constructor == Array)
+            {
+               // TODO: resolve multiple matches by checking
+               // authorityKey/subjectKey/issuerUniqueID/other identifiers, etc.
+               // FIXME: or alternatively do authority key mapping
+               // if possible (X.509v1 certs can't work?)
+               throw {
+                  message:
+                     'Resolving multiple issuer matches not implemented yet.'
+               };
+            }
+         }
+         
+         return rval;
+      };
+      
+      /**
+       * Adds a trusted certificate to the store.
+       * 
+       * @param cert the certificate to add as a trusted certificate.
+       */
+      caStore.addCertificate = function(cert)
+      {
+         // TODO: produce subject hash if it doesn't exist
+         if(cert.subject.hash in _certs)
+         {
+            // subject hash already exists, append to array
+            var tmp = _certs[cert.subject.hash];
+            if(tmp.constructor != Array)
+            {
+               tmp = [tmp];
+            }
+            tmp.push(cert);
+         }
+         else
+         {
+            console.log('added certificate, subject.hash', cert.subject.hash);
+            _certs[cert.subject.hash] = cert;
+         }
+      };
+      
+      // auto-add passed in certs
+      if(certs)
+      {
+         // parse PEM-formatted certificates as necessary
+         for(var i = 0; i < certs.length; ++i)
+         {
+            var cert = certs[i];
+            if(cert.constructor == String)
+            {
+               // convert from pem
+               caStore.addCertificate(krypto.pki.certificateFromPem(cert));
+            }
+            else
+            {
+               // assume krypto.pki cert just add it
+               caStore.addCertificate(cert);
+            }
+         }
+      }
+      
+      return caStore;
    };
    
    /**

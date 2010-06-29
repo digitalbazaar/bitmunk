@@ -397,7 +397,7 @@
       var mac = s.macFunction(s.macKey, s.sequenceNumber++, record);
       record.fragment.putBytes(mac);
       
-      // FIXME: TLS 1.1 & 1.2 use an explicit IV every time to protect
+      // TODO: TLS 1.1 & 1.2 use an explicit IV every time to protect
       // against CBC attacks
       // var iv = krypto.random.getBytes(16);
       
@@ -480,7 +480,7 @@
    {
       var rval = false;
       
-      // FIXME: TLS 1.1 & 1.2 use an explicit IV every time to protect
+      // TODO: TLS 1.1 & 1.2 use an explicit IV every time to protect
       // against CBC attacks
       //var iv = record.fragment.getBytes(16);
       
@@ -966,7 +966,7 @@
          {
             cert = readVector(msg.certificate_list, 3);
             asn1 = krypto.asn1.fromDer(cert);
-            cert = krypto.pki.certificateFromAsn1(asn1);
+            cert = krypto.pki.certificateFromAsn1(asn1, true);
             certs.push(cert);
          }
          
@@ -1180,8 +1180,8 @@
          // create client certificate message if requested
          if(c.handshakeState.certificateRequest !== null)
          {
-            // FIXME: determine cert to send
-            // FIXME: client-side certs not implemented yet, so send none
+            // TODO: determine cert to send
+            // TODO: client-side certs not implemented yet, so send none
             record = tls.createRecord(
             {
                type: tls.ContentType.handshake,
@@ -1191,7 +1191,7 @@
             tls.queue(c, record);
          }
          
-         // FIXME: security params are from TLS 1.2, some values like
+         // Note: security params are from TLS 1.2, some values like
          // prf_algorithm are ignored for TLS 1.0 and the builtin as specified
          // in the spec is used
          
@@ -1231,7 +1231,7 @@
          
          if(c.handshakeState.certificateRequest !== null)
          {
-            /* FIXME: client certs not yet implemented
+            /* TODO: client certs not yet implemented
             // create certificate verify message
             record = tls.createRecord(
             {
@@ -1350,7 +1350,7 @@
    {
       console.log('got Finished');
       
-      // FIXME: for TLS 1.2 check length against expected verify_data_length
+      // TODO: for TLS 1.2 check length against expected verify_data_length
       var vdl = 12;
       if(length != vdl)
       {
@@ -1412,7 +1412,7 @@
          description: b.getByte()
       };
       
-      // FIXME: consider using a table?
+      // TODO: consider using a table?
       // get appropriate message
       var msg;
       switch(alert.description)
@@ -1764,7 +1764,7 @@
       // TLS 1.0 but we don't care because AES is better and we have an
       // implementation for it
       
-      // FIXME: TLS 1.2 implementation
+      // TODO: TLS 1.2 implementation
       /*
       // determine the PRF
       var prf;
@@ -1775,7 +1775,9 @@
             break;
          default:
             // should never happen
-            throw 'Invalid PRF';
+            throw {
+               message: 'Invalid PRF'
+            };
             break;
       }
       
@@ -1960,7 +1962,10 @@
                state.read.macFunction = state.write.macFunction = hmac_sha1;
                break;
              default:
-                throw 'Unsupported MAC algorithm';
+                throw {
+                   message: 'Unsupported MAC algorithm'
+                };
+                break;
          }
          
          // cipher setup
@@ -1987,14 +1992,20 @@
                state.write.cipherFunction = encrypt_aes_128_cbc_sha1;
                break;
             default:
-               throw 'Unsupported cipher algorithm';
+               throw {
+                  message: 'Unsupported cipher algorithm'
+               };
+               break;
          }
          switch(sp.cipher_type)
          {
             case tls.CipherType.block:
                break;
             default:
-               throw 'Unsupported cipher type';
+               throw {
+                  message: 'Unsupported cipher type'
+               };
+               break;
          }
          
          // compression setup
@@ -2003,7 +2014,10 @@
             case tls.CompressionMethod.none:
                break;
             default:
-               throw 'Unsupported compression algorithm';
+               throw {
+                  message: 'Unsupported compression algorithm'
+               };
+               break;
          }
       }
       
@@ -2150,7 +2164,7 @@
          4 + 28 +               // random time and random bytes
          2 + 2 +                // cipher suites vector (1 supported)
          1 + 1 +                // compression methods vector
-         0;                     // no extensions (FIXME: add TLS SNI)
+         0;                     // no extensions (TODO: add TLS SNI)
       
       // create supported cipher suites, only 1 at present
       // TLS_RSA_WITH_AES_128_CBC_SHA = { 0x00,0x2F }
@@ -2200,7 +2214,7 @@
    tls.createCertificate = function(certs)
    {
       var certBuffer = krypto.util.createBuffer();
-      // FIXME: fill buffer with certs to support client side certs
+      // TODO: fill buffer with certs to support client side certs
       
       // determine length of the handshake message
       var length = 3 + certBuffer.length(); // cert vector
@@ -2333,8 +2347,8 @@
     */
    tls.createCertificateVerify = function(privKey, hs)
    {
-      // FIXME: not used because client-side certificates not implemented
-      // FIXME: combine hs.md5.digest() and hs.sha1.digest() to produce
+      // TODO: not used because client-side certificates not implemented
+      // TODO: combine hs.md5.digest() and hs.sha1.digest() to produce
       // signature
    };
    
@@ -2496,27 +2510,148 @@
     */
    tls.verifyCertificateChain = function(c, chain)
    {
-      // FIXME: remove me
-      throw 'Not yet implemented';
+      /* From: RFC3280 - Internet X.509 Public Key Infrastructure Certificate
+         Section 6: Certification Path Validation
+         See inline parentheticals related to this particular implementation.
+         
+         The primary goal of path validation is to verify the binding between
+         a subject distinguished name or a subject alternative name and
+         subject public key, as represented in the end entity certificate,
+         based on the public key of the trust anchor. This requires obtaining
+         a sequence of certificates that support that binding. That sequence
+         should be provided in the passed 'chain'. The trust anchor should be
+         in the connection's CA store. The 'end entity' certificate is the
+         certificate provided by the server.
+         
+         To meet this goal, the path validation process verifies, among other
+         things, that a prospective certification path (a sequence of n
+         certificates or a 'chain') satisfies the following conditions:
+         
+         (a) for all x in {1, ..., n-1}, the subject of certificate x is
+         the issuer of certificate x+1;
+         
+         (b) certificate 1 is issued by the trust anchor;
+         
+         (c) certificate n is the certificate to be validated; and
+         
+         (d) for all x in {1, ..., n}, the certificate was valid at the
+             time in question.
+         
+         Note that here 'n' is index 0 in the chain and 1 is the last
+         certificate in the chain and it must be signed by a certificate
+         in the connection's CA store.
+         
+         The path validation process also determines the set of certificate
+         policies that are valid for this path, based on the certificate
+         policies extension, policy mapping extension, policy constraints
+         extension, and inhibit any-policy extension.
+         
+         Note: Policy mapping extension not supported (Not Required).
+         
+         Note: If the certificate has an unsupported critical extension, then
+         it must be rejected.
+         
+         Note: A certificate is self-issued if the DNs that appear in the
+         subject and issuer fields are identical and are not empty.
+         
+         The path validation algorithm assumes the following seven inputs
+         are provided to the path processing logic. What this specific
+         implementation will use is provided parenthetically:
+         
+         (a) a prospective certification path of length n (the 'chain')
+         (b) the current date/time: ('now').
+         (c) user-initial-policy-set: A set of certificate policy identifiers
+                naming the policies that are acceptable to the certificate
+                user. The user-initial-policy-set contains the special value
+                any-policy if the user is not concerned about certificate
+                policy (Not implemented. Any policy is accepted).
+         (d) trust anchor information, describing a CA that serves as a
+                trust anchor for the certification path. The trust anchor
+                information includes:
+            
+            (1)  the trusted issuer name,
+            (2)  the trusted public key algorithm,
+            (3)  the trusted public key, and
+            (4)  optionally, the trusted public key parameters associated
+                 with the public key.
+             
+            (Trust anchors are provided via certificates in the CA store).
+            
+            The trust anchor information may be provided to the path
+            processing procedure in the form of a self-signed certificate.
+            The trusted anchor information is trusted because it was delivered
+            to the path processing procedure by some trustworthy out-of-band
+            procedure. If the trusted public key algorithm requires
+            parameters, then the parameters are provided along with the
+            trusted public key (No parameters used in this implementation).
+         
+         (e) initial-policy-mapping-inhibit, which indicates if policy
+                mapping is allowed in the certification path.
+                (Not implemented, no policy checking)
+         
+         (f) initial-explicit-policy, which indicates if the path must be
+                valid for at least one of the certificate policies in the user-
+                initial-policy-set.
+                (Not implemented, no policy checking)
+         
+         (g) initial-any-policy-inhibit, which indicates whether the
+                anyPolicy OID should be processed if it is included in a
+                certificate.
+                (Not implemented, so any policy is valid provided that it is
+                 not marked as critical)
+       */
       
-      // FIXME: only rudimentary checks implemented yet
-      // FIXME: see section 6 of RFC 3280 for best explanation of full
-      // trust path processing
+      /* Basic Path Processing:
+       
+         For each certificate in the 'chain', the following is checked:
+         
+         1. The certificate validity period includes the current time.
+         2. The certificate was signed by its parent (where the parent is
+            either the next in the chain or from the CA store).
+         3. TODO: The certificate has not been revoked.
+         4. The certificate issuer name matches the parent's subject name.
+         5. TODO: If the certificate is self-issued and not the final
+            certificate in the chain, skip this step, otherwise verify
+            that the subject name is within one of the permitted subtrees
+            of X.500 distinguished names and that each of the alternative
+            names in the subjectAltName extension (critical or non-critical)
+            is within one of the permitted subtrees for that name type.
+         6. TODO: If the certificate is self-issued and not the final
+            certificate in the chain, skip this step, otherwise verify that
+            the subject name is not within one of the excluded subtrees for
+            X.500 distinguished names and none of the subjectAltName extension
+            names are excluded for that name type.
+         7. The other steps in the algorithm for basic path processing involve
+            handling the policy extension which is not presently supported
+            in this implementation. Instead, if a critical policy extension
+            is found, the certificate is rejected as not supported.
+         8. If the certificate is not the first or the only certificate in
+            the chain and it has a critical key usage extension, verify that
+            the keyCertSign bit is set. If the key usage extension exists,
+            verify that the basic constraints extension exists. If the basic
+            constraints extension exists, verify that the cA flag is set.
+            TODO: handle pathLenConstraint by setting max path length to a
+            lower number if the parent certificate's pathLenConstraint is lower.
+            Also ensure that the path isn't already too long.
+       */
       
-      // copy cert chain references to another array
+      // copy cert chain references to another array and get CA store
       chain = chain.slice(0);
+      var caStore = c.caStore;
       
       // get current date
-      var date = +new Date();
+      var now = new Date();
       
-      // verify each cert in the chain using its parent, if available
+      // verify each cert in the chain using its parent, where the parent
+      // is either the next in the chain or from the CA store
+      var first = true;
       var cert, parent;
       do
       {
          cert = chain.shift();
          
-         // check valid time
-         if(+cert.validity.notBefore > date || +cert.validity.notAfter < date)
+         // 1. check valid time
+         if(now < cert.validity.notBefore || now > cert.validity.notAfter)
          {
             c.error(c, {
                message: 'Certificate not valid yet or has expired.',
@@ -2524,13 +2659,61 @@
                alert: {
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.certificate_expired
-               }
+               },
+               notBefore: cert.validity.notBefore,
+               notAfter: cert.validity.notAfter,
+               now: now
             });
          }
-         else if(chain.length > 0)
+         // 2. verify with parent
+         else
          {
-            parent = chain[0];
-            if(!parent.verify(cert))
+            // get parent from chain
+            var verified = false;
+            if(chain.length > 0)
+            {
+               // verify using parent
+               parent = chain[0];
+               verified = parent.verify(cert);
+            }
+            // get parent from CA store
+            else
+            {
+               // CA store might have multiple certificates where the issuer
+               // can't be determined from the certificate (unlikely case for
+               // old certificates) so normalize by always putting parents into
+               // an array
+               var parents = caStore.getIssuer(cert);
+               if(parents === null)
+               {
+                  // no parent issuer, so certificate not trusted
+                  c.error(c, {
+                     message: 'Untrusted certificate.',
+                     send: true,
+                     alert: {
+                        level: tls.Alert.Level.fatal,
+                        description: tls.Alert.Description.certificate_unknown
+                     }
+                  });
+               }
+               else
+               {
+                  console.log('got parents', parents);
+                  if(parents.constructor != Array)
+                  {
+                     parents = [parents];
+                  }
+                  
+                  // multiple parents to try verifying with
+                  while(!verified && parents.length > 0)
+                  {
+                     parent = parents.shift();
+                     verified = parent.verify(cert);
+                  }
+               }
+            }
+            console.log('certificate verified', verified);
+            if(!verified)
             {
                c.error(c, {
                   message: 'Certificate signature invalid.',
@@ -2542,42 +2725,15 @@
                });
             }
          }
-      }
-      while(!c.fail && chain.length > 0);
-      
-      // verify the last certificate in the chain using the CA store
-      if(!c.fail)
-      {
-         // FIXME: check cert extensions to see who the parent is
-         // FIXME: if no cert extensions just try all certs? if that's really
-         // how its done then save the digest to prevent duplicate work
-         var authorityKey = null;
          
-         // get CA store
-         var root = null;
-         var caStore = c.caStore;
-         for(var i = 0; i < root === null && caStore.length; ++i)
-         {
-            // FIXME: get subjectKey, compare against authorityKey
-         }
+         // TODO: 3. check revoked
          
-         if(root === null)
+         // 4. check for matching issuer/subject
+         if(!c.fail && !parent.isIssuer(cert))
          {
-            // certificate not trusted
+            // parent is not issuer
             c.error(c, {
-               message: 'Untrusted certificate.',
-               send: true,
-               alert: {
-                  level: tls.Alert.Level.fatal,
-                  description: tls.Alert.Description.certificate_unknown
-               }
-            });
-         }
-         else if(!root.verify(cert))
-         {
-            // signature verify failed
-            c.error(c, {
-               message: 'Certificate signature invalid.',
+               message: 'Certificate issuer invalid.',
                send: true,
                alert: {
                   level: tls.Alert.Level.fatal,
@@ -2585,7 +2741,85 @@
                }
             });
          }
+         
+         // 5. TODO: check names with permitted names tree
+         
+         // 6. TODO: check names against excluded names tree
+         
+         // 7. check for unsupported critical extensions
+         if(!c.fail)
+         {
+            // supported extensions
+            var se = {
+               keyUsage: true,
+               basicConstraints: true
+            };
+            for(var i = 0; !c.fail && i < cert.extensions.length; ++i)
+            {
+               var ext = cert.extensions[i];
+               if(ext.critical && !(ext.name in se))
+               {
+                  c.error(c, {
+                     message: 'Certificate has unsupported critical extension.',
+                     send: true,
+                     alert: {
+                        level: tls.Alert.Level.fatal,
+                        description:
+                           tls.Alert.Description.unsupported_certificate
+                     }
+                  });
+               }
+            }
+         }
+         
+         // 8. check for CA if not first or only certificate, first for
+         // keyUsage extension and then for basic constraints
+         if(!first || chain.length == 0)
+         {
+            var bcExt = cert.getExtension('basicConstraints');
+            var keyUsageExt = cert.getExtension('keyUsage');
+            if(keyUsageExt !== null)
+            {
+               // keyCertSign must be true and there must be a basic
+               // constraints extension
+               if(!keyUsageExt.keyCertSign || bcExt === null)
+               {
+                  // bad certificate
+                  c.error(c, {
+                     message:
+                        'Certificate keyUsage or basicConstraints ' +
+                        'conflict or indicate certificate is not a CA.',
+                     send: true,
+                     alert: {
+                        level: tls.Alert.Level.fatal,
+                        description:
+                           tls.Alert.Description.bad_certificate
+                     }
+                  });
+               }
+            }
+            // basic constraints cA flag must be set
+            if(!c.fail && bcExt !== null)
+            {
+               // bad certificate
+               c.error(c, {
+                  message:
+                     'Certificate basicConstraints indicates certificate ' +
+                     'is not a CA.',
+                  send: true,
+                  alert: {
+                     level: tls.Alert.Level.fatal,
+                     description:
+                        tls.Alert.Description.bad_certificate
+                  }
+               });
+            }
+         }
+         
+         // no longer first cert in chain
+         first = false;
       }
+      while(!c.fail && chain.length > 0);
       
       // FIXME: remove me
       throw 'Not yet implemented';
@@ -2604,6 +2838,25 @@
     */
    tls.createConnection = function(options)
    {
+      var caStore = null;
+      if(options.caStore)
+      {
+         // if CA store is an array, convert it to a CA store object
+         if(options.caStore.constructor == Array)
+         {
+            caStore = krypto.pki.createCaStore(options.caStore);
+         }
+         else
+         {
+            caStore = options.caStore;
+         }
+      }
+      else
+      {
+         // create empty CA store
+         caStore = krypto.pki.createCaStore();
+      }
+      
       // create TLS connection
       var c =
       {
@@ -2616,7 +2869,7 @@
          expect: SHE,
          fragmented: null,
          records: [],
-         caStore: options.caStore || [],
+         caStore: caStore,
          initHandshake: false,
          handshakeState: null,
          isConnected: false,
@@ -2942,7 +3195,7 @@
       // create TLS connection
       var c = krypto.tls.createConnection({
          sessionId: options.sessionId || null,
-         caStore: caStore,
+         caStore: options.caStore || [],
          connected: function(c)
          {
             console.log('TLS connected');

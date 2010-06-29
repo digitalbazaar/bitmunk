@@ -558,7 +558,7 @@
       // if YY >= 50 use 19xx, if YY < 50 use 20xx
       var year = parseInt(utc.substr(0, 2));
       year = (year >= 50) ? 1900 + year : 2000 + year;
-      var MM = parseInt(utc.substr(2, 2));
+      var MM = parseInt(utc.substr(2, 2)) - 1; // use 0-11 for month
       var DD = parseInt(utc.substr(4, 2));
       var hh = parseInt(utc.substr(6, 2));
       var mm = parseInt(utc.substr(8, 2));
