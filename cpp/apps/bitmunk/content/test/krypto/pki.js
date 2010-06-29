@@ -1027,8 +1027,6 @@
       {
          var rval = null;
          
-         console.log('looking for certificate, subject.hash', cert.issuer.hash);
-         
          // TODO: produce issuer hash if it doesn't exist
          
          // get the entry using the cert's issuer hash
@@ -1073,7 +1071,6 @@
          }
          else
          {
-            console.log('added certificate, subject.hash', cert.subject.hash);
             _certs[cert.subject.hash] = cert;
          }
       };

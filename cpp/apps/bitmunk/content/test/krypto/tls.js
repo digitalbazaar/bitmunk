@@ -1216,15 +1216,12 @@
             server_random: c.handshakeState.serverRandom.bytes()
          };
          
-         // FIXME: get public key from server RSA cert
-         // c.handshakeState.serverCertificate
-         var pubKey = null;
-         
          // create client key exchange message
          record = tls.createRecord(
          {
             type: tls.ContentType.handshake,
-            data: tls.createClientKeyExchange(pubKey, sp)
+            data: tls.createClientKeyExchange(
+               c.handshakeState.serverCertificate.publicKey, sp)
          });
          console.log('TLS client key exchange record created');
          tls.queue(c, record);
@@ -1262,7 +1259,7 @@
          record = tls.createRecord(
          {
             type: tls.ContentType.handshake,
-            data: tls.createFinished(c)
+            data: tls.createFinished(c, sp)
          });
          console.log('TLS finished record created');
          tls.queue(c, record);
@@ -1272,6 +1269,9 @@
          
          // expect a server ChangeCipherSpec message next
          c.expect = SCC;
+         
+         // FIXME: remove me
+         throw 'Not yet implemented';
       }
    };
   
@@ -2292,19 +2292,20 @@
       b.putBytes(krypto.random.getBytes(46));
       
       // save pre-master secret
-      sp.pre_master_secret = b.bytes();
+      sp.pre_master_secret = b.getBytes();
       
-      // FIXME: do RSA encryption
-      console.log('FIXME: do RSA encryption');
+      // RSA-encrypt the pre-master secret
+      b = pubKey.encrypt(sp.pre_master_secret);
       
       // determine length of the handshake message
-      var length = b.length();
+      var length = b.length;
+      console.log('TLS RSA encrypted data length', length);
       
       // build record fragment
       var rval = krypto.util.createBuffer();
       rval.putByte(tls.HandshakeType.client_key_exchange);
       rval.putInt24(length);
-      rval.putBuffer(b);
+      rval.putBytes(b);
       return rval;
    };
    
@@ -2397,13 +2398,23 @@
     *    defined in 7.4 exchanged thus far.
     * 
     * @param c the connection.
+    * @param sp the security parameters to use.
     * 
     * @return the Finished byte buffer.
     */
-   tls.createFinished = function(c)
+   tls.createFinished = function(c, sp)
    {
       var rval = krypto.util.createBuffer();
-      // FIXME: generate verify_data
+      
+      // generate verify_data
+      rval.putBuffer(c.handshakeState.md5.digest());
+      rval.putBuffer(c.handshakeState.sha1.digest());
+      
+      // TODO: determine prf function for TLS 1.2 and verify data length
+      var vdl = 12;
+      var prf = prf_TLS1;
+      rval = prf(sp.master_secret, 'client finished', rval.getBytes(), vdl);
+      
       return rval;
    };
    
@@ -2698,7 +2709,6 @@
                }
                else
                {
-                  console.log('got parents', parents);
                   if(parents.constructor != Array)
                   {
                      parents = [parents];
@@ -2820,9 +2830,6 @@
          first = false;
       }
       while(!c.fail && chain.length > 0);
-      
-      // FIXME: remove me
-      throw 'Not yet implemented';
       
       return !c.fail;
    };
