@@ -76,6 +76,21 @@
  *    extnValue   OCTET STRING
  * }
  * 
+ * The key usage extension is supported by this implementation:
+ * 
+ * id-ce-keyUsage OBJECT IDENTIFIER ::=  { id-ce 15 }
+ * KeyUsage ::= BIT STRING {
+ *    digitalSignature        (0),
+ *    nonRepudiation          (1),
+ *    keyEncipherment         (2),
+ *    dataEncipherment        (3),
+ *    keyAgreement            (4),
+ *    keyCertSign             (5),
+ *    cRLSign                 (6),
+ *    encipherOnly            (7),
+ *    decipherOnly            (8)
+ * }
+ * 
  * The only algorithm currently supported for PKI is RSA.
  * 
  * An RSA key is often stored in ASN.1 DER format. The SubjectPublicKeyInfo
@@ -200,11 +215,16 @@
    oids['2.5.29.12'] = 'policyConstraints'; // deprecated use .36
    oids['2.5.29.13'] = 'basicConstraints'; // deprecated use .19 
    oids['2.5.29.14'] = 'subjectKeyIdentifier';
+   oids['subjectKeyIdentifier'] = '2.5.29.14';
    oids['2.5.29.15'] = 'keyUsage';
+   oids['keyUsage'] = '2.5.29.15';
    oids['2.5.29.16'] = 'privateKeyUsagePeriod';
    oids['2.5.29.17'] = 'subjectAltName';
+   oids['subjectAltName'] = '2.5.29.17';
    oids['2.5.29.18'] = 'issuerAltName';
+   oids['issuerAltName'] = '2.5.29.18';
    oids['2.5.29.19'] = 'basicConstraints';
+   oids['basicConstraints'] = '2.5.29.19';
    oids['2.5.29.20'] = 'cRLNumber';
    oids['2.5.29.21'] = 'cRLReason';
    oids['2.5.29.22'] = 'expirationDate';
@@ -223,6 +243,7 @@
    oids['2.5.29.35'] = 'authorityKeyIdentifier';
    oids['2.5.29.36'] = 'policyConstraints';
    oids['2.5.29.37'] = 'extKeyUsage';
+   oids['extKeyUsage'] = '2.5.29.37';
    oids['2.5.29.46'] = 'freshestCRL';
    oids['2.5.29.54'] = 'inhibitAnyPolicy';
    
@@ -494,8 +515,9 @@
     * sets into an array with objects that have type and value properties.
     * 
     * @param rdn the RDNSequence to convert.
+    * @param md a message digest to append type and value to if provided.
     */
-   var _getAttributesAsArray = function(rdn)
+   var _getAttributesAsArray = function(rdn, md)
    {
       var rval = [];
       
@@ -524,7 +546,87 @@
                   obj.shortName = _shortNames[obj.name];
                }
             }
+            if(md)
+            {
+               md.update(obj.type);
+               md.update(obj.value);
+            }
             rval.push(obj);
+         }
+      }
+      
+      return rval;
+   };
+   
+   /**
+    * Converts an ASN.1 extensions object (with extension sequences as its
+    * values) into an array of extension objects with types and values.
+    * 
+    * @param exts the extensions ASN.1 with extension sequences to parse.
+    * 
+    * @return the array.
+    */
+   var _parseExtensions = function(exts)
+   {
+      var rval = [];
+      
+      var e, ext, extseq;
+      for(var i = 0; i < exts.value.length; ++i)
+      {
+         // get extension sequence
+         extseq = exts.value[i];
+         for(var ei = 0; ei < extseq.value.length; ++ei)
+         {
+            // an extension has:
+            // [0] extnID      OBJECT IDENTIFIER
+            // [1] critical    BOOLEAN DEFAULT FALSE
+            // [2] extnValue   OCTET STRING
+            ext = extseq.value[ei];
+            e = {};
+            e.id = asn1.derToOid(ext.value[0].value);
+            e.critical = false;
+            if(ext.value[1].type === asn1.Type.BOOLEAN)
+            {
+               e.critical = (ext.value[1].value.charCodeAt(0) != 0x00);
+               e.value = ext.value[2].value;
+            }
+            else
+            {
+               e.value = ext.value[1].value;
+            }
+            // if the oid is known, get its name
+            if(e.id in oids)
+            {
+               e.name = oids[e.id];
+               
+               // handle key usage
+               if(e.name === 'keyUsage')
+               {
+                  // get value as BIT STRING
+                  var bs = asn1.fromDer(e.value);
+                  var b2 = 0x00;
+                  var b3 = 0x00;
+                  if(bs.value.length > 1)
+                  {
+                     // skip first byte, just indicates unused bits which
+                     // will be padded with 0s anyway
+                     // get bytes with flag bits
+                     b2 = bs.value.charCodeAt(1);
+                     b3 = bs.value.length > 2 ? bs.value.charCodeAt(2) : 0;
+                  }
+                  // set flags
+                  e.digitalSignature = (b2 & 0x80) == 0x80;
+                  e.nonRepudiation = (b2 & 0x40) == 0x40;
+                  e.keyEncipherment = (b2 & 0x20) == 0x20;
+                  e.dataEncipherment = (b2 & 0x10) == 0x10;
+                  e.keyAgreement = (b2 & 0x08) == 0x08;
+                  e.keyCertSign = (b2 & 0x04) == 0x04;
+                  e.cRLSign = (b2 & 0x02) == 0x02;
+                  e.encipherOnly = (b2 & 0x01) == 0x01;
+                  e.decipherOnly = (b3 & 0x80) == 0x80;
+               }
+            }
+            rval.push(e);
          }
       }
       
@@ -694,7 +796,8 @@
          cert.md.update(bytes.getBytes());
       }
       
-      // handle issuer
+      // handle issuer, build issuer message digest
+      var imd = krypto.md.sha1.create();
       cert.issuer = {};
       cert.issuer.getField = function(sn)
       {
@@ -711,13 +814,15 @@
          }
          return rval;
       };
-      cert.issuer.attributes = _getAttributesAsArray(capture.certIssuer);
+      cert.issuer.attributes = _getAttributesAsArray(capture.certIssuer, imd);
       if(capture.certIssuerUniqueId)
       {
          cert.issuer.uniqueId = capture.certIssuerUniqueId;
       }
+      cert.issuer.hash = imd.digest().toHex();
       
-      // handle subject
+      // handle subject, build subject message digest
+      var smd = krypto.md.sha1.create();
       cert.subject = {};
       cert.subject.getField = function(sn)
       {
@@ -734,48 +839,21 @@
          }
          return rval;
       };
-      cert.subject.attributes = _getAttributesAsArray(capture.certSubject);
+      cert.subject.attributes = _getAttributesAsArray(capture.certSubject, smd);
       if(capture.certSubjectUniqueId)
       {
          cert.subject.uniqueId = capture.certSubjectUniqueId;
       }
+      cert.subject.hash = smd.digest().toHex();
       
       // handle extensions
-      cert.extensions = [];
       if(capture.certExtensions)
       {
-         var e, ext, extseq;
-         for(var i = 0; i < capture.certExtensions.value.length; ++i)
-         {
-            // get extension sequence
-            extseq = capture.certExtensions.value[i];
-            for(var ei = 0; ei < extseq.value.length; ++ei)
-            {
-               // an extension has:
-               // [0] extnID      OBJECT IDENTIFIER
-               // [1] critical    BOOLEAN DEFAULT FALSE
-               // [2] extnValue   OCTET STRING
-               ext = extseq.value[ei];
-               e = {};
-               e.id = asn1.derToOid(ext.value[0].value);
-               e.critical = false;
-               if(ext.value[1].type === asn1.Type.BOOLEAN)
-               {
-                  e.critical = (ext.value[1].value == 1);
-                  e.value = ext.value[2].value;
-               }
-               else
-               {
-                  e.value = ext.value[1].value;
-               }
-               // if the oid is known, get its name
-               if(e.id in oids)
-               {
-                  e.name = oids[e.id];
-               }
-               cert.extensions.push(e);
-            }
-         }
+         cert.extensions = _parseExtensions(capture.certExtensions);
+      }
+      else
+      {
+         cert.extensions = [];
       }
       
       // convert RSA public key from ASN.1
@@ -798,6 +876,47 @@
             // verify signature on cert using public key
             rval = cert.publicKey.verify(
                child.md.digest().getBytes(), cert.signature);
+         }
+         
+         return rval;
+      };
+      
+      /**
+       * Returns true if the passed certificate's subject is the issuer of
+       * this certificate.
+       * 
+       * @param parent the certificate to check.
+       * 
+       * @return true if the passed certificate's subject is the issuer of
+       *         this certificate.
+       */
+      cert.isIssuer = function(parent)
+      {
+         var rval = false;
+         
+         var i = cert.issuer;
+         var s = parent.subject;
+         
+         // compare hashes if present
+         if(i.hash && s.hash)
+         {
+            rval = (i.hash === s.hash);
+         }
+         // if all attributes are the same then issuer matches subject
+         else if(i.attributes.length === s.attributes.length)
+         {
+            rval = true;
+            var iattr, sattr;
+            for(var n; rval && n < i.attributes.length; ++i)
+            {
+               iattr = i.attributes[n];
+               sattr = s.attributes[n];
+               if(iattr.type !== sattr.type || iattr.value !== sattr.value)
+               {
+                  // attribute mismatch
+                  rval = false;
+               }
+            }
          }
          
          return rval;
