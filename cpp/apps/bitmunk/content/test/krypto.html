@@ -1041,35 +1041,73 @@
       {
          console.log('testing AES-CBC (krypto) ...');
 
-         for(var i = 0; i < aesKeys.length; i++)
+         var keys = [
+            '06a9214036b8a15b512e03d534120006',
+            'c286696d887c9aa0611bbb3e2025a45a',
+            '6c3ea0477630ce21a2ce334aa746c2cd',
+            '56e47a38c5598974bc46903dba290349'
+         ];
+
+         var ivs = [
+            '3dafba429d9eb430b422da802c9fac41',
+            '562e17996d093d28ddb3ba695a2e6f58',
+            'c782dc4c098c66cbd9cd27d825682c81',
+            '8ce82eefbea0da3c44699ed7db51b7d9'
+         ];
+
+         var inputs = [
+            'Single block msg',
+            '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f',
+            'This is a 48-byte message (exactly 3 AES blocks)',
+            'a0a1a2a3a4a5a6a7a8a9aaabacadaeaf' +
+               'b0b1b2b3b4b5b6b7b8b9babbbcbdbebf' +
+               'c0c1c2c3c4c5c6c7c8c9cacbcccdcecf' +
+               'd0d1d2d3d4d5d6d7d8d9dadbdcdddedf'
+         ];
+
+         var outputs = [
+            'e353779c1079aeb82708942dbe77181a',
+            'd296cd94c2cccf8a3a863028b5e1dc0a7586602d253cfff91b8266bea6d61ab1',
+            'd0a02b3836451753d493665d33f0e886' +
+               '2dea54cdb293abc7506939276772f8d5' +
+               '021c19216bad525c8579695d83ba2684',
+            'c30e32ffedc0774e6aff6af0869f71aa' +
+               '0f3af07a9a31a9c684db207eb0ef8e4e' +
+               '35907aa632c3ffdf868bb7b29d3d46ad' +
+               '83ce9f9a102ee99d49a53e87f4c3da55'
+         ];
+
+         for(var i = 0; i < keys.length; ++i)
          {
-            var k = aesKeys[i];
-            var key = [];
-            key.push(parseInt(k.substr(0, 8), 16));
-            key.push(parseInt(k.substr(8, 8), 16));
-            key.push(parseInt(k.substr(16, 8), 16));
-            key.push(parseInt(k.substr(24, 8), 16));
+            var key = krypto.util.hexToBytes(keys[i]);
+            console.log('key', krypto.util.bytesToHex(key));
+            var iv = krypto.util.hexToBytes(ivs[i]);
+            var input = (i & 1) ? krypto.util.hexToBytes(inputs[i]) : inputs[i];
+            var expect = outputs[i];
             
-            var input = krypto.util.createBuffer(aesPlain);
-            
-            // encrypt
+            console.log('input in hex', krypto.util.bytesToHex(input));
+
+            // encrypt w/no padding
             cipher = krypto.aes.createEncryptionCipher(key);
-            cipher.start(aesIvWords);
-            cipher.update(input);
-            cipher.finish();
+            cipher.start(iv);
+            cipher.update(krypto.util.createBuffer(input));
+            cipher.finish(function(){return true;});
+            
+            console.log('encrypted', cipher.output.toHex());
+            console.log('expect', expect);
+            console.log('assert', expect === cipher.output.toHex());
             
             // decrypt
             var ct = cipher.output;
             cipher = krypto.aes.createDecryptionCipher(key);
-            cipher.start(aesIvWords);
+            cipher.start(iv);
             cipher.update(ct);
-            cipher.finish();
+            cipher.finish(function(){return true;});
             
-            console.log('plain', word_array_to_string(cipher.output));
-            console.log('expect', word_array_to_string(aesPlainWords));
-            console.log('assert',
-               word_array_to_string(cipher.output) ==
-               word_array_to_string(aesPlainWords));
+            var out = (i & 1) ? cipher.output.toHex() : cipher.output.bytes();
+            console.log('decrypted', out);
+            console.log('expect', inputs[i]);
+            console.log('assert', inputs[i] === out);
          }
       };
 
@@ -1155,6 +1193,71 @@
          console.log('encrypt time: ' + (totalEncrypt / count) + ' ms');
          console.log('decrypt time: ' + (totalDecrypt / count) + ' ms');
          console.log('jscrypto aes-128 speed test complete.');
+      };
+
+      var aes_sjcl_128 = function()
+      {
+         console.log('testing AES-128 (sjcl) ...');
+         
+         tmp = krypto.util.createBuffer('Single block msg');
+         console.log('input in hex', tmp.toHex());
+         var block = [];
+         block.push(tmp.getInt32());
+         block.push(tmp.getInt32());
+         block.push(tmp.getInt32());
+         block.push(tmp.getInt32());
+
+         tmp = krypto.util.createBuffer(
+            krypto.util.hexToBytes('3dafba429d9eb430b422da802c9fac41'));
+         var iv = [];
+         iv.push(tmp.getInt32());
+         iv.push(tmp.getInt32());
+         iv.push(tmp.getInt32());
+         iv.push(tmp.getInt32());
+         
+         // do XOR with IV
+         block[0] ^= iv[0];
+         block[1] ^= iv[1];
+         block[2] ^= iv[2];
+         block[3] ^= iv[3];
+         
+         tmp = krypto.util.createBuffer(
+            krypto.util.hexToBytes('06a9214036b8a15b512e03d534120006'));
+         var key = [];
+         key.push(tmp.getInt32());
+         key.push(tmp.getInt32());
+         key.push(tmp.getInt32());
+         key.push(tmp.getInt32());
+         
+         var cipher = new sjcl.cipher.aes(key);
+         var output = cipher.encrypt(block);
+         
+         tmp = krypto.util.createBuffer();
+         tmp.putInt32(output[0]);
+         tmp.putInt32(output[1]);
+         tmp.putInt32(output[2]);
+         tmp.putInt32(output[3]);
+         console.log('sjcl encrypted', tmp.toHex());
+         
+         block = output;
+         output = cipher.decrypt(block);
+
+         // do XOR with iv
+         tmp = krypto.util.createBuffer(
+            krypto.util.hexToBytes('3dafba429d9eb430b422da802c9fac41'));
+         output[0] ^= tmp.getInt32();
+         output[1] ^= tmp.getInt32();
+         output[2] ^= tmp.getInt32();
+         output[3] ^= tmp.getInt32();
+
+         tmp = krypto.util.createBuffer();
+         tmp.putInt32(output[0]);
+         tmp.putInt32(output[1]);
+         tmp.putInt32(output[2]);
+         tmp.putInt32(output[3]);
+         console.log('sjcl decrypted', tmp.toHex());//tmp.bytes());
+         
+         console.log('sjcl aes-128 test complete.');
       };
       
       var aes_sjcl_128_speed = function()
@@ -1326,6 +1429,7 @@
          <button id="aes__krypto128_speed" onclick="javascript:return aes_krypto_128_speed();">krypto 128 speed</button>
          <button id="aes__jscrypto128_speed" onclick="javascript:return aes_jscrypto_128_speed();">jscrypto 128 speed</button>
          <button id="aes__sjcl128_speed" onclick="javascript:return aes_sjcl_128_speed();">sjcl 128 speed</button>
+         <button id="aes__sjcl128" onclick="javascript:return aes_sjcl_128();">sjcl 128</button>
          <br />
          <button id="aes_krypto" onclick="javascript:return aes_krypto();">krypto</button>
          <button id="aes_krypto_cbc" onclick="javascript:return aes_krypto_cbc();">krypto CBC</button>         <button id="aes6" onclick="javascript:return aes_krypto_cbc_speed();">krypto CBC speed</button>

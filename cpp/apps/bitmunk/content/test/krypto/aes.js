@@ -850,18 +850,18 @@
       if(key.constructor == String &&
          (key.length == 16 || key.length == 24 || key.length == 32))
       {
+         key = window.krypto.util.createBuffer(key);
+      }
+      // convert key integer array into byte buffer
+      else if(key.constructor == Array &&
+         (key.length == 16 || key.length == 24 || key.length == 32))
+      {
          var tmp = key;
          var key = window.krypto.util.createBuffer();
          for(var i = 0; i < tmp.length; ++i)
          {
             key.putByte(tmp[i]);
          }
-      }
-      // convert key byte array into byte buffer
-      else if(key.constructor == Array &&
-         (key.length == 16 || key.length == 24 || key.length == 32))
-      {
-         key = window.krypto.util.createBuffer(key);
       }
       
       // convert key byte buffer into 32-bit integer array
