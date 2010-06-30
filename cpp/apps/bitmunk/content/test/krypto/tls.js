@@ -376,8 +376,8 @@
       b.putByte(record.version.minor);
       b.putByte(record.length);
       b.putBytes(record.fragment.bytes());
-      hmac.update(b.bytes());
-      return hmac.digest();
+      hmac.update(b.getBytes());
+      return hmac.digest().getBytes();
    };
    
    /**
@@ -562,6 +562,7 @@
          {
             record.fragment = cipher.output.getBytes();
          }
+         record.fragment = krypto.util.createBuffer(record.fragment);
          record.length = record.fragment.length();
          
          // see if data integrity checks out
