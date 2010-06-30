@@ -125,8 +125,8 @@ static void runPieceUploadTest(Node& node, TestRunner& tr)
       Url url;
       url.format("%s/api/3.0/sales/contract/filepiece?nodeuser=1",
          node.getMessenger()->getSecureBitmunkUrl()->toString().c_str());
-      messenger->exchange(1, &url, &out, &in, DEVUSER_ID);
-      assertNoException();
+      assertNoException(
+         messenger->exchange(1, &url, &out, &in, DEVUSER_ID));
 
       // print trailer
       printf("Received trailer:\n%s\n", in.getTrailer()->toString().c_str());
@@ -157,8 +157,8 @@ static bool run(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "common");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       // register observer of all events
       BmPieceUploadTesterObserver obs;

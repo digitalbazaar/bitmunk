@@ -47,8 +47,8 @@ static bool run(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "common");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       // get port mapper interface
       IPortMapper* ipm = dynamic_cast<IPortMapper*>(

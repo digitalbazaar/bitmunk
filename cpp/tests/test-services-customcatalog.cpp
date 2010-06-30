@@ -66,19 +66,19 @@ static void resetTestEnvironment(Node& node)
 
    // log the user out
    node.logout(TEST_USER_ID);
-   assertNoException();
+   assertNoExceptionSet();
 
    // remove the file from the filesystem
    File file(fullDbPath.c_str());
    if(file->exists())
    {
-      file->remove();
-      assertNoException();
+      assertNoException(
+         file->remove());
    }
 
    // log the user in
-   node.login("devuser", "password");
-   assertNoException();
+   assertNoException(
+      node.login("devuser", "password"));
 }
 
 static void customCatalogTests(Node& node, TestRunner& tr)
@@ -172,8 +172,8 @@ static void customCatalogTests(Node& node, TestRunner& tr)
       ew.start("bitmunk.medialibrary.File.exception");
 
       // add the file to the media library
-      messenger->post(&filesUrl, &out, &in, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->post(&filesUrl, &out, &in, node.getDefaultUserId()));
 
       // wait for file ID set event
       assert(ew.waitForEvent(5*1000));
@@ -237,8 +237,8 @@ static void customCatalogTests(Node& node, TestRunner& tr)
    {
       // get a specific ware from the custom catalog
       Ware receivedWare;
-      messenger->get(&wareUrl, receivedWare, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->get(&wareUrl, receivedWare, node.getDefaultUserId()));
 
       // remove format details for comparison
       if(receivedWare->hasMember("fileInfos") &&
@@ -263,8 +263,8 @@ static void customCatalogTests(Node& node, TestRunner& tr)
       url.format(
          "%s/api/3.0/catalog/wares?nodeuser=%" PRIu64 "&id=%s",
          messenger->getSelfUrl(true).c_str(), TEST_USER_ID, TEST_WARE_ID_2);
-      messenger->get(&url, receivedWareSet, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->get(&url, receivedWareSet, node.getDefaultUserId()));
 
       // check ware set
       Ware expectedWareSet;
@@ -287,8 +287,8 @@ static void customCatalogTests(Node& node, TestRunner& tr)
       url.format(
          "%s/api/3.0/catalog/wares?nodeuser=%" PRIu64 "&fileId=%s",
          messenger->getSelfUrl(true).c_str(), TEST_USER_ID, TEST_FILE_ID_2);
-      messenger->get(&url, receivedWareSet, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->get(&url, receivedWareSet, node.getDefaultUserId()));
 
       // check ware set
       Ware expectedWareSet;
@@ -514,8 +514,9 @@ static void customCatalogTests(Node& node, TestRunner& tr)
       p2["description"] = "test-services-customcatalog test payee 2 (updated)";
 
       // update a pre-existing payee scheme
-      messenger->post(&payeeSchemeIdUrl, &out, &in, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->post(
+            &payeeSchemeIdUrl, &out, &in, node.getDefaultUserId()));
 
       // ensure that the payee scheme was updated
       assert(in["payeeSchemeId"]->getUInt32() == 2);
@@ -646,8 +647,8 @@ static void interactiveCustomCatalogTests(Node& node, TestRunner& tr)
       ew.start("bitmunk.medialibrary.File.exception");
 
       // add the file to the media library
-      messenger->post(&filesUrl, &out, &in, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->post(&filesUrl, &out, &in, node.getDefaultUserId()));
 
       // wait for file ID set event
       assert(ew.waitForEvent(5*1000));
@@ -726,8 +727,8 @@ static bool run(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "test-services-customcatalog");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       Config cfg = tr.getApp()->getConfig();
       sTestDataDir = cfg["test"]["dataPath"]->getString();
@@ -747,8 +748,8 @@ static bool run(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "test-services-customcatalog");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       Config cfg = tr.getApp()->getConfig();
       sTestDataDir = cfg["test"]["dataPath"]->getString();

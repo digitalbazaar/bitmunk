@@ -71,8 +71,8 @@ static void runNodeTest(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr);
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       // stop and unload node
       node->stop();
@@ -87,8 +87,8 @@ void runNodeConfigTest(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "common");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       // stop and unload node
       node->stop();
@@ -104,8 +104,8 @@ static void runLoginTest(TestRunner& tr)
       bool success;
       // load and start node
       Node* node = Tester::loadNode(tr, "common");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       // NOTE: some of these are redundant with what load/unloadNode do.
 
@@ -113,8 +113,8 @@ static void runLoginTest(TestRunner& tr)
       node->logout(0);
 
       tr.test("login success");
-      success = node->login("devuser", "password");
-      assert(success);
+      assertNoException(
+         node->login("devuser", "password"));
       tr.passIfNoException();
 
       // logout
@@ -164,8 +164,8 @@ static void runNodeStopEventTest(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "common");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       ExclusiveLock waiter;
       NodeStopEventObserver o(&waiter);

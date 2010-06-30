@@ -226,26 +226,20 @@ static void runNodeMonitorTest(TestRunner& tr)
 
    tr.test("add ex");
    {
-      bool r;
       NodeMonitor nm;
       DynamicObject si;
       si["bad"] = 0;
-      r = nm.addStates(si);
-      assert(!r);
-      assertException();
+      assertException(nm.addStates(si));
       Exception::clear();
    }
    tr.passIfNoException();
 
    tr.test("rem ex");
    {
-      bool r;
       NodeMonitor nm;
       DynamicObject s;
       s["a"] = 0;
-      r = nm.removeStates(s);
-      assert(!r);
-      assertException();
+      assertException(nm.removeStates(s));
       Exception::clear();
    }
    tr.passIfNoException();
@@ -258,9 +252,7 @@ static void runNodeMonitorTest(TestRunner& tr)
       NodeMonitor nm;
       DynamicObject s;
       s["a"] = 0;
-      r = nm.setStates(s);
-      assert(!r);
-      assertException();
+      assertException(nm.setStates(s));
       Exception::clear();
    }
    tr.passIfNoException();
@@ -268,46 +260,37 @@ static void runNodeMonitorTest(TestRunner& tr)
 
    tr.test("get ex");
    {
-      bool r;
       NodeMonitor nm;
       DynamicObject s;
       s["a"] = 0;
-      r = nm.getStates(s);
-      assert(!r);
-      assertException();
+      assertException(nm.getStates(s));
       Exception::clear();
    }
    tr.passIfNoException();
 
    tr.test("adj ex");
    {
-      bool r;
       NodeMonitor nm;
       DynamicObject s;
       s["a"] = 1;
-      r = nm.adjustStates(s);
-      assert(!r);
-      assertException();
+      assertException(nm.adjustStates(s));
       Exception::clear();
    }
    tr.passIfNoException();
 
    tr.test("adj type ex");
    {
-      bool r;
       NodeMonitor nm;
       DynamicObject si;
       si["a"]["init"] = (uint64_t)0;
-      r = nm.addStates(si);
-      assert(r);
+      assertNoException(
+         nm.addStates(si));
 
       // Not for use with async StateMonitor implementation.
       /*
       DynamicObject s;
       s["a"] = 0.;
-      r = nm.adjustStates(s);
-      assert(!r);
-      assertException();
+      assertException(nm.adjustStates(s));
       Exception::clear();
       */
    }
@@ -316,22 +299,19 @@ static void runNodeMonitorTest(TestRunner& tr)
    tr.test("txn adj ex");
    {
       // check bad transaction doesn't change values
-      bool r;
       NodeMonitor nm;
       DynamicObject si;
       si["a"]["init"] = (uint64_t)10;
       si["b"]["init"] = (uint64_t)10;
-      r = nm.addStates(si);
-      assert(r);
+      assertNoException(
+         nm.addStates(si));
 
       // Not for use with async StateMonitor implementation.
       /*
       DynamicObject s;
       s["a"] = (int64_t)-1;
       s["b"] = -1.;
-      r = nm.adjustStates(s);
-      assert(!r);
-      assertException();
+      assertException(nm.adjustStates(s));
       Exception::clear();
       */
 
@@ -346,18 +326,15 @@ static void runNodeMonitorTest(TestRunner& tr)
 
    tr.test("no ex");
    {
-      bool r;
       NodeMonitor nm;
       DynamicObject si;
       si["a"]["init"] = (uint64_t)10;
-      r = nm.addStates(si);
-      assert(r);
+      assertNoException(
+         nm.addStates(si));
 
       DynamicObject s;
       s["bad"] = (int64_t)-1;
-      r = nm.adjustStates(s);
-      assert(!r);
-      assertException();
+      assertException(nm.adjustStates(s));
       Exception::clear();
 
       DynamicObject expect;

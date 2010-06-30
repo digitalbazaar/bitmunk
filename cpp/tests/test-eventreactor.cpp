@@ -60,8 +60,8 @@ static void runEventReactorTest(Node& node, TestRunner& tr)
          "https://localhost:19200");
 
       Messenger* messenger = node.getMessenger();
-      messenger->post(&url, NULL, &in, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->post(&url, NULL, &in, node.getDefaultUserId()));
       // FIXME: remove me
       dumpDynamicObject(in);
    }
@@ -114,8 +114,8 @@ static void runEventReactorTest(Node& node, TestRunner& tr)
             "https://localhost:19200");
 
          Messenger* messenger = node.getMessenger();
-         messenger->post(&url, &out, &in, node.getDefaultUserId());
-         assertNoException();
+         assertNoException(
+            messenger->post(&url, &out, &in, node.getDefaultUserId()));
       }
 
       while(true)
@@ -155,8 +155,8 @@ static void runEventReactorTest(Node& node, TestRunner& tr)
                out["preferences"]["fast"] = false;//true;
                out["preferences"]["accountId"] = 9000;
                out["preferences"]["sellerLimit"] = 1;
-               messenger->post(&url, &out, NULL, DEVUSER_ID);
-               assertNoException();
+               assertNoException(
+                  messenger->post(&url, &out, NULL, DEVUSER_ID));
             }
             else if(strstr(e["type"]->getString(), "assemblyCompleted") != NULL)
             {
@@ -250,8 +250,8 @@ static bool run(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "test-eventreactor");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       // register event observer of all events
       BmEventReactorTesterObserver obs;
@@ -269,8 +269,8 @@ static bool run(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "test-eventreactor");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       // register event observer of all events
       BmEventReactorTesterObserver obs;

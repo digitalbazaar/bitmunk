@@ -134,8 +134,8 @@ static void runPeerBuyTest(
 
       // create download state
       Messenger* messenger = node.getMessenger();
-      messenger->post(&url, &out, &in, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->post(&url, &out, &in, node.getDefaultUserId()));
 
       // get the download state ID
       dsId = in["downloadStateId"]->getUInt64();
@@ -175,8 +175,8 @@ static void runPeerBuyTest(
       DynamicObject out;
       out["downloadStateId"] = dsId;
       Messenger* messenger = node.getMessenger();
-      messenger->post(&url, &out, NULL, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->post(&url, &out, NULL, node.getDefaultUserId()));
 
       // wait for event
       ew.waitForEvent();
@@ -220,8 +220,8 @@ static void runPeerBuyTest(
       DynamicObject out;
       out["downloadStateId"] = dsId;
       Messenger* messenger = node.getMessenger();
-      messenger->post(&url, &out, NULL, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->post(&url, &out, NULL, node.getDefaultUserId()));
 
       // wait for event
       ew.waitForEvent();
@@ -270,8 +270,8 @@ static void runPeerBuyTest(
       out["preferences"]["accountId"] = 9000;
       out["preferences"]["sellerLimit"] = 1;
       Messenger* messenger = node.getMessenger();
-      messenger->post(&url, &out, NULL, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->post(&url, &out, NULL, node.getDefaultUserId()));
 
       // FIXME: here to test pausing a download
       if(false)
@@ -284,8 +284,8 @@ static void runPeerBuyTest(
          // pause download by posting download state ID
          DynamicObject out2;
          out2["downloadStateId"] = dsId;
-         messenger->post(&url2, &out2, NULL, node.getDefaultUserId());
-         assertNoException();
+         assertNoException(
+            messenger->post(&url2, &out2, NULL, node.getDefaultUserId()));
       }
 
       // wait for event
@@ -336,8 +336,8 @@ static void runPeerBuyTest(
       DynamicObject out;
       out["downloadStateId"] = dsId;
       Messenger* messenger = node.getMessenger();
-      messenger->post(&url, &out, NULL, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->post(&url, &out, NULL, node.getDefaultUserId()));
 
       // wait for event
       ew.waitForEvent();
@@ -381,8 +381,8 @@ static void runPeerBuyTest(
       DynamicObject out;
       out["downloadStateId"] = dsId;
       Messenger* messenger = node.getMessenger();
-      messenger->post(&url, &out, NULL, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->post(&url, &out, NULL, node.getDefaultUserId()));
 
       // wait for event
       ew.waitForEvent();
@@ -427,8 +427,8 @@ static bool run(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "test-peerbuy");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       // register event observer of all events
       BmPeerBuyTesterObserver obs;

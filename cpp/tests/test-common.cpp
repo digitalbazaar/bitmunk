@@ -53,20 +53,20 @@ static void runProfileTest(TestRunner& tr)
    PublicKeyRef publicKey = p.generate();
    p.setId(pid);
    p.setUserId(uid);
-   assertNoException();
+   assertNoExceptionSet();
 
    // save to buffer
    ByteBuffer buffer;
    ByteArrayOutputStream os(&buffer);
-   p.save(pw, &os);
-   assertNoException();
+   assertNoException(
+      p.save(pw, &os));
 
    // load from buffer
    ByteArrayInputStream is(buffer.data(), buffer.length());
    Profile p2;
    p2.setUserId(uid);
-   p2.load(pw, &is);
-   assertNoException();
+   assertNoException(
+      p2.load(pw, &is));
 
    // ensure profile ids are equal
    assert(p.getId() == p2.getId());
@@ -687,9 +687,8 @@ static void runValidatorTest(TestRunner& tr)
       for(int i = 0; tests[i] != NULL; ++i)
       {
          d = tests[i];
-         bool success = v->isValid(d);
-         assertNoException();
-         assert(success);
+         assertNoException(
+            v->isValid(d));
       }
    }
    tr.pass();
@@ -702,9 +701,7 @@ static void runValidatorTest(TestRunner& tr)
       for(int i = 0; tests[i] != NULL; ++i)
       {
          d = tests[i];
-         bool success = v->isValid(d);
-         assertException();
-         assert(!success);
+         assertException(v->isValid(d));
          Exception::clear();
       }
    }

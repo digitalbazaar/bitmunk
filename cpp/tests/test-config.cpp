@@ -40,22 +40,22 @@ static void runConfigTest(Node& node, TestRunner& tr)
       }*/
       UserId userId;
       bool loggedin = node.login("devuser", "password", &userId);
-      assertNoException();
+      assertNoExceptionSet();
       assert(loggedin);
       {
          printf("raw user %" PRIu64 " config:\n", userId);
          Config c = node.getConfigManager()->getUserConfig(userId, true);
          JsonWriter::writeToStdOut(c, false, false);
-         assertNoException();
+         assertNoExceptionSet();
       }
       {
          printf("user %" PRIu64 " config:\n", userId);
          Config c = node.getConfigManager()->getUserConfig(userId);
          JsonWriter::writeToStdOut(c, false, false);
-         assertNoException();
+         assertNoExceptionSet();
       }
       node.logout(userId);
-      assertNoException();
+      assertNoExceptionSet();
    }
    tr.passIfNoException();
 
@@ -68,8 +68,8 @@ static bool run(TestRunner& tr)
    {
       // load bitmunk node
       Node* node = Tester::loadNode(tr);
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       // run config test
       runConfigTest(*node, tr);
@@ -77,7 +77,7 @@ static bool run(TestRunner& tr)
       // unload bitmunk node
       node->stop();
       Tester::unloadNode(tr);
-      assertNoException();
+      assertNoExceptionSet();
    }
    return true;
 }

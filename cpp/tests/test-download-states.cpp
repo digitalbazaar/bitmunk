@@ -175,8 +175,8 @@ static bool run(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "common");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       // register event observer of all events
       BmDownloadStatesTesterObserver obs;

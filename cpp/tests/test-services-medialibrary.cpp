@@ -173,8 +173,8 @@ static void mediaLibraryTest(Node& node, TestRunner& tr)
 
       // get a specific file from the media library
       FileInfo receivedFileInfo;
-      messenger->get(&fileUrl, receivedFileInfo, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->get(&fileUrl, receivedFileInfo, node.getDefaultUserId()));
 
       // remove format details for comparison
       receivedFileInfo->removeMember("formatDetails");
@@ -220,8 +220,9 @@ static void mediaLibraryTest(Node& node, TestRunner& tr)
 
       // get a list of files from the media library
       FileInfo receivedFileSet;
-      messenger->get(&searchFilesUrl, receivedFileSet, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->get(
+            &searchFilesUrl, receivedFileSet, node.getDefaultUserId()));
 
       // FIXME: this removes format details from the resources for an easier
       // comparison ... we probably want to actually check against these?
@@ -286,8 +287,9 @@ static void mediaLibraryTest(Node& node, TestRunner& tr)
 
       // get a list of files from the media library
       FileInfo receivedFileSet;
-      messenger->get(&searchFilesUrl, receivedFileSet, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->get(
+            &searchFilesUrl, receivedFileSet, node.getDefaultUserId()));
 
       // FIXME: this removes format details from the resources for an easier
       // comparison ... we probably want to actually check against these?
@@ -338,8 +340,9 @@ static void mediaLibraryTest(Node& node, TestRunner& tr)
 
       // get a list of files from the media library
       FileInfo receivedFileSet;
-      messenger->get(&searchFilesUrl, receivedFileSet, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->get(
+            &searchFilesUrl, receivedFileSet, node.getDefaultUserId()));
 
       // FIXME: this removes format details from the resources for an easier
       // comparison ... we probably want to actually check against these?
@@ -414,8 +417,8 @@ static bool run(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "bpe");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       Config cfg = tr.getApp()->getConfig();
       sTestDataDir = cfg["test"]["dataPath"]->getString();

@@ -50,8 +50,8 @@ static void fileBrowserTest(Node& node, TestRunner& tr)
    {
       // get a specific file from the media library
       DynamicObject receivedFileList;
-      messenger->get(&filesUrl, receivedFileList, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->get(&filesUrl, receivedFileList, node.getDefaultUserId()));
 
       // check to make sure there is at least one entry in the list of files
       //dumpDynamicObject(receivedFileList);
@@ -65,8 +65,8 @@ static void fileBrowserTest(Node& node, TestRunner& tr)
    {
       // get a specific file from the media library
       DynamicObject receivedFileList;
-      messenger->get(&filesUrl, receivedFileList, node.getDefaultUserId());
-      assertException();
+      assertException(
+         messenger->get(&filesUrl, receivedFileList, node.getDefaultUserId()));
    }
    tr.passIfException();
 }
@@ -77,15 +77,15 @@ static bool run(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "bpe");
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       //config["bitmunk.catalog.CustomCatalog"]["uploadListings"] = false;
 
       // login customer support
       //node.logout(0);
       //node.login("BitmunkCustomerSupport", "password");
-      //assertNoException();
+      //assertNoExceptionSet();
 
       // run tests
       fileBrowserTest(*node, tr);

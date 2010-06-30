@@ -47,8 +47,8 @@ static void mediaGetTest(Node& node, TestRunner& tr)
 
       // get media
       Media media;
-      messenger->getFromBitmunk(&url, media);
-      assertNoException();
+      assertNoException(
+         messenger->getFromBitmunk(&url, media));
 
       printf("\nMedia:\n");
       dumpDynamicObject(media, false);
@@ -73,8 +73,8 @@ static void mediaGetTest(Node& node, TestRunner& tr)
 
       // get results
       DynamicObject results;
-      //messenger->getFromBitmunk(&url, results);
-      assertNoException();
+      //assertNoException(
+      //   messenger->getFromBitmunk(&url, results));
 
       printf("\nDISABLED FOR PERFORMANCE\n");
       /*
@@ -92,8 +92,8 @@ static void mediaGetTest(Node& node, TestRunner& tr)
 
       // get results
       DynamicObject results;
-      messenger->getFromBitmunk(&url, results);
-      assertNoException();
+      assertNoException(
+         messenger->getFromBitmunk(&url, results));
 
       printf("\nMedia owned by user 900\n");
       printf("Results %" PRIu32 "-%" PRIu32 " of %" PRIu32 "\n",
@@ -111,8 +111,8 @@ static void mediaGetTest(Node& node, TestRunner& tr)
 
       // get results
       DynamicObject results;
-      messenger->getFromBitmunk(&url, results);
-      assertNoException();
+      assertNoException(
+         messenger->getFromBitmunk(&url, results));
 
       printf("\nSearching media & contributors for 'test'\n");
       printf("Results %" PRIu32 "-%" PRIu32 " of %" PRIu32 "\n",
@@ -130,8 +130,8 @@ static void mediaGetTest(Node& node, TestRunner& tr)
 
       // get results
       DynamicObject results;
-      messenger->getFromBitmunk(&url, results);
-      assertNoException();
+      assertNoException(
+         messenger->getFromBitmunk(&url, results));
 
       printf("\nAudio from genre 165\n");
       printf("Results %" PRIu32 "-%" PRIu32 " of %" PRIu32 "\n",
@@ -149,8 +149,8 @@ static void mediaGetTest(Node& node, TestRunner& tr)
 
       // get results
       DynamicObject results;
-      messenger->getFromBitmunk(&url, results);
-      assertNoException();
+      assertNoException(
+         messenger->getFromBitmunk(&url, results));
 
       printf("\nMedia list %s\n", results["name"]->getString());
       printf("\"%s\"\n", results["description"]->getString());
@@ -174,8 +174,8 @@ static void userGetTest(Node& node, TestRunner& tr)
 
       // get user
       User user;
-      messenger->getSecureFromBitmunk(&url, user, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->getSecureFromBitmunk(&url, user, node.getDefaultUserId()));
 
       printf("\nUser:\n");
       dumpDynamicObject(user, false);
@@ -206,9 +206,9 @@ static void userGetTest(Node& node, TestRunner& tr)
 
       // get identity
       Identity identity;
-      messenger->getSecureFromBitmunk(
-         &url, identity, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->getSecureFromBitmunk(
+            &url, identity, node.getDefaultUserId()));
 
       printf("\nIdentity:\n");
       dumpDynamicObject(identity, false);
@@ -285,9 +285,9 @@ static void userAddTest(Node& node, TestRunner& tr)
       user["confirm"] = "password";
       user["tosAgree"] = "agree";
 
-      messenger->postSecureToBitmunk(
-         &url, &user, NULL, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->postSecureToBitmunk(
+            &url, &user, NULL, node.getDefaultUserId()));
 
       printf("\nUser added.\n");
    }
@@ -512,8 +512,9 @@ static void accountGetTest(Node& node, TestRunner& tr)
 
       // get account
       Account account;
-      messenger->getSecureFromBitmunk(&url, account, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->getSecureFromBitmunk(
+            &url, account, node.getDefaultUserId()));
 
       printf("\nAccount:\n");
       dumpDynamicObject(account, false);
@@ -535,8 +536,8 @@ static void contributorGetTest(Node& node, TestRunner& tr)
 
       // get contributor
       DynamicObject contributor;
-      messenger->getFromBitmunk(&url, contributor);
-      assertNoException();
+      assertNoException(
+         messenger->getFromBitmunk(&url, contributor));
 
       printf("\nContributor:\n");
       dumpDynamicObject(contributor, false);
@@ -549,8 +550,8 @@ static void contributorGetTest(Node& node, TestRunner& tr)
 
       // get contributor
       DynamicObject contributors;
-      messenger->getFromBitmunk(&url, contributors);
-      assertNoException();
+      assertNoException(
+         messenger->getFromBitmunk(&url, contributors));
 
       printf("\nContributors:\n");
       dumpDynamicObject(contributors, false);
@@ -563,8 +564,8 @@ static void contributorGetTest(Node& node, TestRunner& tr)
 
       // get contributor
       DynamicObject contributors;
-      messenger->getFromBitmunk(&url, contributors);
-      assertNoException();
+      assertNoException(
+         messenger->getFromBitmunk(&url, contributors));
 
       printf("\nContributors:\n");
       dumpDynamicObject(contributors, false);
@@ -587,8 +588,8 @@ static void permissionGetTest(Node& node, TestRunner& tr)
 
       // get permission group
       PermissionGroup group;
-      messenger->getFromBitmunk(&url, group);
-      assertNoException();
+      assertNoException(
+         messenger->getFromBitmunk(&url, group));
 
       printf("\nGroup:\n");
       dumpDynamicObject(group, false);
@@ -611,8 +612,9 @@ static void reviewGetTest(Node& node, TestRunner& tr)
 
       // get account
       DynamicObject reviews;
-      messenger->getSecureFromBitmunk(&url, reviews, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->getSecureFromBitmunk(
+            &url, reviews, node.getDefaultUserId()));
 
       printf("\nReviews:\n");
       dumpDynamicObject(reviews, false);
@@ -626,8 +628,9 @@ static void reviewGetTest(Node& node, TestRunner& tr)
 
       // get account
       DynamicObject reviews;
-      messenger->getSecureFromBitmunk(&url, reviews, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->getSecureFromBitmunk(
+            &url, reviews, node.getDefaultUserId()));
 
       printf("\nReviews:\n");
       dumpDynamicObject(reviews, false);
@@ -650,9 +653,9 @@ static void acquireLicenseTest(Node& node, TestRunner& tr)
 
       // get signed media
       Media media;
-      messenger->postSecureToBitmunk(
-         &url, NULL, &media, node.getDefaultUserId());
-      assertNoException();
+      assertNoException(
+         messenger->postSecureToBitmunk(
+            &url, NULL, &media, node.getDefaultUserId()));
 
       printf("\nSigned Media:\n");
       dumpDynamicObject(media, false);
@@ -755,8 +758,8 @@ static bool run(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr/*, "test-node-services"*/);
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       //cout << "You may need to remove testuser5.profile from /tmp/ to "
       //   "run the password update test." << endl;
@@ -764,7 +767,7 @@ static bool run(TestRunner& tr)
       // login the devuser
       //node.login("devuser", "password");
       //node.login("testuser5", "password");
-      assertNoException();
+      assertNoExceptionSet();
 
       // run tests
       //mediaGetTest(node, tr);
@@ -789,13 +792,13 @@ static bool run(TestRunner& tr)
    {
       // load and start node
       Node* node = Tester::loadNode(tr/*, "test-node-services"*/);
-      node->start();
-      assertNoException();
+      assertNoException(
+         node->start());
 
       // login the devuser
       //node.login("devuser", "password");
       //node.login("testuser5", "password");
-      assertNoException();
+      assertNoExceptionSet();
 
       Config cfg = tr.getApp()->getConfig();
       const char* test = cfg["monarch.test.Tester"]["test"]->getString();

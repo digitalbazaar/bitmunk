@@ -40,9 +40,9 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr, const char* unitTest)
    cm->saveState();
 
    // add test config
-   cm->addConfigFile(app->getConfig()
-      ["bitmunk.apps.tester.Tester"]["configPath"]->getString());
-   assertNoException();
+   assertNoException(
+      cm->addConfigFile(app->getConfig()
+         ["bitmunk.apps.tester.Tester"]["configPath"]->getString()));
 
    // add optional unit test config
    if(unitTest != NULL)
@@ -51,13 +51,13 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr, const char* unitTest)
       string path = unitTest;
       path.append(".config");
       path = File::join(cfg["unitTestConfigPath"]->getString(), path.c_str());
-      cm->addConfigFile(path.c_str());
-      assertNoException();
+      assertNoException(
+         cm->addConfigFile(path.c_str()));
    }
 
    // get the path to the node module
    Config cfg = app->getConfig();
-   assertNoException();
+   assertNoExceptionSet();
    assert(!cfg.isNull());
 
    // dump config if requested
@@ -108,7 +108,7 @@ Node* Tester::loadNode(monarch::test::TestRunner& tr, const char* unitTest)
       }
    }
 
-   assertNoException();
+   assertNoExceptionSet();
    return rval;
 }
 
@@ -118,12 +118,12 @@ bool Tester::unloadNode(monarch::test::TestRunner& tr)
 
    // unload the node
    MicroKernel* k = tr.getApp()->getKernel();
-   rval = k->unloadModule("bitmunk.node.Node");
-   assertNoException();
+   assertNoException(
+      (rval = k->unloadModule("bitmunk.node.Node")));
 
    // restore the config manager state
-   rval = tr.getApp()->getConfigManager()->restoreState();
-   assertNoException();
+   assertNoException(
+      (rval = tr.getApp()->getConfigManager()->restoreState()));
 
    return rval;
 }
