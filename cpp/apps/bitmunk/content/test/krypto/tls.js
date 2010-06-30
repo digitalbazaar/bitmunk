@@ -369,12 +369,13 @@
       var hmac = krypto.hmac.create();
       hmac.start('SHA1', key);
       var b = krypto.util.createBuffer();
+      // FIXME: implement seqNum as a byte array of 8 bytes
       b.putInt32(0);
       b.putInt32(seqNum);
       b.putByte(record.type);
       b.putByte(record.version.major);
       b.putByte(record.version.minor);
-      b.putByte(record.length);
+      b.putInt16(record.length);
       b.putBytes(record.fragment.bytes());
       hmac.update(b.getBytes());
       return hmac.digest().getBytes();
@@ -536,41 +537,42 @@
       
       // do decryption
       cipher.update(record.fragment);
-      if(cipher.finish(decrypt_aes_128_cbc_sha1_padding))
+      rval = cipher.finish(decrypt_aes_128_cbc_sha1_padding);
+      
+      // even if decryption fails, keep going to minimize timing attacks
+      
+      // decrypted data:
+      // first (len - 20) bytes = application data
+      // last 20 bytes          = MAC
+      var macLen = s.macLength;
+      
+      // create a zero'd out mac
+      var mac = '';
+      for(var i = 0; i < macLen; ++i)
       {
-         // decrypted data:
-         // first (len - 20) bytes = application data
-         // last 20 bytes          = MAC
-         var macLen = s.macLength;
-         
-         // create a zero'd out mac
-         var mac = '';
-         for(var i = 0; i < macLen; ++i)
-         {
-            mac += String.fromCharCode(0);
-         }
-         
-         // get fragment and mac
-         var len = cipher.output.length();
-         if(len >= macLen)
-         {
-            record.fragment = cipher.output.getBytes(len - macLen);
-            mac = cipher.output.getBytes(macLen);
-         }
-         // bad data, but get bytes anyway to try to keep timing consistent
-         else
-         {
-            record.fragment = cipher.output.getBytes();
-         }
-         record.fragment = krypto.util.createBuffer(record.fragment);
-         record.length = record.fragment.length();
-         
-         // see if data integrity checks out
-         var mac2 = s.macFunction(s.macKey, s.sequenceNumber++, record);
-         if(mac2 === mac)
-         {
-            rval = true;
-         }
+         mac += String.fromCharCode(0);
+      }
+      
+      // get fragment and mac
+      var len = cipher.output.length();
+      if(len >= macLen)
+      {
+         record.fragment = cipher.output.getBytes(len - macLen);
+         mac = cipher.output.getBytes(macLen);
+      }
+      // bad data, but get bytes anyway to try to keep timing consistent
+      else
+      {
+         record.fragment = cipher.output.getBytes();
+      }
+      record.fragment = krypto.util.createBuffer(record.fragment);
+      record.length = record.fragment.length();
+      
+      // see if data integrity checks out
+      var mac2 = s.macFunction(s.macKey, s.sequenceNumber++, record);
+      if(mac2 === mac)
+      {
+         rval = true;
       }
       
       return rval;
