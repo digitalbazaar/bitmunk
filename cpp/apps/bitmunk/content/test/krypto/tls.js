@@ -353,8 +353,6 @@
          rval.putByte(md5bytes.getByte() ^ sha1bytes.getByte());
       }
       
-      console.log('XXX', 'PRF result', rval.toHex());
-      
       return rval;
    };
    
@@ -424,9 +422,6 @@
       record.fragment.putBytes(mac);
       s.updateSequenceNumber();
       
-      console.log('XXX', 'BEFORE RECORD', record.fragment.toHex());
-      console.log('XXX', 'BEFORE RECORD LENGTH', record.fragment.length());
-      
       // TODO: TLS 1.1 & 1.2 use an explicit IV every time to protect
       // against CBC attacks
       // var iv = krypto.random.getBytes(16);
@@ -452,9 +447,6 @@
          record.length = record.fragment.length();
          rval = true;
       }
-      
-      console.log('XXX', 'ENCRYPTED RECORD', record.fragment.toHex());
-      console.log('XXX', 'ENCRYPTED RECORD LENGTH', record.fragment.length());
       
       return rval;
    };
@@ -495,14 +487,14 @@
       {
          // get the number of padding bytes required to reach the blockSize
          // and subtract 1 to make room for the padding_length uint8
-         var padding = Math.max(blockSize, blockSize - input.length()) - 1;
+         var padding = (input.length() == blockSize) ?
+            (blockSize - 1) : (blockSize - input.length() - 1);
          for(var i = 0; i < padding; ++i)
          {
             input.putByte(padding);
          }
          // add the padding_length
          input.putByte(padding);
-         console.log('XXX', 'padding_length', padding);
       }
       return true;
    }
@@ -528,9 +520,7 @@
             if one of them is bad in order to ward-off timing attacks.
           */
          var len = output.length();
-         console.log('XXX', 'len', len);
          var paddingLength = output.last();
-         console.log('XXX', 'padding_length', paddingLength);
          for(var i = len - 1 - paddingLength; i < len - 1; ++i)
          {
             rval = rval && (output.at(i) == paddingLength);
@@ -1711,7 +1701,7 @@
    /*SCR*/[__,F1,F2,__],
    /*SHD*/[__,F1,F2,__],
    /*SCC*/[F0,F1,__,__],
-   /*SFI*/[__,F1,F2,__]
+   /*SFI*/[__,F1,F2,__],
    /*SAD*/[__,F1,F2,F3]
    ];
    
@@ -1870,7 +1860,7 @@
       // create master secret, clean up pre-master secret
       sp.master_secret =
          prf(sp.pre_master_secret, 'master secret', random, 48).bytes();
-      console.log('XXX', 'master secret',
+      console.log('TLS master secret',
          krypto.util.bytesToHex(sp.master_secret));
       sp.pre_master_secret = null;
       
@@ -2034,17 +2024,17 @@
          var sp = c.handshakeState.sp;
          var keys = tls.generateKeys(sp);
          
-         console.log('XXX', 'client_write_MAC_key',
+         console.log('TLS client_write_MAC_key',
             krypto.util.bytesToHex(keys.client_write_MAC_key));
-         console.log('XXX', 'server_write_MAC_key',
+         console.log('TLS server_write_MAC_key',
             krypto.util.bytesToHex(keys.server_write_MAC_key));
-         console.log('XXX', 'client_write_key',
+         console.log('TLS client_write_key',
             krypto.util.bytesToHex(keys.client_write_key));
-         console.log('XXX', 'server_write_key',
+         console.log('TLS server_write_key',
             krypto.util.bytesToHex(keys.server_write_key));
-         console.log('XXX', 'client_write_IV',
+         console.log('TLS client_write_IV',
             krypto.util.bytesToHex(keys.client_write_IV));
-         console.log('XXX', 'server_write_IV',
+         console.log('TLS server_write_IV',
             krypto.util.bytesToHex(keys.server_write_IV));
          
          // mac setup
@@ -2522,8 +2512,6 @@
       var vdl = 12;
       var prf = prf_TLS1;
       b = prf(sp.master_secret, 'client finished', b.getBytes(), vdl);
-      
-      console.log('XXX', 'finished length', b.length());
       
       // build record fragment
       var rval = krypto.util.createBuffer();
@@ -3043,6 +3031,7 @@
          console.log('updating TLS engine state');
          // get record handler (align type in table by subtracting lowest)
          var aligned = record.type - tls.ContentType.change_cipher_spec;
+         console.log('c.expect', c.expect);
          var handlers = ctTable[c.expect];
          if(aligned in handlers)
          {

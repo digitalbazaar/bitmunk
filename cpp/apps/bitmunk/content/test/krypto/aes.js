@@ -991,8 +991,8 @@
                {
                   // add PKCS#7 padding to block (each pad byte is the
                   // value of the number of pad bytes)
-                  var padding = Math.max(
-                     _blockSize, _blockSize - _input.length());
+                  var padding = (_input.length() == blockSize) ?
+                     _blockSize : (_blockSize - _input.length());
                   for(var i = 0; i < padding; ++i)
                   {
                      _input.putByte(padding);
