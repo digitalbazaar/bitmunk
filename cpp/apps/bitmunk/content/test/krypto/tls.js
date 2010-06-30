@@ -412,11 +412,9 @@
       
       // write IV into output
       cipher.output.putBytes(iv);
-      console.log('+++++++++++++++++++++iv length', iv.length);
       
       // do encryption (default padding is appropriate)
       cipher.update(record.fragment);
-      console.log('+++++++++++++++++++input length', record.fragment.length());
       if(cipher.finish(encrypt_aes_128_cbc_sha1_padding))
       {
          // set record fragment to encrypted output
@@ -424,8 +422,6 @@
          record.length = record.fragment.length();
          rval = true;
       }
-      
-      console.log('++++++RECORD LENGTH', record.length);
       
       return rval;
    };
@@ -498,7 +494,7 @@
             if one of them is bad in order to ward-off timing attacks.
           */
          var len = output.length();
-         var paddingLength = output.at(len - 1);
+         var paddingLength = output.last();
          for(var i = len - 2 - paddingLength; i < len - 1; ++i)
          {
             rval = rval && (output.at(i) == paddingLength);
