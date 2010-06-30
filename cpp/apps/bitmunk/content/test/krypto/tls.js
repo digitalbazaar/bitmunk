@@ -585,7 +585,7 @@
       // encode length at the start of the vector, where the number
       // of bytes for the length is the maximum number of bytes it
       // would take to encode the vector's ceiling
-      b.putInt(v.length(), lenBytes * 8);
+      b.putInt(v.length(), lenBytes << 3);
       b.putBuffer(v);
    };
    
@@ -787,17 +787,17 @@
    };
    
    /**
-    * Called when an invalid record is encountered.
+    * Called when an unexpected record is encountered.
     * 
     * @param c the connection.
     * @param record the record.
     */
-   tls.handleInvalid = function(c, record)
+   tls.handleUnexpected = function(c, record)
    {
-      // error case
       c.error(c, {
          message: 'Unexpected message. Received TLS record out of order.',
          send: true,
+         origin: 'client',
          alert: {
             level: tls.Alert.Level.fatal,
             description: tls.Alert.Description.unexpected_message
@@ -864,6 +864,7 @@
          c.error(c, {
             message: 'Invalid ServerHello message. Message too short.',
             send: true,
+            origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unexpected_message
@@ -938,6 +939,7 @@
          c.error(c, {
             message: 'Invalid Certificate message. Message too short.',
             send: true,
+            origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unexpected_message
@@ -977,6 +979,7 @@
             c.error(c, {
                message: 'No server certificate provided.',
                send: true,
+               origin: 'client',
                alert: {
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.certificate_unknown
@@ -1058,6 +1061,7 @@
          c.error(c, {
             message: 'Invalid key parameters. Only RSA is supported.',
             send: true,
+            origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unsupported_certificate
@@ -1109,6 +1113,7 @@
          c.error(c, {
             message: 'Invalid CertificateRequest. Message too short.',
             send: true,
+            origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unexpected_message
@@ -1166,6 +1171,7 @@
          c.error(c, {
             message: 'Invalid ServerHelloDone message. Invalid length.',
             send: true,
+            origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unexpected_message
@@ -1269,9 +1275,6 @@
          
          // expect a server ChangeCipherSpec message next
          c.expect = SCC;
-         
-         // FIXME: remove me
-         throw 'Not yet implemented';
       }
    };
   
@@ -1290,6 +1293,7 @@
          c.error(c, {
             message: 'Invalid ChangeCipherSpec message received.',
             send: true,
+            origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unexpected_message
@@ -1357,6 +1361,7 @@
          c.error(c, {
             message: 'Invalid Finished message. Invalid length.',
             send: true,
+            origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
                description: tls.Alert.Description.unexpected_message
@@ -1494,7 +1499,8 @@
       // call error handler
       c.error(c, {
          message: msg,
-         client: false,
+         send: false,
+         origin: 'server',
          alert: alert
       });
       
@@ -1552,6 +1558,7 @@
             c.error(c, {
                message: 'Invalid handshake type.',
                send: true,
+               origin: 'client',
                alert: {
                   level: fatal,
                   description: illegal_parameter
@@ -1632,15 +1639,15 @@
    // expect states (indicate which records are expected to be received)
    var SHE = 0; // rcv server hello
    var SCE = 1; // rcv server certificate
-   var SKE = 3; // rcv server key exchange
-   var SCR = 4; // rcv certificate request
-   var SHD = 5; // rcv server hello done
-   var SCC = 6; // rcv change cipher spec
-   var SFI = 7; // rcv finished
-   var SAD = 8; // rcv application data
+   var SKE = 2; // rcv server key exchange
+   var SCR = 3; // rcv certificate request
+   var SHD = 4; // rcv server hello done
+   var SCC = 5; // rcv change cipher spec
+   var SFI = 6; // rcv finished
+   var SAD = 7; // rcv application data
    
    // map current expect state and content type to function
-   var __ = tls.handleInvalid;
+   var __ = tls.handleUnexpected;
    var F0 = tls.handleChangeCipherSpec;
    var F1 = tls.handleAlert;
    var F2 = tls.handleHandshake;
@@ -1894,6 +1901,7 @@
             c.error(c, {
                message: 'Could not decrypt record.',
                send: true,
+               origin: 'client',
                alert: {
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.decryption_failed
@@ -1905,6 +1913,7 @@
             c.error(c, {
                message: 'Could not decompress record.',
                send: true,
+               origin: 'client',
                alert: {
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.decompression_failure
@@ -1924,6 +1933,7 @@
             c.error(c, {
                message: 'Could not compress record.',
                send: false,
+               origin: 'client',
                alert: {
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.internal_error
@@ -1937,6 +1947,7 @@
             c.error(c, {
                message: 'Could not encrypt record.',
                send: false,
+               origin: 'client',
                alert: {
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.internal_error
@@ -2273,6 +2284,9 @@
     *    public-key-encrypted PreMasterSecret pre_master_secret;
     * } EncryptedPreMasterSecret;
     * 
+    * A public-key-encrypted element is encoded as a vector <0..2^16-1>. In
+    * other words.
+    * 
     * @param pubKey the RSA public key to use to encrypt the pre-master secret.
     * @param sp the security parameters to set the pre_master_secret in.
     * 
@@ -2297,14 +2311,23 @@
       // RSA-encrypt the pre-master secret
       b = pubKey.encrypt(sp.pre_master_secret);
       
+      /* Note: The encrypted pre-master secret will be stored in a
+         public-key-encrypted opaque vector that has the length prefixed
+         using 2 bytes, so include those 2 bytes in the handshake message
+         length. This is done as a minor optimization instead of calling
+         writeVector().
+       */
+      
       // determine length of the handshake message
-      var length = b.length;
-      console.log('TLS RSA encrypted data length', length);
+      var length = b.length + 2;
+      console.log('TLS RSA public-key-encrypted data length', length);
       
       // build record fragment
       var rval = krypto.util.createBuffer();
       rval.putByte(tls.HandshakeType.client_key_exchange);
       rval.putInt24(length);
+      // add vector length bytes
+      rval.putInt16(b.length);
       rval.putBytes(b);
       return rval;
    };
@@ -2667,6 +2690,7 @@
             c.error(c, {
                message: 'Certificate not valid yet or has expired.',
                send: true,
+               origin: 'client',
                alert: {
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.certificate_expired
@@ -2701,6 +2725,7 @@
                   c.error(c, {
                      message: 'Untrusted certificate.',
                      send: true,
+                     origin: 'client',
                      alert: {
                         level: tls.Alert.Level.fatal,
                         description: tls.Alert.Description.certificate_unknown
@@ -2728,6 +2753,7 @@
                c.error(c, {
                   message: 'Certificate signature invalid.',
                   send: true,
+                  origin: 'client',
                   alert: {
                      level: tls.Alert.Level.fatal,
                      description: tls.Alert.Description.bad_certificate
@@ -2745,6 +2771,7 @@
             c.error(c, {
                message: 'Certificate issuer invalid.',
                send: true,
+               origin: 'client',
                alert: {
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.bad_certificate
@@ -2772,6 +2799,7 @@
                   c.error(c, {
                      message: 'Certificate has unsupported critical extension.',
                      send: true,
+                     origin: 'client',
                      alert: {
                         level: tls.Alert.Level.fatal,
                         description:
@@ -2800,6 +2828,7 @@
                         'Certificate keyUsage or basicConstraints ' +
                         'conflict or indicate certificate is not a CA.',
                      send: true,
+                     origin: 'client',
                      alert: {
                         level: tls.Alert.Level.fatal,
                         description:
@@ -2817,6 +2846,7 @@
                      'Certificate basicConstraints indicates certificate ' +
                      'is not a CA.',
                   send: true,
+                  origin: 'client',
                   alert: {
                      level: tls.Alert.Level.fatal,
                      description:
@@ -2915,13 +2945,16 @@
          console.log('updating TLS engine state');
          // get record handler (align type in table by subtracting lowest)
          var aligned = record.type - tls.ContentType.change_cipher_spec;
-         var handler = ctTable[c.expect][aligned];
-         if(typeof(handler) === 'undefined')
+         var handlers = ctTable[c.expect];
+         if(aligned in handlers)
          {
-            // invalid record
-            handler = __;
+            handlers[aligned](c, record);
          }
-         handler(c, record);
+         else
+         {
+            // unexpected record
+            tls.handleUnexpected(c, record);
+         }
       };
       
       /**
@@ -3010,6 +3043,7 @@
                   fragment: krypto.util.createBuffer()
                };
                len -= 5;
+               console.log('record type', _record.type);
                console.log('record length', _record.length);
                
                // check record version
@@ -3019,6 +3053,7 @@
                   c.error(c, {
                      message: 'Incompatible TLS version.',
                      send: true,
+                     origin: 'client',
                      alert: {
                         level: tls.Alert.Level.fatal,
                         description: tls.Alert.Description.protocol_version
@@ -3056,6 +3091,7 @@
                         c.error(c, {
                            message: 'Invalid fragmented record.',
                            send: true,
+                           origin: 'client',
                            alert: {
                               level: tls.Alert.Level.fatal,
                               description:
@@ -3268,7 +3304,9 @@
       var _requiredBytes = 0;
       socket.data = function(e)
       {
-         console.log('received TLS data');
+         console.log('TLS data arrived, ' +
+            'available bytes: ' + e.bytesAvailable,
+            ', required bytes: ' + _requiredBytes);
          
          // only receive if there are enough bytes available to
          // process a record
@@ -3281,6 +3319,8 @@
             var data = socket.receive(count);
             if(data !== null)
             {
+               // FIXME: remove print out
+               console.log('received ' + data.length + ' bytes');
                _requiredBytes = c.process(data);
             }
          }
