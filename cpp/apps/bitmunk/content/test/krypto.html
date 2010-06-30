@@ -615,6 +615,33 @@
             console.log(ex);
          }
       };
+
+      var test_prf_tls1 = function()
+      {
+         var secret = krypto.util.createBuffer();
+         for(var i = 0; i < 48; ++i)
+         {
+            secret.putByte(0xAB);
+         }
+         secret = secret.getBytes();
+         var seed = krypto.util.createBuffer();
+         for(var i = 0; i < 64; ++i)
+         {
+            seed.putByte(0xCD);
+         }
+         seed = seed.getBytes();
+         
+         var bytes = krypto.tls.prf_tls1(secret, 'PRF Testvector',  seed, 104);
+         var expect =
+            'd3d4d1e349b5d515044666d51de32bab258cb521' +
+            'b6b053463e354832fd976754443bcf9a296519bc' +
+            '289abcbc1187e4ebd31e602353776c408aafb74c' +
+            'bc85eff69255f9788faa184cbb957a9819d84a5d' +
+            '7eb006eb459d3ae8de9810454b8b2d8f1afbc655' +
+            'a8c9a013';
+         //console.log('output', bytes.toHex());
+         console.log('assert', expect === bytes.toHex());
+      };
       
       // 128-bit test keys
       var aesKeys = [
@@ -1308,7 +1335,7 @@
          <button id="aes_flash128" onclick="javascript:return aes_flash_128();">flash 128</button>
          <button id="aes_flash" onclick="javascript:return aes_flash_test();">flash test</button>
          <br />
-         <button id="tls_handshake" onclick="javascript:return tls_handshake();">tls handshake</button>
+         <button id="tls_prf" onclick="javascript:return test_prf_tls1();">tls prf</button>
       </div>
    </body>
 </html>

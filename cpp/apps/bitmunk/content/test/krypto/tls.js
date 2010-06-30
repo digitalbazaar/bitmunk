@@ -269,7 +269,19 @@
     * A(1) = HMAC_hash(secret, A(0))
     *      = HMAC_hash(secret, seed)
     * A(2) = HMAC_hash(secret, A(1))
-    *      = HMAC_hash(secret, HMAC_hash(secret, seed)) 
+    *      = HMAC_hash(secret, HMAC_hash(secret, seed))
+    * 
+    * Therefore:
+    * P_hash(secret, seed) =
+    *    HMAC_hash(secret, HMAC_hash(secret, A(0)) + seed) +
+    *    HMAC_hash(secret, HMAC_hash(secret, A(1)) + seed) +
+    *    ...
+    * 
+    * Therefore:
+    * P_hash(secret, seed) =
+    *    HMAC_hash(secret, HMAC_hash(secret, seed) + seed) +
+    *    HMAC_hash(secret, HMAC_hash(secret, HMAC_hash(secret, seed)) + seed) +
+    *    ...
     * 
     * @param secret the secret to use.
     * @param label the label to use.
@@ -282,16 +294,22 @@
    {
       var rval = krypto.util.createBuffer();
       
-      /* For TLS 1.0, the secret is split, in half, into two secrets of equal
+      /* For TLS 1.0, the secret is split in half, into two secrets of equal
          length. If the secret has an odd length then the last byte of the
          first half will be the same as the first byte of the second. The
          length of the two secrets is half of the secret rounded up.
        */
-      var slen = Math.ceil(secret.length / 2);
+      var idx = (secret.length >> 1);
+      var slen = idx + (secret.length & 1);
       var s1 = secret.substr(0, slen);
-      var s2 = secret.substr(slen - 1, slen);
-      var seed = krypto.util.createBuffer();
+      var s2 = secret.substr(idx, slen);
+      var ai = krypto.util.createBuffer();
       var hmac = krypto.hmac.create();
+      seed = label + seed;
+      
+      console.log('secret', krypto.util.bytesToHex(secret));
+      console.log('s1', krypto.util.bytesToHex(s1));
+      console.log('s2', krypto.util.bytesToHex(s2));
       
       // determine the number of iterations that must be performed to generate
       // enough output bytes, md5 creates 16 byte hashes, sha1 creates 20
@@ -301,27 +319,40 @@
       // do md5 iterations
       hmac.start('MD5', s1);
       var md5bytes = krypto.util.createBuffer();
-      seed.putBytes(label + seed);
+      ai.putBytes(seed);
       for(var i = 0; i < md5itr; ++i)
       {
+         // HMAC_hash(secret, A(i-1))
          hmac.start(null, null);
-         hmac.update(seed.getBytes());
-         seed.putBuffer(hmac.digest());
-         md5bytes.putBytes(seed.bytes());
+         hmac.update(ai.getBytes());
+         ai.putBuffer(hmac.digest());
+         
+         // HMAC_hash(secret, A(i) + seed)
+         hmac.start(null, null);
+         hmac.update(ai.bytes() + seed);
+         md5bytes.putBuffer(hmac.digest());
       }
       
       // do sha1 iterations
       hmac.start('SHA1', s2);
       var sha1bytes = krypto.util.createBuffer();
-      seed.clear();
-      seed.putBytes(label + seed);
-      for(var i = 0; i < md5itr; ++i)
+      ai.clear();
+      ai.putBytes(seed);
+      for(var i = 0; i < sha1itr; ++i)
       {
+         // HMAC_hash(secret, A(i-1))
          hmac.start(null, null);
-         hmac.update(seed.getBytes());
-         seed.putBuffer(hmac.digest());
-         sha1bytes.putBytes(seed.bytes());
+         hmac.update(ai.getBytes());
+         ai.putBuffer(hmac.digest());
+         
+         // HMAC_hash(secret, A(i) + seed)
+         hmac.start(null, null);
+         hmac.update(ai.bytes() + seed);
+         sha1bytes.putBuffer(hmac.digest());
       }
+      
+      console.log('XXX', 'PRF md5 hash', md5bytes.toHex());
+      console.log('XXX', 'PRF sha hash', sha1bytes.toHex());
       
       // XOR the md5 bytes with the sha1 bytes
       for(var i = 0; i < length; ++i)
@@ -393,8 +424,11 @@
    {
       var rval = false;
       
+      console.log('XXX', 'BEFORE ENCRYPTION', record.fragment.toHex());
+      
       // append MAC to fragment, update sequence number
       var mac = s.macFunction(s.macKey, s.sequenceNumber, record);
+      console.log('XXX', 'MAC', krypto.util.bytesToHex(mac));
       record.fragment.putBytes(mac);
       s.updateSequenceNumber();
       
@@ -421,8 +455,11 @@
          // set record fragment to encrypted output
          record.fragment = cipher.output;
          record.length = record.fragment.length();
+         console.log('XXX', 'ENCRYPTED RECORD LENGTH', record.length);
          rval = true;
       }
+      
+      console.log('XXX', 'AFTER ENCRYPTION', record.fragment.toHex());
       
       return rval;
    };
@@ -470,6 +507,7 @@
          }
          // add the padding_length
          input.putByte(padding);
+         console.log('XXX', 'padding_length', padding);
       }
       return true;
    }
@@ -1830,10 +1868,20 @@
       
       // concatenate server and client random
       var random = sp.server_random + sp.client_random;
+      console.log('XXX', 'client random',
+         krypto.util.bytesToHex(sp.client_random));
+      console.log('XXX', 'server random',
+         krypto.util.bytesToHex(sp.server_random));
+      console.log('XXX', 'concatenated random',
+         krypto.util.bytesToHex(random));
+      console.log('XXX', 'pre-master secret',
+         krypto.util.bytesToHex(sp.pre_master_secret));
       
       // create master secret, clean up pre-master secret
       sp.master_secret =
          prf(sp.pre_master_secret, 'master secret', random, 48).bytes();
+      console.log('XXX', 'master secret',
+         krypto.util.bytesToHex(sp.master_secret));
       sp.pre_master_secret = null;
       
       // generate the amount of key material needed
@@ -3237,6 +3285,9 @@
     * The crypto namespace and tls API.
     */
    krypto.tls = {};
+   
+   // expose prf_tls1 for testing
+   krypto.tls.prf_tls1 = prf_TLS1;
    
    /**
     * Creates a new TLS connection. This does not make any assumptions about
