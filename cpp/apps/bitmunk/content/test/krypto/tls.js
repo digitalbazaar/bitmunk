@@ -351,7 +351,7 @@
     * Gets a MAC for a record using the SHA-1 hash algorithm.
     * 
     * @param key the mac key.
-    * @param state the sequence number.
+    * @param state the sequence number (array of two 32-bit integers).
     * @param record the record.
     * 
     * @return the sha-1 hash (20 bytes) for the given record.
@@ -369,9 +369,8 @@
       var hmac = krypto.hmac.create();
       hmac.start('SHA1', key);
       var b = krypto.util.createBuffer();
-      // FIXME: implement seqNum as a byte array of 8 bytes
-      b.putInt32(0);
-      b.putInt32(seqNum);
+      b.putInt32(seqNum[0]);
+      b.putInt32(seqNum[1]);
       b.putByte(record.type);
       b.putByte(record.version.major);
       b.putByte(record.version.minor);
@@ -394,9 +393,10 @@
    {
       var rval = false;
       
-      // append MAC to fragment
-      var mac = s.macFunction(s.macKey, s.sequenceNumber++, record);
+      // append MAC to fragment, update sequence number
+      var mac = s.macFunction(s.macKey, s.sequenceNumber, record);
       record.fragment.putBytes(mac);
+      s.updateSequenceNumber();
       
       // TODO: TLS 1.1 & 1.2 use an explicit IV every time to protect
       // against CBC attacks
@@ -568,11 +568,12 @@
       record.fragment = krypto.util.createBuffer(record.fragment);
       record.length = record.fragment.length();
       
-      // see if data integrity checks out
-      var mac2 = s.macFunction(s.macKey, s.sequenceNumber++, record);
+      // see if data integrity checks out, update sequence number
+      var mac2 = s.macFunction(s.macKey, s.sequenceNumber, record);
+      s.updateSequenceNumber();
       if(mac2 === mac)
       {
-         rval = true;
+         rval = rval && true;
       }
       
       return rval;
@@ -1890,14 +1891,27 @@
       {
          var mode =
          {
-            sequenceNumber: 0,
+            // two 32-bit numbers, first is most significant
+            sequenceNumber: [0, 0],
             macKey: null,
             macLength: 0,
             macFunction: null,
             cipherState: null,
             cipherFunction: function(record){return true;},
             compressionState: null,
-            compressFunction: function(record){return true;}
+            compressFunction: function(record){return true;},
+            updateSequenceNumber: function()
+            {
+               if(mode.sequenceNumber[1] == 0xFFFFFFFF)
+               {
+                  mode.sequenceNumber[1] = 0;
+                  ++mode.sequenceNumber[0];
+               }
+               else
+               {
+                  ++mode.sequenceNumber[1];
+               }
+            }
          };
          return mode;
       };
@@ -2922,6 +2936,7 @@
          fragmented: null,
          records: [],
          caStore: caStore,
+         open: false,
          firstHandshake: false,
          handshakeState: null,
          isConnected: false,
@@ -2943,8 +2958,10 @@
                tls.flush(c);
             }
             
-            // set fail flag
+            // set fail flag, connection no longer open, clear input
             c.fail = true;
+            c.open = false;
+            c.input.clear();
             options.error(c, ex);
          }
       };
@@ -3033,6 +3050,9 @@
             md5: krypto.md.md5.create(),
             sha1: krypto.md.sha1.create()
          };
+         
+         // connection now open
+         c.open = true;
          
          console.log('TLS client hello record created');
          tls.queue(c, record);
@@ -3206,6 +3226,7 @@
          
          // reset TLS engine state
          c = null;
+         _record = null;
          c = tls.createConnection(options);
       };
       
@@ -3355,30 +3376,38 @@
       var _requiredBytes = 0;
       socket.data = function(e)
       {
-         console.log('TLS data arrived, ' +
-            'available bytes: ' + e.bytesAvailable,
-            ', required bytes: ' + _requiredBytes);
-         
-         // only receive if there are enough bytes available to
-         // process a record
-         // FIXME: remove try/catch
-         try
+         // drop data if connection not open
+         if(!c.open)
          {
-         if(e.bytesAvailable >= _requiredBytes)
+            socket.receive(e.bytesAvailable);
+         }
+         else
          {
-            var count = Math.max(e.bytesAvailable, _requiredBytes);
-            var data = socket.receive(count);
-            if(data !== null)
+            console.log('TLS data arrived, ' +
+               'available bytes: ' + e.bytesAvailable,
+               ', required bytes: ' + _requiredBytes);
+            
+            // only receive if there are enough bytes available to
+            // process a record
+            // FIXME: remove try/catch
+            try
             {
-               // FIXME: remove print out
-               console.log('received ' + data.length + ' bytes');
-               _requiredBytes = c.process(data);
+            if(e.bytesAvailable >= _requiredBytes)
+            {
+               var count = Math.max(e.bytesAvailable, _requiredBytes);
+               var data = socket.receive(count);
+               if(data !== null)
+               {
+                  // FIXME: remove print out
+                  console.log('received ' + data.length + ' bytes');
+                  _requiredBytes = c.process(data);
+               }
             }
-         }
-         }
-         catch(ex)
-         {
-            console.log(ex);
+            }
+            catch(ex)
+            {
+               console.log(ex);
+            }
          }
       };
       
