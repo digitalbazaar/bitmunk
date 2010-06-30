@@ -412,28 +412,70 @@
       
       // write IV into output
       cipher.output.putBytes(iv);
+      console.log('+++++++++++++++++++++iv length', iv.length);
       
       // do encryption (default padding is appropriate)
       cipher.update(record.fragment);
-      if(cipher.finish())
+      console.log('+++++++++++++++++++input length', record.fragment.length());
+      if(cipher.finish(encrypt_aes_128_cbc_sha1_padding))
       {
-         /* The encrypted data length (TLSCiphertext.length) is one more than
-         the sum of SecurityParameters.block_length, TLSCompressed.length,
-         SecurityParameters.mac_length, and padding_length. */
-         
-         // add padding length to output (there are always padding bytes and
-         // their value is the length of the padding, so the last byte's value
-         // will be the padding length)
-         cipher.output.putByte(cipher.output.last());
-         
          // set record fragment to encrypted output
          record.fragment = cipher.output;
          record.length = record.fragment.length();
          rval = true;
       }
       
+      console.log('++++++RECORD LENGTH', record.length);
+      
       return rval;
    };
+   
+   /**
+    * Handles padding for aes_128_cbc_sha1 in encrypt mode.
+    * 
+    * @param blockSize the block size.
+    * @param input the input buffer.
+    * @param decrypt true in decrypt mode, false in encrypt mode.
+    * 
+    * @return true on success, false on failure.
+    */
+   var encrypt_aes_128_cbc_sha1_padding = function(blockSize, input, decrypt)
+   {
+      /* The encrypted data length (TLSCiphertext.length) is one more than
+      the sum of SecurityParameters.block_length, TLSCompressed.length,
+      SecurityParameters.mac_length, and padding_length.
+      
+      The padding may be any length up to 255 bytes long, as long as it
+      results in the TLSCiphertext.length being an integral multiple of
+      the block length. Lengths longer than necessary might be desirable
+      to frustrate attacks on a protocol based on analysis of the lengths
+      of exchanged messages. Each uint8 in the padding data vector must be
+      filled with the padding length value.
+      
+      The padding length should be such that the total size of the
+      GenericBlockCipher structure is a multiple of the cipher's block
+      length. Legal values range from zero to 255, inclusive. This length
+      specifies the length of the padding field exclusive of the
+      padding_length field itself.
+      
+      This is slightly different from PKCS#7 because the padding value is 1
+      less than the actual number of padding bytes if you include the
+      padding_length uint8 itself as a padding byte.
+      */
+      if(!decrypt)
+      {
+         // get the number of padding bytes required to reach the blockSize
+         // and subtract 1 to make room for the padding_length uint8
+         var padding = Math.max(blockSize, blockSize - input.length()) - 1;
+         for(var i = 0; i < padding; ++i)
+         {
+            input.putByte(padding);
+         }
+         // add the padding_length
+         input.putByte(padding);
+      }
+      return true;
+   }
    
    /**
     * Handles padding for aes_128_cbc_sha1 in decrypt mode.
@@ -449,19 +491,22 @@
       var rval = true;
       if(decrypt)
       {
-         // ensure padding bytes are valid, additional (last) padding byte
-         // specifies the length of the padding exclusive of itself, keep
-         // checking all bytes even if one is bad to keep time consistent
+         /* The last byte in the output specifies the number of padding bytes
+            not including itself. Each of the padding bytes has the same value
+            as that last byte (known as the padding_length). Here we check all
+            padding bytes to ensure they have the value of padding_length even
+            if one of them is bad in order to ward-off timing attacks.
+          */
          var len = output.length();
-         var count = output.at(len - 1) + 1;
-         for(var i = len - count; i < len; ++i)
+         var paddingLength = output.at(len - 1);
+         for(var i = len - 2 - paddingLength; i < len - 1; ++i)
          {
-            rval = rval && (output.at(i) == count);
+            rval = rval && (output.at(i) == paddingLength);
          }
          if(rval)
          {
-            // trim off padding bytes
-            output.truncate(count);
+            // trim off padding bytes and last padding length byte
+            output.truncate(paddingLength + 1);
          }
       }
       return rval;
