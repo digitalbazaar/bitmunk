@@ -1579,6 +1579,9 @@
          c.fragmented = null;
          b.read -= 4;
          
+         // FIXME: deal with case when handshake isn't in progress and
+         // there is no handshakeState
+         
          // update handshake hashes (includes type and length of handshake msg)
          var bytes = b.bytes();
          c.handshakeState.md5.update(bytes);
