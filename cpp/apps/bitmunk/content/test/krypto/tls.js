@@ -307,10 +307,6 @@
       var hmac = krypto.hmac.create();
       seed = label + seed;
       
-      console.log('secret', krypto.util.bytesToHex(secret));
-      console.log('s1', krypto.util.bytesToHex(s1));
-      console.log('s2', krypto.util.bytesToHex(s2));
-      
       // determine the number of iterations that must be performed to generate
       // enough output bytes, md5 creates 16 byte hashes, sha1 creates 20
       var md5itr = Math.ceil(length / 16);
@@ -351,14 +347,13 @@
          sha1bytes.putBuffer(hmac.digest());
       }
       
-      console.log('XXX', 'PRF md5 hash', md5bytes.toHex());
-      console.log('XXX', 'PRF sha hash', sha1bytes.toHex());
-      
       // XOR the md5 bytes with the sha1 bytes
       for(var i = 0; i < length; ++i)
       {
          rval.putByte(md5bytes.getByte() ^ sha1bytes.getByte());
       }
+      
+      console.log('XXX', 'PRF result', rval.toHex());
       
       return rval;
    };
@@ -424,13 +419,13 @@
    {
       var rval = false;
       
-      console.log('XXX', 'BEFORE ENCRYPTION', record.fragment.toHex());
-      
       // append MAC to fragment, update sequence number
       var mac = s.macFunction(s.macKey, s.sequenceNumber, record);
-      console.log('XXX', 'MAC', krypto.util.bytesToHex(mac));
       record.fragment.putBytes(mac);
       s.updateSequenceNumber();
+      
+      console.log('XXX', 'BEFORE RECORD', record.fragment.toHex());
+      console.log('XXX', 'BEFORE RECORD LENGTH', record.fragment.length());
       
       // TODO: TLS 1.1 & 1.2 use an explicit IV every time to protect
       // against CBC attacks
@@ -445,8 +440,8 @@
       var cipher = s.cipherState.cipher;
       cipher.start(iv);
       
-      // write IV into output
-      cipher.output.putBytes(iv);
+      // TODO: TLS 1.1 & 1.2 write IV into output
+      //cipher.output.putBytes(iv);
       
       // do encryption (default padding is appropriate)
       cipher.update(record.fragment);
@@ -455,11 +450,11 @@
          // set record fragment to encrypted output
          record.fragment = cipher.output;
          record.length = record.fragment.length();
-         console.log('XXX', 'ENCRYPTED RECORD LENGTH', record.length);
          rval = true;
       }
       
-      console.log('XXX', 'AFTER ENCRYPTION', record.fragment.toHex());
+      console.log('XXX', 'ENCRYPTED RECORD', record.fragment.toHex());
+      console.log('XXX', 'ENCRYPTED RECORD LENGTH', record.fragment.length());
       
       return rval;
    };
@@ -533,8 +528,10 @@
             if one of them is bad in order to ward-off timing attacks.
           */
          var len = output.length();
+         console.log('XXX', 'len', len);
          var paddingLength = output.last();
-         for(var i = len - 2 - paddingLength; i < len - 1; ++i)
+         console.log('XXX', 'padding_length', paddingLength);
+         for(var i = len - 1 - paddingLength; i < len - 1; ++i)
          {
             rval = rval && (output.at(i) == paddingLength);
          }
@@ -1842,8 +1839,8 @@
             break;
       }
       
-      // concatenate server and client random
-      var random = sp.server_random + sp.client_random;
+      // concatenate client and server random
+      var random = sp.client_random + sp.server_random;
       
       // create master secret, clean up pre-master secret
       sp.master_secret =
@@ -1851,6 +1848,7 @@
       sp.pre_master_secret = null;
       
       // generate the amount of key material needed
+      random = sp.server_random + sp.client_random;
       var length = 2 * sp.mac_key_length + 2 * sp.enc_key_length;
       var km = prf(sp.master_secret.bytes(), 'key expansion', random, length);
       
@@ -1867,15 +1865,7 @@
       var prf = prf_TLS1;
       
       // concatenate server and client random
-      var random = sp.server_random + sp.client_random;
-      console.log('XXX', 'client random',
-         krypto.util.bytesToHex(sp.client_random));
-      console.log('XXX', 'server random',
-         krypto.util.bytesToHex(sp.server_random));
-      console.log('XXX', 'concatenated random',
-         krypto.util.bytesToHex(random));
-      console.log('XXX', 'pre-master secret',
-         krypto.util.bytesToHex(sp.pre_master_secret));
+      var random = sp.client_random + sp.server_random;
       
       // create master secret, clean up pre-master secret
       sp.master_secret =
@@ -1885,6 +1875,7 @@
       sp.pre_master_secret = null;
       
       // generate the amount of key material needed
+      random = sp.server_random + sp.client_random;
       var length =
          2 * sp.mac_key_length +
          2 * sp.enc_key_length +
@@ -1975,12 +1966,15 @@
          if(!state.read.cipherFunction(record, state.read))
          {
             c.error(c, {
-               message: 'Could not decrypt record.',
+               message: 'Could not decrypt record or bad MAC.',
                send: true,
                origin: 'client',
                alert: {
                   level: tls.Alert.Level.fatal,
-                  description: tls.Alert.Description.decryption_failed
+                  // doesn't matter if decryption failed or MAC was
+                  // invalid, return the same error so as not to reveal
+                  // which one occurred
+                  description: tls.Alert.Description.bad_record_mac
                }
             });
          }
@@ -2040,6 +2034,19 @@
          var sp = c.handshakeState.sp;
          var keys = tls.generateKeys(sp);
          
+         console.log('XXX', 'client_write_MAC_key',
+            krypto.util.bytesToHex(keys.client_write_MAC_key));
+         console.log('XXX', 'server_write_MAC_key',
+            krypto.util.bytesToHex(keys.server_write_MAC_key));
+         console.log('XXX', 'client_write_key',
+            krypto.util.bytesToHex(keys.client_write_key));
+         console.log('XXX', 'server_write_key',
+            krypto.util.bytesToHex(keys.server_write_key));
+         console.log('XXX', 'client_write_IV',
+            krypto.util.bytesToHex(keys.client_write_IV));
+         console.log('XXX', 'server_write_IV',
+            krypto.util.bytesToHex(keys.server_write_IV));
+         
          // mac setup
          state.read.macKey = keys.server_write_MAC_key;
          state.write.macKey = keys.client_write_MAC_key;
@@ -2072,6 +2079,8 @@
                state.write.cipherState =
                {
                   init: false,
+                  // FIXME: remove tmp,
+                  tmp: keys.client_write_key,
                   cipher: krypto.aes.createEncryptionCipher(
                      keys.client_write_key),
                   iv: keys.client_write_IV
@@ -2503,18 +2512,24 @@
     */
    tls.createFinished = function(c)
    {
-      var rval = krypto.util.createBuffer();
-      
       // generate verify_data
-      rval.putBuffer(c.handshakeState.md5.digest());
-      rval.putBuffer(c.handshakeState.sha1.digest());
+      var b = krypto.util.createBuffer();
+      b.putBuffer(c.handshakeState.md5.digest());
+      b.putBuffer(c.handshakeState.sha1.digest());
       
-      // TODO: determine prf function for TLS 1.2 and verify data length
+      // TODO: determine prf function and verify length for TLS 1.2
+      var sp = c.handshakeState.sp;
       var vdl = 12;
       var prf = prf_TLS1;
-      var sp = c.handshakeState.sp;
-      rval = prf(sp.master_secret, 'client finished', rval.getBytes(), vdl);
+      b = prf(sp.master_secret, 'client finished', b.getBytes(), vdl);
       
+      console.log('XXX', 'finished length', b.length());
+      
+      // build record fragment
+      var rval = krypto.util.createBuffer();
+      rval.putByte(tls.HandshakeType.finished);
+      rval.putInt24(b.length());
+      rval.putBuffer(b);
       return rval;
    };
    
