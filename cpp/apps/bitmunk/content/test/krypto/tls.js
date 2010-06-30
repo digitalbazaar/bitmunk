@@ -934,7 +934,7 @@
          
          // save server hello
          c.handshakeState.serverHello = msg;
-         c.handshakeState.serverRandom = msg.random;
+         c.handshakeState.sp.server_random = msg.random.bytes();
          
          // read extensions if there are any
          if(b.length() > 0)
@@ -1241,37 +1241,11 @@
             tls.queue(c, record);
          }
          
-         // Note: security params are from TLS 1.2, some values like
-         // prf_algorithm are ignored for TLS 1.0 and the builtin as specified
-         // in the spec is used
-         
-         // create security parameters
-         var sp =
-         {
-            entity: tls.ConnectionEnd.client,
-            prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
-            bulk_cipher_algorithm: tls.BulkCipherAlgorithm.aes,
-            cipher_type: tls.CipherType.block,
-            enc_key_length: 16,
-            block_length: 16,
-            fixed_iv_length: 16,
-            record_iv_length: 16,
-            mac_algorithm: tls.MACAlgorithm.hmac_sha1,
-            mac_length: 80,
-            mac_key_length: 20,
-            compression_algorithm: tls.CompressionMethod.none,
-            pre_master_secret: null,
-            master_secret: null,
-            client_random: c.handshakeState.clientRandom.bytes(),
-            server_random: c.handshakeState.serverRandom.bytes()
-         };
-         
          // create client key exchange message
          record = tls.createRecord(
          {
             type: tls.ContentType.handshake,
-            data: tls.createClientKeyExchange(
-               c.handshakeState.serverCertificate.publicKey, sp)
+            data: tls.createClientKeyExchange(c)
          });
          console.log('TLS client key exchange record created');
          tls.queue(c, record);
@@ -1283,7 +1257,7 @@
             record = tls.createRecord(
             {
                type: tls.ContentType.handshake,
-               data: tls.createCertificateVerify(c.handshakeState)
+               data: tls.createCertificateVerify(c)
             });
             console.log('TLS certificate verify record created');
             tls.queue(c, record);
@@ -1300,7 +1274,7 @@
          tls.queue(c, record);
          
          // create pending state
-         c.state.pending = tls.createConnectionState(c, sp);
+         c.state.pending = tls.createConnectionState(c);
          
          // change current write state to pending write state
          c.state.current.write = c.state.pending.write;
@@ -1309,7 +1283,7 @@
          record = tls.createRecord(
          {
             type: tls.ContentType.handshake,
-            data: tls.createFinished(c, sp)
+            data: tls.createFinished(c)
          });
          console.log('TLS finished record created');
          tls.queue(c, record);
@@ -1436,10 +1410,7 @@
          
          // now connected
          c.isConnected = true;
-         if(!c.initHandshake)
-         {
-            c.connected(c);
-         }
+         c.connected(c);
       }
    };
    
@@ -1910,11 +1881,10 @@
     *    particular connection state MUST use sequence number 0.
     * 
     * @param c the connection.
-    * @param sp the security parameters used to initialize the state.
     * 
     * @return the new initialized TLS connection state.
     */
-   tls.createConnectionState = function(c, sp)
+   tls.createConnectionState = function(c)
    {
       var createMode = function()
       {
@@ -2002,9 +1972,10 @@
       };
       
       // handle security parameters
-      if(sp)
+      if(c.handshakeState)
       {
          // generate keys
+         var sp = c.handshakeState.sp;
          var keys = tls.generateKeys(sp);
          
          // mac setup
@@ -2331,12 +2302,11 @@
     * A public-key-encrypted element is encoded as a vector <0..2^16-1>. In
     * other words.
     * 
-    * @param pubKey the RSA public key to use to encrypt the pre-master secret.
-    * @param sp the security parameters to set the pre_master_secret in.
+    * @param c the connection.
     * 
     * @return the ClientKeyExchange byte buffer.
     */
-   tls.createClientKeyExchange = function(pubKey, sp)
+   tls.createClientKeyExchange = function(c)
    {
       // create buffer to encrypt
       var b = krypto.util.createBuffer();
@@ -2350,10 +2320,12 @@
       b.putBytes(krypto.random.getBytes(46));
       
       // save pre-master secret
+      var sp = c.handshakeState.sp;
       sp.pre_master_secret = b.getBytes();
       
       // RSA-encrypt the pre-master secret
-      b = pubKey.encrypt(sp.pre_master_secret);
+      var key = c.handshakeState.serverCertificate.publicKey;
+      b = key.encrypt(sp.pre_master_secret);
       
       /* Note: The encrypted pre-master secret will be stored in a
          public-key-encrypted opaque vector that has the length prefixed
@@ -2408,12 +2380,11 @@
     * message, including the type and length fields of the handshake
     * messages.
     * 
-    * @param privKey the private key to sign with.
-    * @param hs the current handshake state.
+    * @param c the connection.
     * 
     * @return the CertificateVerify byte buffer.
     */
-   tls.createCertificateVerify = function(privKey, hs)
+   tls.createCertificateVerify = function(c)
    {
       // TODO: not used because client-side certificates not implemented
       // TODO: combine hs.md5.digest() and hs.sha1.digest() to produce
@@ -2465,11 +2436,10 @@
     *    defined in 7.4 exchanged thus far.
     * 
     * @param c the connection.
-    * @param sp the security parameters to use.
     * 
     * @return the Finished byte buffer.
     */
-   tls.createFinished = function(c, sp)
+   tls.createFinished = function(c)
    {
       var rval = krypto.util.createBuffer();
       
@@ -2480,6 +2450,7 @@
       // TODO: determine prf function for TLS 1.2 and verify data length
       var vdl = 12;
       var prf = prf_TLS1;
+      var sp = c.handshakeState.sp;
       rval = prf(sp.master_secret, 'client finished', rval.getBytes(), vdl);
       
       return rval;
@@ -2945,13 +2916,13 @@
          state:
          {
             pending: null,
-            current: tls.createConnectionState(c)
+            current: null
          },
          expect: SHE,
          fragmented: null,
          records: [],
          caStore: caStore,
-         initHandshake: false,
+         firstHandshake: false,
          handshakeState: null,
          isConnected: false,
          fail: false,
@@ -2977,6 +2948,9 @@
             options.error(c, ex);
          }
       };
+      
+      // create default current connection state
+      c.state.current = tls.createConnectionState(c);
       
       /**
        * Updates the current TLS engine state based on the given record.
@@ -3024,12 +2998,38 @@
             data: tls.createClientHello(sessionId || '', random)
          });
          
+         // Note: security params are from TLS 1.2, some values like
+         // prf_algorithm are ignored for TLS 1.0 and the builtin as specified
+         // in the spec is used
+         
+         // create security parameters
+         var sp =
+         {
+            entity: tls.ConnectionEnd.client,
+            prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
+            bulk_cipher_algorithm: tls.BulkCipherAlgorithm.aes,
+            cipher_type: tls.CipherType.block,
+            enc_key_length: 16,
+            block_length: 16,
+            fixed_iv_length: 16,
+            record_iv_length: 16,
+            mac_algorithm: tls.MACAlgorithm.hmac_sha1,
+            mac_length: 80,
+            mac_key_length: 20,
+            compression_algorithm: tls.CompressionMethod.none,
+            pre_master_secret: null,
+            master_secret: null,
+            client_random: random.bytes(),
+            server_random: null
+         };
+         
          // create handshake state
          c.handshakeState =
          {
+            serverHello: null,
+            serverCertificate: null,
             certificateRequest: null,
-            clientRandom: random,
-            serverRandom: null,
+            sp: sp,
             md5: krypto.md.md5.create(),
             sha1: krypto.md.sha1.create()
          };
@@ -3285,13 +3285,20 @@
          caStore: options.caStore || [],
          connected: function(c)
          {
-            console.log('TLS connected');
-            // initial handshake complete
-            tlsSocket.connected({
-               id: socket.id,
-               type: 'connect',
-               bytesAvailable: c.data.length()
-            });
+            // clean up handshake state
+            c.handshakeState = null;
+            
+            // first handshake complete, call handler
+            if(!c.firstHandshake)
+            {
+               c.firstHandshake = true;
+               console.log('TLS connected');
+               tlsSocket.connected({
+                  id: socket.id,
+                  type: 'connect',
+                  bytesAvailable: c.data.length()
+               });
+            }
          },
          tlsDataReady: function(c)
          {
