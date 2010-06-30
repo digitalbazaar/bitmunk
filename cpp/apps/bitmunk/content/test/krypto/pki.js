@@ -677,8 +677,15 @@
                {
                   // get value as SEQUENCE
                   var ev = asn1.fromDer(e.value);
-                  // get cA BOOLEAN flag
-                  e.cA = (ev.value[0].value.charCodeAt(0) != 0x00);
+                  // get cA BOOLEAN flag (defaults to false)
+                  if(ev.value.length > 0)
+                  {
+                     e.cA = (ev.value[0].value.charCodeAt(0) != 0x00);
+                  }
+                  else
+                  {
+                     e.cA = false;
+                  }
                   // get path length constraint
                   if(ev.value.length > 1)
                   {
@@ -1470,7 +1477,7 @@
       var m = krypto.util.createBuffer();
       
       // get the length of the modulus in bytes
-      var k = n.bitLength() >>> 3;
+      var k = Math.ceil(n.bitLength() / 8);
       
       // error if the length of the encrypted data ED is not k
       if(ed.length != k)
