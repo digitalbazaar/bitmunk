@@ -1249,7 +1249,7 @@
          // create change cipher spec message
          record = tls.createRecord(
          {
-            type: tls.ContentType.handshake,
+            type: tls.ContentType.change_cipher_spec,
             data: tls.createChangeCipherSpec()
          });
          console.log('TLS change cipher spec record created');
