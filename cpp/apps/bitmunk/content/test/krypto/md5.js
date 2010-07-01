@@ -132,10 +132,10 @@
          }
          
          // update hash state
-         s.h0 += a;
-         s.h1 += b;
-         s.h2 += c;
-         s.h3 += d;
+         s.h0 = (s.h0 + a) & 0xFFFFFFFF;
+         s.h1 = (s.h1 + b) & 0xFFFFFFFF;
+         s.h2 = (s.h2 + c) & 0xFFFFFFFF;
+         s.h3 = (s.h3 + d) & 0xFFFFFFFF;
       }
    };
    

@@ -2608,6 +2608,7 @@
          var bytes = record.fragment.bytes();
          c.handshakeState.md5.update(bytes);
          c.handshakeState.sha1.update(bytes);
+         bytes = null;
       }
       
       // handle record fragmentation
@@ -3527,7 +3528,6 @@
       // handle closing TLS connection
       socket.closed = function(e)
       {
-         console.log('TLS socket closed');
          if(c.open && c.handshakeState)
          {
             // error
@@ -3547,6 +3547,7 @@
             type: 'close',
             bytesAvailable: 0
          });
+         console.log('TLS socket closed');
       };
       
       // handle receiving raw TLS data from socket
