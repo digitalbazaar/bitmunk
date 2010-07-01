@@ -3687,7 +3687,7 @@
             // error
             tlsSocket.error({
                id: socket.id,
-               type: 'tlsError',
+               type: 'ioError',
                message: 'Remote end closed connection during handshake.',
                bytesAvailable: 0
             });
@@ -3701,6 +3701,19 @@
             type: 'close',
             bytesAvailable: 0
          });
+      };
+      
+      // handle error on socket
+      socket.error = function(e)
+      {
+         // error
+         tlsSocket.error({
+            id: socket.id,
+            type: e.type,
+            message: e.message,
+            bytesAvailable: 0
+         });
+         c.close();
       };
       
       // handle receiving raw TLS data from socket
