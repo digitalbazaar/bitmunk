@@ -3192,6 +3192,7 @@
       {
          _record = null;
          c.sessionId = null;
+         c.session = null;
          c.state =
          {
             pending: null,
@@ -3461,6 +3462,13 @@
                // no longer connected
                c.isConnected = false;
                
+               // save session
+               if(c.sessionCache && c.session)
+               {
+                  var key = krypto.util.bytesToHex(c.sessionId);
+                  c.sessionCache[key] = c.session;
+               }
+               
                // call handler
                c.closed(c);
             }
@@ -3578,6 +3586,15 @@
          verify: options.verify,
          connected: function(c)
          {
+            // if caching, save session
+            if(c.sessionCache)
+            {
+               c.session =
+               {
+                  sp: c.handshakeState.sp
+               };
+            }
+            
             // clean up handshake state
             c.handshakeState = null;
             
