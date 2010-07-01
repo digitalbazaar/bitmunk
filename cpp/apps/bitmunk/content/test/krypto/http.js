@@ -224,7 +224,7 @@
                response: socket.options.response
             });
             socket.close();
-            _handleNextRequest(client, socket);               
+            _handleNextRequest(client, socket);
          };
          socket.idle = true;
          socket.buffer = util.createBuffer();

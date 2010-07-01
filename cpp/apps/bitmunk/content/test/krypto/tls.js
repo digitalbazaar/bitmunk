@@ -2185,8 +2185,6 @@
          }
       }
       
-      console.log('CREATED STATE', state);
-      
       return state;
    };
    
@@ -3104,7 +3102,7 @@
          c.state =
          {
             pending: null,
-            current: tls.createConnectionState(c)
+            current: null
          };
          c.expect = SHE;
          c.fragmented = null;
@@ -3117,6 +3115,7 @@
          c.input.clear();
          c.tlsData.clear();
          c.data.clear();
+         c.state.current = tls.createConnectionState(c);
       };
       
       // do initial reset of connection
@@ -3240,7 +3239,6 @@
          var b = c.input;
          b.putBytes(data);
          var len = b.length();
-         console.log('data len', len);
          
          // keep processing data until more is needed
          while(rval === 0 && b.length() > 0 && !c.fail)
@@ -3362,27 +3360,31 @@
        */
       c.close = function()
       {
-         // connection no longer open, clear input
-         c.open = false;
-         c.input.clear();
-         
-         if(c.isConnected)
+         if(c.open)
          {
-            // send close_notify alert
-            var record = tls.createAlert(
+            // connection no longer open, clear input
+            c.open = false;
+            c.input.clear();
+            if(c.isConnected)
             {
-               level: tls.Alert.Level.fatal,
-               description: tls.Alert.Description.close_notify
-            });
-            console.log('TLS close_notify alert record created');
-            tls.queue(c, record);
-            tls.flush(c);
+               // send close_notify alert
+               var record = tls.createAlert(
+               {
+                  level: tls.Alert.Level.fatal,
+                  description: tls.Alert.Description.close_notify
+               });
+               console.log('TLS close_notify alert record created');
+               tls.queue(c, record);
+               tls.flush(c);
+               
+               // no longer connected
+               c.isConnected = false;
+               
+               // call handler
+               c.closed(c);
+            }
             
-            // no longer connected
-            c.isConnected = false;
-            
-            // call handler
-            c.closed(c);
+            console.log('TLS connection closed');
          }
          
          // reset TLS connection
@@ -3523,13 +3525,14 @@
       // handle doing handshake after connecting
       socket.connected = function(e)
       {
-         console.log('connected', e);
+         console.log('TLS socket connected', e);
          c.handshake(options.sessionId);
       };
       
       // handle closing TLS connection
       socket.closed = function(e)
       {
+         console.log('TLS socket closed');
          if(c.open)
          {
             // error
