@@ -151,9 +151,9 @@
          // wrap socket for TLS
          if(useTls)
          {
-            // FIXME: add TLS session cache
             socket = window.krypto.tls.wrapSocket({
                sessionId: null,
+               sessionCache: {},
                caStore: caStore,
                socket: socket,
                verify: options.verify || function(c, verified, depth, certs)

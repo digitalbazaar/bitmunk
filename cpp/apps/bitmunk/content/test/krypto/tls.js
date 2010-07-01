@@ -960,13 +960,12 @@
             msg.extensions = readVector(b, 2);
          }
          
+         // TODO: error out if version not supported
          // TODO: error out if cipher_suite not supported
          
          // see if the session ID is a match for session resumption,
-         // skip first byte (length of session ID), also an empty
-         // session ID indicates no resumption is supported
+         // an empty session ID indicates no resumption is supported
          var sid = krypto.util.createBuffer(msg.session_id.bytes());
-         sid.getByte();
          sid = sid.getBytes();
          if(sid.length > 0 && sid === c.handshakeState.sessionId)
          {
@@ -1449,9 +1448,20 @@
       }
       else
       {
+         // create pending state if resuming session
+         if(c.handshakeState.resuming)
+         {
+            c.state.pending = tls.createConnectionState(c);
+         }
+         
          // change current read state to pending read state
          c.state.current.read = c.state.pending.read;
-         c.state.pending = null;
+         
+         // clear pending state if not resuming session
+         if(!c.handshakeState.resuming)
+         {
+            c.state.pending = null;
+         }
       }
       
       // expect a Finished record next
@@ -1539,7 +1549,7 @@
          c.handshakeState.sha1.update(msgBytes);
          
          // resuming a session
-         if(c.resuming)
+         if(c.handshakeState.resuming)
          {
             // create change cipher spec message
             record = tls.createRecord(
@@ -1549,11 +1559,14 @@
             });
             tls.queue(c, record);
             
-            // create pending state
-            c.state.pending = tls.createConnectionState(c);
-            
             // change current write state to pending write state
             c.state.current.write = c.state.pending.write;
+            
+            // clear pending state if resuming
+            if(c.handshakeState.resuming)
+            {
+               c.state.pending = null;
+            }
             
             // create finished message
             record = tls.createRecord(
@@ -3275,6 +3288,17 @@
                   sessionId = '';
                }
             }
+            // else grab a session from the cache, if available
+            if(sessionId.length == 0 && c.sessionCache)
+            {
+               for(var key in c.sessionCache)
+               {
+                  session = c.sessionCache[key];
+                  sessionId = session.id;
+                  delete c.sessionCache[key];
+                  break;
+               }
+            }
             
             // create random
             var random = tls.createRandom();
@@ -3443,6 +3467,13 @@
        */
       c.close = function()
       {
+         // save session if connection didn't fail
+         if(!c.fail && c.sessionCache && c.session)
+         {
+            var key = krypto.util.bytesToHex(c.sessionId);
+            c.sessionCache[key] = c.session;
+         }
+         
          if(c.open)
          {
             // connection no longer open, clear input
@@ -3461,13 +3492,6 @@
                
                // no longer connected
                c.isConnected = false;
-               
-               // save session
-               if(c.sessionCache && c.session)
-               {
-                  var key = krypto.util.bytesToHex(c.sessionId);
-                  c.sessionCache[key] = c.session;
-               }
                
                // call handler
                c.closed(c);
@@ -3555,7 +3579,9 @@
     * Wraps a krypto.net socket with a TLS layer.
     * 
     * @param options:
-    *    sessionId: a session ID to reuse, null for a new connection.
+    *    sessionId: a session ID to reuse, null for a new connection if no
+    *       session cache is provided or it is empty.
+    *    sessionCache: a session cache to use.
     *    caStore: an array of certificates to trust.
     *    socket: the socket to wrap.
     *    verify: a handler used to custom verify certificates in the chain.
@@ -3586,13 +3612,18 @@
          verify: options.verify,
          connected: function(c)
          {
-            // if caching, save session
+            // update session ID
+            c.sessionId = c.handshakeState.sessionId;
+            
+            // save session if caching
             if(c.sessionCache)
             {
                c.session =
                {
+                  id: c.sessionId,
                   sp: c.handshakeState.sp
                };
+               c.session.sp.keys = null;
             }
             
             // clean up handshake state
