@@ -3413,7 +3413,7 @@
                // send close_notify alert
                var record = tls.createAlert(
                {
-                  level: tls.Alert.Level.fatal,
+                  level: tls.Alert.Level.warning,
                   description: tls.Alert.Description.close_notify
                });
                tls.queue(c, record);
