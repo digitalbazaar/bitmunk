@@ -596,11 +596,7 @@
       // see if data integrity checks out, update sequence number
       var mac2 = s.macFunction(s.macKey, s.sequenceNumber, record);
       s.updateSequenceNumber();
-      if(mac2 === mac)
-      {
-         rval = rval && true;
-      }
-      
+      rval = (mac2 === mac) && rval;
       return rval;
    };
    
@@ -937,7 +933,7 @@
             origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
-               description: tls.Alert.Description.unexpected_message
+               description: tls.Alert.Description.illegal_parameter
             }
          });
       }
@@ -965,11 +961,33 @@
          // read extensions if there are any
          if(b.length() > 0)
          {
-            msg.extensions = readVector(b, 2); 
+            msg.extensions = readVector(b, 2);
          }
          
-         // expect a server Certificate message next
-         c.expect = SCE;
+         // see if the session ID is a match for session resumption,
+         // skip first byte (length of session ID), also an empty
+         // session ID indicates no resumption is supported
+         var sid = krypto.util.createBuffer(msg.session_id.bytes());
+         sid.getByte();
+         sid = sid.getBytes();
+         if(sid.length > 0 && sid === c.handshakeState.sessionId)
+         {
+            // resuming session, expect a ChangeCipherSpec next
+            c.expect = SCC;
+            c.handshakeState.resuming = true;
+            
+            // TODO: get session from cache
+            throw 'Session resumption not implemented yet.';
+         }
+         else
+         {
+            // not resuming, expect a server Certificate message next
+            c.expect = SCE;
+            c.handshakeState.resuming = false;
+         }
+         
+         // set new session ID
+         c.handshakeState.sessionId = sid;
       }
    };
    
@@ -1012,7 +1030,7 @@
             origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
-               description: tls.Alert.Description.unexpected_message
+               description: tls.Alert.Description.illegal_parameter
             }
          });
       }
@@ -1034,36 +1052,55 @@
          // bytes
          var cert, asn1;
          var certs = [];
-         while(msg.certificate_list.length() > 0)
+         try
          {
-            cert = readVector(msg.certificate_list, 3);
-            asn1 = krypto.asn1.fromDer(cert);
-            cert = krypto.pki.certificateFromAsn1(asn1, true);
-            certs.push(cert);
+            while(msg.certificate_list.length() > 0)
+            {
+               cert = readVector(msg.certificate_list, 3);
+               asn1 = krypto.asn1.fromDer(cert);
+               cert = krypto.pki.certificateFromAsn1(asn1, true);
+               certs.push(cert);
+            }
          }
-         
-         // ensure at least 1 certificate was provided
-         if(certs.length === 0)
+         catch(ex)
          {
-            // error, no server certificate
             c.error(c, {
-               message: 'No server certificate provided.',
+               message: 'Could not parse certificate list.',
+               cause: ex,
                send: true,
                origin: 'client',
                alert: {
                   level: tls.Alert.Level.fatal,
-                  description: tls.Alert.Description.certificate_unknown
+                  description: tls.Alert.Description.bad_certificate
                }
             });
          }
-         // check certificate chain
-         else if(tls.verifyCertificateChain(c, certs))
+         
+         if(!c.fail)
          {
-            // save server certificate handshake state
-            c.handshakeState.serverCertificate = certs[0];
-            
-            // expect a ServerKeyExchange message next
-            c.expect = SKE;
+            // ensure at least 1 certificate was provided
+            if(certs.length === 0)
+            {
+               // error, no server certificate
+               c.error(c, {
+                  message: 'No server certificate provided.',
+                  send: true,
+                  origin: 'client',
+                  alert: {
+                     level: tls.Alert.Level.fatal,
+                     description: tls.Alert.Description.certificate_unknown
+                  }
+               });
+            }
+            // check certificate chain
+            else if(tls.verifyCertificateChain(c, certs))
+            {
+               // save server certificate handshake state
+               c.handshakeState.serverCertificate = certs[0];
+               
+               // expect a ServerKeyExchange message next
+               c.expect = SKE;
+            }
          }
       }
    };
@@ -1186,7 +1223,7 @@
             origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
-               description: tls.Alert.Description.unexpected_message
+               description: tls.Alert.Description.illegal_parameter
             }
          });
       }
@@ -1236,7 +1273,7 @@
       console.log('got ServerHelloDone');
       
       // len must be 0 bytes
-      if(length != 0)
+      if(length > 0)
       {
          c.error(c, {
             message: 'Invalid ServerHelloDone message. Invalid length.',
@@ -1244,7 +1281,7 @@
             origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
-               description: tls.Alert.Description.unexpected_message
+               description: tls.Alert.Description.record_overflow
             }
          });
       }
@@ -1257,7 +1294,7 @@
          if(c.handshakeState.certificateRequest !== null)
          {
             // TODO: determine cert to send
-            // TODO: client-side certs not implemented yet, so send none
+            // TODO: client-side certs not implemented yet, so always send none
             record = tls.createRecord(
             {
                type: tls.ContentType.handshake,
@@ -1340,7 +1377,7 @@
             origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
-               description: tls.Alert.Description.unexpected_message
+               description: tls.Alert.Description.illegal_parameter
             }
          });
       }
@@ -1398,38 +1435,78 @@
    {
       console.log('got Finished');
       
-      // TODO: for TLS 1.2 check length against expected verify_data_length
+      // rewind to get full bytes for message so it can be manually
+      // digested below (special case for Finished messages because they
+      // must be digested *after* handling as opposed to all others)
+      var b = record.fragment;
+      b.read -= 4;
+      var msgBytes = b.bytes();
+      b.read += 4;
+      
+      // message contains only verify_data
+      var vd = record.fragment.getBytes()
+      
+      console.log('XXX', 'verify data', krypto.util.bytesToHex(vd));
+      console.log('XXX', 'verify data length', vd.length);
+      
+      // ensure verify data is correct
+      var b = krypto.util.createBuffer();
+      b.putBuffer(c.handshakeState.md5.digest());
+      b.putBuffer(c.handshakeState.sha1.digest());
+      
+      // TODO: determine prf function and verify length for TLS 1.2
+      var sp = c.handshakeState.sp;
       var vdl = 12;
-      if(length != vdl)
+      var prf = prf_TLS1;
+      b = prf(sp.master_secret, 'server finished', b.getBytes(), vdl);
+      if(b.getBytes() !== vd)
       {
          c.error(c, {
-            message: 'Invalid Finished message. Invalid length.',
+            message: 'Invalid verify_data in Finished message.',
             send: true,
             origin: 'client',
             alert: {
                level: tls.Alert.Level.fatal,
-               description: tls.Alert.Description.unexpected_message
+               description: tls.Alert.Description.decrypt_error
             }
          });
       }
       else
       {
-         var b = record.fragment;
-         var msg =
+         // digest finished message now that it has been handled
+         c.handshakeState.md5.update(msgBytes);
+         c.handshakeState.sha1.update(msgBytes);
+         
+         // resuming a session
+         if(c.resuming)
          {
-            verify_data: b.getBytes()
-         };
-         
-         // FIXME: ensure verify data is correct
-         
-         // FIXME: when creating a new session:
-         // FIXME: verify_data should be the same as the one previously
-         // calculated when sending Finished message?
-         
-         // FIXME: when resuming a session:
-         // FIXME: calculate verify_data
-         // FIXME: create client change cipher spec record and
-         // finished record
+            // create change cipher spec message
+            record = tls.createRecord(
+            {
+               type: tls.ContentType.change_cipher_spec,
+               data: tls.createChangeCipherSpec()
+            });
+            console.log('TLS change cipher spec record created');
+            tls.queue(c, record);
+            
+            // create pending state
+            c.state.pending = tls.createConnectionState(c);
+            
+            // change current write state to pending write state
+            c.state.current.write = c.state.pending.write;
+            
+            // create finished message
+            record = tls.createRecord(
+            {
+               type: tls.ContentType.handshake,
+               data: tls.createFinished(c)
+            });
+            console.log('TLS finished record created');
+            tls.queue(c, record);
+            
+            // send records
+            tls.flush(c);
+         }
          
          // expect server application data next
          c.expect = SAD;
@@ -1544,9 +1621,6 @@
          origin: 'server',
          alert: alert
       });
-      
-      // close connection
-      c.close();
    };
    
    /**
@@ -1579,35 +1653,37 @@
          c.fragmented = null;
          b.read -= 4;
          
-         // FIXME: deal with case when handshake isn't in progress and
-         // there is no handshakeState
-         
-         // update handshake hashes (includes type and length of handshake msg)
+         // save the handshake bytes for digestion after handler is found
+         // (includes type and length of handshake msg)
          var bytes = b.bytes();
-         c.handshakeState.md5.update(bytes);
-         c.handshakeState.sha1.update(bytes);
          
          // restore read pointer
          b.read += 4;
          
-         // handle message
+         // handle expected message
          if(type in hsTable[c.expect])
          {
+            /* Update handshake messages digest. The Finished message is not
+               digested here it couldn't have been digested as part of the
+               verify_data that is itself included in the Finished message.
+               The message is manually digested in the Finished message
+               handler. HelloRequest messages are simply never included in
+               the handshake message digest according to spec.
+             */
+            if(type !== tls.HandshakeType.hello_request &&
+               type !== tls.HandshakeType.finished)
+            {
+               c.handshakeState.md5.update(bytes);
+               c.handshakeState.sha1.update(bytes);
+            }
+            
             // handle specific handshake type record
             hsTable[c.expect][type](c, record, length);
          }
          else
          {
-            // invalid handshake type
-            c.error(c, {
-               message: 'Invalid handshake type.',
-               send: true,
-               origin: 'client',
-               alert: {
-                  level: fatal,
-                  description: illegal_parameter
-               }
-            });
+            // unexpected record
+            tls.handleUnexpected(c, record);
          }
       }
    };
@@ -2072,8 +2148,6 @@
                state.write.cipherState =
                {
                   init: false,
-                  // FIXME: remove tmp,
-                  tmp: keys.client_write_key,
                   cipher: krypto.aes.createEncryptionCipher(
                      keys.client_write_key),
                   iv: keys.client_write_IV
@@ -2187,7 +2261,6 @@
    tls.createAlert = function(alert)
    {
       console.log('creating TLS alert record', alert);
-      
       var b = krypto.util.createBuffer();
       b.putByte(alert.level);
       b.putByte(alert.description);
@@ -2451,8 +2524,8 @@
    tls.createCertificateVerify = function(c)
    {
       // TODO: not used because client-side certificates not implemented
-      // TODO: combine hs.md5.digest() and hs.sha1.digest() to produce
-      // signature
+      // TODO: combine c.handshakeState.md5.digest() and
+      // c.handshakeState.sha1.digest() to produce signature
    };
    
    /**
@@ -3012,11 +3085,22 @@
                tls.flush(c);
             }
             
-            // set fail flag, connection no longer open, clear input
-            c.fail = true;
-            c.open = false;
-            c.input.clear();
+            // error is fatal by default
+            var fatal = (ex.fatal !== false);
+            if(fatal)
+            {
+               // set fail flag
+               c.fail = true;
+            }
+            
+            // call error handler first
             options.error(c, ex);
+            
+            if(fatal)
+            {
+               // fatal error, close connection
+               c.close();
+            }
          }
       };
       
@@ -3034,7 +3118,6 @@
          console.log('updating TLS engine state');
          // get record handler (align type in table by subtracting lowest)
          var aligned = record.type - tls.ContentType.change_cipher_spec;
-         console.log('c.expect', c.expect);
          var handlers = ctTable[c.expect];
          if(aligned in handlers)
          {
@@ -3054,68 +3137,73 @@
        */
       c.handshake = function(sessionId)
       {
-         // FIXME: make sure handshake doesn't take place in the middle of
-         // another handshake ... either fail if one is in process or
-         // schedule it for later?
-         
-         // create random
-         var random = tls.createRandom();
-         
-         // FIXME: remove try/catch
-         try{
-         console.log('doing TLS handshake');
-         var record = tls.createRecord(
+         // if a handshake is already in progress, fail
+         if(c.handshakeState)
          {
-            type: tls.ContentType.handshake,
-            data: tls.createClientHello(sessionId || '', random)
-         });
-         
-         // Note: security params are from TLS 1.2, some values like
-         // prf_algorithm are ignored for TLS 1.0 and the builtin as specified
-         // in the spec is used
-         
-         // create security parameters
-         var sp =
-         {
-            entity: tls.ConnectionEnd.client,
-            prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
-            bulk_cipher_algorithm: tls.BulkCipherAlgorithm.aes,
-            cipher_type: tls.CipherType.block,
-            enc_key_length: 16,
-            block_length: 16,
-            fixed_iv_length: 16,
-            record_iv_length: 16,
-            mac_algorithm: tls.MACAlgorithm.hmac_sha1,
-            mac_length: 80,
-            mac_key_length: 20,
-            compression_algorithm: tls.CompressionMethod.none,
-            pre_master_secret: null,
-            master_secret: null,
-            client_random: random.bytes(),
-            server_random: null
-         };
-         
-         // create handshake state
-         c.handshakeState =
-         {
-            serverHello: null,
-            serverCertificate: null,
-            certificateRequest: null,
-            sp: sp,
-            md5: krypto.md.md5.create(),
-            sha1: krypto.md.sha1.create()
-         };
-         
-         // connection now open
-         c.open = true;
-         
-         console.log('TLS client hello record created');
-         tls.queue(c, record);
-         tls.flush(c);
+            // not fatal error
+            c.error(c, {
+               message: 'Handshake already in progress.',
+               fatal: false
+            });
          }
-         catch(ex)
+         else
          {
-            console.log(ex);
+            // default to blank (new session)
+            sessionId = sessionId || '';
+            
+            // create random
+            var random = tls.createRandom();
+            
+            console.log('doing TLS handshake');
+            var record = tls.createRecord(
+            {
+               type: tls.ContentType.handshake,
+               data: tls.createClientHello(sessionId, random)
+            });
+            
+            // Note: security params are from TLS 1.2, some values like
+            // prf_algorithm are ignored for TLS 1.0 and the builtin as specified
+            // in the spec is used
+            
+            // create security parameters
+            var sp =
+            {
+               entity: tls.ConnectionEnd.client,
+               prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
+               bulk_cipher_algorithm: tls.BulkCipherAlgorithm.aes,
+               cipher_type: tls.CipherType.block,
+               enc_key_length: 16,
+               block_length: 16,
+               fixed_iv_length: 16,
+               record_iv_length: 16,
+               mac_algorithm: tls.MACAlgorithm.hmac_sha1,
+               mac_length: 20,
+               mac_key_length: 20,
+               compression_algorithm: tls.CompressionMethod.none,
+               pre_master_secret: null,
+               master_secret: null,
+               client_random: random.bytes(),
+               server_random: null
+            };
+            
+            // create handshake state
+            c.handshakeState =
+            {
+               sessionId: sessionId,
+               serverHello: null,
+               serverCertificate: null,
+               certificateRequest: null,
+               sp: sp,
+               md5: krypto.md.md5.create(),
+               sha1: krypto.md.sha1.create()
+            };
+            
+            // connection now open
+            c.open = true;
+            
+            console.log('TLS client hello record created');
+            tls.queue(c, record);
+            tls.flush(c);
          }
       };
       
@@ -3178,7 +3266,6 @@
                         description: tls.Alert.Description.protocol_version
                      }
                   });
-                  c.close();
                }
             }
             
@@ -3263,6 +3350,10 @@
        */
       c.close = function()
       {
+         // connection no longer open, clear input
+         c.open = false;
+         c.input.clear();
+         
          if(c.isConnected)
          {
             // send close_notify alert
@@ -3447,24 +3538,14 @@
             
             // only receive if there are enough bytes available to
             // process a record
-            // FIXME: remove try/catch
-            try
-            {
             if(e.bytesAvailable >= _requiredBytes)
             {
                var count = Math.max(e.bytesAvailable, _requiredBytes);
                var data = socket.receive(count);
                if(data !== null)
                {
-                  // FIXME: remove print out
-                  console.log('received ' + data.length + ' bytes');
                   _requiredBytes = c.process(data);
                }
-            }
-            }
-            catch(ex)
-            {
-               console.log(ex);
             }
          }
       };
