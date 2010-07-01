@@ -74,7 +74,7 @@
             //url: 'https://localhost:19300',
             socketPool: sp,
             connections: 1,
-            caCerts: [certificatePem, certPem2],
+            caCerts: [certificatePem],
             verify: function(c, verified, depth, certs)
             {
                console.log('TLS certificate ' + depth + ' verified', verified);
