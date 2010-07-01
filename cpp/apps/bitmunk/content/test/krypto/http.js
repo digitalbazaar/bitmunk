@@ -93,6 +93,7 @@
     *           connections: number of connections to use to handle requests.
     *           caCerts: an array of certificates to trust for TLS, certs may
     *              be PEM-formatted or cert objects produced via krypto.pki.
+    *           verify: a custom TLS certificate verify callback to use.
     * 
     * @return the client.
     */
@@ -154,7 +155,12 @@
             socket = window.krypto.tls.wrapSocket({
                sessionId: null,
                caStore: caStore,
-               socket: socket
+               socket: socket,
+               verify: options.verify || function(c, verified, depth, certs)
+               {
+                  // FIXME: if depth === 0, check certs[0] common name
+                  return verified;
+               }
             });
          }
          // set up handlers
@@ -171,6 +177,16 @@
          };
          socket.closed = function(e)
          {
+            // handle unspecified content-length transfer
+            var response = socket.options.response;
+            if(response.readBodyUntilClose)
+            {
+               response.bodyReceived = true;
+               socket.options.bodyReady({
+                  request: socket.options.request,
+                  response: response
+               });
+            }
             socket.options.closed(e);
             _handleNextRequest(client, socket);
          };
@@ -224,7 +240,7 @@
                response: socket.options.response
             });
             socket.close();
-            _handleNextRequest(client, socket);               
+            _handleNextRequest(client, socket);
          };
          socket.idle = true;
          socket.buffer = util.createBuffer();
@@ -697,10 +713,13 @@
             }
          }
          // read all data in the buffer
-         else if(contentLength !== null && contentLength < 0)
+         else if((contentLength !== null && contentLength < 0) ||
+                 (contentLength === null &&
+                   response.getField('Content-Type') !== null))
          {
             response.body = response.body || '';
             response.body += b.getBytes();
+            response.readBodyUntilClose = true;
          }
          else
          {

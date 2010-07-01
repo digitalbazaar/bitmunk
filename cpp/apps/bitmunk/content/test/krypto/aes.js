@@ -850,18 +850,18 @@
       if(key.constructor == String &&
          (key.length == 16 || key.length == 24 || key.length == 32))
       {
+         key = window.krypto.util.createBuffer(key);
+      }
+      // convert key integer array into byte buffer
+      else if(key.constructor == Array &&
+         (key.length == 16 || key.length == 24 || key.length == 32))
+      {
          var tmp = key;
          var key = window.krypto.util.createBuffer();
          for(var i = 0; i < tmp.length; ++i)
          {
             key.putByte(tmp[i]);
          }
-      }
-      // convert key byte array into byte buffer
-      else if(key.constructor == Array &&
-         (key.length == 16 || key.length == 24 || key.length == 32))
-      {
-         key = window.krypto.util.createBuffer(key);
       }
       
       // convert key byte buffer into 32-bit integer array
@@ -991,8 +991,8 @@
                {
                   // add PKCS#7 padding to block (each pad byte is the
                   // value of the number of pad bytes)
-                  var padding = Math.max(
-                     _blockSize, _blockSize - _input.length());
+                  var padding = (_input.length() == blockSize) ?
+                     _blockSize : (_blockSize - _input.length());
                   for(var i = 0; i < padding; ++i)
                   {
                      _input.putByte(padding);

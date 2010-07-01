@@ -213,6 +213,75 @@
          console.log('assert', md.digest().toHex() === expect);
       };
 
+      var test_md5_long = function()
+      {
+         var input = krypto.util.createBuffer();
+         input.putBytes(krypto.util.hexToBytes(
+            '0100002903018d32e9c6dc423774c4c39a5a1b78f44cc2cab5f676d39' +
+            'f703d29bfa27dfeb870000002002f0100'));
+         input.putBytes(krypto.util.hexToBytes(
+            '0200004603014c2c1e835d39da71bc0857eb04c2b50fe90dbb2a8477f' +
+            'e7364598d6f0575999c20a6c7248c5174da6d03ac711888f762fc4ed5' +
+            '4f7254b32273690de849c843073d002f00'));
+         input.putBytes(krypto.util.hexToBytes(
+            '0b0003d20003cf0003cc308203c8308202b0a003020102020100300d0' +
+            '6092a864886f70d0101050500308186310b3009060355040613025553' +
+            '311d301b060355040a13144469676974616c2042617a6161722c20496' +
+            'e632e31443042060355040b133b4269746d756e6b206c6f63616c686f' +
+            '73742d6f6e6c7920436572746966696361746573202d20417574686f7' +
+            '2697a6174696f6e207669612042545031123010060355040313096c6f' +
+            '63616c686f7374301e170d3130303231343137303931395a170d32303' +
+            '03231333137303931395a308186310b3009060355040613025553311d' +
+            '301b060355040a13144469676974616c2042617a6161722c20496e632' +
+            'e31443042060355040b133b4269746d756e6b206c6f63616c686f7374' +
+            '2d6f6e6c7920436572746966696361746573202d20417574686f72697' +
+            'a6174696f6e207669612042545031123010060355040313096c6f6361' + 
+            '6c686f737430820122300d06092a864886f70d01010105000382010f0' + 
+            '03082010a0282010100dc436f17d6909d8a9d6186ea218eb5c86b848b' + 
+            'ae02219bd56a71203daf07e81bc19e7e98134136bcb012881864bf03b' +
+            '3774652ad5eab85dba411a5114ffeac09babce75f31314345512cd87c' +
+            '91318b2e77433270a52185fc16f428c3ca412ad6e9484bc2fb87abb4e' +
+            '8fb71bf0f619e31a42340b35967f06c24a741a31c979c0bb8921a90a4' +
+            '7025fbeb8adca576979e70a56830c61170c9647c18c0794d68c0df38f' +
+            '3aac5fc3b530e016ea5659715339f3f3c209cdee9dbe794b5af92530c' +
+            '5754c1d874b78974bfad994e0dfc582275e79feb522f6e4bcc2b2945b' +
+            'aedfb0dbdaebb605f9483ff0bea29ecd5f4d6f2769965d1b3e04f8422' +
+            '716042680011ff676f0203010001a33f303d300c0603551d130101ff0' +
+            '4023000300e0603551d0f0101ff0404030204f0301d0603551d250416' +
+            '301406082b0601050507030106082b06010505070302300d06092a864' +
+            '886f70d010105050003820101009c4562be3f2d8d8e388085a697f2f1' +
+            '06eaeff4992a43f198fe3dcf15c8229cf1043f061a38204f73d86f4fb' +
+            '6348048cc5279ed719873aa10e3773d92b629c2c3fcce04012c81ba3b' +
+            '4ec451e9644ec5191078402d845e05d02c7b4d974b4588276e5037aba' +
+            '7ef26a8bddeb21e10698c82f425e767dc401adf722fa73ab78cfa069b' +
+            'd69052d7ca6a75cc9225550e315d71c5f8764362ea4dbc6ecb837a847' +
+            '1043c5a7f826a71af145a053090bd4bccca6a2c552841cdb1908a8352' +
+            'f49283d2e641acdef667c7543af441a16f8294251e2ac376fa507b53a' +
+            'e418dd038cd20cef1e7bfbf5ae03a7c88d93d843abaabbdc5f3431132' + 
+            'f3e559d2dd414c3eda38a210b8'));
+         input.putBytes(krypto.util.hexToBytes('0e000000'));
+         input.putBytes(krypto.util.hexToBytes(
+            '10000102010026a220b7be857402819b78d81080d01a682599bbd0090' +
+            '2985cc64edf8e520e4111eb0e1729a14ffa3498ca259cc9ad6fc78fa1' +
+            '30d968ebdb78dc0b950c0aa44355f13ba678419185d7e4608fe178ca6' +
+            'b2cef33e4193778d1a70fe4d0dfcb110be4bbb4dbaa712177655728f9' +
+            '14ab4c0f6c4aef79a46b3d996c82b2ebe9ed1748eb5cace7dc44fb67e' +
+            '73f452a047f2ed199b3d50d5db960acf03244dc8efa4fc129faf8b65f' +
+            '9e52e62b5544722bd17d2358e817a777618a4265a3db277fc04851a82' +
+            'a91fe6cdcb8127f156e0b4a5d1f54ce2742eb70c895f5f8b85f5febe6' +
+            '9bc73e891f9280826860a0c2ef94c7935e6215c3c4cd6b0e43e80cca3' +
+            '96d913d36be'));
+
+         var md = krypto.md.md5.create();
+         md.start();
+         md.update(input.getBytes());
+         var got = 'c0fc3d9ae0b17db9f0aac6ab2063b33a';
+         var expect = 'd15a2da0e92c3da55dc573f885b6e653';
+         console.log('digest', md.digest().toHex());
+         console.log('expect', expect);
+         console.log('assert', expect === md.digest().toHex());
+      };
+      
       var count_md5_speed = 300;
       var test_md5_speed = function()
       {
@@ -615,6 +684,33 @@
             console.log(ex);
          }
       };
+
+      var test_prf_tls1 = function()
+      {
+         var secret = krypto.util.createBuffer();
+         for(var i = 0; i < 48; ++i)
+         {
+            secret.putByte(0xAB);
+         }
+         secret = secret.getBytes();
+         var seed = krypto.util.createBuffer();
+         for(var i = 0; i < 64; ++i)
+         {
+            seed.putByte(0xCD);
+         }
+         seed = seed.getBytes();
+         
+         var bytes = krypto.tls.prf_tls1(secret, 'PRF Testvector',  seed, 104);
+         var expect =
+            'd3d4d1e349b5d515044666d51de32bab258cb521' +
+            'b6b053463e354832fd976754443bcf9a296519bc' +
+            '289abcbc1187e4ebd31e602353776c408aafb74c' +
+            'bc85eff69255f9788faa184cbb957a9819d84a5d' +
+            '7eb006eb459d3ae8de9810454b8b2d8f1afbc655' +
+            'a8c9a013';
+         //console.log('output', bytes.toHex());
+         console.log('assert', expect === bytes.toHex());
+      };
       
       // 128-bit test keys
       var aesKeys = [
@@ -1014,35 +1110,73 @@
       {
          console.log('testing AES-CBC (krypto) ...');
 
-         for(var i = 0; i < aesKeys.length; i++)
+         var keys = [
+            '06a9214036b8a15b512e03d534120006',
+            'c286696d887c9aa0611bbb3e2025a45a',
+            '6c3ea0477630ce21a2ce334aa746c2cd',
+            '56e47a38c5598974bc46903dba290349'
+         ];
+
+         var ivs = [
+            '3dafba429d9eb430b422da802c9fac41',
+            '562e17996d093d28ddb3ba695a2e6f58',
+            'c782dc4c098c66cbd9cd27d825682c81',
+            '8ce82eefbea0da3c44699ed7db51b7d9'
+         ];
+
+         var inputs = [
+            'Single block msg',
+            '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f',
+            'This is a 48-byte message (exactly 3 AES blocks)',
+            'a0a1a2a3a4a5a6a7a8a9aaabacadaeaf' +
+               'b0b1b2b3b4b5b6b7b8b9babbbcbdbebf' +
+               'c0c1c2c3c4c5c6c7c8c9cacbcccdcecf' +
+               'd0d1d2d3d4d5d6d7d8d9dadbdcdddedf'
+         ];
+
+         var outputs = [
+            'e353779c1079aeb82708942dbe77181a',
+            'd296cd94c2cccf8a3a863028b5e1dc0a7586602d253cfff91b8266bea6d61ab1',
+            'd0a02b3836451753d493665d33f0e886' +
+               '2dea54cdb293abc7506939276772f8d5' +
+               '021c19216bad525c8579695d83ba2684',
+            'c30e32ffedc0774e6aff6af0869f71aa' +
+               '0f3af07a9a31a9c684db207eb0ef8e4e' +
+               '35907aa632c3ffdf868bb7b29d3d46ad' +
+               '83ce9f9a102ee99d49a53e87f4c3da55'
+         ];
+
+         for(var i = 0; i < keys.length; ++i)
          {
-            var k = aesKeys[i];
-            var key = [];
-            key.push(parseInt(k.substr(0, 8), 16));
-            key.push(parseInt(k.substr(8, 8), 16));
-            key.push(parseInt(k.substr(16, 8), 16));
-            key.push(parseInt(k.substr(24, 8), 16));
+            var key = krypto.util.hexToBytes(keys[i]);
+            console.log('key', krypto.util.bytesToHex(key));
+            var iv = krypto.util.hexToBytes(ivs[i]);
+            var input = (i & 1) ? krypto.util.hexToBytes(inputs[i]) : inputs[i];
+            var expect = outputs[i];
             
-            var input = krypto.util.createBuffer(aesPlain);
-            
-            // encrypt
+            console.log('input in hex', krypto.util.bytesToHex(input));
+
+            // encrypt w/no padding
             cipher = krypto.aes.createEncryptionCipher(key);
-            cipher.start(aesIvWords);
-            cipher.update(input);
-            cipher.finish();
+            cipher.start(iv);
+            cipher.update(krypto.util.createBuffer(input));
+            cipher.finish(function(){return true;});
+            
+            console.log('encrypted', cipher.output.toHex());
+            console.log('expect', expect);
+            console.log('assert', expect === cipher.output.toHex());
             
             // decrypt
             var ct = cipher.output;
             cipher = krypto.aes.createDecryptionCipher(key);
-            cipher.start(aesIvWords);
+            cipher.start(iv);
             cipher.update(ct);
-            cipher.finish();
+            cipher.finish(function(){return true;});
             
-            console.log('plain', word_array_to_string(cipher.output));
-            console.log('expect', word_array_to_string(aesPlainWords));
-            console.log('assert',
-               word_array_to_string(cipher.output) ==
-               word_array_to_string(aesPlainWords));
+            var out = (i & 1) ? cipher.output.toHex() : cipher.output.bytes();
+            console.log('decrypted', out);
+            console.log('expect', inputs[i]);
+            console.log('assert', inputs[i] === out);
          }
       };
 
@@ -1128,6 +1262,71 @@
          console.log('encrypt time: ' + (totalEncrypt / count) + ' ms');
          console.log('decrypt time: ' + (totalDecrypt / count) + ' ms');
          console.log('jscrypto aes-128 speed test complete.');
+      };
+
+      var aes_sjcl_128 = function()
+      {
+         console.log('testing AES-128 (sjcl) ...');
+         
+         tmp = krypto.util.createBuffer('Single block msg');
+         console.log('input in hex', tmp.toHex());
+         var block = [];
+         block.push(tmp.getInt32());
+         block.push(tmp.getInt32());
+         block.push(tmp.getInt32());
+         block.push(tmp.getInt32());
+
+         tmp = krypto.util.createBuffer(
+            krypto.util.hexToBytes('3dafba429d9eb430b422da802c9fac41'));
+         var iv = [];
+         iv.push(tmp.getInt32());
+         iv.push(tmp.getInt32());
+         iv.push(tmp.getInt32());
+         iv.push(tmp.getInt32());
+         
+         // do XOR with IV
+         block[0] ^= iv[0];
+         block[1] ^= iv[1];
+         block[2] ^= iv[2];
+         block[3] ^= iv[3];
+         
+         tmp = krypto.util.createBuffer(
+            krypto.util.hexToBytes('06a9214036b8a15b512e03d534120006'));
+         var key = [];
+         key.push(tmp.getInt32());
+         key.push(tmp.getInt32());
+         key.push(tmp.getInt32());
+         key.push(tmp.getInt32());
+         
+         var cipher = new sjcl.cipher.aes(key);
+         var output = cipher.encrypt(block);
+         
+         tmp = krypto.util.createBuffer();
+         tmp.putInt32(output[0]);
+         tmp.putInt32(output[1]);
+         tmp.putInt32(output[2]);
+         tmp.putInt32(output[3]);
+         console.log('sjcl encrypted', tmp.toHex());
+         
+         block = output;
+         output = cipher.decrypt(block);
+
+         // do XOR with iv
+         tmp = krypto.util.createBuffer(
+            krypto.util.hexToBytes('3dafba429d9eb430b422da802c9fac41'));
+         output[0] ^= tmp.getInt32();
+         output[1] ^= tmp.getInt32();
+         output[2] ^= tmp.getInt32();
+         output[3] ^= tmp.getInt32();
+
+         tmp = krypto.util.createBuffer();
+         tmp.putInt32(output[0]);
+         tmp.putInt32(output[1]);
+         tmp.putInt32(output[2]);
+         tmp.putInt32(output[3]);
+         console.log('sjcl decrypted', tmp.toHex());//tmp.bytes());
+         
+         console.log('sjcl aes-128 test complete.');
       };
       
       var aes_sjcl_128_speed = function()
@@ -1275,6 +1474,7 @@
       </div>
       <div id="hash_controls">
          <button id="md5" onclick="javascript:return test_md5();">md5</button>
+         <button id="md5_long" onclick="javascript:return test_md5_long();">md5 long</button>
          <button id="md5_speed" onclick="javascript:return test_md5_speed();">md5 speed</button>
          <button id="sha1" onclick="javascript:return test_sha1();">sha1</button>
          <button id="sha1_speed" onclick="javascript:return test_sha1_speed();">sha1 speed</button>
@@ -1299,6 +1499,7 @@
          <button id="aes__krypto128_speed" onclick="javascript:return aes_krypto_128_speed();">krypto 128 speed</button>
          <button id="aes__jscrypto128_speed" onclick="javascript:return aes_jscrypto_128_speed();">jscrypto 128 speed</button>
          <button id="aes__sjcl128_speed" onclick="javascript:return aes_sjcl_128_speed();">sjcl 128 speed</button>
+         <button id="aes__sjcl128" onclick="javascript:return aes_sjcl_128();">sjcl 128</button>
          <br />
          <button id="aes_krypto" onclick="javascript:return aes_krypto();">krypto</button>
          <button id="aes_krypto_cbc" onclick="javascript:return aes_krypto_cbc();">krypto CBC</button>         <button id="aes6" onclick="javascript:return aes_krypto_cbc_speed();">krypto CBC speed</button>
@@ -1308,7 +1509,7 @@
          <button id="aes_flash128" onclick="javascript:return aes_flash_128();">flash 128</button>
          <button id="aes_flash" onclick="javascript:return aes_flash_test();">flash test</button>
          <br />
-         <button id="tls_handshake" onclick="javascript:return tls_handshake();">tls handshake</button>
+         <button id="tls_prf" onclick="javascript:return test_prf_tls1();">tls prf</button>
       </div>
    </body>
 </html>

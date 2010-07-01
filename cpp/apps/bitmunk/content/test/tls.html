@@ -70,10 +70,23 @@
             msie: false
          });
          client = http.createClient({
-            url: 'https://localhost:4433',
+            //url: 'https://localhost:4433',
+            url: 'https://localhost:19300',
             socketPool: sp,
             connections: 1,
-            caCerts: [certificatePem]
+            caCerts: [certificatePem],
+            verify: function(c, verified, depth, certs)
+            {
+               console.log('TLS certificate ' + depth + ' verified', verified);
+               // Note: change to always true to test verifying without cert
+               //return verified;
+               // FIXME: temporarily accept any cert to allow hitting any bpe
+               if(verified !== true)
+               {
+                  console.log('Certificate NOT verified. Ignored for test.');
+               }
+               return true;
+            }
          });
          document.getElementById('feedback').innerHTML = 'http client created';
          return false;
@@ -97,6 +110,12 @@
             body: 'echo=foo',
             headers: [{'Content-Type': 'application/x-www-form-urlencoded'}]
          });
+         /*
+         var request = http.createRequest({
+            method: 'GET',
+            path: '/'
+         });
+         */
          
          client.send({
             request: request,

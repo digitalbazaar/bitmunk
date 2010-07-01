@@ -304,9 +304,12 @@
                {
                   var len = _getValueLength(bytes);
                   composed = (len === length - (bytes.read - read));
-                  // adjust read/length to account for unused bits byte
-                  ++read;
-                  --length;
+                  if(composed)
+                  {
+                     // adjust read/length to account for unused bits byte
+                     ++read;
+                     --length;
+                  }
                }
                catch(ex) {}
             }
