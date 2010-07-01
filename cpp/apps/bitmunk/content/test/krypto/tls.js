@@ -1446,9 +1446,6 @@
       // message contains only verify_data
       var vd = record.fragment.getBytes()
       
-      console.log('XXX', 'verify data', krypto.util.bytesToHex(vd));
-      console.log('XXX', 'verify data length', vd.length);
-      
       // ensure verify data is correct
       var b = krypto.util.createBuffer();
       b.putBuffer(c.handshakeState.md5.digest());
@@ -3383,8 +3380,6 @@
                // call handler
                c.closed(c);
             }
-            
-            console.log('TLS connection closed');
          }
          
          // reset TLS connection
@@ -3533,18 +3528,25 @@
       socket.closed = function(e)
       {
          console.log('TLS socket closed');
-         if(c.open)
+         if(c.open && c.handshakeState)
          {
             // error
             tlsSocket.error({
                id: socket.id,
                type: 'tlsError',
-               message: 'Remote end closed connection.',
+               message: 'Remote end closed connection during handshake.',
                bytesAvailable: 0
             });
          }
          c.isConnected = false;
          c.close();
+         
+         // call socket handler
+         tlsSocket.closed({
+            id: socket.id,
+            type: 'close',
+            bytesAvailable: 0
+         });
       };
       
       // handle receiving raw TLS data from socket

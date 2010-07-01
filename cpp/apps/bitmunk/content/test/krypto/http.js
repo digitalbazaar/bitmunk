@@ -171,6 +171,16 @@
          };
          socket.closed = function(e)
          {
+            // handle unspecified content-length transfer
+            var response = socket.options.response;
+            if(response.readBodyUntilClose)
+            {
+               response.bodyReceived = true;
+               socket.options.bodyReady({
+                  request: socket.options.request,
+                  response: response
+               });
+            }
             socket.options.closed(e);
             _handleNextRequest(client, socket);
          };
@@ -697,10 +707,13 @@
             }
          }
          // read all data in the buffer
-         else if(contentLength !== null && contentLength < 0)
+         else if((contentLength !== null && contentLength < 0) ||
+                 (contentLength === null &&
+                   response.getField('Content-Type') !== null))
          {
             response.body = response.body || '';
             response.body += b.getBytes();
+            response.readBodyUntilClose = true;
          }
          else
          {
