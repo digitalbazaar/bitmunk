@@ -154,7 +154,12 @@
             socket = window.krypto.tls.wrapSocket({
                sessionId: null,
                caStore: caStore,
-               socket: socket
+               socket: socket,
+               verify: function(c, verified, depth, certs)
+               {
+                  // FIXME: if depth === 0, check certs[0] common name
+                  return verified;
+               }
             });
          }
          // set up handlers

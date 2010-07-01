@@ -2823,6 +2823,7 @@
       
       // copy cert chain references to another array and get CA store
       chain = chain.slice(0);
+      var certs = chain.slice(0);
       var caStore = c.caStore;
       
       // get current date
@@ -2831,6 +2832,8 @@
       // verify each cert in the chain using its parent, where the parent
       // is either the next in the chain or from the CA store
       var first = true;
+      var error = null;
+      var depth = 0;
       var cert, parent;
       do
       {
@@ -2839,7 +2842,7 @@
          // 1. check valid time
          if(now < cert.validity.notBefore || now > cert.validity.notAfter)
          {
-            c.error(c, {
+            error = {
                message: 'Certificate not valid yet or has expired.',
                send: true,
                origin: 'client',
@@ -2850,7 +2853,7 @@
                notBefore: cert.validity.notBefore,
                notAfter: cert.validity.notAfter,
                now: now
-            });
+            };
          }
          // 2. verify with parent
          else
@@ -2874,7 +2877,7 @@
                if(parents === null)
                {
                   // no parent issuer, so certificate not trusted
-                  c.error(c, {
+                  error = {
                      message: 'Untrusted certificate.',
                      send: true,
                      origin: 'client',
@@ -2882,7 +2885,7 @@
                         level: tls.Alert.Level.fatal,
                         description: tls.Alert.Description.certificate_unknown
                      }
-                  });
+                  };
                }
                else
                {
@@ -2900,9 +2903,9 @@
                }
             }
             console.log('certificate verified', verified);
-            if(!verified)
+            if(error === null && !verified)
             {
-               c.error(c, {
+               error = {
                   message: 'Certificate signature invalid.',
                   send: true,
                   origin: 'client',
@@ -2910,17 +2913,17 @@
                      level: tls.Alert.Level.fatal,
                      description: tls.Alert.Description.bad_certificate
                   }
-               });
+               };
             }
          }
          
          // TODO: 3. check revoked
          
          // 4. check for matching issuer/subject
-         if(!c.fail && !parent.isIssuer(cert))
+         if(error === null && !parent.isIssuer(cert))
          {
             // parent is not issuer
-            c.error(c, {
+            error = {
                message: 'Certificate issuer invalid.',
                send: true,
                origin: 'client',
@@ -2928,7 +2931,7 @@
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.bad_certificate
                }
-            });
+            };
          }
          
          // 5. TODO: check names with permitted names tree
@@ -2936,19 +2939,19 @@
          // 6. TODO: check names against excluded names tree
          
          // 7. check for unsupported critical extensions
-         if(!c.fail)
+         if(error === null)
          {
             // supported extensions
             var se = {
                keyUsage: true,
                basicConstraints: true
             };
-            for(var i = 0; !c.fail && i < cert.extensions.length; ++i)
+            for(var i = 0; error === null && i < cert.extensions.length; ++i)
             {
                var ext = cert.extensions[i];
                if(ext.critical && !(ext.name in se))
                {
-                  c.error(c, {
+                  error = {
                      message: 'Certificate has unsupported critical extension.',
                      send: true,
                      origin: 'client',
@@ -2957,7 +2960,7 @@
                         description:
                            tls.Alert.Description.unsupported_certificate
                      }
-                  });
+                  };
                }
             }
          }
@@ -2975,7 +2978,7 @@
                if(!keyUsageExt.keyCertSign || bcExt === null)
                {
                   // bad certificate
-                  c.error(c, {
+                  error = {
                      message:
                         'Certificate keyUsage or basicConstraints ' +
                         'conflict or indicate certificate is not a CA.',
@@ -2986,14 +2989,14 @@
                         description:
                            tls.Alert.Description.bad_certificate
                      }
-                  });
+                  };
                }
             }
             // basic constraints cA flag must be set
-            if(!c.fail && bcExt !== null)
+            if(error === null && bcExt !== null)
             {
                // bad certificate
-               c.error(c, {
+               error = {
                   message:
                      'Certificate basicConstraints indicates certificate ' +
                      'is not a CA.',
@@ -3004,12 +3007,63 @@
                      description:
                         tls.Alert.Description.bad_certificate
                   }
-               });
+               };
             }
+         }
+         
+         // call application callback
+         var vfd = (error === null) ? true : error.alert.description;
+         var ret = c.verify(c, vfd, depth, certs);
+         if(ret === true)
+         {
+            // clear any set error
+            error = null;
+         }
+         else
+         {
+            // if passed basic tests, set default message and alert
+            if(vfd === true)
+            {
+               error = {
+                  message: 'Application rejected certificate.',
+                  send: true,
+                  origin: 'client',
+                  alert: {
+                     level: tls.Alert.Level.fatal,
+                     description: tls.Alert.Description.bad_certificate
+                  }
+               };
+            }
+            
+            // check for custom alert info
+            if(ret || ret === 0)
+            {
+               // set custom message and alert description
+               if(ret.constructor == Object)
+               {
+                  if(ret.message)
+                  {
+                     error.message = ret.message;
+                  }
+                  if(ret.alert)
+                  {
+                     error.alert.description = ret.alert;
+                  }
+               }
+               else if(ret.constructor == Number)
+               {
+                  // set custom alert description
+                  error.alert.description = ret;
+               }
+            }
+            
+            // send error
+            c.error(c, error);
          }
          
          // no longer first cert in chain
          first = false;
+         ++depth;
       }
       while(!c.fail && chain.length > 0);
       
@@ -3052,6 +3106,7 @@
          sessionId: options.sessionId,
          caStore: caStore,
          connected: options.connected,
+         verify: options.verify || function(cn,vfd,dpth,cts){return vfd;},
          input: krypto.util.createBuffer(),
          tlsData: krypto.util.createBuffer(),
          data: krypto.util.createBuffer(),
@@ -3398,6 +3453,9 @@
    // expose prf_tls1 for testing
    krypto.tls.prf_tls1 = prf_TLS1;
    
+   // expose TLS alerts
+   krypto.tls.Alert = tls.Alert;
+   
    /**
     * Creates a new TLS connection. This does not make any assumptions about
     * the transport layer that TLS is working on top of, ie: it does not
@@ -3413,10 +3471,31 @@
     * been generated can the pending states be converted into current
     * states. Current states will be updated for each record processed.
     * 
+    * A custom certificate verify callback may be provided to check information
+    * like the common name on the server's certificate. It will be called for
+    * every certificate in the chain. It has the following signature:
+    * 
+    * variable func(c, certs, index, preVerify)
+    * Where:
+    * c         The TLS connection
+    * verified  Set to true if certificate was verified, otherwise the alert
+    *           tls.Alert.Description for why the certificate failed.
+    * depth     The current index in the chain, where 0 is the server's cert.
+    * certs     The certificate chain.
+    * 
+    * The function returns true on success and on failure either the
+    * appropriate tls.Alert.Description or an object with 'alert' set to
+    * the appropriate tls.Alert.Description and 'message' set to a custom
+    * error message. If true is not returned then the connection will abort
+    * using, in order of availability, first the returned alert description,
+    * second the preVerify alert description, and lastly the default
+    * 'bad_certificate'.
+    * 
     * @param options the options for this connection:
     *    sessionId: a session ID to reuse, null for a new connection.
     *    caStore: an array of certificates to trust.
     *    connected: function(conn) called when the first handshake completes.
+    *    verify: a handler used to custom verify certificates in the chain.
     *    tlsDataReady: function(conn) called when TLS protocol data has
     *       been prepared and is ready to be used (typically sent over a
     *       socket connection to its destination), read from conn.tlsData
@@ -3441,6 +3520,7 @@
     *    sessionId: a session ID to reuse, null for a new connection.
     *    caStore: an array of certificates to trust.
     *    socket: the socket to wrap.
+    *    verify: a handler used to custom verify certificates in the chain.
     * 
     * @return the TLS-wrapped socket.
     */
@@ -3464,6 +3544,7 @@
       var c = krypto.tls.createConnection({
          sessionId: options.sessionId || null,
          caStore: options.caStore || [],
+         verify: options.verify,
          connected: function(c)
          {
             // clean up handshake state
