@@ -411,7 +411,7 @@
             type: asn1.Type.OID,
             constructed: false,
             capture: 'certSignatureOid'
-         }],
+         }]
       }, {
          // SignatureValue
          name: 'Certificate.signatureValue',
