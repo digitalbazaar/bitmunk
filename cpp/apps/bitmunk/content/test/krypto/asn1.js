@@ -444,7 +444,7 @@
       bytes.putByte(40 * parseInt(values[0]) + parseInt(values[1]));
       // other bytes are each value in base 128 with 8th bit set except for
       // the last byte for each value
-      var last, valueBytes, value, byte;
+      var last, valueBytes, value, b;
       for(var i = 2; i < values.length; ++i)
       {
          // produce value bytes in reverse because we don't know how many
@@ -454,14 +454,14 @@
          value = parseInt(values[i]);
          do
          {
-            byte = value & 0x7F;
+            b = value & 0x7F;
             value = value >>> 7;
             // if value is not last, then turn on 8th bit
             if(!last)
             {
-               byte |= 0x80;
+               b |= 0x80;
             }
-            valueBytes.push(byte);
+            valueBytes.push(b);
             last = false;
          }
          while(value > 0);

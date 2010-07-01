@@ -63,7 +63,7 @@
       /* Draws from Park-Miller "minimal standard" 31 bit PRNG, implemented
       with David G. Carta's optimization: with 32 bit math and without
       division (Public Domain). */
-      var hi, lo;
+      var hi, lo, next;
       while(b.length < count)
       {
          lo = 16807 * (state.seed & 0xFFFF);
@@ -77,10 +77,10 @@
          for(var i = 0; i < 3 && b.length < count; i++)
          {
             // throw in random or pseudo-random byte (WEAK)
-            var byte = state.seed >> (i << 3) & 0xFF;
-            byte ^= (b.length < pb.length) ?
+            next = state.seed >> (i << 3) & 0xFF;
+            next ^= (b.length < pb.length) ?
                pb[b.length] : Math.random() * 0xFF;
-            b += String.fromCharCode(byte & 0xFF);
+            b += String.fromCharCode(next & 0xFF);
          }
       }
       

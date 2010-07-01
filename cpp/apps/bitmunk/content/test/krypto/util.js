@@ -397,12 +397,12 @@
          var len = buf.length();
          for(var i = buf.read; i < len; ++i)
          {
-            var byte = buf.data.charCodeAt(i);
-            if(byte < 16)
+            var b = buf.data.charCodeAt(i);
+            if(b < 16)
             {
                rval += '0';
             }
-            rval += byte.toString(16);
+            rval += b.toString(16);
          }
          return rval;
       };
