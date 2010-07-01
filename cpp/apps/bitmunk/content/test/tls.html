@@ -71,9 +71,16 @@
          });
          client = http.createClient({
             url: 'https://localhost:4433',
+            //url: 'https://localhost:19300',
             socketPool: sp,
             connections: 1,
-            caCerts: [certificatePem]
+            caCerts: [certificatePem, certPem2],
+            verify: function(c, verified, depth, certs)
+            {
+               console.log('TLS certificate ' + depth + ' verified', verified);
+               // Note: change to always true to test verifying without cert
+               return verified;
+            }
          });
          document.getElementById('feedback').innerHTML = 'http client created';
          return false;
@@ -91,11 +98,16 @@
 
       function client_send()
       {
+         /*
          var request = http.createRequest({
             method: 'POST',
             path: '/api/3.0/system/test/echo',
             body: 'echo=foo',
             headers: [{'Content-Type': 'application/x-www-form-urlencoded'}]
+         });*/
+         var request = http.createRequest({
+            method: 'GET',
+            path: '/'
          });
          
          client.send({

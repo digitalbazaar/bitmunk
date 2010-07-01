@@ -880,16 +880,18 @@
     */
    tls.handleHelloRequest = function(c, record, length)
    {
-      // ignore renegotiation requests from the server
-      console.log('got HelloRequest');
-      
-      // send alert warning
-      var record = tls.createAlert({
-         level: tls.Alert.Level.warning,
-         description: tls.Alert.Description.no_renegotiation
-      });
-      tls.queue(c, record);
-      tls.flush(c);
+      // ignore renegotiation requests from the server during a handshake,
+      // otherwise send a warning alert
+      if(!c.handshakeState)
+      {
+         // send alert warning
+         var record = tls.createAlert({
+            level: tls.Alert.Level.warning,
+            description: tls.Alert.Description.no_renegotiation
+         });
+         tls.queue(c, record);
+         tls.flush(c);
+      }
    };
    
    /**
@@ -922,8 +924,6 @@
     */
    tls.handleServerHello = function(c, record, length)
    {
-      console.log('got ServerHello');
-      
       // minimum of 38 bytes in message
       if(length < 38)
       {
@@ -1019,8 +1019,6 @@
     */
    tls.handleCertificate = function(c, record, length)
    {
-      console.log('got Certificate');
-      
       // minimum of 3 bytes in message
       if(length < 3)
       {
@@ -1159,8 +1157,6 @@
     */
    tls.handleServerKeyExchange = function(c, record, length)
    {
-      console.log('got ServerKeyExchange');
-      
       // this implementation only supports RSA, no Diffie-Hellman support
       // so any length > 0 is invalid
       if(length > 0)
@@ -1212,8 +1208,6 @@
     */
    tls.handleCertificateRequest = function(c, record, length)
    {
-      console.log('got CertificateRequest');
-      
       // minimum of 5 bytes in message
       if(len < 5)
       {
@@ -1270,8 +1264,6 @@
     */
    tls.handleServerHelloDone = function(c, record, length)
    {
-      console.log('got ServerHelloDone');
-      
       // len must be 0 bytes
       if(length > 0)
       {
@@ -1349,7 +1341,6 @@
                type: tls.ContentType.handshake,
                data: tls.createCertificate([])
             });
-            console.log('TLS client certificate record created');
             tls.queue(c, record);
          }
          
@@ -1359,7 +1350,6 @@
             type: tls.ContentType.handshake,
             data: tls.createClientKeyExchange(c)
          });
-         console.log('TLS client key exchange record created');
          tls.queue(c, record);
          
          if(c.handshakeState.certificateRequest !== null)
@@ -1371,7 +1361,6 @@
                type: tls.ContentType.handshake,
                data: tls.createCertificateVerify(c)
             });
-            console.log('TLS certificate verify record created');
             tls.queue(c, record);
             */
          }
@@ -1382,7 +1371,6 @@
             type: tls.ContentType.change_cipher_spec,
             data: tls.createChangeCipherSpec()
          });
-         console.log('TLS change cipher spec record created');
          tls.queue(c, record);
          
          // create pending state
@@ -1397,7 +1385,6 @@
             type: tls.ContentType.handshake,
             data: tls.createFinished(c)
          });
-         console.log('TLS finished record created');
          tls.queue(c, record);
          
          // send records
@@ -1416,8 +1403,6 @@
     */
    tls.handleChangeCipherSpec = function(c, record)
    {
-      console.log('got ChangeCipherSpec');
-      
       if(record.fragment.getByte() != 0x01)      
       {
          c.error(c, {
@@ -1482,8 +1467,6 @@
     */
    tls.handleFinished = function(c, record, length)
    {
-      console.log('got Finished');
-      
       // rewind to get full bytes for message so it can be manually
       // digested below (special case for Finished messages because they
       // must be digested *after* handling as opposed to all others)
@@ -1532,7 +1515,6 @@
                type: tls.ContentType.change_cipher_spec,
                data: tls.createChangeCipherSpec()
             });
-            console.log('TLS change cipher spec record created');
             tls.queue(c, record);
             
             // create pending state
@@ -1547,7 +1529,6 @@
                type: tls.ContentType.handshake,
                data: tls.createFinished(c)
             });
-            console.log('TLS finished record created');
             tls.queue(c, record);
             
             // send records
@@ -1571,8 +1552,6 @@
     */
    tls.handleAlert = function(c, record)
    {
-      console.log('got Alert');
-      
       // read alert
       var b = record.fragment;
       var alert =
@@ -1677,8 +1656,6 @@
     */
    tls.handleHandshake = function(c, record)
    {
-      console.log('got Handshake message');
-      
       // get the handshake type and message length
       var b = record.fragment;
       var type = b.getByte();
@@ -1742,7 +1719,6 @@
     */
    tls.handleApplicationData = function(c, record)
    {
-      console.log('got application data');
       // buffer data, notify that its ready
       c.data.putBuffer(record.fragment);
       c.dataReady(c);
@@ -1985,8 +1961,6 @@
       // create master secret, clean up pre-master secret
       sp.master_secret =
          prf(sp.pre_master_secret, 'master secret', random, 48).bytes();
-      console.log('TLS master secret',
-         krypto.util.bytesToHex(sp.master_secret));
       sp.pre_master_secret = null;
       
       // generate the amount of key material needed
@@ -2149,19 +2123,6 @@
          var sp = c.handshakeState.sp;
          sp.keys = tls.generateKeys(sp);
          
-         console.log('TLS client_write_MAC_key',
-            krypto.util.bytesToHex(sp.keys.client_write_MAC_key));
-         console.log('TLS server_write_MAC_key',
-            krypto.util.bytesToHex(sp.keys.server_write_MAC_key));
-         console.log('TLS client_write_key',
-            krypto.util.bytesToHex(sp.keys.client_write_key));
-         console.log('TLS server_write_key',
-            krypto.util.bytesToHex(sp.keys.server_write_key));
-         console.log('TLS client_write_IV',
-            krypto.util.bytesToHex(sp.keys.client_write_IV));
-         console.log('TLS server_write_IV',
-            krypto.util.bytesToHex(sp.keys.server_write_IV));
-         
          // mac setup
          state.read.macKey = sp.keys.server_write_MAC_key;
          state.write.macKey = sp.keys.client_write_MAC_key;
@@ -2182,7 +2143,6 @@
          switch(sp.bulk_cipher_algorithm)
          {
             case tls.BulkCipherAlgorithm.aes:
-               console.log('creating aes cipher');
                state.read.cipherState =
                {
                   init: false,
@@ -2190,7 +2150,6 @@
                      sp.keys.server_write_key),
                   iv: sp.keys.server_write_IV
                };
-               console.log('CREATING ENCRYPTION CIPHER');
                state.write.cipherState =
                {
                   init: false,
@@ -2278,7 +2237,6 @@
     */
    tls.createRecord = function(options)
    {
-      console.log('creating TLS record', options);
       var record =
       {
          type: options.type,
@@ -2304,7 +2262,6 @@
     */
    tls.createAlert = function(alert)
    {
-      console.log('creating TLS alert record', alert);
       var b = krypto.util.createBuffer();
       b.putByte(alert.level);
       b.putByte(alert.description);
@@ -2517,7 +2474,6 @@
       
       // determine length of the handshake message
       var length = b.length + 2;
-      console.log('TLS RSA public-key-encrypted data length', length);
       
       // build record fragment
       var rval = krypto.util.createBuffer();
@@ -2649,8 +2605,6 @@
     */
    tls.queue = function(c, record)
    {
-      console.log('queuing TLS record', record);
-      
       // if the record is a handshake record, update handshake hashes
       if(record.type === tls.ContentType.handshake)
       {
@@ -2698,7 +2652,6 @@
          var s = c.state.current.write;
          if(s.update(c, rec))
          {
-            console.log('TLS record queued');
             // store record
             c.records.push(rec);
          }
@@ -2715,11 +2668,9 @@
     */
    tls.flush = function(c)
    {
-      console.log('flushing TLS records');
       for(var i = 0; i < c.records.length; ++i)
       {
          var record = c.records[i];
-         console.log('flushing TLS record', record);
          
          // add record header and fragment
          c.tlsData.putByte(record.type);
@@ -2729,7 +2680,6 @@
          c.tlsData.putBuffer(c.records[i].fragment);
       }
       c.records = [];
-      console.log('TLS flush finished');
       return c.tlsDataReady(c);
    };
    
@@ -2951,7 +2901,6 @@
                   }
                }
             }
-            console.log('certificate verified', verified);
             if(error === null && !verified)
             {
                error = {
@@ -3231,7 +3180,6 @@
        */
       var _update = function(c, record)
       {
-         console.log('updating TLS engine state');
          // get record handler (align type in table by subtracting lowest)
          var aligned = record.type - tls.ContentType.change_cipher_spec;
          var handlers = ctTable[c.expect];
@@ -3270,7 +3218,6 @@
             // create random
             var random = tls.createRandom();
             
-            console.log('doing TLS handshake');
             var record = tls.createRecord(
             {
                type: tls.ContentType.handshake,
@@ -3317,7 +3264,7 @@
             // connection now open
             c.open = true;
             
-            console.log('TLS client hello record created');
+            // send hello
             tls.queue(c, record);
             tls.flush(c);
          }
@@ -3334,7 +3281,6 @@
        */
       c.process = function(data)
       {
-         console.log('processing TLS data');
          var rval = 0;
          
          // buffer data, get input length
@@ -3349,7 +3295,6 @@
             // for the record, parse the basic record info
             if(_record === null && len >= 5)
             {
-               console.log('got record header');
                _record =
                {
                   type: b.getByte(),
@@ -3362,8 +3307,6 @@
                   fragment: krypto.util.createBuffer()
                };
                len -= 5;
-               console.log('record type', _record.type);
-               console.log('record length', _record.length);
                
                // check record version
                if(_record.version.major != tls.Version.major ||
@@ -3384,7 +3327,6 @@
             // see if there is enough data to parse the pending record
             if(_record !== null && len >= _record.length)
             {
-               console.log('filling record fragment');
                // fill record fragment
                _record.fragment.putBytes(b.getBytes(_record.length));
                
@@ -3398,7 +3340,6 @@
                   {
                      if(c.fragmented.type === _record.type)
                      {
-                        console.log('combining fragmented records');
                         // concatenate record fragments
                         c.fragmented.fragment.putBuffer(_record.fragment);
                         _record = c.fragmented;
@@ -3475,7 +3416,6 @@
                   level: tls.Alert.Level.fatal,
                   description: tls.Alert.Description.close_notify
                });
-               console.log('TLS close_notify alert record created');
                tls.queue(c, record);
                tls.flush(c);
                
@@ -3604,7 +3544,6 @@
             if(!c.firstHandshake)
             {
                c.firstHandshake = true;
-               console.log('TLS connected');
                tlsSocket.connected({
                   id: socket.id,
                   type: 'connect',
@@ -3614,13 +3553,11 @@
          },
          tlsDataReady: function(c)
          {
-            console.log('sending TLS data over socket');
             // send TLS data over socket
             return socket.send(c.tlsData.getBytes());
          },
          dataReady: function(c)
          {
-            console.log('TLS application data ready');
             // indicate application data is ready
             tlsSocket.data({
                id: socket.id,
@@ -3630,13 +3567,11 @@
          },
          closed: function(c)
          {
-            console.log('TLS connection closed');
             // close socket
             socket.close();
          },
          error: function(c, e)
          {
-            console.log('TLS error', e);
             // close socket, send error
             socket.close();
             tlsSocket.error({
@@ -3652,7 +3587,6 @@
       // handle doing handshake after connecting
       socket.connected = function(e)
       {
-         console.log('TLS socket connected', e);
          c.handshake(options.sessionId);
       };
       
@@ -3678,7 +3612,6 @@
             type: 'close',
             bytesAvailable: 0
          });
-         console.log('TLS socket closed');
       };
       
       // handle receiving raw TLS data from socket
@@ -3692,10 +3625,6 @@
          }
          else
          {
-            console.log('TLS data arrived, ' +
-               'available bytes: ' + e.bytesAvailable,
-               ', required bytes: ' + _requiredBytes);
-            
             // only receive if there are enough bytes available to
             // process a record
             if(e.bytesAvailable >= _requiredBytes)
