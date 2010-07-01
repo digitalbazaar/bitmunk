@@ -954,15 +954,13 @@
             extensions: []
          };
          
-         // save server hello
-         c.handshakeState.serverHello = msg;
-         c.handshakeState.sp.server_random = msg.random.bytes();
-         
          // read extensions if there are any
          if(b.length() > 0)
          {
             msg.extensions = readVector(b, 2);
          }
+         
+         // TODO: error out if cipher_suite not supported
          
          // see if the session ID is a match for session resumption,
          // skip first byte (length of session ID), also an empty
@@ -976,15 +974,49 @@
             c.expect = SCC;
             c.handshakeState.resuming = true;
             
-            // TODO: get session from cache
-            throw 'Session resumption not implemented yet.';
+            // get security parameters from session and clear session
+            c.handshakeState.sp = c.handshakeState.session.sp;
+            c.handshakeState.session = null;
          }
          else
          {
             // not resuming, expect a server Certificate message next
             c.expect = SCE;
             c.handshakeState.resuming = false;
+            
+            /* Note: security params are from TLS 1.2, some values like
+               prf_algorithm are ignored for TLS 1.0 and the builtin as
+               specified in the spec is used.
+             */
+            
+            // TODO: handle other options from server when more are supported
+            
+            // create new security parameters
+            c.handshakeState.sp =
+            {
+               entity: tls.ConnectionEnd.client,
+               prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
+               bulk_cipher_algorithm: tls.BulkCipherAlgorithm.aes,
+               cipher_type: tls.CipherType.block,
+               enc_key_length: 16,
+               block_length: 16,
+               fixed_iv_length: 16,
+               record_iv_length: 16,
+               mac_algorithm: tls.MACAlgorithm.hmac_sha1,
+               mac_length: 20,
+               mac_key_length: 20,
+               compression_algorithm: tls.CompressionMethod.none,
+               pre_master_secret: null,
+               master_secret: null,
+               client_random: null,
+               server_random: null
+            };
          }
+         
+         // save client and server randoms
+         c.handshakeState.sp.server_random = msg.random.bytes();
+         c.handshakeState.sp.client_random = c.handshakeState.clientRandom;
+         c.handshakeState.clientRandom = null;
          
          // set new session ID
          c.handshakeState.sessionId = sid;
@@ -1900,11 +1932,12 @@
     * material. In TLS 1.0 it also requires 2 x 16 byte IVs, so it actually
     * takes 160 bytes of key material.
     * 
+    * @param c the connection.
     * @param sp the security parameters to use.
     * 
     * @return the security keys.
     */
-   tls.generateKeys = function(sp)
+   tls.generateKeys = function(c, sp)
    {
       // TLS_RSA_WITH_AES_128_CBC_SHA (required to be compliant with TLS 1.2)
       // is the only cipher suite implemented at present
@@ -1933,10 +1966,14 @@
       // concatenate client and server random
       var random = sp.client_random + sp.server_random;
       
-      // create master secret, clean up pre-master secret
-      sp.master_secret =
-         prf(sp.pre_master_secret, 'master secret', random, 48).bytes();
-      sp.pre_master_secret = null;
+      // only create master secret if session is new
+      if(!c.handshakeState.resuming)
+      {
+         // create master secret, clean up pre-master secret
+         sp.master_secret =
+            prf(sp.pre_master_secret, 'master secret', random, 48).bytes();
+         sp.pre_master_secret = null;
+      }
       
       // generate the amount of key material needed
       random = sp.server_random + sp.client_random;
@@ -1958,10 +1995,14 @@
       // concatenate server and client random
       var random = sp.client_random + sp.server_random;
       
-      // create master secret, clean up pre-master secret
-      sp.master_secret =
-         prf(sp.pre_master_secret, 'master secret', random, 48).bytes();
-      sp.pre_master_secret = null;
+      // only create master secret if session is new
+      if(!c.handshakeState.resuming)
+      {
+         // create master secret, clean up pre-master secret
+         sp.master_secret =
+            prf(sp.pre_master_secret, 'master secret', random, 48).bytes();
+         sp.pre_master_secret = null;
+      }
       
       // generate the amount of key material needed
       random = sp.server_random + sp.client_random;
@@ -2121,7 +2162,7 @@
       {
          // generate keys
          var sp = c.handshakeState.sp;
-         sp.keys = tls.generateKeys(sp);
+         sp.keys = tls.generateKeys(c, sp);
          
          // mac setup
          state.read.macKey = sp.keys.server_write_MAC_key;
@@ -3103,6 +3144,7 @@
       {
          sessionId: options.sessionId,
          caStore: caStore,
+         sessionCache: options.sessionCache,
          connected: options.connected,
          verify: options.verify || function(cn,vfd,dpth,cts){return vfd;},
          input: krypto.util.createBuffer(),
@@ -3215,48 +3257,45 @@
             // default to blank (new session)
             sessionId = sessionId || '';
             
+            // if a session ID was specified, find it in the cache
+            var session = null;
+            if(sessionId.length > 0)
+            {
+               var key = krypto.util.bytesToHex(sessionId);
+               if(c.sessionCache && key in c.sessionCache)
+               {
+                  // get cached session and remove from cache
+                  session = c.sessionCache[key];
+                  delete c.sessionCache[key];
+               }
+               else
+               {
+                  // session ID not cached, clear it
+                  sessionId = '';
+               }
+            }
+            
             // create random
             var random = tls.createRandom();
             
+            // create client hello
             var record = tls.createRecord(
             {
                type: tls.ContentType.handshake,
                data: tls.createClientHello(sessionId, random)
             });
             
-            // Note: security params are from TLS 1.2, some values like
-            // prf_algorithm are ignored for TLS 1.0 and the builtin as
-            // specified in the spec is used
+            // TODO: clean up session/handshake state design
             
-            // create security parameters
-            var sp =
-            {
-               entity: tls.ConnectionEnd.client,
-               prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
-               bulk_cipher_algorithm: tls.BulkCipherAlgorithm.aes,
-               cipher_type: tls.CipherType.block,
-               enc_key_length: 16,
-               block_length: 16,
-               fixed_iv_length: 16,
-               record_iv_length: 16,
-               mac_algorithm: tls.MACAlgorithm.hmac_sha1,
-               mac_length: 20,
-               mac_key_length: 20,
-               compression_algorithm: tls.CompressionMethod.none,
-               pre_master_secret: null,
-               master_secret: null,
-               client_random: random.bytes(),
-               server_random: null
-            };
-            
-            // create handshake state
+            // create new handshake state
             c.handshakeState =
             {
                sessionId: sessionId,
-               serverHello: null,
+               session: session,
                serverCertificate: null,
                certificateRequest: null,
-               sp: sp,
+               sp: null,
+               clientRandom: random.bytes(),
                md5: krypto.md.md5.create(),
                sha1: krypto.md.sha1.create()
             };
@@ -3484,6 +3523,7 @@
     * @param options the options for this connection:
     *    sessionId: a session ID to reuse, null for a new connection.
     *    caStore: an array of certificates to trust.
+    *    sessionCache: a session cache to use.
     *    connected: function(conn) called when the first handshake completes.
     *    verify: a handler used to custom verify certificates in the chain.
     *    tlsDataReady: function(conn) called when TLS protocol data has
@@ -3534,6 +3574,7 @@
       var c = krypto.tls.createConnection({
          sessionId: options.sessionId || null,
          caStore: options.caStore || [],
+         sessionCache: options.sessionCache || null,
          verify: options.verify,
          connected: function(c)
          {
@@ -3645,6 +3686,21 @@
       tlsSocket.destroy = function()
       {
          socket.destroy();
+      };
+      
+      /**
+       * Sets this socket's TLS session cache. This should be called before
+       * the socket is connected or after it is closed.
+       * 
+       * The cache is an object mapping session IDs to internal opaque state.
+       * An application might need to change the cache used by a particular
+       * tlsSocket between connections if it accesses multiple TLS hosts.
+       * 
+       * @param cache the session cache to use.
+       */
+      tlsSocket.setSessionCache = function(cache)
+      {
+         c.sessionCache = cache;
       };
       
       /**
