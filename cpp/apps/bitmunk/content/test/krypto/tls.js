@@ -2147,24 +2147,24 @@
       {
          // generate keys
          var sp = c.handshakeState.sp;
-         var keys = tls.generateKeys(sp);
+         sp.keys = tls.generateKeys(sp);
          
          console.log('TLS client_write_MAC_key',
-            krypto.util.bytesToHex(keys.client_write_MAC_key));
+            krypto.util.bytesToHex(sp.keys.client_write_MAC_key));
          console.log('TLS server_write_MAC_key',
-            krypto.util.bytesToHex(keys.server_write_MAC_key));
+            krypto.util.bytesToHex(sp.keys.server_write_MAC_key));
          console.log('TLS client_write_key',
-            krypto.util.bytesToHex(keys.client_write_key));
+            krypto.util.bytesToHex(sp.keys.client_write_key));
          console.log('TLS server_write_key',
-            krypto.util.bytesToHex(keys.server_write_key));
+            krypto.util.bytesToHex(sp.keys.server_write_key));
          console.log('TLS client_write_IV',
-            krypto.util.bytesToHex(keys.client_write_IV));
+            krypto.util.bytesToHex(sp.keys.client_write_IV));
          console.log('TLS server_write_IV',
-            krypto.util.bytesToHex(keys.server_write_IV));
+            krypto.util.bytesToHex(sp.keys.server_write_IV));
          
          // mac setup
-         state.read.macKey = keys.server_write_MAC_key;
-         state.write.macKey = keys.client_write_MAC_key;
+         state.read.macKey = sp.keys.server_write_MAC_key;
+         state.write.macKey = sp.keys.client_write_MAC_key;
          state.read.macLength = state.write.macLength = sp.mac_length;
          switch(sp.mac_algorithm)
          {
@@ -2187,16 +2187,16 @@
                {
                   init: false,
                   cipher: krypto.aes.createDecryptionCipher(
-                     keys.server_write_key),
-                  iv: keys.server_write_IV
+                     sp.keys.server_write_key),
+                  iv: sp.keys.server_write_IV
                };
                console.log('CREATING ENCRYPTION CIPHER');
                state.write.cipherState =
                {
                   init: false,
                   cipher: krypto.aes.createEncryptionCipher(
-                     keys.client_write_key),
-                  iv: keys.client_write_IV
+                     sp.keys.client_write_key),
+                  iv: sp.keys.client_write_IV
                };
                state.read.cipherFunction = decrypt_aes_128_cbc_sha1;
                state.write.cipherFunction = encrypt_aes_128_cbc_sha1;
