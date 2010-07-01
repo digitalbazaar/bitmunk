@@ -3371,7 +3371,7 @@
                
                // update record using current read state
                var s = c.state.current.read;
-               if(s.update(c, _record));
+               if(s.update(c, _record))
                {
                   // if the record type matches a previously fragmented
                   // record, append the record fragment to it
