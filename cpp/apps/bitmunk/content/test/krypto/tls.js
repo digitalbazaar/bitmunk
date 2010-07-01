@@ -3054,24 +3054,11 @@
       var c =
       {
          sessionId: options.sessionId,
-         state:
-         {
-            pending: null,
-            current: null
-         },
-         expect: SHE,
-         fragmented: null,
-         records: [],
          caStore: caStore,
-         open: false,
-         firstHandshake: false,
-         handshakeState: null,
-         isConnected: false,
-         fail: false,
+         connected: options.connected,
          input: krypto.util.createBuffer(),
          tlsData: krypto.util.createBuffer(),
          data: krypto.util.createBuffer(),
-         connected: options.connected,
          tlsDataReady: options.tlsDataReady,
          dataReady: options.dataReady,
          closed: options.closed,
@@ -3101,11 +3088,39 @@
                // fatal error, close connection
                c.close();
             }
-         }
+         }      
       };
       
-      // create default current connection state
-      c.state.current = tls.createConnectionState(c);
+      // used while buffering enough data to read an entire record
+      var _record = null;
+      
+      /**
+       * Resets a closed TLS connection for reuse. Called in c.close().
+       */
+      c.reset = function()
+      {
+         _record = null;
+         c.sessionId = null;
+         c.state =
+         {
+            pending: null,
+            current: tls.createConnectionState(c)
+         };
+         c.expect = SHE;
+         c.fragmented = null;
+         c.records = [];
+         c.open = false;
+         c.firstHandshake = false;
+         c.handshakeState = null;
+         c.isConnected = false;
+         c.fail = false;
+         c.input.clear();
+         c.tlsData.clear();
+         c.data.clear();
+      };
+      
+      // do initial reset of connection
+      c.reset();
       
       /**
        * Updates the current TLS engine state based on the given record.
@@ -3162,8 +3177,8 @@
             });
             
             // Note: security params are from TLS 1.2, some values like
-            // prf_algorithm are ignored for TLS 1.0 and the builtin as specified
-            // in the spec is used
+            // prf_algorithm are ignored for TLS 1.0 and the builtin as
+            // specified in the spec is used
             
             // create security parameters
             var sp =
@@ -3206,9 +3221,6 @@
             tls.flush(c);
          }
       };
-      
-      // used while buffering enough data to read an entire record
-      var _record = null;
       
       /**
        * Called when TLS protocol data has been received from somewhere
@@ -3366,14 +3378,15 @@
             tls.queue(c, record);
             tls.flush(c);
             
+            // no longer connected
+            c.isConnected = false;
+            
             // call handler
             c.closed(c);
          }
          
-         // reset TLS engine state
-         c = null;
-         _record = null;
-         c = tls.createConnection(options);
+         // reset TLS connection
+         c.reset();
       };
       
       return c;
@@ -3517,6 +3530,16 @@
       // handle closing TLS connection
       socket.closed = function(e)
       {
+         if(c.open)
+         {
+            // error
+            tlsSocket.error({
+               id: socket.id,
+               type: 'tlsError',
+               message: 'Remote end closed connection.',
+               bytesAvailable: 0
+            });
+         }
          c.isConnected = false;
          c.close();
       };
