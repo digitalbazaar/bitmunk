@@ -1088,7 +1088,7 @@
                   origin: 'client',
                   alert: {
                      level: tls.Alert.Level.fatal,
-                     description: tls.Alert.Description.certificate_unknown
+                     description: tls.Alert.Description.illegal_parameter
                   }
                });
             }
@@ -1285,7 +1285,56 @@
             }
          });
       }
-      else
+      // see if no server certificate was provided
+      else if(c.serverCertificate === null)
+      {
+         var error = {
+            message: 'No server certificate provided. Not enough security.',
+            send: true,
+            origin: 'client',
+            alert: {
+               level: tls.Alert.Level.fatal,
+               description: tls.Alert.Description.insufficient_security
+            }
+         };
+         
+         // call application callback
+         var ret = c.verify(c, error.alert.description, depth, []);
+         if(ret === true)
+         {
+            // clear any set error
+            error = null;
+         }
+         else
+         {
+            // check for custom alert info
+            if(ret || ret === 0)
+            {
+               // set custom message and alert description
+               if(ret.constructor == Object)
+               {
+                  if(ret.message)
+                  {
+                     error.message = ret.message;
+                  }
+                  if(ret.alert)
+                  {
+                     error.alert.description = ret.alert;
+                  }
+               }
+               else if(ret.constructor == Number)
+               {
+                  // set custom alert description
+                  error.alert.description = ret;
+               }
+            }
+            
+            // send error
+            c.error(c, error);
+         }         
+      }
+      
+      if(!c.fail)
       {
          // create all of the client response records:
          record = null;
@@ -2883,7 +2932,7 @@
                      origin: 'client',
                      alert: {
                         level: tls.Alert.Level.fatal,
-                        description: tls.Alert.Description.certificate_unknown
+                        description: tls.Alert.Description.unknown_ca
                      }
                   };
                }
@@ -3481,7 +3530,8 @@
     * verified  Set to true if certificate was verified, otherwise the alert
     *           tls.Alert.Description for why the certificate failed.
     * depth     The current index in the chain, where 0 is the server's cert.
-    * certs     The certificate chain.
+    * certs     The certificate chain, *NOTE* if the server was anonymous
+    *           then the chain will be empty.
     * 
     * The function returns true on success and on failure either the
     * appropriate tls.Alert.Description or an object with 'alert' set to

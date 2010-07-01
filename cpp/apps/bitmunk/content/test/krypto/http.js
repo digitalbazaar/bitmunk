@@ -93,6 +93,7 @@
     *           connections: number of connections to use to handle requests.
     *           caCerts: an array of certificates to trust for TLS, certs may
     *              be PEM-formatted or cert objects produced via krypto.pki.
+    *           verify: a custom TLS certificate verify callback to use.
     * 
     * @return the client.
     */
@@ -155,7 +156,7 @@
                sessionId: null,
                caStore: caStore,
                socket: socket,
-               verify: function(c, verified, depth, certs)
+               verify: options.verify || function(c, verified, depth, certs)
                {
                   // FIXME: if depth === 0, check certs[0] common name
                   return verified;
