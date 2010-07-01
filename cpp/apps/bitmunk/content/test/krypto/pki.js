@@ -1,5 +1,5 @@
 /**
- * Javscript implementation of a basic Public Key Infrastructure, including
+ * Javascript implementation of a basic Public Key Infrastructure, including
  * support for RSA public and private keys.
  *
  * @author Dave Longley
