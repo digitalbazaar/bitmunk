@@ -33,9 +33,10 @@
    /**
     * Connects and sends a request.
     *
+    * @param client the http client.
     * @param socket the socket to use.
     */
-   var _doRequest = function(socket)
+   var _doRequest = function(client, socket)
    {
       // socket no longer idle
       socket.idle = false;
@@ -89,7 +90,7 @@
          else
          {
             socket.options = pending;
-            _doRequest(socket);
+            _doRequest(client, socket);
          }
       }
    };
@@ -159,21 +160,7 @@
       for(var i = 0; i < options.connections; i++)
       {
          var socket = sp.createSocket();
-         // wrap socket for TLS
-         if(useTls)
-         {
-            socket = window.krypto.tls.wrapSocket({
-               sessionId: null,
-               sessionCache: {},
-               caStore: caStore,
-               socket: socket,
-               verify: options.verify || function(c, verified, depth, certs)
-               {
-                  // FIXME: if depth === 0, check certs[0] common name
-                  return verified;
-               }
-            });
-         }
+         
          // set up handlers
          socket.connected = function(e)
          {
@@ -274,6 +261,23 @@
             socket.close();
             _handleNextRequest(client, socket);
          };
+         
+         // wrap socket for TLS
+         if(useTls)
+         {
+            socket = window.krypto.tls.wrapSocket({
+               sessionId: null,
+               sessionCache: {},
+               caStore: caStore,
+               socket: socket,
+               verify: options.verify || function(c, verified, depth, certs)
+               {
+                  // FIXME: if depth === 0, check certs[0] common name
+                  return verified;
+               }
+            });
+         }
+         
          socket.idle = true;
          socket.buffer = util.createBuffer();
          client.sockets.push(socket);
@@ -331,7 +335,7 @@
          {
             var socket = client.idle.pop();
             socket.options = opts;
-            _doRequest(socket);
+            _doRequest(client, socket);
          }
       };
       
