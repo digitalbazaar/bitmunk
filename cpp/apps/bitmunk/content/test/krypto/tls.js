@@ -960,65 +960,82 @@
             msg.extensions = readVector(b, 2);
          }
          
-         // TODO: error out if version not supported
+         // TODO: support other versions
+         if(msg.version.major !== tls.Version.major ||
+            msg.version.minor !== tls.Version.minor)
+         {
+            c.error(c, {
+               message: 'Incompatible TLS version.',
+               send: true,
+               origin: 'client',
+               alert: {
+                  level: tls.Alert.Level.fatal,
+                  description: tls.Alert.Description.protocol_version
+               }
+            });
+         }
+         
          // TODO: error out if cipher_suite not supported
          
-         // see if the session ID is a match for session resumption,
-         // an empty session ID indicates no resumption is supported
-         var sid = krypto.util.createBuffer(msg.session_id.bytes());
-         sid = sid.getBytes();
-         if(sid.length > 0 && sid === c.handshakeState.sessionId)
+         if(!c.fail)
          {
-            // resuming session, expect a ChangeCipherSpec next
-            c.expect = SCC;
-            c.handshakeState.resuming = true;
-            
-            // get security parameters from session and clear session
-            c.handshakeState.sp = c.handshakeState.session.sp;
-            c.handshakeState.session = null;
-         }
-         else
-         {
-            // not resuming, expect a server Certificate message next
-            c.expect = SCE;
-            c.handshakeState.resuming = false;
-            
-            /* Note: security params are from TLS 1.2, some values like
-               prf_algorithm are ignored for TLS 1.0 and the builtin as
-               specified in the spec is used.
-             */
-            
-            // TODO: handle other options from server when more are supported
-            
-            // create new security parameters
-            c.handshakeState.sp =
+            // see if the session ID is a match for session resumption,
+            // an empty session ID indicates no resumption is supported
+            var sid = krypto.util.createBuffer(msg.session_id.bytes());
+            sid = sid.getBytes();
+            if(sid.length > 0 && sid === c.handshakeState.sessionId)
             {
-               entity: tls.ConnectionEnd.client,
-               prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
-               bulk_cipher_algorithm: tls.BulkCipherAlgorithm.aes,
-               cipher_type: tls.CipherType.block,
-               enc_key_length: 16,
-               block_length: 16,
-               fixed_iv_length: 16,
-               record_iv_length: 16,
-               mac_algorithm: tls.MACAlgorithm.hmac_sha1,
-               mac_length: 20,
-               mac_key_length: 20,
-               compression_algorithm: tls.CompressionMethod.none,
-               pre_master_secret: null,
-               master_secret: null,
-               client_random: null,
-               server_random: null
-            };
+               // resuming session, expect a ChangeCipherSpec next
+               c.expect = SCC;
+               c.handshakeState.resuming = true;
+               
+               // get security parameters from session and clear session
+               c.handshakeState.sp = c.handshakeState.session.sp;
+               c.handshakeState.session = null;
+            }
+            else
+            {
+               // not resuming, expect a server Certificate message next
+               c.expect = SCE;
+               c.handshakeState.resuming = false;
+               
+               /* Note: security params are from TLS 1.2, some values like
+                  prf_algorithm are ignored for TLS 1.0 and the builtin as
+                  specified in the spec is used.
+                */
+               
+               // TODO: handle other options from server when more supported
+               
+               // create new security parameters
+               c.handshakeState.sp =
+               {
+                  entity: tls.ConnectionEnd.client,
+                  prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
+                  bulk_cipher_algorithm: tls.BulkCipherAlgorithm.aes,
+                  cipher_type: tls.CipherType.block,
+                  enc_key_length: 16,
+                  block_length: 16,
+                  fixed_iv_length: 16,
+                  record_iv_length: 16,
+                  mac_algorithm: tls.MACAlgorithm.hmac_sha1,
+                  mac_length: 20,
+                  mac_key_length: 20,
+                  compression_algorithm: tls.CompressionMethod.none,
+                  pre_master_secret: null,
+                  master_secret: null,
+                  client_random: null,
+                  server_random: null
+               };
+            }
+            
+            // save client and server randoms
+            c.handshakeState.sp.server_random = msg.random.bytes();
+            c.handshakeState.sp.client_random = c.handshakeState.clientRandom;
+            c.handshakeState.clientRandom = null;
+            
+            // set new session ID
+            c.handshakeState.sessionId = sid;
          }
-         
-         // save client and server randoms
-         c.handshakeState.sp.server_random = msg.random.bytes();
-         c.handshakeState.sp.client_random = c.handshakeState.clientRandom;
-         c.handshakeState.clientRandom = null;
-         
-         // set new session ID
-         c.handshakeState.sessionId = sid;
       }
    };
    
@@ -3687,7 +3704,7 @@
             // error
             tlsSocket.error({
                id: socket.id,
-               type: 'tlsError',
+               type: 'ioError',
                message: 'Remote end closed connection during handshake.',
                bytesAvailable: 0
             });
@@ -3701,6 +3718,19 @@
             type: 'close',
             bytesAvailable: 0
          });
+      };
+      
+      // handle error on socket
+      socket.error = function(e)
+      {
+         // error
+         tlsSocket.error({
+            id: socket.id,
+            type: e.type,
+            message: e.message,
+            bytesAvailable: 0
+         });
+         c.close();
       };
       
       // handle receiving raw TLS data from socket

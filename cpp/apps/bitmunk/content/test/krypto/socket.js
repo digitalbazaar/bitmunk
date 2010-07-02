@@ -209,7 +209,7 @@
           */
          socket.send = function(bytes)
          {
-            return api.send(id, util.encode64(bytes));
+            return api.send(id, krypto.util.encode64(bytes));
          };
          
          /**
@@ -231,7 +231,7 @@
          socket.receive = function(count)
          {
             var rval = api.receive(id, count).rval;
-            return (rval === null) ? null : util.decode64(rval);
+            return (rval === null) ? null : krypto.util.decode64(rval);
          };
          
          /**

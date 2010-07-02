@@ -7,8 +7,8 @@
       </style> 
       <script type="text/javascript" src="/bitmunk/js/swfobject/swfobject.js"></script>
       <script type="text/javascript" src="/bitmunk/js/jquery.js"></script>
-      <script type="text/javascript" src="/bitmunk/test/krypto/socket.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/util.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/socket.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/random.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/md5.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/sha1.js"></script>
@@ -22,16 +22,10 @@
       <script type="text/javascript" src="/bitmunk/test/krypto/http.js"></script>
       
       <script type="text/javascript">
-      var flashvars = {};
-      var params = {};
-      var attributes = {};
-      
-      params.allowscriptaccess = "always";
-      
       swfobject.embedSWF(
-         "/bitmunk/SocketPool.swf", "socketPool", "400", "224", "9.0.0",
-         "/bitmunk/js/swfobject/expressInstall.swf",
-         flashvars, params, attributes);
+         '/bitmunk/SocketPool.swf', 'socketPool', '400', '224', '9.0.0',
+         '/bitmunk/js/swfobject/expressInstall.swf',
+         {}, {allowscriptaccess: 'always'}, {});
       
       // CA certificate for test server
       var certificatePem =

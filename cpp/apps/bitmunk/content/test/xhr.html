@@ -7,6 +7,19 @@
       <script type="text/javascript" src="/bitmunk/js/swfobject/swfobject.js"></script>
       <script type="text/javascript" src="/bitmunk/js/json2.js"></script>
       <script type="text/javascript" src="/bitmunk/js/jquery.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/util.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/socket.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/random.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/md5.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/sha1.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/hmac.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/aes.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/asn1.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/jsbn.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/jsbn2.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/pki.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/tls.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/http.js"></script>
       <script type="text/javascript" src="/bitmunk/js/bitmunk.js"></script>
       <script type="text/javascript" src="/bitmunk/js/bitmunk.debug.js"></script>
       <script type="text/javascript" src="/bitmunk/js/bitmunk.util.js"></script>
@@ -15,8 +28,10 @@
       <script type="text/javascript" src="/bitmunk/js/bitmunk.resource.js"></script>
       <script type="text/javascript" src="/bitmunk/js/bitmunk.sys.js"></script>
       <script type="text/javascript" src="/bitmunk/js/bitmunk.api.js"></script>
-      <script type="text/javascript" src="/bitmunk/js/bitmunk.xhr.js"></script>
+      <!-- script type="text/javascript" src="/bitmunk/js/bitmunk.xhr.js"></script> -->
+      <script type="text/javascript" src="/bitmunk/test/krypto/xhr.js"></script>
       <script type="text/javascript" src="/bitmunk/test/xhr.js"></script>
+      
       <style type="text/css">
          .ready { color: inherit; background: inherit; }
          .testing { color: black; background: yellow; }
@@ -44,8 +59,8 @@ Fail: <span id="fail">?</span>
 <h2>Tests</h2>
 <div id="tests"></div>
 
-<div id="httpPoolManager">
-   <p>Could not load the flash HttpPoolManager.</p>
+<div id="socketPool">
+   <p>Could not load the flash socket pool.</p>
 </div>
 
 </body>
