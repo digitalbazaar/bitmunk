@@ -20,7 +20,7 @@ package
    {
       import flash.events.Event;
       import flash.events.EventDispatcher;
-	  import flash.errors.IOError;
+	   import flash.errors.IOError;
       import flash.events.IOErrorEvent;
       import flash.events.ProgressEvent;
       import flash.events.SecurityErrorEvent;
@@ -93,7 +93,7 @@ package
                ExternalInterface.addCallback("inflate", inflate);
                
                // socket pool is now ready
-               ExternalInterface.call("sp.ready");
+               ExternalInterface.call("window.krypto.socketPool.ready");
             }
             catch(e:Error)
             {
