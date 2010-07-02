@@ -484,7 +484,7 @@
          tagClass: asn1.Class.UNIVERSAL,
          type: asn1.Type.INTEGER,
          constructed: false,
-         capture: 'privateKeyExponent1'
+         capture: 'privateKeyExponent2'
       }, {
          // coefficient ((inverse of q) mod p)
          name: 'RSAPrivateKey.coefficient',
@@ -1182,15 +1182,15 @@
       // Note: Version is currently ignored.
       // capture.privateKeyVersion
       // FIXME: inefficient, get a BigInteger that uses byte strings
-      var n, e, d, p, q, e1, e2, c;
+      var n, e, d, p, q, dP, dQ, qInv;
       n = krypto.util.createBuffer(capture.privateKeyModulus).toHex();
       e = krypto.util.createBuffer(capture.privateKeyPublicExponent).toHex();
       d = krypto.util.createBuffer(capture.privateKeyPrivateExponent).toHex();
       p = krypto.util.createBuffer(capture.privateKeyPrime1).toHex();
       q = krypto.util.createBuffer(capture.privateKeyPrime2).toHex();
-      e1 = krypto.util.createBuffer(capture.privateKeyExponent1).toHex();
-      e2 = krypto.util.createBuffer(capture.privateKeyExponent2).toHex();
-      c = krypto.util.createBuffer(capture.privateKeyCoefficient).toHex();
+      dP = krypto.util.createBuffer(capture.privateKeyExponent1).toHex();
+      dQ = krypto.util.createBuffer(capture.privateKeyExponent2).toHex();
+      qInv = krypto.util.createBuffer(capture.privateKeyCoefficient).toHex();
       
       // create private key
       return pki.createRsaPrivateKey(
@@ -1199,9 +1199,9 @@
          new BigInteger(d, 16),
          new BigInteger(p, 16),
          new BigInteger(q, 16),
-         new BigInteger(e1, 16),
-         new BigInteger(e2, 16),
-         new BigInteger(c, 16));
+         new BigInteger(dP, 16),
+         new BigInteger(dQ, 16),
+         new BigInteger(qInv, 16));
    };
    
    /**
@@ -1229,7 +1229,7 @@
        */
       key.encrypt = function(data)
       {
-         return pki.rsa.encrypt(data, key.n, key.e, 0x02);
+         return pki.rsa.encrypt(data, key, 0x02);
       };
       
       /**
@@ -1253,7 +1253,7 @@
       key.verify = function(digest, signature)
       {
          // do rsa decryption
-         var d = pki.rsa.decrypt(signature, key.n, key.e, true);
+         var d = pki.rsa.decrypt(signature, key, true);
          
          // d is ASN.1 BER-encoded DigestInfo
          var obj = asn1.fromDer(d);
@@ -1266,20 +1266,21 @@
    };
    
    /**
-    * Creates an RSA private key from BigIntegers modulus and exponent.
+    * Creates an RSA private key from BigIntegers modulus, exponent, primes,
+    * prime exponents, and modular multiplicative inverse.
     * 
     * @param n the modulus.
     * @param e the public exponent.
-    * @param d the private exponent.
+    * @param d the private exponent ((inverse of e) mod n).
     * @param p the first prime.
     * @param q the second prime.
-    * @param e1 exponent1 (d mod (p-1)).
-    * @param e2 exponent2 (d mod (q-1)).
-    * @param c ((inverse of q) mod p)
+    * @param dP exponent1 (d mod (p-1)).
+    * @param dQ exponent2 (d mod (q-1)).
+    * @param qInv ((inverse of q) mod p)
     * 
     * @return the private key.
     */
-   pki.createRsaPrivateKey = function(n, e, d, p, q, e1, e2, c)
+   pki.createRsaPrivateKey = function(n, e, d, p, q, dP, dQ, qInv)
    {
       var key =
       {
@@ -1288,9 +1289,9 @@
          d: d,
          p: p,
          q: q,
-         e1: e1,
-         e2: e2,
-         c: c
+         dP: dP,
+         dQ: dQ,
+         qInv: qInv
       };
       
       /**
@@ -1302,7 +1303,7 @@
        */
       key.decrypt = function(data)
       {
-         return pki.rsa.decrypt(data, key.n, key.d, false);
+         return pki.rsa.decrypt(data, key, false);
       };
       
       /**
@@ -1358,7 +1359,7 @@
          var d = asn1.toDer(digestInfo).getBytes();
          
          // do rsa encryption
-         return pki.rsa.encrypt(d, key.n, key.d, 0x01);
+         return pki.rsa.encrypt(d, key, 0x01);
       };
       
       return key;
@@ -1370,19 +1371,153 @@
    pki.rsa = {};
    
    /**
+    * Performs x^c mod n (RSA encryption or decryption operation).
+    * 
+    * @param x the number to raise and mod.
+    * @param key the key to use.
+    * @param pub true if the key is public, false if private.
+    * 
+    * @return the result of x^c mod n.
+    */
+   var _modPow = function(x, key, pub)
+   {
+      var y;
+      
+      if(pub)
+      {
+         y = x.modPow(key.e, key.n);
+      }
+      else
+      {
+         // pre-compute dP, dQ, and qInv if necessary
+         if(!key.dP)
+         {
+            key.dP = key.d.mod(p.subtract(BigInteger.ONE));
+         }
+         if(!key.dQ)
+         {
+            key.dQ = key.d.mod(q.substract(BigInteger.ONE));
+         }
+         if(!key.qInv)
+         {
+            key.qInv = key.q.modInverse(key.p);
+         }
+         
+         /* Chinese remainder theorem (CRT) states:
+            
+            Suppose n1, n2, ..., nk are positive integers which are pairwise
+            coprime (n1 and n2 have no common factors other than 1). For any
+            integers x1, x2, ..., xk there exists an integer x solving the
+            system of simultaneous congruences (where ~= means modularly
+            congruent so a ~= b mod n means a mod n = b mod n):
+            
+            x ~= x1 mod n1
+            x ~= x2 mod n2
+            ...
+            x ~= xk mod nk
+            
+            This system of congruences has a single simultaneous solution x
+            between 0 and n - 1. Furthermore, each xk solution and x itself
+            is congruent modulo the product n = n1*n2*...*nk.
+            So x1 mod n = x2 mod n = xk mod n = x mod n.
+            
+            The single simultaneous solution x can be solved with the following
+            equation:
+            
+            x = sum(xi*ri*si) mod n where ri = n/ni and si = ri^-1 mod ni.
+            
+            Where x is less than n, xi = x mod ni.
+            
+            For RSA we are only concerned with k = 2. The modulus n = pq, where
+            p and q are coprime. The RSA decryption algorithm is:
+            
+            y = x^d mod n
+            
+            Given the above:
+            
+            x1 = x^d mod p
+            r1 = n/p = q
+            s1 = q^-1 mod p
+            x2 = x^d mod q
+            r2 = n/q = p
+            s2 = p^-1 mod q
+            
+            So y = (x1r1s1 + x2r2s2) mod n
+                 = ((x^d mod p)q(q^-1 mod p) + (x^d mod q)p(p^-1 mod q)) mod n
+            
+            According to Fermat's Little Theorem, if the modulus P is prime,
+            for any integer A not evenly divisible by P, A^(P-1) ~= 1 mod P.
+            Since A is not divisible by P it follows that if:
+            N ~= M mod (P - 1), then A^N mod P = A^M mod P. Therefore:
+            
+            A^N mod P = A^(M mod (P - 1)) mod P. (The latter takes less effort
+            to calculate). In order to calculate x^d mod p more quickly the
+            exponent d mod (p - 1) is stored in the RSA private key (the same
+            is done for x^d mod q). These values are referred to as dP and dQ
+            respectively. Therefore we now have:
+            
+            y = ((x^dP mod p)q(q^-1 mod p) + (x^dQ mod q)p(p^-1 mod q)) mod n
+            
+            Since we'll be reducing x^dP by modulo p (same for q) we can also
+            reduce x by p (and q respectively) before hand. Therefore, let
+            
+            xp = ((x mod p)^dP mod p), and
+            xq = ((x mod q)^dQ mod q), yielding:
+            
+            y = (xp*q*(q^-1 mod p) + xq*p*(p^-1 mod q)) mod n
+            
+            This can be further reduced to a simple algorithm that only
+            requires 1 inverse (the q inverse is used) to be used and stored.
+            The algorithm is called Garner's algorithm. If qInv is the
+            inverse of q, we simply calculate:
+            
+            y = (qInv*(xp - xq) mod p) * q + xq
+            
+            However, there are two further complications. First, we need to
+            ensure that xp > xq to prevent signed BigIntegers from being used
+            so we add p until this is true (since we will be mod'ing with
+            p anyway). Then, there is a known timing attack on algorithms
+            using the CRT. To mitigate this risk, "cryptographic blinding"
+            should be used (*Not yet implemented*). This requires simply
+            generating a random number r between 0 and n-1 and its inverse
+            and multiplying x by r^e before calculating y and then multiplying
+            y by r^-1 afterwards.
+          */
+         
+         // TODO: do cryptographic blinding
+         
+         // calculate xp and xq
+         var xp = x.mod(key.p).modPow(key.dP, key.p);
+         var xq = x.mod(key.q).modPow(key.dQ, key.q);
+         
+         // xp must be larger than xq to avoid signed bit usage
+         while(xp.compareTo(xq) < 0)
+         {
+            xp = xp.add(key.p);
+         }
+         
+         // do last step
+         y = xp.subtract(xq)
+            .multiply(key.qInv).mod(key.p)
+            .multiply(key.q).add(xq);
+      }
+      
+      return y;
+   };
+   
+   /**
     * Performs RSA encryption.
     * 
     * @param m the message to encrypt as a byte string.
-    * @param n the modulus to use.
-    * @param c the exponent to use.
+    * @param key the RSA key to use.
     * @param bt the block type to use (0x01 for private key, 0x02 for public).
     * 
     * @return the encrypted bytes as a string.
     */
-   pki.rsa.encrypt = function(m, n, c, bt)
+   pki.rsa.encrypt = function(m, key, bt)
    {
       // get the length of the modulus in bytes
-      var k = n.bitLength() >>> 3;
+      var k = key.n.bitLength() >>> 3;
       
       if(m.length > k - 11)
       {
@@ -1415,11 +1550,13 @@
       eb.putByte(0x00);
       eb.putByte(bt);
       
-      // create the padding
+      // create the padding, get key type
+      var pub;
       var padNum = k - 3 - m.length;
       var padByte;
       if(bt === 0x00 || bt === 0x01)
       {
+         pub = false;
          padByte = (bt === 0x00) ? 0x00 : 0xFF;
          for(var i = 0; i < padNum; ++i)
          {
@@ -1428,6 +1565,7 @@
       }
       else
       {
+         pub = true;
          for(var i = 0; i < padNum; ++i)
          {
             padByte = Math.floor(Math.random() * 255) + 1;
@@ -1444,7 +1582,7 @@
       var x = new BigInteger(eb.toHex(), 16);
       
       // do RSA encryption
-      var y = x.modPow(c, n);
+      var y = _modPow(x, key, pub);
       
       // convert y into the encrypted data byte string, if y is shorter in
       // bytes than k, then prepend zero bytes to fill up ed
@@ -1465,19 +1603,18 @@
     * Performs RSA decryption.
     * 
     * @param ed the encrypted data to decrypt in as a byte string.
-    * @param n the modulus to use.
-    * @param c the exponent to use.
+    * @param key the RSA key to use.
     * @param pub true for a public key operation, false for private.
     * @param ml the message length, if known.
     * 
     * @return the decrypted message in as a byte string.
     */
-   pki.rsa.decrypt = function(ed, n, c, pub, ml)
+   pki.rsa.decrypt = function(ed, key, pub, ml)
    {
       var m = krypto.util.createBuffer();
       
       // get the length of the modulus in bytes
-      var k = Math.ceil(n.bitLength() / 8);
+      var k = Math.ceil(key.n.bitLength() / 8);
       
       // error if the length of the encrypted data ED is not k
       if(ed.length != k)
@@ -1494,7 +1631,7 @@
       var y = new BigInteger(krypto.util.createBuffer(ed).toHex(), 16);
       
       // do RSA decryption
-      var x = y.modPow(c, n);
+      var x = _modPow(y, key, pub);
       
       // create the encryption block, if x is shorter in bytes than k, then
       // prepend zero bytes to fill up eb
