@@ -6,21 +6,15 @@
       }
       </style> 
       <script type="text/javascript" src="/bitmunk/js/swfobject/swfobject.js"></script>
-      <script type="text/javascript" src="/bitmunk/test/krypto/socket.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/util.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/socket.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/http.js"></script>
       
       <script type="text/javascript">
-      var flashvars = {};
-      var params = {};
-      var attributes = {};
-      
-      params.allowscriptaccess = "always";
-      
       swfobject.embedSWF(
-         "/bitmunk/SocketPool.swf", "socketPool", "400", "224", "9.0.0",
-         "/bitmunk/js/swfobject/expressInstall.swf",
-         flashvars, params, attributes);
+         '/bitmunk/SocketPool.swf', 'socketPool', '400', '224', '9.0.0',
+         '/bitmunk/js/swfobject/expressInstall.swf',
+         {}, {allowscriptaccess: 'always'}, {});
       
       // local aliases
       var net = window.krypto.net;
