@@ -7,30 +7,21 @@
  */
 (function($)
 {
-   var flashvars = {};
-   var params =
+   window.krypto.socketPool = {};
+   window.krypto.socketPool.ready = function()
    {
-      allowscriptaccess: "always"
-   };
-   var attributes = {};
-   
-   swfobject.embedSWF(
-      "/bitmunk/HttpPoolManager.swf", "httpPoolManager", "0", "0", "9.0.0",
-      "/bitmunk/js/swfobject/expressInstall.swf",
-      flashvars, params, attributes);
-   
-   swfobject.addLoadEvent(function()
-   {
-      console.log('doc loaded');
-      
       // init flash xhr
       bitmunk.task.start({
          type: 'xhr.init',
          run: bitmunk.xhr.init
       });
-   });
+   };
+   swfobject.embedSWF(
+      '/bitmunk/SocketPool.swf', 'socketPool', '0', '0', '9.0.0',
+      '/bitmunk/js/swfobject/expressInstall.swf',
+      {}, {allowscriptaccess: 'always'}, {});
 })(jQuery);
-         
+
 jQuery(function($)
 {
    var cat = 'xhr-test';
@@ -298,7 +289,7 @@ jQuery(function($)
    }
    
    for(var i = 0; i < 3; i++) {
-   addTest('flash wrapper xhr ' + i, function(task, test)
+   addTest('TLS xhr ' + i, function(task, test)
    {
       task.block();
       
@@ -324,7 +315,7 @@ jQuery(function($)
    });
    }
    
-   addTest('flash wrapper xhr (10 serial)', function(task, test)
+   addTest('TLS xhr (10 serial)', function(task, test)
    {
       var N = 10;
       for(var i = 0; i < N; i++)
@@ -356,7 +347,7 @@ jQuery(function($)
       });
    });
    
-   addTest('flash wrapper xhr (10 parallel)', function(task, test)
+   addTest('TLS xhr (10 parallel)', function(task, test)
    {
       var N = 10;
       task.block(N);

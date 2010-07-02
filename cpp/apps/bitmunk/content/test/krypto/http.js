@@ -133,10 +133,6 @@
       // default to 1 connection
       options.connections = options.connections || 1;
       
-      // local aliases
-      var net = window.krypto.net;
-      var util = window.krypto.util;
-      
       // create client
       var sp = options.socketPool;
       var client =
@@ -279,7 +275,7 @@
          }
          
          socket.idle = true;
-         socket.buffer = util.createBuffer();
+         socket.buffer = krypto.util.createBuffer();
          client.sockets.push(socket);
          client.idle.push(socket);
       }
@@ -478,7 +474,7 @@
             !request.bodyDeflated && request.body.length > 100)
          {
             // use flash to compress data
-            request.body = util.deflate(request.flashApi, request.body);
+            request.body = krypto.util.deflate(request.flashApi, request.body);
             request.bodyDeflated = true;
             request.setField('Content-Encoding', 'deflate');
             request.setField('Content-Length', request.body.length);
@@ -790,7 +786,8 @@
             response.getField('Content-Encoding') === 'deflate')
          {
             // inflate using flash api
-            response.body = util.inflate(response.flashApi, response.body);
+            response.body = krypto.util.inflate(
+               response.flashApi, response.body);
          }
          
          return response.bodyReceived;
