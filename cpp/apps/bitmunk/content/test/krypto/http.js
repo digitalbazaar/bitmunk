@@ -68,8 +68,19 @@
          // clear buffer
          socket.buffer.clear();
          
+         // get pending request
+         var pending = null;
+         while(pending === null && client.requests.length > 0)
+         {
+            pending = client.requests.shift();
+            if(pending.request.aborted)
+            {
+               pending = null;
+            }
+         }
+         
          // mark socket idle if no pending requests
-         if(client.requests.length == 0)
+         if(pending === null)
          {
             socket.idle = true;
             client.idle.push(socket);
@@ -77,7 +88,7 @@
          // handle pending request
          else
          {
-            socket.options = client.requests.shift();
+            socket.options = pending;
             _doRequest(socket);
          }
       }
@@ -168,12 +179,23 @@
          {
             socket.options.connected(e);
             var request = socket.options.request;
-            var out = request.toString();
-            if(request.body)
+            if(request.aborted)
             {
-               out += request.body;
+               socket.close();
+               _handleNextRequest(client, socket);
             }
-            socket.send(out);
+            else
+            {
+               var out = request.toString();
+               if(request.body)
+               {
+                  out += request.body;
+               }
+               request.time = +new Date();
+               socket.send(out);
+               request.time = (+new Date() - request.time);
+               socket.options.response.time = +new Date();
+            }
          };
          socket.closed = function(e)
          {
@@ -181,6 +203,7 @@
             var response = socket.options.response;
             if(response.readBodyUntilClose)
             {
+               response.time = (+new Date() - response.time);
                response.bodyReceived = true;
                socket.options.bodyReady({
                   request: socket.options.request,
@@ -192,41 +215,50 @@
          };
          socket.data = function(e)
          {
-            // receive all bytes available
-            var response = socket.options.response;
-            var bytes = socket.receive(e.bytesAvailable);
-            if(bytes !== null)
+            var request = socket.options.request;
+            if(request.aborted)
             {
-               // receive header and then body
-               socket.buffer.putBytes(bytes);
-               if(!response.headerReceived)
+               socket.close();
+               _handleNextRequest(client, socket);
+            }
+            else
+            {
+               // receive all bytes available
+               var response = socket.options.response;
+               var bytes = socket.receive(e.bytesAvailable);
+               if(bytes !== null)
                {
-                  response.readHeader(socket.buffer);
-                  if(response.headerReceived)
+                  // receive header and then body
+                  socket.buffer.putBytes(bytes);
+                  if(!response.headerReceived)
                   {
-                     socket.options.headerReady({
+                     response.readHeader(socket.buffer);
+                     if(response.headerReceived)
+                     {
+                        socket.options.headerReady({
+                           request: socket.options.request,
+                           response: response
+                        });
+                     }
+                  }
+                  if(response.headerReceived && !response.bodyReceived)
+                  {
+                     response.readBody(socket.buffer);
+                  }
+                  if(response.bodyReceived)
+                  {
+                     socket.options.bodyReady({
                         request: socket.options.request,
                         response: response
                      });
+                     var value = response.getField('Connection') || '';
+                     if(value.indexOf('close') != -1)
+                     {
+                        // close socket
+                        socket.close();
+                     }
+                     _handleNextRequest(client, socket);
                   }
-               }
-               if(response.headerReceived && !response.bodyReceived)
-               {
-                  response.readBody(socket.buffer);
-               }
-               if(response.bodyReceived)
-               {
-                  socket.options.bodyReady({
-                     request: socket.options.request,
-                     response: response
-                  });
-                  var value = response.getField('Connection') || '';
-                  if(value.indexOf('close') != -1)
-                  {
-                     // close socket
-                     socket.close();
-                  }
-                  _handleNextRequest(client, socket);
                }
             }
          };
@@ -249,7 +281,8 @@
       }
       
       /**
-       * Sends a request.
+       * Sends a request. A method 'abort' will be set on the request that
+       * can be called to attempt to abort the request.
        * 
        * @param options:
        *           request: the request to send.
@@ -262,27 +295,42 @@
       client.send = function(options)
       {
          // set default dummy handlers
-         options.connected = options.connected || function(){};
-         options.closed = options.close || function(){};
-         options.headerReady = options.headerReady || function(){};
-         options.bodyReady = options.bodyReady || function(){};
-         options.error = options.error || function(){};
+         var opts = {};
+         opts.request = options.request;
+         opts.connected = options.connected || function(){};
+         opts.closed = options.close || function(){};
+         opts.headerReady = options.headerReady || function(){};
+         opts.bodyReady = options.bodyReady || function(){};
+         opts.error = options.error || function(){};
          
          // create response
-         options.response = http.createResponse();
-         options.response.flashApi = client.socketPool.flashApi;
-         options.request.flashApi = client.socketPool.flashApi;
+         opts.response = http.createResponse();
+         opts.response.time = 0;
+         opts.response.flashApi = client.socketPool.flashApi;
+         opts.request.flashApi = client.socketPool.flashApi;
+         
+         // create abort function
+         opts.request.abort = function()
+         {
+            // set aborted, clear handlers
+            opts.request.aborted = true;
+            opts.connected = function(){};
+            opts.closed = function(){};
+            opts.headerReady = function(){};
+            opts.bodyReady = function(){};
+            opts.error = function(){};
+         };
          
          // queue request options if there are no idle sockets
          if(client.idle.length == 0)
          {
-            client.requests.push(options);
+            client.requests.push(opts);
          }
          // use an idle socket
          else
          {
             var socket = client.idle.pop();
-            socket.options = options;
+            socket.options = opts;
             _doRequest(socket);
          }
       };
@@ -726,6 +774,11 @@
             // no body
             response.body = null;
             response.bodyReceived = true;
+         }
+         
+         if(response.bodyReceived)
+         {
+            response.time = (+new Date() - response.time);
          }
          
          if(response.flashApi !== null &&
