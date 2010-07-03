@@ -20,12 +20,13 @@ package
    {
       import flash.events.Event;
       import flash.events.EventDispatcher;
-	   import flash.errors.IOError;
+      import flash.errors.IOError;
       import flash.events.IOErrorEvent;
       import flash.events.ProgressEvent;
       import flash.events.SecurityErrorEvent;
       import flash.events.TextEvent;
       import flash.external.ExternalInterface;
+      import flash.net.SharedObject;
       import flash.system.Security;
       import flash.utils.ByteArray;
       import mx.utils.Base64Decoder;
@@ -91,6 +92,12 @@ package
                // add callbacks for deflate/inflate
                ExternalInterface.addCallback("deflate", deflate);
                ExternalInterface.addCallback("inflate", inflate);
+               
+               // add callbacks for local disk storage
+               ExternalInterface.addCallback("setItem", setItem);
+               ExternalInterface.addCallback("getItem", getItem);
+               ExternalInterface.addCallback("removeItem", removeItem);
+               ExternalInterface.addCallback("clearItems", clearItems);
                
                // socket pool is now ready
                ExternalInterface.call("window.krypto.socketPool.ready");
@@ -576,6 +583,131 @@ package
          
          log("inflate done");
          return {rval: rval};
+      }
+      
+      /**
+       * Stores an item with a key and arbitrary base64-encoded data on local
+       * disk.
+       * 
+       * @param storeId the private storage ID to use.
+       * @param key the key for the item.
+       * @param data the base64-encoded item data.
+       * 
+       * @return an object with rval set to true on success, false on failure
+       *         with error included.
+       */
+      private function setItem(storeId:String, key:String, data:String):Object
+      {
+         var rval:Object = {rval: false};
+         try
+         {
+            var store:SharedObject = SharedObject.getLocal(storeId);
+            store.data.key = data;
+            store.flush();
+            rval.rval = true;
+         }
+         catch(e:Error)
+         {
+         	log(e);
+         	rval.error = {
+                id: e.errorID,
+                name: e.name,
+                message: e.message
+            };
+         }
+         return rval;
+      }
+      
+      /**
+       * Gets an item from the local disk.
+       * 
+       * @param storeId the storage ID to use.
+       * @param key the key for the item.
+       * 
+       * @return an object with rval set to the item data, null on error with
+       *         error included.
+       */
+      private function getItem(storeId:String, key:String):Object
+      {
+         var rval:Object = {rval: null};
+         try
+         {
+            var store:SharedObject = SharedObject.getLocal(storeId);
+            if(key in store.data)
+            {
+               rval.rval = store.data.key;
+            }
+         }
+         catch(e:Error)
+         {
+         	log(e);
+            rval.error = {
+                id: e.errorID,
+                name: e.name,
+                message: e.message
+            };
+         }
+         return rval;
+      }
+      
+      /**
+       * Removes an item from the local disk.
+       * 
+       * @param storeId the storage ID to use.
+       * @param key the key for the item.
+       * 
+       * @return an object with rval set to true if removed, false if not.
+       */
+      private function removeItem(storeId:String, key:String):Object
+      {
+         var rval:Object = {rval: false};
+         try
+         {
+            var store:SharedObject = SharedObject.getLocal(storeId);
+            if(key in store.data)
+            {
+               delete store.data.key;
+               rval.rval = true;
+            }
+         }
+         catch(e:Error)
+         {
+            log(e);
+            rval.error = {
+                id: e.errorID,
+                name: e.name,
+                message: e.message
+            };
+         }
+         return rval;
+      }
+      
+      /**
+       * Clears an entire store of all of its items.
+       * 
+       * @param storeId the storage ID to use.
+       * 
+       * @return an object with rval set to true if cleared, false if not.
+       */
+      private function clearItems(storeId:String):Object
+      {
+         var rval:Object = {rval: false};
+         try
+         {
+            var store:SharedObject = SharedObject.getLocal(storeId);
+            store.clear();
+            rval.rval = true;
+         }
+         catch(e:Error)
+         {
+            log(e);
+            rval.error = {
+                id: e.errorID,
+                name: e.name,
+                message: e.message
+            };
+         }
+         return rval;
       }
    }
 }
