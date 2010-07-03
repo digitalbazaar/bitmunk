@@ -74,7 +74,7 @@
    var _client = null;
    
    // the maximum number of concurrents connections per client
-   var _maxConnections = 1;
+   var _maxConnections = 10;
    
    // local aliases
    var net = window.krypto.net;
@@ -82,14 +82,14 @@
    
    // define the xhr interface
    // TODO: change to monarch or js lib name
-   bitmunk.xhr = {};
+   var xhrApi = {};
    
    /**
     * Initializes flash XHR support.
     * 
     * @param task the task to use to synchronize initialization.
     */
-   bitmunk.xhr.init = function(task)
+   xhrApi.init = function(task)
    {
       // get flash config
       var cfg;
@@ -140,7 +140,7 @@
    /**
     * Called to clean up the flash interface.
     */
-   bitmunk.xhr.cleanup = function()
+   xhrApi.cleanup = function()
    {
       _client.destroy();
       _sp.destroy();
@@ -152,7 +152,7 @@
     * @param name the name of the cookie.
     * @param value the value of the cookie, null to remove the cookie.
     */
-   bitmunk.xhr.setCookie = function(name, value)
+   xhrApi.setCookie = function(name, value)
    {
       // TODO: implement this in http
    };
@@ -164,7 +164,7 @@
     * 
     * @return the cookie value or null if not found.
     */
-   bitmunk.xhr.getCookie = function(name)
+   xhrApi.getCookie = function(name)
    {
       // TODO: implement this in http
       return null;
@@ -180,7 +180,7 @@
     * 
     * @return the XmlHttpRequest.
     */
-   bitmunk.xhr.create = function(options)
+   xhrApi.create = function(options)
    {
       // set option defaults
       options = $.extend(
@@ -569,11 +569,15 @@
       return xhr;
    };
    
+   // FIXME: enable to replace bitmunk.xhr with this api
+   //bitmunk.xhr = xhrApi;
+   bitmunk.xhr2 = xhrApi;
+   
    // NOTE: xhr support is implicit and not a required dependency
    // plugin registered after registration code is initialized
-   bitmunk._implicitPluginInfo.task =
+   /*bitmunk._implicitPluginInfo.task =
    {
       pluginId: 'bitmunk.webui.core.Xhr',
       name: 'Bitmunk Xhr'
-   };
+   };*/
 })(jQuery);

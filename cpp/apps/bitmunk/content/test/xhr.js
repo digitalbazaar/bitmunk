@@ -7,19 +7,34 @@
  */
 (function($)
 {
+   // load flash socket pool
    window.krypto.socketPool = {};
    window.krypto.socketPool.ready = function()
    {
       // init flash xhr
       bitmunk.task.start({
-         type: 'xhr.init',
-         run: bitmunk.xhr.init
+         type: 'xhr2.init',
+         run: bitmunk.xhr2.init
       });
    };
    swfobject.embedSWF(
       '/bitmunk/SocketPool.swf', 'socketPool', '0', '0', '9.0.0',
       '/bitmunk/js/swfobject/expressInstall.swf',
       {}, {allowscriptaccess: 'always'}, {});
+   
+   // load deprecated flash http pool manager
+   swfobject.embedSWF(
+      "/bitmunk/HttpPoolManager.swf", "httpPoolManager", "0", "0", "9.0.0",
+      "/bitmunk/js/swfobject/expressInstall.swf",
+      {}, {allowscriptaccess: 'always'}, {});
+   swfobject.addLoadEvent(function()
+   {
+      // init flash xhr
+      bitmunk.task.start({
+         type: 'xhr.init',
+         run: bitmunk.xhr.init
+      });
+   });
 })(jQuery);
 
 jQuery(function($)
@@ -43,6 +58,7 @@ jQuery(function($)
       $('.expect').empty();
       $('.result').empty();
       $('.time').empty();
+      $('.timePer').empty();
       $('#start').attr('disabled', '');
    };
 
@@ -199,7 +215,12 @@ jQuery(function($)
       var expect = $('<li>Expect: <span class="expect"/></li>');
       var result = $('<li>Result: <span class="result"/></li>');
       var time = $('<li>Time: <span class="time"/></li>');
-      $('ul', container).append(expect).append(result).append(time);
+      var timePer = $('<li>Time Per Iteration: <span class="timePer"/></li>');
+      $('ul', container)
+         .append(expect)
+         .append(result)
+         .append(time)
+         .append(timePer);
       $('#tests').append(container);
       var test = {
          container: container,
@@ -215,25 +236,37 @@ jQuery(function($)
             var r = test.result.text();
             (e == r) ? test.pass() : test.fail();
          },
-         pass: function() {
+         pass: function(iterations) {
+            var dt = new Date() - test.startTime;
+            if(!iterations)
+            {
+               iterations = 1;
+            }
+            var dti = (dt / iterations);
             passed += 1;
             $('#pass').text(passed);
             $('li:first', container).addClass('pass');
-            var dt = new Date() - test.startTime;
-            $('span.time', container).html(dt);
+            $('span.time', container).html(dt + 'ms');
+            $('span.timePer', container).html(dti + 'ms');
          },
-         fail: function() {
+         fail: function(iterations) {
+            var dt = new Date() - test.startTime;
+            if(!iterations)
+            {
+               iterations = 1;
+            }
+            var dti = (dt / iterations);
             failed += 1;
             $('#fail').text(failed);
             $('li:first', container).addClass('fail');
-            var dt = new Date() - test.startTime;
-            $('span.time', container).html(dt);
+            $('span.time', container).html(dt + 'ms');
+            $('span.timePer', container).html(dti + 'ms');
          }
       };
       tests.push(test);
    };
 
-   addTest('no replacement', function(task, test)
+   addTest('builtin xhr', function(task, test)
    {
       task.block();
       
@@ -258,10 +291,69 @@ jQuery(function($)
       });
    });
    
+   addTest('builtin xhr (10 serial)', function(task, test)
+   {
+      var N = 10;
+      for(var i = 0; i < N; i++)
+      {
+         task.next(function(task)
+         {
+            task.parent.block();
+            
+            $.ajax(
+            {
+               type: 'GET',
+               url: bitmunk.api.localRoot + 'system/test/echo?echo=test',
+               success: function(data, textStatus)
+               {
+                  test.result.append('.');
+                  task.parent.unblock();
+               },
+               error: function(xhr, textStatus, errorThrown)
+               {
+                  task.fail(N);
+               }
+            });
+         });
+      }
+      
+      task.next(function(task)
+      {
+         test.pass(N);
+      });
+   });
+   
+   addTest('builtin xhr (10 parallel)', function(task, test)
+   {
+      var N = 10;
+      task.block(N);
+      for(var i = 0; i < N; i++)
+      {
+         $.ajax(
+         {
+            url: bitmunk.api.localRoot + 'system/test/echo?echo=test',
+            success: function(data, textStatus)
+            {
+               test.result.append('.');
+               task.unblock();
+            },
+            error: function(xhr, textStatus, errorThrown)
+            {
+               task.fail(N);
+            }
+         });
+      }
+      
+      task.next(function(task)
+      {
+         test.pass(N);
+      });
+   });
+   
    // test only works with non-IE
    if(!$.browser.msie)
    {
-      addTest('replace with wrapper xhr', function(task, test)
+      addTest('generic wrapper xhr', function(task, test)
       {
          task.block();
          
@@ -286,6 +378,67 @@ jQuery(function($)
             test.pass();
          });
       });
+      
+      addTest('generic wrapper xhr (10 serial)', function(task, test)
+      {
+         var N = 10;
+         for(var i = 0; i < N; i++)
+         {
+            task.next(function(task)
+            {
+               task.parent.block();
+               
+               $.ajax(
+               {
+                  type: 'GET',
+                  url: bitmunk.api.localRoot + 'system/test/echo?echo=test',
+                  success: function(data, textStatus)
+                  {
+                     test.result.append('.');
+                     task.parent.unblock();
+                  },
+                  error: function(xhr, textStatus, errorThrown)
+                  {
+                     task.fail(N);
+                  },
+                  xhr: createWrapper
+               });
+            });
+         }
+         
+         task.next(function(task)
+         {
+            test.pass(N);
+         });
+      });
+      
+      addTest('generic wrapper xhr (10 parallel)', function(task, test)
+      {
+         var N = 10;
+         task.block(N);
+         for(var i = 0; i < N; i++)
+         {
+            $.ajax(
+            {
+               url: bitmunk.api.localRoot + 'system/test/echo?echo=test',
+               success: function(data, textStatus)
+               {
+                  test.result.append('.');
+                  task.unblock();
+               },
+               error: function(xhr, textStatus, errorThrown)
+               {
+                  task.fail(N);
+               },
+               xhr: createWrapper
+            });
+         }
+         
+         task.next(function(task)
+         {
+            test.pass(N);
+         });
+      });
    }
    
    for(var i = 0; i < 3; i++) {
@@ -305,7 +458,7 @@ jQuery(function($)
          {
             task.fail();
          },
-         xhr: bitmunk.xhr.create
+         xhr: bitmunk.xhr2.create
       });
       
       task.next(function(task)
@@ -334,16 +487,16 @@ jQuery(function($)
                },
                error: function(xhr, textStatus, errorThrown)
                {
-                  task.fail();
+                  task.fail(N);
                },
-               xhr: bitmunk.xhr.create
+               xhr: bitmunk.xhr2.create
             });
          });
       }
       
       task.next(function(task)
       {
-         test.pass();
+         test.pass(N);
       });
    });
    
@@ -363,7 +516,95 @@ jQuery(function($)
             },
             error: function(xhr, textStatus, errorThrown)
             {
-               task.fail();
+               task.fail(N);
+            },
+            xhr: bitmunk.xhr2.create
+         });
+      }
+      
+      task.next(function(task)
+      {
+         test.pass(N);
+      });
+   });
+   
+   // deprecated flash http pool manager tests
+   for(var i = 0; i < 3; i++) {
+   addTest('deprecated flash xhr ' + i, function(task, test)
+   {
+      task.block();
+      
+      $.ajax(
+      {
+         url: bitmunk.api.localRoot + 'system/test/echo?echo=test',
+         success: function(data, textStatus)
+         {
+            test.result.html(data);
+            task.unblock();
+         },
+         error: function(xhr, textStatus, errorThrown)
+         {
+            task.fail();
+         },
+         xhr: bitmunk.xhr.create
+      });
+      
+      task.next(function(task)
+      {
+         test.pass();
+      });
+   });
+   }
+   
+   addTest('deprecated flash xhr (10 serial)', function(task, test)
+   {
+      var N = 10;
+      for(var i = 0; i < N; i++)
+      {
+         task.next(function(task)
+         {
+            task.parent.block();
+            
+            $.ajax(
+            {
+               url: bitmunk.api.localRoot + 'system/test/echo?echo=test',
+               success: function(data, textStatus)
+               {
+                  test.result.append('.');
+                  task.parent.unblock();
+               },
+               error: function(xhr, textStatus, errorThrown)
+               {
+                  task.fail(N);
+               },
+               xhr: bitmunk.xhr.create
+            });
+         });
+      }
+      
+      task.next(function(task)
+      {
+         test.pass(N);
+      });
+   });
+   
+   addTest('deprecated flash xhr (10 parallel)', function(task, test)
+   {
+      var N = 10;
+      task.block(N);
+      for(var i = 0; i < N; i++)
+      {
+         $.ajax(
+         {
+            url: bitmunk.api.localRoot + 'system/test/echo?echo=test',
+            success: function(data, textStatus)
+            {
+               test.result.append('.');
+               task.unblock();
+            },
+            error: function(xhr, textStatus, errorThrown)
+            {
+               task.fail(N);
             },
             xhr: bitmunk.xhr.create
          });
@@ -371,7 +612,7 @@ jQuery(function($)
       
       task.next(function(task)
       {
-         test.pass();
+         test.pass(N);
       });
    });
    
