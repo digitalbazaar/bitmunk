@@ -97,9 +97,9 @@
          var cookie =
          {
             name: 'test-cookie',
-            value: 'cookie',
+            value: 'test-value',
             maxAge: -1,
-            secure: true,
+            secure: false,
             path: '/'
          };
          client.setCookie(cookie);
@@ -108,10 +108,41 @@
 
       function request_add_cookies()
       {
+         var cookie1 =
+         {
+            name: 'test-cookie1',
+            value: 'test-value1',
+            maxAge: -1,
+            secure: false,
+            path: '/'
+         };
+         var cookie2 =
+         {
+            name: 'test-cookie2',
+            value: 'test-value2',
+            maxAge: -1,
+            secure: false,
+            path: '/'
+         };
+         var request = http.createRequest({
+            method: 'GET',
+            path: '/'
+         });
+         request.addCookie(cookie1);
+         request.addCookie(cookie2);
+         console.log('request', request.toString());
       }
 
       function response_get_cookies()
       {
+         var response = http.createResponse();
+         response.appendField('Set-Cookie',
+            'test-cookie1=test-value1; max-age=0; path=/; secure');
+         response.appendField('Set-Cookie',
+            'test-cookie2=test-value2; ' +
+            'expires=Thu, 21-Aug-2008 23:47:25 GMT; path=/');
+         var cookies = response.getCookies();
+         console.log('cookies', cookies);
       }
       
       </script>
@@ -127,8 +158,8 @@
          <button id="send" onclick="javascript:return client_send();">send</button>
          <button id="send10" onclick="javascript:return client_send_10();">send 10</button>
          <button id="client_cookies" onclick="javascript:return client_cookies();">cookies</button>
-         <button id="add_cookies" onclick="javascript:return request_add_cookies();">add cookie</button>
-         <button id="get_cookies" onclick="javascript:return response_get_cookies();">get cookie</button>
+         <button id="add_cookies" onclick="javascript:return request_add_cookies();">add cookies</button>
+         <button id="get_cookies" onclick="javascript:return response_get_cookies();">get cookies</button>
       </div>
       <p>Feedback from the flash SocketPool:</p>
       <div id="feedback">

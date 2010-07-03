@@ -143,6 +143,20 @@
          }
          return false;
       }
+
+      function client_cookies()
+      {
+         var cookie =
+         {
+            name: 'test-cookie',
+            value: 'test-value',
+            maxAge: -1,
+            secure: true,
+            path: '/'
+         };
+         client.setCookie(cookie);
+         console.log('cookie', client.getCookie('test-cookie'));
+      }
       
       </script>
    </head>
@@ -156,6 +170,7 @@
          <button id="cleanup" onclick="javascript:return client_cleanup();">cleanup</button>
          <button id="send" onclick="javascript:return client_send();">send</button>
          <button id="send10" onclick="javascript:return client_send_10();">send 10</button>
+         <button id="client_cookies" onclick="javascript:return client_cookies();">cookies</button>
       </div>
       <p>Feedback from the flash SocketPool:</p>
       <div id="feedback">

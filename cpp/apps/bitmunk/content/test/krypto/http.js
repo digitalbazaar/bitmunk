@@ -265,27 +265,20 @@
       var cookies = client.cookies;
       for(var name in cookies)
       {
-         // put cookie in array as necessary for use of single code path
-         var array = cookies[name];
-         if(array.constructor != Array)
+         // get cookie paths
+         var paths = cookies[name];
+         for(var p in paths)
          {
-            array = [array];
-         }
-         for(var i = 0; i < array.length; ++i)
-         {
-            var cookie = array[i];
+            var cookie = paths[p];
             if(_hasCookieExpired(cookie))
             {
                // store for clean up
                expired.push(cookie);
             }
-            else
+            // path or path's ancestor must match cookie.path
+            else if(request.path.indexOf(cookie.path) === 0)
             {
-               // path or path's ancestor must match cookie.path
-               if(request.path.indexOf(cookie.path) === 0)
-               {
-                  request.addCookie(cookie);
-               }
+               request.addCookie(cookie);
             }
          }
       }
@@ -362,9 +355,8 @@
          sockets: [],
          // idle sockets
          idle: [],
-         // cookie jar (key'd off of name, there is only 1 domain and one
-         // setting for secure per client ... but paths may still be different
-         // in which case an array is stored under the cookie name)
+         // cookie jar (key'd off of name and then path, there is only 1 domain
+         // and one setting for secure per client so name+path is unique)
          cookies: {}
       };
       
@@ -470,7 +462,7 @@
        * 
        * If the cookie's domain doesn't match this client's url host or the
        * cookie's secure flag doesn't match this client's url scheme, then
-       * setting the cookie will fail.
+       * setting the cookie will fail with an exception.
        * 
        * @param cookie the cookie with parameters:
        *    name: the name of the cookie.
@@ -484,13 +476,9 @@
        *    domain: optional domain the cookie belongs to (must start with dot).
        *    version: optional version of the cookie.
        *    created: creation time, in UTC seconds, of the cookie.
-       * 
-       * @return true on success, false on failure.
        */
       client.setCookie = function(cookie)
       {
-         var rval = false;
-         
          if(typeof(cookie.name) !== 'undefined')
          {
             if(cookie.value === null || typeof(cookie.value) === 'undefined' ||
@@ -504,66 +492,47 @@
                // set cookie defaults
                cookie.comment = cookie.comment || '';
                cookie.maxAge = cookie.maxAge || 0;
-               cookie.secure = cookie.secure || true;
+               cookie.secure = (typeof(cookie.secure) === 'undefined') ?
+                  true : cookie.secure;
                cookie.httpOnly = cookie.httpOnly || true,
                cookie.path = cookie.path || '/';
                cookie.domain = cookie.domain || null;
                cookie.version = cookie.version || null;
                cookie.created = _getUtcTime(new Date());
                
-               // do secure and domain check
+               // do domain check
                var url = client.url;
-               if(((cookie.secure && url.scheme === 'https') ||
-                  (!cookie.secure && url.scheme === 'http')) &&
-                  (cookie.domain !== null ||
-                  // make sure url host ends in cookie.domain
-                  ('.' + url.host).indexOf(cookie.domain) ===
-                   (url.host.length - cookie.domain.length)))
+               if((cookie.secure && url.scheme !== 'https') ||
+                  (!cookie.secure && url.scheme !== 'http'))
                {
-                  if(cookie.name in client.cookies)
+                  throw {
+                     message: 'Http client url scheme is incompatible ' +
+                        'with cookie secure flag.',
+                     url: client.url,
+                     cookie: cookie
+                  };
+               }
+               // make sure url host ends in cookie.domain
+               else if(cookie.domain !== null &&
+                  ('.' + url.host).indexOf(cookie.domain) !==
+                   (url.host.length - cookie.domain.length))
+               {
+                  throw {
+                     message: 'Http client url host is incompatible with ' +
+                        'cookie domain.',
+                     url: client.url,
+                     cookie: cookie
+                  };
+               }
+               else
+               {
+                  // add new cookie
+                  if(!(cookie.name in client.cookies))
                   {
-                     // handle array
-                     var array = client.cookies[cookie.name];
-                     if(array.constructor != Array)
-                     {
-                        if(array.path === cookie.path)
-                        {
-                           // replace cookie
-                           client.cookies[cookie.name] = cookie;
-                        }
-                        else
-                        {
-                           // make array
-                           client.cookies[cookie.name] = [array, cookie];
-                        }
-                        rval = true;
-                     }
-                     else
-                     {
-                        // find existing cookie
-                        for(var i = 0; !rval && i < array.length; ++i)
-                        {
-                           if(array[i].path === path)
-                           {
-                              // replace cookie
-                              array[i] = cookie;
-                              rval = true;
-                           }
-                        }
-                        
-                        // no existing cookie to replace, append
-                        if(!rval)
-                        {
-                           array.push(cookie);
-                        }
-                     }
+                     client.cookies[cookie.name] = {};
                   }
-                  else
-                  {
-                     // new cookie, simple case
-                     client.cookies[cookie.name] = cookie;
-                     rval = true;
-                  }
+                  client.cookies[cookie.name][cookie.path] = cookie;
+                  rval = true;
                }
             }
          }
@@ -585,26 +554,23 @@
          var rval = null;
          if(name in client.cookies)
          {
-            rval = client.cookies[name];
-            if(rval.constructor == Array)
+            var paths = client.cookies[name];
+            
+            // get path-specific cookie
+            if(path)
             {
-               if(path)
+               if(path in paths)
                {
-                  // find the specific path
-                  var array = rval;
-                  rval = null;
-                  for(var i = 0; rval === null && i < array.length; ++i)
-                  {
-                     if(array[i].path === path)
-                     {
-                        rval = array[i];
-                     }
-                  }
+                  rval = paths[path];
                }
-               else
+            }
+            // get first cookie
+            else
+            {
+               for(var p in paths)
                {
-                  // just return first one
-                  rval = rval[0];
+                  rval = paths[p];
+                  break;
                }
             }
          }
@@ -625,28 +591,24 @@
          var rval = false;
          if(name in client.cookies)
          {
+            // delete the specific path
             if(path)
             {
-               // find the specific path
-               var array = client.cookies[name];
-               for(var i = 0; i < array.length; ++i)
+               var paths = client.cookies[name];
+               if(path in paths)
                {
-                  if(array[i].path === path)
+                  rval = true;
+                  delete client.cookies[name][path];
+                  // clean up empty entry
+                  if(client.cookies[name].length === 0)
                   {
-                     rval = true;
-                     array.splice(i, 1);
-                     if(array.length === 0)
-                     {
-                        // clean up whole array, its empty
-                        delete client.cookies[name];
-                     }
-                     break;
+                     delete client.cookies[name];
                   }
                }
             }
+            // delete all cookies with the given name
             else
             {
-               // delete all cookies with the given name
                rval = true;
                delete client.cookies[name];
             }
@@ -666,6 +628,18 @@
    };
    
    /**
+    * Trims the whitespace off of the beginning and end of a string.
+    * 
+    * @param str the string to trim.
+    * 
+    * @return the trimmed string.
+    */
+   var _trimString = function(str)
+   {
+      return str.replace(/^\s*/, '').replace(/\s*$/, '');
+   };
+   
+   /**
     * Creates an http header object.
     * 
     * @return the http header object.
@@ -678,8 +652,7 @@
          setField: function(name, value)
          {
             // normalize field name, trim value
-            header.fields[_normalize(name)] =
-               [('' + value).replace(/^\s*/, '').replace(/\s*$/, '')];
+            header.fields[_normalize(name)] = [_trimString('' + value)];
          },
          appendField: function(name, value)
          {
@@ -688,8 +661,7 @@
             {
                header.fields[name] = [];
             }
-            header.fields[name].push(
-               ('' + value).replace(/^\s*/, '').replace(/\s*$/, ''));
+            header.fields[name].push(_trimString('' + value));
          },
          getField: function(name, index)
          {
@@ -779,7 +751,7 @@
          if(field !== null)
          {
             // separate cookies by semi-colons
-            value += '; ';
+            value = field + '; ';
          }
          
          // get current time in utc seconds
@@ -1153,33 +1125,36 @@
          {
             var field = response.fields['Set-Cookie'];
             
-            // get current time in utc seconds
-            var now = _getUtcTime(new Date());
+            // get current local time in seconds
+            var now = +new Date() / 1000;
             
-            // regex for parsing name=value
-            var regex = /^\s*([^=]*)=?(.*)$/g;
+            // regex for parsing 'name1=value1; name2=value2; name3'
+            var regex = /\s*([^=]*)=?([^;]*)(;|$)/g;
             
+            // examples:
+            // Set-Cookie: cookie1_name=cookie1_value; max-age=0; path=/
+            // Set-Cookie: c2=v2; expires=Thu, 21-Aug-2008 23:47:25 GMT; path=/
             for(var i = 0; i < field.length; ++i)
             {
+               var fv = field[i];
+               var m;
+               regex.lastIndex = 0;
+               var first = true;
                var cookie = {};
-               // parse cookies by semi-colons (cannot parse by commas because
-               // the 'expires' value may contain a comma an no one follows
-               // the standard)
-               var params = field[i].split(';');
-               for(var n = 0; n < params.length; ++n)
+               do
                {
-                  // parse name and value
-                  var m = regex.exec(params[n]);
+                  m = regex.exec(fv);
                   if(m !== null)
                   {
-                     var name = m[1];
-                     var value = m[2] || '';
+                     var name = _trimString(m[1]);
+                     var value = _trimString(m[2]);
                      
-                     // cooke_name=value
-                     if(n === 0)
+                     // cookie_name=value
+                     if(first)
                      {
                         cookie.name = name;
                         cookie.value = value;
+                        first = false;
                      }
                      // property_name=value
                      else
@@ -1188,8 +1163,11 @@
                         switch(name)
                         {
                         case 'expires':
+                           // replace hyphens w/spaces so date will parse
+                           value = value.replace(/-/g, ' ');
                            var secs = Date.parse(value) / 1000;
                            cookie.maxAge = Math.max(0, secs - now);
+                           break;
                         case 'max-age':
                            cookie.maxAge = parseInt(value);
                            break;
@@ -1200,12 +1178,16 @@
                            cookie.httpOnly = true;
                            break;
                         default:
-                           cookie[name] = value;
+                           if(name !== '')
+                           {
+                              cookie[name] = value;
+                           }
                         }
                      }
-                     rval.push(cookie);
                   }
                }
+               while(m !== null && m[0] !== '');
+               rval.push(cookie);
             }
          }
          
