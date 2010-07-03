@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
+#define __STDC_FORMAT_MACROS
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -9,6 +11,7 @@
 
 #include "monarch/app/App.h"
 #include "monarch/app/AppFactory.h"
+#include "monarch/app/AppRunner.h"
 #include "monarch/config/ConfigManager.h"
 #include "monarch/data/json/JsonReader.h"
 #include "monarch/data/json/JsonWriter.h"
@@ -215,9 +218,14 @@ bool Bitmunk::startNode()
       }
    }
 
-   // send ready event
+   // bitmunk ready
    if(rval)
    {
+      // show start up time
+      MO_CAT_INFO(BM_APP_CAT, "Started in %" PRIu64 " ms",
+         getAppRunner()->getTimer()->getElapsedMilliseconds());
+
+      // send ready event
       MO_CAT_INFO(BM_APP_CAT, "Ready.");
       Event e;
       e["type"] = "bitmunk.app.Bitmunk.ready";
