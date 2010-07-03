@@ -96,6 +96,138 @@
    };
    
    /**
+    * Sets up a socket for use with an http client.
+    * 
+    * @param client the parent http client.
+    * @param socket the socket to set up.
+    * @param tlsOptions if the socket must use TLS, the TLS options.
+    */
+   var _initSocket = function(client, socket, tlsOptions)
+   {
+      // set up handlers
+      socket.connected = function(e)
+      {
+         socket.options.connected(e);
+         var request = socket.options.request;
+         if(request.aborted)
+         {
+            socket.close();
+            _handleNextRequest(client, socket);
+         }
+         else
+         {
+            var out = request.toString();
+            if(request.body)
+            {
+               out += request.body;
+            }
+            request.time = +new Date();
+            socket.send(out);
+            request.time = (+new Date() - request.time);
+            socket.options.response.time = +new Date();
+         }
+      };
+      socket.closed = function(e)
+      {
+         // handle unspecified content-length transfer
+         var response = socket.options.response;
+         if(response.readBodyUntilClose)
+         {
+            response.time = (+new Date() - response.time);
+            response.bodyReceived = true;
+            socket.options.bodyReady({
+               request: socket.options.request,
+               response: response
+            });
+         }
+         socket.options.closed(e);
+         _handleNextRequest(client, socket);
+      };
+      socket.data = function(e)
+      {
+         var request = socket.options.request;
+         if(request.aborted)
+         {
+            socket.close();
+            _handleNextRequest(client, socket);
+         }
+         else
+         {
+            // receive all bytes available
+            var response = socket.options.response;
+            var bytes = socket.receive(e.bytesAvailable);
+            if(bytes !== null)
+            {
+               // receive header and then body
+               socket.buffer.putBytes(bytes);
+               if(!response.headerReceived)
+               {
+                  response.readHeader(socket.buffer);
+                  if(response.headerReceived)
+                  {
+                     socket.options.headerReady({
+                        request: socket.options.request,
+                        response: response
+                     });
+                  }
+               }
+               if(response.headerReceived && !response.bodyReceived)
+               {
+                  response.readBody(socket.buffer);
+               }
+               if(response.bodyReceived)
+               {
+                  socket.options.bodyReady({
+                     request: socket.options.request,
+                     response: response
+                  });
+                  var value = response.getField('Connection') || '';
+                  if(value.indexOf('close') != -1)
+                  {
+                     // close socket
+                     socket.close();
+                  }
+                  _handleNextRequest(client, socket);
+               }
+            }
+         }
+      };
+      socket.error = function(e)
+      {
+         // do error callback, include request
+         socket.options.error({
+            type: e.type,
+            message: e.message,
+            request: socket.options.request,
+            response: socket.options.response
+         });
+         socket.close();
+         _handleNextRequest(client, socket);
+      };
+      
+      // wrap socket for TLS
+      if(tlsOptions)
+      {
+         socket = window.krypto.tls.wrapSocket({
+            sessionId: null,
+            sessionCache: {},
+            caStore: tlsOptions.caStore,
+            socket: socket,
+            verify: tlsOptions.verify || function(c, verified, depth, certs)
+            {
+               // FIXME: if depth === 0, check certs[0] common name
+               return verified;
+            }
+         });
+      }
+      
+      socket.idle = true;
+      socket.buffer = krypto.util.createBuffer();
+      client.sockets.push(socket);
+      client.idle.push(socket);
+   };
+   
+   /**
     * Creates an http client that uses krypto.net sockets as a backend and
     * krypto.tls for security.
     * 
@@ -150,134 +282,20 @@
       };
       
       // determine if TLS is used
-      var useTls = (url.scheme === 'https');
+      var tlsOptions = null;
+      if(url.scheme === 'https')
+      {
+         tlsOptions =
+         {
+            caStore: caStore,
+            verify: options.verify
+         };
+      }
       
-      // create sockets
+      // create and initialize sockets
       for(var i = 0; i < options.connections; i++)
       {
-         var socket = sp.createSocket();
-         
-         // set up handlers
-         socket.connected = function(e)
-         {
-            socket.options.connected(e);
-            var request = socket.options.request;
-            if(request.aborted)
-            {
-               socket.close();
-               _handleNextRequest(client, socket);
-            }
-            else
-            {
-               var out = request.toString();
-               if(request.body)
-               {
-                  out += request.body;
-               }
-               request.time = +new Date();
-               socket.send(out);
-               request.time = (+new Date() - request.time);
-               socket.options.response.time = +new Date();
-            }
-         };
-         socket.closed = function(e)
-         {
-            // handle unspecified content-length transfer
-            var response = socket.options.response;
-            if(response.readBodyUntilClose)
-            {
-               response.time = (+new Date() - response.time);
-               response.bodyReceived = true;
-               socket.options.bodyReady({
-                  request: socket.options.request,
-                  response: response
-               });
-            }
-            socket.options.closed(e);
-            _handleNextRequest(client, socket);
-         };
-         socket.data = function(e)
-         {
-            var request = socket.options.request;
-            if(request.aborted)
-            {
-               socket.close();
-               _handleNextRequest(client, socket);
-            }
-            else
-            {
-               // receive all bytes available
-               var response = socket.options.response;
-               var bytes = socket.receive(e.bytesAvailable);
-               if(bytes !== null)
-               {
-                  // receive header and then body
-                  socket.buffer.putBytes(bytes);
-                  if(!response.headerReceived)
-                  {
-                     response.readHeader(socket.buffer);
-                     if(response.headerReceived)
-                     {
-                        socket.options.headerReady({
-                           request: socket.options.request,
-                           response: response
-                        });
-                     }
-                  }
-                  if(response.headerReceived && !response.bodyReceived)
-                  {
-                     response.readBody(socket.buffer);
-                  }
-                  if(response.bodyReceived)
-                  {
-                     socket.options.bodyReady({
-                        request: socket.options.request,
-                        response: response
-                     });
-                     var value = response.getField('Connection') || '';
-                     if(value.indexOf('close') != -1)
-                     {
-                        // close socket
-                        socket.close();
-                     }
-                     _handleNextRequest(client, socket);
-                  }
-               }
-            }
-         };
-         socket.error = function(e)
-         {
-            // do error callback, include request
-            socket.options.error({
-               type: e.type,
-               message: e.message,
-               request: socket.options.request,
-               response: socket.options.response
-            });
-            socket.close();
-            _handleNextRequest(client, socket);
-         };
-         
-         // wrap socket for TLS
-         if(useTls)
-         {
-            socket = window.krypto.tls.wrapSocket({
-               sessionId: null,
-               sessionCache: {},
-               caStore: caStore,
-               socket: socket,
-               verify: options.verify || function(c, verified, depth, certs)
-               {
-                  // FIXME: if depth === 0, check certs[0] common name
-                  return verified;
-               }
-            });
-         }
-         
-         socket.idle = true;
-         socket.buffer = krypto.util.createBuffer();
-         client.sockets.push(socket);
-         client.idle.push(socket);
+         _initSocket(client, sp.createSocket(), tlsOptions);
       }
       
       /**
@@ -329,7 +347,7 @@
          // use an idle socket
          else
          {
-            var socket = client.idle.pop();
+            var socket = client.idle.shift();
             socket.options = opts;
             _doRequest(client, socket);
          }

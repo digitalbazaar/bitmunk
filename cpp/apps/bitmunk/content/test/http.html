@@ -33,7 +33,7 @@
          client = http.createClient({
             url: 'http://localhost:19300',
             socketPool: sp,
-            connections: 1
+            connections: 10
          });
          document.getElementById('feedback').innerHTML =
             'http client created';
@@ -82,6 +82,15 @@
             'http request sent';
          return false;
       }
+
+      function client_send_10()
+      {
+         for(var i = 0; i < 10; ++i)
+         {
+            client_send();
+         }
+         return false;
+      }
       
       </script>
    </head>
@@ -94,6 +103,7 @@
          <button id="init" onclick="javascript:return client_init();">init</button>
          <button id="cleanup" onclick="javascript:return client_cleanup();">cleanup</button>
          <button id="send" onclick="javascript:return client_send();">send</button>
+         <button id="send10" onclick="javascript:return client_send_10();">send 10</button>
       </div>
       <p>Feedback from the flash SocketPool:</p>
       <div id="feedback">
