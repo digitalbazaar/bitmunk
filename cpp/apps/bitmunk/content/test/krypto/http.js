@@ -20,14 +20,13 @@
    // parses the scheme, host, and port from a url
    var _parseUrl = function(str)
    {
-      var url = {};
       var regex = /^(https?):\/\/([^:&^\/]*):?(\d*)(.*)$/g;
-      str.replace(regex, function(full, scheme, host, port) {
-         url.scheme = scheme;
-         url.host = host;
-         url.port = port || (scheme === 'https' ? 443 : 80);
-      });
-      return url;
+      var m = regex.exec(str);
+      return (m === null) ? null : {
+         scheme: m[1],
+         host: m[2],
+         port: m[3]
+      };
    };
    
    /**
@@ -228,6 +227,90 @@
    };
    
    /**
+    * Checks to see if the given cookie has expired. If the cookie's max-age
+    * plus its created time is less than the time now, it has expired, unless
+    * its max-age is set to -1 which indicates it will never expire.
+    * 
+    * @param cookie the cookie to check.
+    * 
+    * @return true if it has expired, false if not.
+    */
+   var _hasCookieExpired = function(cookie)
+   {
+      var rval = false;
+      
+      if(cookie.maxAge !== -1)
+      {
+         var now = _getUtcTime(new Date());
+         var expires = cookie.created + cookie.maxAge;
+         if(expires <= now)
+         {
+            rval = true;
+         }
+      }
+      
+      return rval;
+   };
+   
+   /**
+    * Adds cookies in the given client to the given request.
+    * 
+    * @param client the client.
+    * @param request the request.
+    */
+   var _writeCookies = function(client, request)
+   {
+      var expired = [];
+      var url = client.url;
+      var cookies = client.cookies;
+      for(var name in cookies)
+      {
+         // put cookie in array as necessary for use of single code path
+         var array = cookies[name];
+         if(array.constructor != Array)
+         {
+            array = [array];
+         }
+         for(var i = 0; i < array.length; ++i)
+         {
+            var cookie = array[i];
+            if(_hasCookieExpired(cookie))
+            {
+               // store for clean up
+               expired.push(cookie);
+            }
+            else
+            {
+               // path or path's ancestor must match cookie.path
+               if(request.path.indexOf(cookie.path) === 0)
+               {
+                  request.addCookie(cookie);
+               }
+            }
+         }
+      }
+      
+      // clean up expired cookies
+      for(var i = 0; i < expired.length; ++i)
+      {
+         var cookie = expired[i];
+         client.removeCookie(cookie.name, cookie.path);
+      }
+   };
+   
+   /**
+    * Gets cookies from the given response and adds the to the given client.
+    * 
+    * @param client the client.
+    * @param response the response.
+    */
+   var _readCookies = function(client, response)
+   {
+      var cookies = response.getCookies();
+      
+   };
+   
+   /**
     * Creates an http client that uses krypto.net sockets as a backend and
     * krypto.tls for security.
     * 
@@ -252,7 +335,7 @@
       
       // get scheme, host, and port from url
       var url = _parseUrl(options.url);
-      if(!url.scheme || !url.host || !url.port)
+      if(!url)
       {
          throw {
             message: 'Invalid url.',
@@ -278,7 +361,11 @@
          // all sockets
          sockets: [],
          // idle sockets
-         idle: []
+         idle: [],
+         // cookie jar (key'd off of name, there is only 1 domain and one
+         // setting for secure per client ... but paths may still be different
+         // in which case an array is stored under the cookie name)
+         cookies: {}
       };
       
       // determine if TLS is used
@@ -293,7 +380,7 @@
       }
       
       // create and initialize sockets
-      for(var i = 0; i < options.connections; i++)
+      for(var i = 0; i < options.connections; ++i)
       {
          _initSocket(client, sp.createSocket(), tlsOptions);
       }
@@ -339,6 +426,12 @@
             opts.error = function(){};
          };
          
+         // add cookies to request
+         if(client.cookies.length > 0)
+         {
+            _addCookies(client, opts.request);
+         }
+         
          // queue request options if there are no idle sockets
          if(client.idle.length == 0)
          {
@@ -347,7 +440,7 @@
          // use an idle socket
          else
          {
-            var socket = client.idle.shift();
+            var socket = client.idle.pop();
             socket.options = opts;
             _doRequest(client, socket);
          }
@@ -360,7 +453,7 @@
       {
          // clear pending requests, close and destroy sockets
          client.requests = [];
-         for(var i = 0; i < client.sockets.length; i++)
+         for(var i = 0; i < client.sockets.length; ++i)
          {
             client.sockets[i].close();
             client.sockets[i].destroy();
@@ -368,6 +461,205 @@
          client.socketPool = null;
          client.sockets = [];
          client.idle = [];
+      };
+      
+      /**
+       * Sets a cookie for use with all connections made by this client. Any
+       * cookie with the same name will be replaced. If the cookie's value
+       * is undefined, null, or the blank string, the cookie will be removed.
+       * 
+       * If the cookie's domain doesn't match this client's url host or the
+       * cookie's secure flag doesn't match this client's url scheme, then
+       * setting the cookie will fail.
+       * 
+       * @param cookie the cookie with parameters:
+       *    name: the name of the cookie.
+       *    value: the value of the cookie.
+       *    comment: an optional comment string.
+       *    maxAge: the age of the cookie in seconds relative to created time.
+       *    secure: true if the cookie must be sent over a secure protocol.
+       *    httpOnly: true to restrict access to the cookie from javascript
+       *       (inaffective since the cookies are stored in javascript).
+       *    path: the path for the cookie.
+       *    domain: optional domain the cookie belongs to (must start with dot).
+       *    version: optional version of the cookie.
+       *    created: creation time, in UTC seconds, of the cookie.
+       * 
+       * @return true on success, false on failure.
+       */
+      client.setCookie = function(cookie)
+      {
+         var rval = false;
+         
+         if(typeof(cookie.name) !== 'undefined')
+         {
+            if(cookie.value === null || typeof(cookie.value) === 'undefined' ||
+               cookie.value === '')
+            {
+               // remove cookie
+               rval = client.removeCookie(cookie.name, cookie.path);
+            }
+            else
+            {
+               // set cookie defaults
+               cookie.comment = cookie.comment || '';
+               cookie.maxAge = cookie.maxAge || 0;
+               cookie.secure = cookie.secure || true;
+               cookie.httpOnly = cookie.httpOnly || true,
+               cookie.path = cookie.path || '/';
+               cookie.domain = cookie.domain || null;
+               cookie.version = cookie.version || null;
+               cookie.created = _getUtcTime(new Date());
+               
+               // do secure and domain check
+               var url = client.url;
+               if(((cookie.secure && url.scheme === 'https') ||
+                  (!cookie.secure && url.scheme === 'http')) &&
+                  (cookie.domain !== null ||
+                  // make sure url host ends in cookie.domain
+                  ('.' + url.host).indexOf(cookie.domain) ===
+                   (url.host.length - cookie.domain.length)))
+               {
+                  if(cookie.name in client.cookies)
+                  {
+                     // handle array
+                     var array = client.cookies[cookie.name];
+                     if(array.constructor != Array)
+                     {
+                        if(array.path === cookie.path)
+                        {
+                           // replace cookie
+                           client.cookies[cookie.name] = cookie;
+                        }
+                        else
+                        {
+                           // make array
+                           client.cookies[cookie.name] = [array, cookie];
+                        }
+                        rval = true;
+                     }
+                     else
+                     {
+                        // find existing cookie
+                        for(var i = 0; !rval && i < array.length; ++i)
+                        {
+                           if(array[i].path === path)
+                           {
+                              // replace cookie
+                              array[i] = cookie;
+                              rval = true;
+                           }
+                        }
+                        
+                        // no existing cookie to replace, append
+                        if(!rval)
+                        {
+                           array.push(cookie);
+                        }
+                     }
+                  }
+                  else
+                  {
+                     // new cookie, simple case
+                     client.cookies[cookie.name] = cookie;
+                     rval = true;
+                  }
+               }
+            }
+         }
+         
+         return rval;
+      };
+      
+      /**
+       * Gets a cookie by its name.
+       * 
+       * @param name the name of the cookie to retrieve.
+       * @param path an optional path for the cookie (if there are multiple
+       *           cookies with the same name but different paths).
+       * 
+       * @return the cookie or null if not found.
+       */
+      client.getCookie = function(name, path)
+      {
+         var rval = null;
+         if(name in client.cookies)
+         {
+            rval = client.cookies[name];
+            if(rval.constructor == Array)
+            {
+               if(path)
+               {
+                  // find the specific path
+                  var array = rval;
+                  rval = null;
+                  for(var i = 0; rval === null && i < array.length; ++i)
+                  {
+                     if(array[i].path === path)
+                     {
+                        rval = array[i];
+                     }
+                  }
+               }
+               else
+               {
+                  // just return first one
+                  rval = rval[0];
+               }
+            }
+         }
+         return rval;
+      };
+      
+      /**
+       * Removes a cookie.
+       * 
+       * @param name the name of the cookie to remove.
+       * @param path an optional path for the cookie (if there are multiple
+       *           cookies with the same name but different paths).
+       * 
+       * @return true if a cookie was removed, false if not.
+       */
+      client.removeCookie = function(name, path)
+      {
+         var rval = false;
+         if(name in client.cookies)
+         {
+            if(path)
+            {
+               // find the specific path
+               var array = client.cookies[name];
+               for(var i = 0; i < array.length; ++i)
+               {
+                  if(array[i].path === path)
+                  {
+                     rval = true;
+                     array.splice(i, 1);
+                     if(array.length === 0)
+                     {
+                        // clean up whole array, its empty
+                        delete client.cookies[name];
+                     }
+                     break;
+                  }
+               }
+            }
+            else
+            {
+               // delete all cookies with the given name
+               rval = true;
+               delete client.cookies[name];
+            }
+         }
+         return rval;
+      };
+      
+      /**
+       * Clears all cookies stored in this client.
+       */
+      client.clearCookies = function()
+      {
+         client.cookies = {};
       };
       
       return client;
@@ -415,6 +707,19 @@
    };
    
    /**
+    * Gets the time in utc seconds given a date.
+    * 
+    * @param d the date to use.
+    * 
+    * @return the time in utc seconds.
+    */
+   var _getUtcTime = function(d)
+   {
+      var utc = +d + d.getTimezoneOffset() * 60000;
+      return Math.floor(+new Date() / 1000);
+   };
+   
+   /**
     * Creates an http request.
     * 
     * @param options:
@@ -440,7 +745,7 @@
       
       // add custom headers
       var headers = options.headers || [];
-      for(var i = 0; i < headers.length; i++)
+      for(var i = 0; i < headers.length; ++i)
       {
          for(var name in headers[i])
          {
@@ -461,6 +766,29 @@
       {
          request.setField('Connection', 'close');
       }
+      
+      /**
+       * Adds a cookie to the request 'Cookie' header.
+       * 
+       * @param cookie a cookie to add.
+       */
+      request.addCookie = function(cookie)
+      {
+         var value = '';
+         var field = request.getField('Cookie');
+         if(field !== null)
+         {
+            // separate cookies by semi-colons
+            value += '; ';
+         }
+         
+         // get current time in utc seconds
+         var now = _getUtcTime(new Date());
+         
+         // output cookie name and value
+         value += cookie.name + '=' + cookie.value;
+         request.setField('Cookie', value);
+      };
       
       /**
        * Converts an http request into a string that can be sent as a
@@ -512,7 +840,7 @@
          for(var name in request.fields)
          {
             var fields = request.fields[name];
-            for(var i = 0; i < fields.length; i++)
+            for(var i = 0; i < fields.length; ++i)
             {
                rval += name + ': ' + fields[i] + '\r\n';
             }
@@ -809,6 +1137,79 @@
          }
          
          return response.bodyReceived;
+      };
+      
+      /**
+       * Parses an array of cookies from the 'Set-Cookie' field, if present.
+       * 
+       * @return the array of cookies.
+       */
+      response.getCookies = function()
+      {
+         var rval = [];
+         
+         // get Set-Cookie field
+         if('Set-Cookie' in response.fields)
+         {
+            var field = response.fields['Set-Cookie'];
+            
+            // get current time in utc seconds
+            var now = _getUtcTime(new Date());
+            
+            // regex for parsing name=value
+            var regex = /^\s*([^=]*)=?(.*)$/g;
+            
+            for(var i = 0; i < field.length; ++i)
+            {
+               var cookie = {};
+               // parse cookies by semi-colons (cannot parse by commas because
+               // the 'expires' value may contain a comma an no one follows
+               // the standard)
+               var params = field[i].split(';');
+               for(var n = 0; n < params.length; ++n)
+               {
+                  // parse name and value
+                  var m = regex.exec(params[n]);
+                  if(m !== null)
+                  {
+                     var name = m[1];
+                     var value = m[2] || '';
+                     
+                     // cooke_name=value
+                     if(n === 0)
+                     {
+                        cookie.name = name;
+                        cookie.value = value;
+                     }
+                     // property_name=value
+                     else
+                     {
+                        name = name.toLowerCase();
+                        switch(name)
+                        {
+                        case 'expires':
+                           var secs = Date.parse(value) / 1000;
+                           cookie.maxAge = Math.max(0, secs - now);
+                        case 'max-age':
+                           cookie.maxAge = parseInt(value);
+                           break;
+                        case 'secure':
+                           cookie.secure = true;
+                           break;
+                        case 'httponly':
+                           cookie.httpOnly = true;
+                           break;
+                        default:
+                           cookie[name] = value;
+                        }
+                     }
+                     rval.push(cookie);
+                  }
+               }
+            }
+         }
+         
+         return rval;
       };
            
       return response;

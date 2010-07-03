@@ -149,12 +149,28 @@
    /**
     * Sets a cookie.
     * 
-    * @param name the name of the cookie.
-    * @param value the value of the cookie, null to remove the cookie.
+    * @param cookie the cookie with parameters:
+    *    name: the name of the cookie.
+    *    value: the value of the cookie.
+    *    comment: an optional comment string.
+    *    maxAge: the age of the cookie in seconds relative to created time.
+    *    secure: true if the cookie must be sent over a secure protocol.
+    *    httpOnly: true to restrict access to the cookie from javascript
+    *       (inaffective since the cookies are stored in javascript).
+    *    path: the path for the cookie.
+    *    domain: optional domain the cookie belongs to (must start with dot).
+    *    version: optional version of the cookie.
+    *    created: creation time, in UTC seconds, of the cookie.
     */
-   xhrApi.setCookie = function(name, value)
+   xhrApi.setCookie = function(cookie)
    {
-      // TODO: implement this in http
+      // TODO: when multiple http clients are supported, set the cookie on
+      // the one with the correct domain (or on all of them if domain is null)
+      // also handle 'secure' flag in a similar way
+      
+      // default cookie expiration to never
+      cookie.maxAge = cookie.maxAge || -1;
+      _client.setCookie(cookie);
    };
    
    /**
@@ -162,12 +178,23 @@
     * 
     * @param name the name of the cookie.
     * 
-    * @return the cookie value or null if not found.
+    * @return the cookie or null if not found.
     */
    xhrApi.getCookie = function(name)
    {
-      // TODO: implement this in http
-      return null;
+      return _client.getCookie(name);
+   };
+   
+   /**
+    * Removes a cookie.
+    * 
+    * @param name the name of the cookie.
+    * 
+    * @return true if a cookie was removed, false if not.
+    */
+   xhrApi.removeCookie = function(name)
+   {
+      return _client.removeCookie(name);
    };
    
    /**

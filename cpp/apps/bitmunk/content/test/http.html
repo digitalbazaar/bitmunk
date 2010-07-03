@@ -92,6 +92,28 @@
          return false;
       }
       
+      function client_cookies()
+      {
+         var cookie =
+         {
+            name: 'test-cookie',
+            value: 'cookie',
+            maxAge: -1,
+            secure: true,
+            path: '/'
+         };
+         client.setCookie(cookie);
+         console.log('cookie', client.getCookie('test-cookie'));
+      }
+
+      function request_add_cookies()
+      {
+      }
+
+      function response_get_cookies()
+      {
+      }
+      
       </script>
    </head>
    <body>
@@ -104,6 +126,9 @@
          <button id="cleanup" onclick="javascript:return client_cleanup();">cleanup</button>
          <button id="send" onclick="javascript:return client_send();">send</button>
          <button id="send10" onclick="javascript:return client_send_10();">send 10</button>
+         <button id="client_cookies" onclick="javascript:return client_cookies();">cookies</button>
+         <button id="add_cookies" onclick="javascript:return request_add_cookies();">add cookie</button>
+         <button id="get_cookies" onclick="javascript:return response_get_cookies();">get cookie</button>
       </div>
       <p>Feedback from the flash SocketPool:</p>
       <div id="feedback">
