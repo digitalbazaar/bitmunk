@@ -129,6 +129,22 @@
          var buf = krypto.util.createBuffer();
          buf.putBytes(krypto.util.hexToBytes(exHex));
          console.log('assert', buf.toHex() === exHex);
+
+         var count = 100000;
+         buf = krypto.util.createBuffer();
+         var t1 = +new Date();
+         buf.fillWithByte('b'.charCodeAt(0), count);
+         t1 = +new Date() - t1;
+         
+         bytes = '';
+         var t2 = +new Date();
+         for(var i = 0; i < count; ++i)
+         {
+            bytes += 'b';
+         }
+         t2 = +new Date() - t2;
+         console.log('assert', bytes === buf.getBytes());
+         console.log('fill times', t1, t2); 
       };
 
       var test_base64 = function()

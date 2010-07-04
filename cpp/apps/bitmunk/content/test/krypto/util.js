@@ -48,6 +48,31 @@
       };
       
       /**
+       * Puts a byte in this buffer N times.
+       * 
+       * @param b the byte to put.
+       * @param n the number of bytes of value b to put.
+       */
+      buf.fillWithByte = function(b, n)
+      {
+         b = String.fromCharCode(b);
+         var d = buf.data;
+         while(n > 0)
+         {
+            if(n & 1)
+            {
+               d += b;
+            }
+            n >>>= 1;
+            if(n > 0)
+            {
+               b += b;
+            }
+         }
+         buf.data = d;
+      };
+      
+      /**
        * Puts bytes in this buffer.
        * 
        * @param bytes the bytes (as a string) to put.
