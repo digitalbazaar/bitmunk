@@ -399,7 +399,17 @@
    var _readCookies = function(client, response)
    {
       var cookies = response.getCookies();
-      
+      for(var i = 0; i < cookies.length; ++i)
+      {
+         try
+         {
+            client.setCookie(cookie);
+         }
+         catch(ex)
+         {
+            // ignore failure to add other-domain, etc. cookies
+         }
+      }
    };
    
    /**
@@ -503,7 +513,15 @@
          opts.request = options.request;
          opts.connected = options.connected || function(){};
          opts.closed = options.close || function(){};
-         opts.headerReady = options.headerReady || function(){};
+         opts.headerReady = function(e)
+         {
+            // read cookies
+            _readCookies(client, e.response);
+            if(options.headerReady)
+            {
+               options.headerReady(e);
+            }
+         },
          opts.bodyReady = options.bodyReady || function(){};
          opts.error = options.error || function(){};
          
@@ -526,10 +544,7 @@
          };
          
          // add cookies to request
-         if(client.cookies.length > 0)
-         {
-            _addCookies(client, opts.request);
-         }
+         _writeCookies(client, opts.request);
          
          // queue request options if there are no idle sockets
          if(client.idle.length == 0)
@@ -707,8 +722,14 @@
                {
                   rval = true;
                   delete client.cookies[name][path];
-                  // clean up empty entry
-                  if(client.cookies[name].length === 0)
+                  // clean up entry if empty
+                  var empty = true;
+                  for(var i in client.cookies[name])
+                  {
+                     empty = false;
+                     break;
+                  }
+                  if(empty)
                   {
                      delete client.cookies[name];
                   }
