@@ -471,7 +471,8 @@
                req.method + ' ' + req.path + ' ' +
                xhr.status + ' ' + xhr.statusText + ' ' +
                length + 'B ' +
-               (e.request.time + e.response.time) + 'ms';
+               (e.request.connectTime + e.request.time + e.response.time) +
+               'ms';
             // TODO: provide log functions via options
             if(options.logVerbose)
             {

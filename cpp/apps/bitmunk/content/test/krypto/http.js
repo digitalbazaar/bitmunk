@@ -142,6 +142,7 @@
       if(socket.isConnected())
       {
          // already connected
+         socket.options.request.connectTime = +new Date();
          socket.connected({
             type: 'connect',
             id: socket.id
@@ -150,6 +151,7 @@
       else
       {
          // connect
+         socket.options.request.connectTime = +new Date();
          socket.connect(client.url);
       }
    };
@@ -205,8 +207,9 @@
       // set up handlers
       socket.connected = function(e)
       {
-         socket.options.connected(e);
          var request = socket.options.request;
+         request.connectTime = +new Date() - request.connectTime;
+         socket.options.connected(e);
          if(request.aborted)
          {
             socket.close();
@@ -221,7 +224,7 @@
             }
             request.time = +new Date();
             socket.send(out);
-            request.time = (+new Date() - request.time);
+            request.time = +new Date() - request.time;
             socket.options.response.time = +new Date();
          }
       };
@@ -231,7 +234,7 @@
          var response = socket.options.response;
          if(response.readBodyUntilClose)
          {
-            response.time = (+new Date() - response.time);
+            response.time = +new Date() - response.time;
             response.bodyReceived = true;
             socket.options.bodyReady({
                request: socket.options.request,
@@ -1231,7 +1234,7 @@
          
          if(response.bodyReceived)
          {
-            response.time = (+new Date() - response.time);
+            response.time = +new Date() - response.time;
          }
          
          if(response.flashApi !== null &&
