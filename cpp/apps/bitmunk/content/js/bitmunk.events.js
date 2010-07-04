@@ -640,44 +640,32 @@
          
          var timer = +new Date();
          
-         // create new observer(s)
+         // create new observers upon registrations
          var observerCount = options.eventGroups.length;
-         bitmunk.events.createObservers(observerCount,
+         
+         // build observers request in reverse because the event groups
+         // are popped off the end of the event group array (this
+         // way the order of the observer IDs matches the order of
+         // the event groups
+         var obs = [];
+         var eg = options.eventGroups;
+         while(eg.length > 0)
          {
-            success: function(data)
-            {
-               timer = +new Date() - timer;
-               bitmunk.log.debug('timing',
-                  'created observers in ' + timer + ' ms');
-               
-               // get new observer IDs
-               var ids = data;
-               
-               // build observer data in reverse because the event groups
-               // are popped off the end of the event group array (this
-               // way the order of the observer IDs matches the order of
-               // the event groups
-               var obs = [];
-               for(var i = ids.length - 1; i >= 0; i--)
-               {
-                  var group = options.eventGroups.pop();
-                  obs.push({
-                     id: ids[i],
-                     events: group.events,
-                     coalesceRules: group.coalesceRules
-                  });
-               }
-               
-               // register observer(s) for events
-               bitmunk.events.registerObservers(
-               {
-                  observers: obs,
-                  success: options.success,
-                  error: options.error,
-                  complete: options.complete
-               });
-            },
-            error: options.error
+            var group = eg.pop();
+            obs.push({
+               id: '0',
+               events: group.events,
+               coalesceRules: group.coalesceRules
+            });
+         }
+         
+         // register and create observer(s) for events
+         bitmunk.events.registerObservers(
+         {
+            observers: obs,
+            success: options.success,
+            error: options.error,
+            complete: options.complete
          });
       },
       
