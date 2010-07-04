@@ -91,6 +91,8 @@
     */
    xhrApi.init = function(task)
    {
+      // TODO: abstract this away, pass in config to xhr init
+      
       // get flash config
       var cfg;
       task.block();
