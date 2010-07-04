@@ -10,6 +10,7 @@
 #include "bitmunk/node/BtpActionDelegate.h"
 #include "bitmunk/node/RestResourceHandler.h"
 #include "monarch/net/SocketTools.h"
+#include "monarch/util/Timer.h"
 #include "monarch/validation/Validation.h"
 
 using namespace std;
@@ -19,6 +20,7 @@ using namespace monarch::http;
 using namespace monarch::io;
 using namespace monarch::net;
 using namespace monarch::rt;
+using namespace monarch::util;
 using namespace bitmunk::common;
 using namespace bitmunk::protocol;
 using namespace bitmunk::node;
@@ -545,6 +547,9 @@ void BtpProxyService::proxy(BtpAction* action)
 {
    bool pass = false;
 
+   Timer timer;
+   timer.start();
+
    // store proxy parameters and user's profile
    DynamicObject params;
    ProfileRef profile;
@@ -668,5 +673,16 @@ void BtpProxyService::proxy(BtpAction* action)
       // send exception (client's fault if code < 500)
       ExceptionRef e = Exception::get();
       action->sendException(e, e->getCode() < 500);
+   }
+
+   if(pass)
+   {
+      HttpConnection* hc = action->getRequest()->getConnection();
+      MO_CAT_INFO(BM_PROTOCOL_CAT,
+         "BtpProxyService proxied %s from %s:%i in %" PRIu64 " ms",
+         params["url"]->getString(),
+         hc->getRemoteAddress()->getAddress(),
+         hc->getRemoteAddress()->getPort(),
+         timer.getElapsedMilliseconds());
    }
 }
