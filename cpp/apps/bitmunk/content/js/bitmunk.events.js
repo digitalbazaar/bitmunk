@@ -338,35 +338,39 @@
             complete: function() {}
          }, options || {});
          
-         // FIXME: change state.callbacks so that different functions
-         // can be used by different filters (right now we have an artificial
-         // limit of 1 callback per event type)
-         
-         // update callback map and create post data
+         // save indexes of observers to be created on-the-fly and create
+         // register data
+         var registerData = [];
          var observers = options.observers;
+         var indexes = [];
          $.each(observers, function(i, entry)
          {
-            // add callbacks to state and remove from post data
+            if(entry.id === '0')
+            {
+               indexes.push(i);
+            }
+            
+            var observer = {};
+            observer.id = entry.id;
+            observer.events = [];
+            registerData.push(observer);
+            
+            // add events to register data
             $.each(entry.events, function()
             {
-               if(!(entry.id in state.callbacks))
+               var event = {}
+               event.type = this.type;
+               if(this.filter !== null)
                {
-                  state.callbacks[entry.id] = {};
+                  event.filter = this.filter;
                }
-               state.callbacks[entry.id][this.type] = this.callback;
-               delete this.callback;
-               
-               // remove filter if null
-               if(this.filter === null)
-               {
-                  delete this.filter;
-               }
+               observer.events.push(event);
             });
             
-            // remove coalesceRules if null
-            if(entry.coalesceRules === null)
+            // add coalesceRules if not null
+            if(entry.coalesceRules !== null)
             {
-               delete entry.coalesceRules;
+               observer.coalesceRules = entry.coalesceRules;
             }
          });
          
@@ -378,17 +382,70 @@
             method: 'POST',
             url: eventsUrl + '/observers/register',
             params: { nodeuser: bitmunk.user.getUserId() },
-            data: observers,
+            data: registerData,
             success: function(data, textStatus)
             {
                timer = +new Date() - timer;
                bitmunk.log.debug('timing',
                   'registered for events in ' + timer + ' ms');
-               options.success(JSON.parse(data), textStatus);
+               
+               // get array of valid observer IDs (same order as observer
+               // entries that were posted)
+               var ids = JSON.parse(data);
+               
+               // add any new observer IDs into list and observers data
+               $.each(indexes, function(i, index)
+               {
+                  state.observerIds.push(ids[index]);
+                  observers[index].id = ids[index];
+               });
+               
+               // FIXME: change state.callbacks so that different functions can be
+               // used by different filters (right now we have an artificial limit
+               // of 1 callback per event type)
+               
+               // update callback map
+               $.each(observers, function(i, entry)
+               {
+                  // add callbacks to state
+                  $.each(entry.events, function()
+                  {
+                     if(!(entry.id in state.callbacks))
+                     {
+                        state.callbacks[entry.id] = {};
+                     }
+                     state.callbacks[entry.id][this.type] = this.callback;
+                  });
+               });
+               
+               if(indexes.length > 0)
+               {
+                  // start polling if not doing so already
+                  if(!state.poll)
+                  {
+                     state.poll = true;
+                     bitmunk.events.poll();
+                  }
+                  else
+                  {
+                     // send webui observer created event to reset polling to
+                     // include new observer(s)
+                     bitmunk.events.sendEvents(
+                     {
+                        send: [{
+                           type: 'bitmunk.webui.Observer.created',
+                           details: { userId: bitmunk.user.getUserId() }
+                        }]
+                     });
+                  }
+               }
+               
+               // do callback
+               options.success(ids, textStatus);
             },
             error: options.error,
             complete: options.complete
-         });
+         });         
       },
       
       /**
