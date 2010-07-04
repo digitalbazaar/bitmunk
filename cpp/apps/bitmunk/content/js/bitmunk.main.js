@@ -299,6 +299,7 @@ jQuery(function($) {
     */
    var doLogin = function(task)
    {
+      var timer = +new Date();
       task.next(bitmunk.events.init);
       task.next(startLoading);
       task.next(loadConfiguration);
@@ -308,6 +309,11 @@ jQuery(function($) {
       task.next(callDidLoginHandlers);
       task.next(setupNavigation);
       task.next(pluginsLoaded);
+      task.next(function(task)
+      {
+         timer = +new Date() - timer;
+         bitmunk.log.info(cat, 'login completed in ' + timer + ' ms');
+      });
    };
    
    // Storage for timeout id for showing loading page so it can be cancelled.
@@ -971,6 +977,10 @@ jQuery(function($) {
    bitmunk.main = function()
    {
       bitmunk.log.verbose(cat, 'main: started');
+      bitmunk.log.info(cat, 'starting up...');
+      
+      // startup timer
+      var timer = +new Date();
       
       bitmunk.task.start({
          type: 'bitmunk.main',
@@ -1046,7 +1056,9 @@ jQuery(function($) {
             });
             task.next('main.done', function(task)
             {
+               timer = +new Date() - timer;
                bitmunk.log.verbose(cat, 'main task: done');
+               bitmunk.log.info(cat, 'started in ' + timer + ' ms');
             });
          },
          failure: function(task)
