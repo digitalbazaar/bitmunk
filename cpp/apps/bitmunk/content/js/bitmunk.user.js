@@ -3,7 +3,7 @@
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
  *
- * Copyright (c) 2008 Digital Bazaar, Inc.  All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 (function($) {
    // logging category
@@ -30,6 +30,9 @@
             password: options.password
          };
          
+         // time login process
+         var timer = +new Date();
+         
          $.ajax({
             type: 'POST',
             url: bitmunk.api.localRoot + 'webui/login',
@@ -40,6 +43,9 @@
             dataType: 'text',
             success: function(data, textStatus) 
             {
+               timer = +new Date() - timer;
+               bitmunk.log.info(cat,
+                  'network login completed in ' + timer + ' ms');
                $.event.trigger('bitmunk-login-success');
             },
             error: function(xhr, textStatus, errorThrown) 
@@ -92,7 +98,7 @@
             complete: function(xhr, textStatus) {
                //bitmunk.log.debug(cat, 'login complete', arguments);
             },
-            xhr: bitmunk.xhr.create
+            xhr: window.krypto.xhr.create
          });
       },
       
@@ -118,13 +124,13 @@
             complete: function(xhr, textStatus) {
                bitmunk.log.debug(cat, 'logout', xhr, textStatus);
                // ensure cookie cleared
-               bitmunk.xhr.setCookie('bitmunk-user-id', null);
-               bitmunk.xhr.setCookie('bitmunk-session', null);
+               window.krypto.xhr.removeCookie('bitmunk-user-id');
+               window.krypto.xhr.removeCookie('bitmunk-session');
                $.event.trigger('bitmunk-logout', [details]);
             },
             // do not use global failure handler
             global: false,
-            xhr: bitmunk.xhr.create
+            xhr: window.krypto.xhr.create
          });
       },
       
@@ -135,7 +141,7 @@
        */
       isLoggedIn: function()
       {
-         return bitmunk.xhr.getCookie('bitmunk-user-id') ? true : false;
+         return window.krypto.xhr.getCookie('bitmunk-user-id') ? true : false;
       },
       
       /**
@@ -145,7 +151,8 @@
        */
       getUserId: function()
       {
-         return bitmunk.xhr.getCookie('bitmunk-user-id');
+         var cookie = window.krypto.xhr.getCookie('bitmunk-user-id');
+         return cookie === null ? null : cookie.value;
       },
       
       /**
@@ -155,7 +162,8 @@
        */
       getUsername: function()
       {
-         return unescape(bitmunk.xhr.getCookie('bitmunk-username'));
+         var cookie = window.krypto.xhr.getCookie('bitmunk-username');
+         return cookie === null ? null : unescape(cookie.value);
       },
       
       /**

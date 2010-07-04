@@ -42,7 +42,7 @@
          {
             ruleNode.html('<li>Error: Failed to fetch user access rules.</li>');
          },
-         xhr: bitmunk.xhr.create
+         xhr: window.krypto.xhr.create
       });
    };
       
@@ -360,7 +360,7 @@
                ruleNode.html('<li>Error: ' + access + ' ' + entry.username +
                   ' @ ' + entry.ip + '</li>');
             },
-            xhr: bitmunk.xhr.create
+            xhr: window.krypto.xhr.create
          });
       });
       

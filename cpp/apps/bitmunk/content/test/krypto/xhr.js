@@ -462,9 +462,10 @@
                xhr.responseText = e.response.body;
                length = e.response.body.length;
             }
+            // TODO: provide log functions via options
             var logFunction =
                (xhr.status >= 400 && options.logWarningOnError) ?
-               bitmunk.log.warning : bitmunk.log.verbose;
+               window.bitmunk.log.warning : window.bitmunk.log.verbose;
             var req = _state.request;
             logFunction(cat,
                req.method + ' ' + req.path + ' ' +

@@ -46,8 +46,8 @@
       -->
       <script type="text/javascript">
       // called when flash is ready
-      window.hpm = window.hpm || {};
-      window.hpm.ready = function()
+      window.krypto.socketPool = {};
+      window.krypto.socketPool.ready = function()
       {
          if($.browser.msie === true)
          {
@@ -63,17 +63,13 @@
          {
             jQuery(bitmunk.main);
          }
-      }
+      };
       
       // embed flash xhr proxy
-      var flashvars = {};
-      var params = { allowscriptaccess: "always" };
-      var attributes = {};
-      swfobject.embedSWF(
-         "bitmunk/HttpPoolManager.swf", "httpPoolManager",
-         "0", "0", "9.0.0",
-         "bitmunk/js/swfobject/expressInstall.swf",
-         flashvars, params, attributes,
+	   swfobject.embedSWF(
+	      '/bitmunk/SocketPool.swf', 'socketPool', '0', '0', '9.0.0',
+	      '/bitmunk/js/swfobject/expressInstall.swf',
+	      {}, {allowscriptaccess: 'always'}, {},
          function(e)
          {
             // flash loaded successfully
@@ -117,7 +113,7 @@
          </div>
       </div>
       
-      <div id="httpPoolManager">
+      <div id="socketPool">
          <p>Could not initialize flash. Please make sure you have
          Adobe Shockwave Flash Player plugin version 10 or newer installed.</p>
       </div>
