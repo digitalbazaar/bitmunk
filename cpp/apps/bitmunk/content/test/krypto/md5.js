@@ -27,10 +27,7 @@
    {
       // create padding
       _padding = String.fromCharCode(128);
-      for(var i = 0; i < 64; i++)
-      {
-         _padding += String.fromCharCode(0);
-      }
+      _padding += krypto.util.fillString(String.fromCharCode(0x00), 64);
       
       // g values
       _g = [
