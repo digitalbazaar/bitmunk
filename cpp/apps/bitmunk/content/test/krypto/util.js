@@ -436,6 +436,39 @@
    };
    
    /**
+    * Performs a per byte XOR between two byte strings and returns the result
+    * as a string of bytes.
+    * 
+    * @param s1 first string of bytes.
+    * @param s2 second string of bytes.
+    * @param n the number of bytes to XOR.
+    * 
+    * @return the XOR'd result.
+    */
+   util.xorBytes = function(s1, s2, n)
+   {
+      var s3 = '';
+      var b = '';
+      var t = '';
+      var i = 0;
+      var c = 0;
+      for(; n > 0; --n, ++i)
+      {
+         b = s1.charCodeAt(i) ^ s2.charCodeAt(i);
+         if(c >= 10)
+         {
+            s3 += t;
+            t = '';
+            c = 0;
+         }
+         t += String.fromCharCode(b);
+         ++c;
+      }
+      s3 += t;
+      return s3;
+   };
+   
+   /**
     * Converts a hex string into a string of bytes.
     * 
     * @param hex the hexadecimal string to convert.

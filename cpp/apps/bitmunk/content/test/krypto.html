@@ -130,12 +130,14 @@
          buf.putBytes(krypto.util.hexToBytes(exHex));
          console.log('assert', buf.toHex() === exHex);
 
-         var count = 100000;
+         // optimized fill
+         var count = 200000;
          buf = krypto.util.createBuffer();
          var t1 = +new Date();
          buf.fillWithByte('b'.charCodeAt(0), count);
          t1 = +new Date() - t1;
-         
+
+         // slow fill
          bytes = '';
          var t2 = +new Date();
          for(var i = 0; i < count; ++i)
@@ -144,7 +146,36 @@
          }
          t2 = +new Date() - t2;
          console.log('assert', bytes === buf.getBytes());
-         console.log('fill times', t1, t2); 
+         console.log('fill times', t1 + ' < ' + t2);
+
+         // optimized xor
+         count = 500000;
+         var buf1 = krypto.util.createBuffer();
+         buf1.fillWithByte(0x01, count);
+         var buf2 = krypto.util.createBuffer();
+         buf2.fillWithByte(0x02, count);
+         var buf3 = krypto.util.createBuffer();
+         t1 = +new Date();
+         buf3.putBytes(krypto.util.xorBytes(
+            buf1.getBytes(), buf2.getBytes(), count));
+         t1 = +new Date() - t1;
+         //console.log('buf3', buf3.toHex());
+         
+         // slow xor
+         buf1 = krypto.util.createBuffer();
+         buf1.fillWithByte(0x01, count);
+         buf2 = krypto.util.createBuffer();
+         buf2.fillWithByte(0x02, count);
+         var buf4 = krypto.util.createBuffer();
+         t2 = +new Date();
+         for(var i = 0; i < count; ++i)
+         {
+            buf4.putByte(buf1.getByte(i) ^ buf2.getByte(i));
+         }
+         t2 = +new Date() - t2;
+         //console.log('buf4', buf4.toHex());
+         console.log('assert', buf4.getBytes() === buf3.getBytes());
+         console.log('xor times', t1 + ' < ' + t2); 
       };
 
       var test_base64 = function()

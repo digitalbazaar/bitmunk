@@ -993,10 +993,7 @@
                   // value of the number of pad bytes)
                   var padding = (_input.length() == _blockSize) ?
                      _blockSize : (_blockSize - _input.length());
-                  for(var i = 0; i < padding; ++i)
-                  {
-                     _input.putByte(padding);
-                  }
+                  _input.fillWithByte(padding, padding);
                }
             }
             

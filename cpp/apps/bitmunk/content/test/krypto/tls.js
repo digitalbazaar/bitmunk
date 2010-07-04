@@ -348,10 +348,8 @@
       }
       
       // XOR the md5 bytes with the sha1 bytes
-      for(var i = 0; i < length; ++i)
-      {
-         rval.putByte(md5bytes.getByte() ^ sha1bytes.getByte());
-      }
+      rval.putBytes(krypto.util.xorBytes(
+         md5bytes.getBytes(), sha1bytes.getBytes(), length));
       
       return rval;
    };
@@ -486,15 +484,11 @@
       if(!decrypt)
       {
          // get the number of padding bytes required to reach the blockSize
-         // and subtract 1 to make room for the padding_length uint8
+         // and subtract 1 to make room for the padding_length uint8 but
+         // add it during fillWithByte
          var padding = (input.length() == blockSize) ?
             (blockSize - 1) : (blockSize - input.length() - 1);
-         for(var i = 0; i < padding; ++i)
-         {
-            input.putByte(padding);
-         }
-         // add the padding_length
-         input.putByte(padding);
+         input.fillWithByte(padding, padding + 1);
       }
       return true;
    }
