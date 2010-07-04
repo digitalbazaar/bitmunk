@@ -562,7 +562,7 @@ package
       private function inflate(data:String):Object
       {
          log("inflate");
-         var rval:String = null;
+         var rval:Object = {rval: null};
       	 
       	 try
       	 {
@@ -574,15 +574,20 @@ package
             var b64e:Base64Encoder = new Base64Encoder();
             b64e.insertNewLines = false;
             b64e.encodeBytes(b, 0, b.length);
-            rval = b64e.toString();
+            rval.rval = b64e.toString();
          }
          catch(e:Error)
          {
          	log(e);
+            rval.error = {
+                id: e.errorID,
+                name: e.name,
+                message: e.message
+            };
          }
          
          log("inflate done");
-         return {rval: rval};
+         return rval;
       }
       
       /**

@@ -582,6 +582,87 @@
    };
    
    /**
+    * Stores an item on local disk using a flash interface.
+    * 
+    * @param api the flash interface.
+    * @param id the storage ID to use.
+    * @param key the key for the item.
+    * @param data the data for the item (any javascript object/primitive).
+    */
+   util.setItem = function(api, id, key, data)
+   {
+      // json-encode and then store compressed data
+      var d = JSON.stringify(data);
+      var rval = api.setItem(id, key, api.deflate(util.encode64(d)).rval);
+      if(rval.rval !== true)
+      {
+         throw rval.error;
+      }
+   };
+   
+   /**
+    * Gets an item on local disk using a flash interface.
+    * 
+    * @param api the flash interface.
+    * @param id the storage ID to use.
+    * @param key the key for the item.
+    * 
+    * @return the item.
+    */
+   util.getItem = function(api, id, key)
+   {
+      // get the base64-encoded data
+      var rval = api.getItem(id, key);
+      if(rval.rval !== true)
+      {
+         throw rval.error;
+      }
+      
+      // inflate the data
+      rval = api.inflate(rval);
+      if(rval.rval === null)
+      {
+         throw rval.error;
+      }
+      
+      // base64-decode and return json-decoded data
+      rval = util.decode64(rval.rval);
+      return JSON.parse(rval);
+   };
+   
+   /**
+    * Removes an item on local disk using a flash interface.
+    * 
+    * @param api the flash interface.
+    * @param id the storage ID to use.
+    * @param key the key for the item.
+    */
+   util.removeItem = function(api, id, key)
+   {
+      var rval = api.removeItem(id, key);
+      if(rval.rval !== true && rval.error)
+      {
+         throw rval.error;
+      }
+   };
+   
+   /**
+    * Clears the local disk storage identified by the given ID using a
+    * flash interface.
+    * 
+    * @param api the flash interface.
+    * @param id the storage ID to use.
+    */
+   util.clearItems = function(api, id)
+   {
+      var rval = api.clearItems(id);
+      if(rval.rval !== true)
+      {
+         throw rval.error;
+      }
+   };
+   
+   /**
     * The crypto namespace and util API.
     */
    window.krypto = window.krypto || {};
