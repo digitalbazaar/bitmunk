@@ -356,12 +356,12 @@ jQuery(function($) {
          success: function(data, textStatus)
          {
             timer = +new Date() - timer;
-            bitmunk.log.debug(cat, 'config loaded in ' + timer + ' ms');
+            bitmunk.log.debug('timing', 'config loaded in ' + timer + ' ms');
             timer = +new Date();
             // store config
             sConfig = JSON.parse(data);
             timer = +new Date() - timer;
-            bitmunk.log.debug(cat, 'config parsed in ' + timer + ' ms');
+            bitmunk.log.debug('timing', 'config parsed in ' + timer + ' ms');
             // notify watchers of new config details
             triggerConfigChanged(sConfig);
             task.unblock();
