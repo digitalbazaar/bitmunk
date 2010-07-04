@@ -444,55 +444,40 @@ jQuery(function($) {
    var registerPluginLoaders = function(task)
    {
       var timer = +new Date();
+      
+      // do registration in parallel for better performance
+      var count = task.userData.pluginInfo.length;
+      var handlers = [];
+      $.each(task.userData.pluginInfo, function(i, info)
+      {
+         handlers.push(function(task)
+         {
+            // FIXME: remove this once dlehn fixes double-registration
+            // problems
+            console.log('XXX', 'info.id', info.id);
+            
+            // do not re-register login plugin
+            if(info.id !== 'bitmunk.webui.Login')
+            {
+               // register resource
+               bitmunk.resource.register(
+               {
+                  pluginId: info.id,
+                  type: bitmunk.resource.types.pluginLoader,
+                  loadInit: info.loadInit,
+                  init: info.init,
+                  task: task
+               });
+            }
+         });
+      });
+      task.parallel(handlers);
+      
       task.next(function(task)
       {
          timer = +new Date() - timer;
          bitmunk.log.debug('timing',
             'plugin loaders registered in ' + timer + ' ms');
-      });
-      
-      // do registration in parallel for better performance
-      var count = task.userData.pluginInfo.length;
-      var parallel = task;
-      parallel.block(count);
-      $.each(task.userData.pluginInfo, function(i, info)
-      {
-         // FIXME: do we need better support for preventing re-registration
-         // of existing plugins when we don't want to do so?
-         
-         // start a task for each registration
-         bitmunk.task.start(
-         {
-            type: 'resource.parallel.load.' + info.id,
-            name: 'register ' + info.id,
-            run: function(task)
-            {
-               // FIXME: remove this once dlehn fixes double-registration
-               // problems
-               
-               // do not re-register login plugin
-               if(info.id !== 'bitmunk.webui.Login')
-               {
-                  // register resource
-                  bitmunk.resource.register(
-                  {
-                     pluginId: info.id,
-                     type: bitmunk.resource.types.pluginLoader,
-                     loadInit: info.loadInit,
-                     init: info.init,
-                     task: task
-                  });
-               }
-            },
-            success: function(task)
-            {
-               parallel.unblock();
-            },
-            failure: function(task)
-            {
-               parallel.fail();
-            }
-         });
       });
    };
    
