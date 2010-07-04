@@ -11,10 +11,10 @@
    window.krypto.socketPool = {};
    window.krypto.socketPool.ready = function()
    {
-      // init flash xhr
+      // init krypto xhr
       bitmunk.task.start({
-         type: 'xhr2.init',
-         run: bitmunk.xhr2.init
+         type: 'krypto.xhr.init',
+         run: krypto.xhr.init
       });
    };
    swfobject.embedSWF(
@@ -31,8 +31,8 @@
    {
       // init flash xhr
       bitmunk.task.start({
-         type: 'xhr.init',
-         run: bitmunk.xhr.init
+         type: 'deprecated xhr.init',
+         run: bitmunk.deprecated.xhr.init
       });
    });
 })(jQuery);
@@ -458,7 +458,7 @@ jQuery(function($)
          {
             task.fail();
          },
-         xhr: bitmunk.xhr2.create
+         xhr: krypto.xhr.create
       });
       
       task.next(function(task)
@@ -489,7 +489,7 @@ jQuery(function($)
                {
                   task.fail(N);
                },
-               xhr: bitmunk.xhr2.create
+               xhr: krypto.xhr.create
             });
          });
       }
@@ -518,7 +518,7 @@ jQuery(function($)
             {
                task.fail(N);
             },
-            xhr: bitmunk.xhr2.create
+            xhr: krypto.xhr.create
          });
       }
       
@@ -546,7 +546,7 @@ jQuery(function($)
          {
             task.fail();
          },
-         xhr: bitmunk.xhr.create
+         xhr: bitmunk.deprecated.xhr.create
       });
       
       task.next(function(task)
@@ -577,7 +577,7 @@ jQuery(function($)
                {
                   task.fail(N);
                },
-               xhr: bitmunk.xhr.create
+               xhr: bitmunk.deprecated.xhr.create
             });
          });
       }
@@ -606,7 +606,7 @@ jQuery(function($)
             {
                task.fail(N);
             },
-            xhr: bitmunk.xhr.create
+            xhr: bitmunk.deprecated.xhr.create
          });
       }
       

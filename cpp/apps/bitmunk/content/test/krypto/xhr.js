@@ -8,8 +8,7 @@
 (function($)
 {
    // logging category
-   // TODO: change to 'monarch.something' or to js lib name
-   var cat = 'bitmunk.webui.core.Xhr';
+   var cat = 'krypto.xhr';
    
    /*
    XMLHttpRequest interface definition from:
@@ -77,8 +76,9 @@
    var _maxConnections = 10;
    
    // local aliases
-   var net = window.krypto.net;
-   var http = window.krypto.http;
+   var krypto = window.krypto;
+   var net = krypto.net;
+   var http = krypto.http;
    
    // define the xhr interface
    // TODO: change to monarch or js lib name
@@ -596,15 +596,6 @@
       return xhr;
    };
    
-   // FIXME: enable to replace bitmunk.xhr with this api
-   //bitmunk.xhr = xhrApi;
-   bitmunk.xhr2 = xhrApi;
-   
-   // NOTE: xhr support is implicit and not a required dependency
-   // plugin registered after registration code is initialized
-   /*bitmunk._implicitPluginInfo.task =
-   {
-      pluginId: 'bitmunk.webui.core.Xhr',
-      name: 'Bitmunk Xhr'
-   };*/
+   // expose public api
+   krypto.xhr = xhrApi;
 })(jQuery);
