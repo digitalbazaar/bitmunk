@@ -504,108 +504,107 @@
     * file system and select files or directories. 
     */
    // filebrowser namespace object
-   bitmunk.filebrowser =
+   bitmunk.filebrowser = {};
+   
+   /**
+    * Creates a file browser that will be displayed in a DOM element with
+    * the given ID. The element should be a <div> element. The contents of
+    * the element will be cleared and replaced with the file browser UI. 
+    *
+    * @param options:
+    *           id the name of the element ID to use when replacing the
+    *              contents of the element.
+    *           path the path to use when initializing the file browser.
+    *           selectable an array with 'file' if files can be selected,
+    *              'directory' if directories can be selected.
+    *           fileSelected the function(path) that will be called when a
+    *              file has been selected.
+    *           directorySelected the function(path) that will be called when
+    *              a directory has been selected.
+    *           init an optional custom function(browser) that will be
+    *              called to initialize the browser UI.
+    *           setDirectory an optional custom function(browser, path) that
+    *              will be called to update the browser contents based on
+    *              the given path.
+    *           clearSelection an optional custom function(browser) that
+    *              can be called to clear the browser contents.
+    *           show an optional custom function(browser) that can be called
+    *              to show the browser.
+    *           hide an optional custom function(browser) that can be called
+    *              to hide the browser.
+    * 
+    * @return the created file browser object.
+    */
+   bitmunk.filebrowser.create = function(options)
    {
-      /**
-       * Creates a file browser that will be displayed in a DOM element with
-       * the given ID. The element should be a <div> element. The contents of
-       * the element will be cleared and replaced with the file browser UI. 
-       *
-       * @param options:
-       *           id the name of the element ID to use when replacing the
-       *              contents of the element.
-       *           path the path to use when initializing the file browser.
-       *           selectable an array with 'file' if files can be selected,
-       *              'directory' if directories can be selected.
-       *           fileSelected the function(path) that will be called when a
-       *              file has been selected.
-       *           directorySelected the function(path) that will be called when
-       *              a directory has been selected.
-       *           init an optional custom function(browser) that will be
-       *              called to initialize the browser UI.
-       *           setDirectory an optional custom function(browser, path) that
-       *              will be called to update the browser contents based on
-       *              the given path.
-       *           clearSelection an optional custom function(browser) that
-       *              can be called to clear the browser contents.
-       *           show an optional custom function(browser) that can be called
-       *              to show the browser.
-       *           hide an optional custom function(browser) that can be called
-       *              to hide the browser.
-       * 
-       * @return the created file browser object.
-       */
-      create: function(options)
+      // set parameter defaults
+      options = $.extend(
       {
-         // set parameter defaults
-         options = $.extend(
+         path: '/',
+         selectable: ['file'],
+         fileSelected: function() {},
+         directorySelected: function() {},
+         init: init,
+         setDirectory: setDirectory,
+         clearSelection: clearSelection,
+         show: show,
+         hide: hide
+      }, options || {});
+      
+      bitmunk.log.debug(sLogCategory, 'create', options);
+      
+      // create browser object
+      var browser =
+      {
+         id: options.id,
+         directory: options.path,
+         selectable: options.selectable,
+         selection:
          {
-            path: '/',
-            selectable: ['file'],
-            fileSelected: function() {},
-            directorySelected: function() {},
-            init: init,
-            setDirectory: setDirectory,
-            clearSelection: clearSelection,
-            show: show,
-            hide: hide
-         }, options || {});
-         
-         bitmunk.log.debug(sLogCategory, 'create', options);
-         
-         // create browser object
-         var browser =
+            path: null,
+            type: null
+         },
+         mainElement: null,
+         directoryElement: null,
+         contentElement: null,
+         selectButton: null,
+         highlightedItem: null,
+         fileSelected: options.fileSelected,
+         directorySelected: options.directorySelected,
+         setDirectory: function(path)
          {
-            id: options.id,
-            directory: options.path,
-            selectable: options.selectable,
-            selection:
-            {
-               path: null,
-               type: null
-            },
-            mainElement: null,
-            directoryElement: null,
-            contentElement: null,
-            selectButton: null,
-            highlightedItem: null,
-            fileSelected: options.fileSelected,
-            directorySelected: options.directorySelected,
-            setDirectory: function(path)
-            {
-               options.setDirectory(browser, path);
-            },
-            clearSelection: function()
-            {
-               options.clearSelection(browser);
-            },
-            selectFile: function(path)
-            {
-               browser.selection.path = path;
-               browser.selection.type = 'file';
-               browser.fileSelected(path);
-            },
-            selectDirectory: function(path)
-            {
-               browser.selection.path = path;
-               browser.selection.type = 'directory';
-               browser.directorySelected(path);
-            },
-            show: function()
-            {
-               options.show(browser);
-            },
-            hide: function()
-            {
-               options.hide(browser);
-            }
-         };
-         
-         // initialize the browser's UI
-         options.init(browser);
-         
-         return browser;
-      }
+            options.setDirectory(browser, path);
+         },
+         clearSelection: function()
+         {
+            options.clearSelection(browser);
+         },
+         selectFile: function(path)
+         {
+            browser.selection.path = path;
+            browser.selection.type = 'file';
+            browser.fileSelected(path);
+         },
+         selectDirectory: function(path)
+         {
+            browser.selection.path = path;
+            browser.selection.type = 'directory';
+            browser.directorySelected(path);
+         },
+         show: function()
+         {
+            options.show(browser);
+         },
+         hide: function()
+         {
+            options.hide(browser);
+         }
+      };
+      
+      // initialize the browser's UI
+      options.init(browser);
+      
+      return browser;
    };
    
    // NOTE: filebrowser support is implicit and not a required dependency
