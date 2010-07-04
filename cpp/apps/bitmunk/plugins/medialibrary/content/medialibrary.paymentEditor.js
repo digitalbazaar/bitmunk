@@ -1,6 +1,6 @@
 /**
  * Bitmunk Media Library Payment Scheme Editor
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * @author Mike Johnson
  * @author Manu Sporny
@@ -24,81 +24,81 @@
    var sSchemesUrl = bitmunk.api.localRoot + 'catalog/payees/schemes';
    
    /** Public Media Library Payment Scheme Editor namespace **/
-   bitmunk.medialibrary.paymentEditor =
+   bitmunk.medialibrary.paymentEditor = {};
+   
+   /**
+    * Opens the payment scheme editor and to edit payment scheme.
+    * 
+    * @param psId the related scheme ID (can be 0 for a new scheme).
+    */
+   bitmunk.medialibrary.paymentEditor.open = function(psId)
    {
-      /**
-       * Opens the payment scheme editor and to edit payment scheme.
-       * 
-       * @param psId the related scheme ID (can be 0 for a new scheme).
-       */
-      open: function(psId)
-      {
-         bitmunk.log.debug(sLogCategory, 'open', psId);
-         
-         // save payee scheme ID
-         sPayeeSchemeId = psId;
-         
-         // get scheme
-         var scheme = bitmunk.model.fetch(
-            bitmunk.catalog.model.name,
-            bitmunk.catalog.model.payeeSchemeTable,
-            psId);
-         
-         // get user accounts
-         var accounts = bitmunk.model.fetch(
-            'accounts', 'accounts', bitmunk.user.getUserId());
-         
-         // show the editor dialog
-         show(scheme, accounts);
-      },
+      bitmunk.log.debug(sLogCategory, 'open', psId);
       
-      /**
-       * Closes the payment editor and notifies the ware editor.
-       */
-      close: function()
-      {
-         bitmunk.log.debug(sLogCategory, 'close', sPayeeSchemeId);
-         hide();
-         bitmunk.medialibrary.wareEditor.paymentEditorClosed(sPayeeSchemeId);
-      },
+      // save payee scheme ID
+      sPayeeSchemeId = psId;
       
-      /**
-       * Adds a feedback message inside the editor dialog.
-       * 
-       * @param schemeId the payment scheme ID.
-       * @param type the type of message (i.e. 'ok', 'warning', 'error').
-       * @param message the message to display.
-       */
-      addFeedback: function(schemeId, type, message)
-      {
-         // only add feeback if scheme is loaded in dialog
-         if(schemeId == sPayeeSchemeId)
-         {
-            var feedback = $('<p class="' + type + '">' + message + '</p>');
-            $('#feedback-payment').prepend(feedback);
-            
-            // show feedback box
-            $('#feedbackBox-payment').show();
-         }
-      },
+      // get scheme
+      var scheme = bitmunk.model.fetch(
+         bitmunk.catalog.model.name,
+         bitmunk.catalog.model.payeeSchemeTable,
+         psId);
       
-      /**
-       * Clears all feedback messages for the specified payment scheme.
-       * 
-       * @param schemeId the payment scheme ID or null to clear any feedback.
-       */
-      clearFeedback: function(schemeId)
+      // get user accounts
+      var accounts = bitmunk.model.fetch(
+         'accounts', 'accounts', bitmunk.user.getUserId());
+      
+      // show the editor dialog
+      show(scheme, accounts);
+   };
+   
+   /**
+    * Closes the payment editor and notifies the ware editor.
+    */
+   bitmunk.medialibrary.paymentEditor.close = function()
+   {
+      bitmunk.log.debug(sLogCategory, 'close', sPayeeSchemeId);
+      hide();
+      bitmunk.medialibrary.wareEditor.paymentEditorClosed(sPayeeSchemeId);
+   };
+   
+   /**
+    * Adds a feedback message inside the editor dialog.
+    * 
+    * @param schemeId the payment scheme ID.
+    * @param type the type of message (i.e. 'ok', 'warning', 'error').
+    * @param message the message to display.
+    */
+   bitmunk.medialibrary.paymentEditor.addFeedback = function(
+      schemeId, type, message)
+   {
+      // only add feeback if scheme is loaded in dialog
+      if(schemeId == sPayeeSchemeId)
       {
-         // if scheme is loaded in dialog or scheme ID is null/undefined,
-        // remove feedback
-         if(schemeId == sPayeeSchemeId || !schemeId)
-         {
-            // hide feedback box
-            $('#feedbackBox-payment').hide();
-            
-            // clear feedback
-            $('#feedback-payment').empty();
-         }
+         var feedback = $('<p class="' + type + '">' + message + '</p>');
+         $('#feedback-payment').prepend(feedback);
+         
+         // show feedback box
+         $('#feedbackBox-payment').show();
+      }
+   };
+   
+   /**
+    * Clears all feedback messages for the specified payment scheme.
+    * 
+    * @param schemeId the payment scheme ID or null to clear any feedback.
+    */
+   bitmunk.medialibrary.paymentEditor.clearFeedback = function(schemeId)
+   {
+      // if scheme is loaded in dialog or scheme ID is null/undefined,
+     // remove feedback
+      if(schemeId == sPayeeSchemeId || !schemeId)
+      {
+         // hide feedback box
+         $('#feedbackBox-payment').hide();
+         
+         // clear feedback
+         $('#feedback-payment').empty();
       }
    };
    

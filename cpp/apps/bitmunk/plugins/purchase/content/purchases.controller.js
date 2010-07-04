@@ -27,196 +27,194 @@
    
    // Purchases Controller namespace
    bitmunk.purchases = bitmunk.purchases || {};
-   bitmunk.purchases.controller = 
+   bitmunk.purchases.controller = {};
+   
+   /**
+    * Data loading methods
+    * ====================
+    */
+   bitmunk.purchases.controller.loadPurchases = function(task)
    {
-      /**
-       * Data loading methods
-       * ====================
-       */
-      loadPurchases: function(task)
+      // clear view
+      task.next('Purchases Prepare UI', function(task)
       {
-         // clear view
-         task.next('Purchases Prepare UI', function(task)
+         // DEBUG: output
+         bitmunk.log.debug(sLogCategory, 'Prepare UI');
+         
+         // clear purchases
+         bitmunk.purchases.view.clearPurchaseRows();
+         
+         // FIXME: show loading indicator
+         //bitmunk.purchases.view.showLoading(true);
+      });
+      
+      // add purchase rows
+      task.next('Purchases Add Rows', function(task)
+      {
+         // TODO: add slice here for paginated purchases table
+         
+         // get all download states from model
+         var states = bitmunk.model.fetchAll(
+            sDownloadStatesModel, 'downloadStates');
+         
+         // add each row
+         $.each(states, function(index, ds)
          {
             // DEBUG: output
-            bitmunk.log.debug(sLogCategory, 'Prepare UI');
+            bitmunk.log.debug(sLogCategory, 'Add Row: ' + ds.id);
             
-            // clear purchases
-            bitmunk.purchases.view.clearPurchaseRows();
+            // FIXME: get feedback to display in the row
             
-            // FIXME: show loading indicator
-            //bitmunk.purchases.view.showLoading(true);
-         });
-         
-         // add purchase rows
-         task.next('Purchases Add Rows', function(task)
-         {
-            // TODO: add slice here for paginated purchases table
-            
-            // get all download states from model
-            var states = bitmunk.model.fetchAll(
-               sDownloadStatesModel, 'downloadStates');
-            
-            // add each row
-            $.each(states, function(index, ds)
+            if(ds.licenseAcquired)
             {
-               // DEBUG: output
-               bitmunk.log.debug(sLogCategory, 'Add Row: ' + ds.id);
-               
-               // FIXME: get feedback to display in the row
-               
-               if(ds.licenseAcquired)
-               {
-                  // add the purchase row to view
-                  bitmunk.purchases.view.addPurchaseRow(ds);
-               }
-               else
-               {
-                  // add a loading row to view
-                  bitmunk.purchases.view.addLoadingRow(ds.id);
-               }
-            });
-            
-            // TODO: add page control update here
-         });
-      },
-      
-      /**
-       * Starts the specified download.
-       * 
-       * @param options:
-       *    dsId: the download state ID of the purchase to start.
-       *    accountId: the ID of the account to use for the purchase.
-       *    price: the maximum amount to spend on the download.
-       *    fast: true if download speed is preferred over price.
-       *    sellers: the maximum number of sellers to download from at once.
-       * 
-       * @return true if successful, false if not.
-       */
-      startPurchase: function(options)
-      {
-         var rval = false;
-         
-         // set defaults
-         options = $.extend(options,
-         {
-            fast: true,
-            sellers: 10
-         });
-         
-         var accounts = bitmunk.model.fetch(
-            sAccountsModel, 'accounts', bitmunk.user.getUserId());
-         if(!(options.accountId in accounts))
-         {
-            // display warning about wrong account/no account selected
-            bitmunk.purchases.view.addPurchaseFeedback(
-               options.dsId, 'warning', 'Please choose an account.');
-         }
-         else if(+accounts[options.accountId].balance < +options.price)
-         {
-            // display warning about insufficient funds
-            bitmunk.purchases.view.addPurchaseFeedback(
-               options.dsId, 'warning',
-               'Please choose an account with enough money to ' +
-               'complete your purchase.');
-         }
-         else
-         {
-            rval = true;
-            
-            // create the buyer's purchase preferences
-            var prefs =
+               // add the purchase row to view
+               bitmunk.purchases.view.addPurchaseRow(ds);
+            }
+            else
             {
-               downloadStateId: options.dsId,
-               preferences:
-               {
-                  accountId: options.accountId,
-                  price: {max: options.price},
-                  fast: options.fast,
-                  sellerLimit: options.sellers
-               }
-            };
-            
-            // start the download
-            downloadAction(
-               options.dsId, 'download', 'Failed to start download.', prefs);
-         }
+               // add a loading row to view
+               bitmunk.purchases.view.addLoadingRow(ds.id);
+            }
+         });
          
-         return rval;
-      },
-      
-      /**
-       * Pauses the specified download.
-       * 
-       * @param dsId the download state ID of the purchase to pause.
-       */
-      pausePurchase: function(dsId)
-      {
-         // DEBUG: output
-         bitmunk.log.debug(sLogCategory, 'Pause Purchase: ' + dsId);
-         
-         // pause the download
-         downloadAction(dsId, 'pause', 'Failed to pause download.',
-            null, function() { bitmunk.purchases.view.pausePurchase(dsId); });
-      },
-      
-      /**
-       * Resumes the specified download.
-       * 
-       * @param dsId the download state ID of the purchase to resume.
-       */
-      resumePurchase: function(dsId)
-      {
-         // DEBUG: output
-         bitmunk.log.debug(sLogCategory, 'Resume Purchase: ' + dsId);
-         
-         // resume the download
-         downloadAction(dsId, 'download', 'Failed to resume download.');
-      },
-      
-      /**
-       * Removes the specified download.
-       * 
-       * @param dsId the download state ID of the purchase to remove.
-       */
-      removePurchase: function(dsId)
-      {
-         // DEBUG: output
-         bitmunk.log.debug(sLogCategory, 'Remove Purchase: ' + dsId);
-         
-         // remove the download
-         downloadAction(
-            dsId, 'downloadstates/delete',
-            'Failed to delete download state.');
-      },
-      
-      /**
-       * Loads information about the specified download state into the
-       * purchase dialog.
-       * 
-       * @param dsId the download state ID.
-       */
-      loadPurchaseDialog: function(dsId)
-      {
-         // DEBUG: output
-         bitmunk.log.debug(sLogCategory, 'Load Dialog');
-         
-         // get download state, accounts and feedback
-         var ds = bitmunk.model.fetch(
-            sDownloadStatesModel, 'downloadStates', dsId);
-         var accounts = bitmunk.model.fetch(
-            sAccountsModel, 'accounts', bitmunk.user.getUserId());
-         var feedback = bitmunk.model.fetch(
-            sDownloadStatesModel, 'feedback', ds.id);
-         
-         // update view purchase dialog box
-         bitmunk.purchases.view.setPurchaseDialog(ds, accounts, feedback);
-         
-         // show purchase dialog
-         bitmunk.purchases.view.showPurchaseDialog(true);
-      }
+         // TODO: add page control update here
+      });
    };
    
+   /**
+    * Starts the specified download.
+    * 
+    * @param options:
+    *    dsId: the download state ID of the purchase to start.
+    *    accountId: the ID of the account to use for the purchase.
+    *    price: the maximum amount to spend on the download.
+    *    fast: true if download speed is preferred over price.
+    *    sellers: the maximum number of sellers to download from at once.
+    * 
+    * @return true if successful, false if not.
+    */
+   bitmunk.purchases.controller.startPurchase = function(options)
+   {
+      var rval = false;
+      
+      // set defaults
+      options = $.extend(options,
+      {
+         fast: true,
+         sellers: 10
+      });
+      
+      var accounts = bitmunk.model.fetch(
+         sAccountsModel, 'accounts', bitmunk.user.getUserId());
+      if(!(options.accountId in accounts))
+      {
+         // display warning about wrong account/no account selected
+         bitmunk.purchases.view.addPurchaseFeedback(
+            options.dsId, 'warning', 'Please choose an account.');
+      }
+      else if(+accounts[options.accountId].balance < +options.price)
+      {
+         // display warning about insufficient funds
+         bitmunk.purchases.view.addPurchaseFeedback(
+            options.dsId, 'warning',
+            'Please choose an account with enough money to ' +
+            'complete your purchase.');
+      }
+      else
+      {
+         rval = true;
+         
+         // create the buyer's purchase preferences
+         var prefs =
+         {
+            downloadStateId: options.dsId,
+            preferences:
+            {
+               accountId: options.accountId,
+               price: {max: options.price},
+               fast: options.fast,
+               sellerLimit: options.sellers
+            }
+         };
+         
+         // start the download
+         downloadAction(
+            options.dsId, 'download', 'Failed to start download.', prefs);
+      }
+      
+      return rval;
+   };
+   
+   /**
+    * Pauses the specified download.
+    * 
+    * @param dsId the download state ID of the purchase to pause.
+    */
+   bitmunk.purchases.controller.pausePurchase = function(dsId)
+   {
+      // DEBUG: output
+      bitmunk.log.debug(sLogCategory, 'Pause Purchase: ' + dsId);
+      
+      // pause the download
+      downloadAction(dsId, 'pause', 'Failed to pause download.',
+         null, function() { bitmunk.purchases.view.pausePurchase(dsId); });
+   };
+   
+   /**
+    * Resumes the specified download.
+    * 
+    * @param dsId the download state ID of the purchase to resume.
+    */
+   bitmunk.purchases.controller.resumePurchase = function(dsId)
+   {
+      // DEBUG: output
+      bitmunk.log.debug(sLogCategory, 'Resume Purchase: ' + dsId);
+      
+      // resume the download
+      downloadAction(dsId, 'download', 'Failed to resume download.');
+   };
+   
+   /**
+    * Removes the specified download.
+    * 
+    * @param dsId the download state ID of the purchase to remove.
+    */
+   bitmunk.purchases.controller.removePurchase = function(dsId)
+   {
+      // DEBUG: output
+      bitmunk.log.debug(sLogCategory, 'Remove Purchase: ' + dsId);
+      
+      // remove the download
+      downloadAction(
+         dsId, 'downloadstates/delete',
+         'Failed to delete download state.');
+   };
+   
+   /**
+    * Loads information about the specified download state into the
+    * purchase dialog.
+    * 
+    * @param dsId the download state ID.
+    */
+   bitmunk.purchases.controller.loadPurchaseDialog = function(dsId)
+   {
+      // DEBUG: output
+      bitmunk.log.debug(sLogCategory, 'Load Dialog');
+      
+      // get download state, accounts and feedback
+      var ds = bitmunk.model.fetch(
+         sDownloadStatesModel, 'downloadStates', dsId);
+      var accounts = bitmunk.model.fetch(
+         sAccountsModel, 'accounts', bitmunk.user.getUserId());
+      var feedback = bitmunk.model.fetch(
+         sDownloadStatesModel, 'feedback', ds.id);
+      
+      // update view purchase dialog box
+      bitmunk.purchases.view.setPurchaseDialog(ds, accounts, feedback);
+      
+      // show purchase dialog
+      bitmunk.purchases.view.showPurchaseDialog(true);
+   };
    
    /**
     * Event Callbacks

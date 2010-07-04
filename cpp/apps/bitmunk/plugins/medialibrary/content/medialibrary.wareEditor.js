@@ -1,6 +1,6 @@
 /**
  * Bitmunk Media Library Ware Editor
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * @author Mike Johnson
  * @author Manu Sporny
@@ -37,73 +37,72 @@
    var sMediaId = null;
    
    /** Public Media Library Ware Editor namespace **/
-   bitmunk.medialibrary.wareEditor =
+   bitmunk.medialibrary.wareEditor = {};
+   
+   /**
+    * Opens the ware editor and to edit a ware.
+    * 
+    * @param fileId the ID of the related file.
+    * @param mediaId the ID of the related media.
+    */
+   bitmunk.medialibrary.wareEditor.open = function(fileId, mediaId)
    {
-      /**
-       * Opens the ware editor and to edit a ware.
-       * 
-       * @param fileId the ID of the related file.
-       * @param mediaId the ID of the related media.
-       */
-      open: function(fileId, mediaId)
-      {
-         bitmunk.log.debug(sLogCategory, 'open', fileId, mediaId);
-         
-         // no reload necessary yet
-         sReloadNeeded = false;
-         
-         // get file, media, ware, and schemes
-         var file = fileId ? bitmunk.model.fetch(
-            bitmunk.medialibrary.model.name,
-            bitmunk.medialibrary.model.fileTable,
-            fileId) : null;
-         var media = mediaId ? bitmunk.model.fetch(
-            bitmunk.medialibrary.model.name,
-            bitmunk.medialibrary.model.mediaTable,
-            mediaId) : null;
-         var ware = (fileId && mediaId) ? bitmunk.model.fetch(
-            bitmunk.catalog.model.name,
-            bitmunk.catalog.model.wareTable,
-            'bitmunk:file:' + mediaId + '-' + fileId) : null;
-         var schemes = bitmunk.model.fetchAll(
-            bitmunk.catalog.model.name,
-            bitmunk.catalog.model.payeeSchemeTable);
-         
-         // show the editor dialog
-         show(file, media, ware, schemes);
-      },
+      bitmunk.log.debug(sLogCategory, 'open', fileId, mediaId);
       
-      /**
-       * Closes the ware editor and notifies the library browser.
-       */
-      close: function()
-      {
-         bitmunk.log.debug(sLogCategory, 'close', sFileId, sMediaId);
-         hide();
-         bitmunk.medialibrary.controller.wareEditorClosed(
-            sReloadNeeded, sFileId, sMediaId);
-         sReloadNeeded = false;
-      },
+      // no reload necessary yet
+      sReloadNeeded = false;
       
-      /**
-       * Called when the payment editor is closed.
-       * 
-       * @param psId the payment scheme the editor was editing.
-       */
-      paymentEditorClosed: function(psId)
-      {
-         // show loading indicator
-         setActivityIndicator('Loading...');
-         
-         // update payment details
-         setPaymentDetails(null, null, psId);
-         
-         // try to enable save button
-         enableSaveButton(true);
-         
-         // hide loading indicator
-         setActivityIndicator();
-      }
+      // get file, media, ware, and schemes
+      var file = fileId ? bitmunk.model.fetch(
+         bitmunk.medialibrary.model.name,
+         bitmunk.medialibrary.model.fileTable,
+         fileId) : null;
+      var media = mediaId ? bitmunk.model.fetch(
+         bitmunk.medialibrary.model.name,
+         bitmunk.medialibrary.model.mediaTable,
+         mediaId) : null;
+      var ware = (fileId && mediaId) ? bitmunk.model.fetch(
+         bitmunk.catalog.model.name,
+         bitmunk.catalog.model.wareTable,
+         'bitmunk:file:' + mediaId + '-' + fileId) : null;
+      var schemes = bitmunk.model.fetchAll(
+         bitmunk.catalog.model.name,
+         bitmunk.catalog.model.payeeSchemeTable);
+      
+      // show the editor dialog
+      show(file, media, ware, schemes);
+   };
+   
+   /**
+    * Closes the ware editor and notifies the library browser.
+    */
+   bitmunk.medialibrary.wareEditor.close = function()
+   {
+      bitmunk.log.debug(sLogCategory, 'close', sFileId, sMediaId);
+      hide();
+      bitmunk.medialibrary.controller.wareEditorClosed(
+         sReloadNeeded, sFileId, sMediaId);
+      sReloadNeeded = false;
+   };
+   
+   /**
+    * Called when the payment editor is closed.
+    * 
+    * @param psId the payment scheme the editor was editing.
+    */
+   bitmunk.medialibrary.wareEditor.paymentEditorClosed = function(psId)
+   {
+      // show loading indicator
+      setActivityIndicator('Loading...');
+      
+      // update payment details
+      setPaymentDetails(null, null, psId);
+      
+      // try to enable save button
+      enableSaveButton(true);
+      
+      // hide loading indicator
+      setActivityIndicator();
    };
    
    /** Private functions **/

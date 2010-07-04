@@ -1,5 +1,6 @@
 /**
  * Bitmunk Catalog Model
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  *
  * @author Mike Johnson
  * @author Manu Sporny
@@ -59,173 +60,173 @@
       /**
        * The total number of payee schemes in the system.
        */
-      totalPayeeSchemes: 0,
+      totalPayeeSchemes: 0
+   };
+   
+   /**
+    * Updates all of the payee schemes in the model.
+    * 
+    * @param psIds A list of payee scheme IDs to update or null if all of
+    *              them should be updated.
+    * @param task A task to use when blocking and unblocking processing.
+    */
+   bitmunk.catalog.model.updatePayeeSchemes = function(psIds, task)
+   {
+      bitmunk.log.debug(sLogCategory, 'updatePayeeSchemes', psIds);
       
-      /**
-       * Updates all of the payee schemes in the model.
-       * 
-       * @param psIds A list of payee scheme IDs to update or null if all of
-       *              them should be updated.
-       * @param task A task to use when blocking and unblocking processing.
-       */
-      updatePayeeSchemes: function(psIds, task)
+      if(task)
       {
-         bitmunk.log.debug(sLogCategory, 'updatePayeeSchemes', psIds);
-         
-         if(task)
-         {
-            task.block();
-         }
-         
-         bitmunk.api.proxy(
-         {
-            method: 'GET',
-            url: sPayeeSchemesUrl,
-            params:
-            {
-               start: 0,
-               'default': 'false',
-               nodeuser: bitmunk.user.getUserId()
-            },
-            success: function(data, status)
-            {
-               //bitmunk.log.debug(
-               //   sLogCategory, 'updatePayeeSchemes response', psIds);
-               
-               // we're replacing all payee schemes in the model, so clear it
-               if(psIds === null)
-               {
-                  // clear the payee scheme table
-                  bitmunk.model.clear(
-                     bitmunk.catalog.model.name,
-                     bitmunk.catalog.model.payeeSchemeTable);
-               }
-               
-               // add each payee scheme
-               var rs = JSON.parse(data);
-               $.each(rs.resources, function(index, ps)
-               {
-                  bitmunk.model.update(
-                     bitmunk.catalog.model.name,
-                     bitmunk.catalog.model.payeeSchemeTable,
-                     ps.id, ps, 0);
-               });
-               
-               // update the total payee scheme count
-               bitmunk.catalog.model.totalPayeeSchemes = rs.total;
-               
-               if(task)
-               {
-                  task.unblock();
-               }
-            },
-            error: function(xhr, textStatus, errorThrown)
-            {
-               if(task)
-               {
-                  try
-                  {
-                     // use exception from server
-                     task.userData = JSON.parse(xhr.responseText);
-                  }
-                  catch(e)
-                  {
-                     // use error message
-                     task.userData = { message: textStatus };
-                  }
-                  
-                  task.fail();
-               }
-            }
-         });
-      },
-
-      /**
-      * Updates all of the wares in the model.
-      * 
-      * @param fileIds A list of file IDs that are associated with the wares to
-      *                receive.
-      * @param task A task to use when blocking and unblocking processing.
-      */
-      updateWares: function(fileIds, task)
+         task.block();
+      }
+      
+      bitmunk.api.proxy(
       {
-         bitmunk.log.debug(sLogCategory, 'updateWares', fileIds);
-         
-         // create the files and media retrieval URL
-         var params =
+         method: 'GET',
+         url: sPayeeSchemesUrl,
+         params:
          {
+            start: 0,
             'default': 'false',
             nodeuser: bitmunk.user.getUserId()
-         };
-         if(fileIds && (fileIds.length > 0))
+         },
+         success: function(data, status)
          {
-            params.fileId = fileIds; 
-         }
-         
-         // start blocking if a task was given
-         if(task)
-         {
-            task.block();
-         }
-         
-         // perform the call to retrieve the wares
-         bitmunk.api.proxy(
-         {
-            method: 'GET',
-            url: sWaresUrl,
-            params: params,
-            success: function(data, status)
+            //bitmunk.log.debug(
+            //   sLogCategory, 'updatePayeeSchemes response', psIds);
+            
+            // we're replacing all payee schemes in the model, so clear it
+            if(psIds === null)
             {
-               //bitmunk.log.debug(sLogCategory, 'updateWares response', data);
-               
-               // insert wares into model
-               var rs = JSON.parse(data);
-               for(var i = 0; i < rs.resources.length; i++)
-               {
-                  // update the tables with the data
-                  var ware = rs.resources[i];
-                  
-                  // use sequence id 0 in both update calls to overwrite
-                  // current data and prevent update race conditions
-
-                  // FIXME: clear ware table?
-
-                  // update the ware table
-                  bitmunk.model.update(
-                     bitmunk.catalog.model.name,
-                     bitmunk.catalog.model.wareTable, ware.id, ware, 0);
-               }
-               
-               // update the total count for wares in the system
-               // FIXME: is this incorrect? what if we were only updating
-               // a single ware at this time?
-               bitmunk.catalog.model.totalWares = rs.total;
-                
-               if(task)
-               {
-                  task.unblock();
-               }
-            },
-            error: function(xhr, textStatus, errorThrown)
-            {
-               if(task)
-               {
-                  try
-                  {
-                     // use exception from server
-                     task.userData = JSON.parse(xhr.responseText);
-                  }
-                  catch(e)
-                  {
-                     // use error message
-                     task.userData = { message: textStatus };
-                  }
-                  
-                  task.fail();
-               }
+               // clear the payee scheme table
+               bitmunk.model.clear(
+                  bitmunk.catalog.model.name,
+                  bitmunk.catalog.model.payeeSchemeTable);
             }
-         });
+            
+            // add each payee scheme
+            var rs = JSON.parse(data);
+            $.each(rs.resources, function(index, ps)
+            {
+               bitmunk.model.update(
+                  bitmunk.catalog.model.name,
+                  bitmunk.catalog.model.payeeSchemeTable,
+                  ps.id, ps, 0);
+            });
+            
+            // update the total payee scheme count
+            bitmunk.catalog.model.totalPayeeSchemes = rs.total;
+            
+            if(task)
+            {
+               task.unblock();
+            }
+         },
+         error: function(xhr, textStatus, errorThrown)
+         {
+            if(task)
+            {
+               try
+               {
+                  // use exception from server
+                  task.userData = JSON.parse(xhr.responseText);
+               }
+               catch(e)
+               {
+                  // use error message
+                  task.userData = { message: textStatus };
+               }
+               
+               task.fail();
+            }
+         }
+      });
+   };
+
+   /**
+   * Updates all of the wares in the model.
+   * 
+   * @param fileIds A list of file IDs that are associated with the wares to
+   *                receive.
+   * @param task A task to use when blocking and unblocking processing.
+   */
+   bitmunk.catalog.model.updateWares = function(fileIds, task)
+   {
+      bitmunk.log.debug(sLogCategory, 'updateWares', fileIds);
+      
+      // create the files and media retrieval URL
+      var params =
+      {
+         'default': 'false',
+         nodeuser: bitmunk.user.getUserId()
+      };
+      if(fileIds && (fileIds.length > 0))
+      {
+         params.fileId = fileIds; 
       }
+      
+      // start blocking if a task was given
+      if(task)
+      {
+         task.block();
+      }
+      
+      // perform the call to retrieve the wares
+      bitmunk.api.proxy(
+      {
+         method: 'GET',
+         url: sWaresUrl,
+         params: params,
+         success: function(data, status)
+         {
+            //bitmunk.log.debug(sLogCategory, 'updateWares response', data);
+            
+            // insert wares into model
+            var rs = JSON.parse(data);
+            for(var i = 0; i < rs.resources.length; i++)
+            {
+               // update the tables with the data
+               var ware = rs.resources[i];
+               
+               // use sequence id 0 in both update calls to overwrite
+               // current data and prevent update race conditions
+
+               // FIXME: clear ware table?
+
+               // update the ware table
+               bitmunk.model.update(
+                  bitmunk.catalog.model.name,
+                  bitmunk.catalog.model.wareTable, ware.id, ware, 0);
+            }
+            
+            // update the total count for wares in the system
+            // FIXME: is this incorrect? what if we were only updating
+            // a single ware at this time?
+            bitmunk.catalog.model.totalWares = rs.total;
+             
+            if(task)
+            {
+               task.unblock();
+            }
+         },
+         error: function(xhr, textStatus, errorThrown)
+         {
+            if(task)
+            {
+               try
+               {
+                  // use exception from server
+                  task.userData = JSON.parse(xhr.responseText);
+               }
+               catch(e)
+               {
+                  // use error message
+                  task.userData = { message: textStatus };
+               }
+               
+               task.fail();
+            }
+         }
+      });
    };
    
    /**

@@ -1,5 +1,6 @@
 /**
  * Bitmunk Media Library Model
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  *
  * @author Mike Johnson
  * @author Manu Sporny
@@ -63,113 +64,113 @@
        *    }
        * }
        */
-      mediaTable: 'media',
-
-      /**
-       * Updates the files and media in the media library.
-       *
-       * @param fileIds a list of file IDs to fetch from the backend, or null
-       *                if all file IDs should be fetched from the backend.
-       * @param task a task that is associated with the given function.
-       * @param options an options object that contains start, num, query,
-       *                order, and optionally, a flag for clearing the file
-       *                table and a sequence number to use for inserting
-       *                the files into the model.
-       */
-      updateFiles: function(fileIds, task, options)
+      mediaTable: 'media'
+   };
+   
+   /**
+    * Updates the files and media in the media library.
+    *
+    * @param fileIds a list of file IDs to fetch from the backend, or null
+    *                if all file IDs should be fetched from the backend.
+    * @param task a task that is associated with the given function.
+    * @param options an options object that contains start, num, query,
+    *                order, and optionally, a flag for clearing the file
+    *                table and a sequence number to use for inserting
+    *                the files into the model.
+    */
+   bitmunk.medialibrary.model.updateFiles = function(fileIds, task, options)
+   {
+      // set the default options
+      options = $.extend({
+         seqNum: 0,
+         clearModel: false
+         }, options || {});
+      
+      // create the files and media params
+      var params = $.extend({
+         media: 'true',
+         nodeuser: bitmunk.user.getUserId()
+      }, 
+      { 
+         start: options.start, 
+         num: options.num, 
+         query: options.query, 
+         order: options.order
+      });
+      if(fileIds && (fileIds.length > 0))
       {
-         // set the default options
-         options = $.extend({
-            seqNum: 0,
-            clearModel: false
-            }, options || {});
-         
-         // create the files and media params
-         var params = $.extend({
-            media: 'true',
-            nodeuser: bitmunk.user.getUserId()
-         }, 
-         { 
-            start: options.start, 
-            num: options.num, 
-            query: options.query, 
-            order: options.order
-         });
-         if(fileIds && (fileIds.length > 0))
+         params.id = fileIds; 
+      }
+      
+      // start blocking if a task was given
+      if(task)
+      {
+         task.block();
+      }
+      
+      // perform the call to retrieve the files and media
+      bitmunk.api.proxy(
+      {
+         method: 'GET',
+         url: sFilesUrl,
+         params: params,
+         success: function(data, status)
          {
-            params.id = fileIds; 
-         }
-         
-         // start blocking if a task was given
-         if(task)
-         {
-            task.block();
-         }
-         
-         // perform the call to retrieve the files and media
-         bitmunk.api.proxy(
-         {
-            method: 'GET',
-            url: sFilesUrl,
-            params: params,
-            success: function(data, status)
+            // clear the old files from the table if the clearModel flag
+            // is set
+            if(options.clearModel)
             {
-               // clear the old files from the table if the clearModel flag
-               // is set
-               if(options.clearModel)
+               bitmunk.model.clear(
+                  bitmunk.medialibrary.model.name,
+                  bitmunk.medialibrary.model.fileTable);
+            }
+            
+            // insert files into model
+            var rs = JSON.parse(data);
+            for(var i = 0, length = rs.resources.length;
+               i < length; i++)
+            {
+               // update the tables with the data
+               var file = rs.resources[i].fileInfo;
+               var media = rs.resources[i].media;
+
+               // use sequence id 0 by default in both update calls to
+               // overwrite current data and prevent update race conditions
+
+               // FIXME: clear file and media table?
+
+               // update the file table
+               bitmunk.model.update(
+                  bitmunk.medialibrary.model.name,
+                  bitmunk.medialibrary.model.fileTable, file.id, file,
+                  options.seqNum);
+                
+               // update the media table, if the media exists
+               if(media)
                {
-                  bitmunk.model.clear(
-                     bitmunk.medialibrary.model.name,
-                     bitmunk.medialibrary.model.fileTable);
-               }
-               
-               // insert files into model
-               var rs = JSON.parse(data);
-               for(var i = 0, length = rs.resources.length;
-                  i < length; i++)
-               {
-                  // update the tables with the data
-                  var file = rs.resources[i].fileInfo;
-                  var media = rs.resources[i].media;
-
-                  // use sequence id 0 by default in both update calls to
-                  // overwrite current data and prevent update race conditions
-
-                  // FIXME: clear file and media table?
-
-                  // update the file table
                   bitmunk.model.update(
                      bitmunk.medialibrary.model.name,
-                     bitmunk.medialibrary.model.fileTable, file.id, file,
-                     options.seqNum);
-                   
-                  // update the media table, if the media exists
-                  if(media)
-                  {
-                     bitmunk.model.update(
-                        bitmunk.medialibrary.model.name,
-                        bitmunk.medialibrary.model.mediaTable, 
-                        media.id, media, 0);
-                  }
-               }
-               
-               // update the total number of files in the media library
-               bitmunk.medialibrary.model.totalFiles = rs.total;
-
-               if(task)
-               {
-                  task.unblock();
-               }
-            },
-            error: function()
-            {
-               if(task)
-               {
-                  task.fail();
+                     bitmunk.medialibrary.model.mediaTable, 
+                     media.id, media, 0);
                }
             }
-         });
-      }
+            
+            // update the total number of files in the media library
+            bitmunk.medialibrary.model.totalFiles = rs.total;
+
+            if(task)
+            {
+               task.unblock();
+            }
+         },
+         error: function()
+         {
+            if(task)
+            {
+               task.fail();
+            }
+         }
+      });
    };
    
    /**

@@ -1,6 +1,6 @@
 /**
  * Bitmunk Media Library Controller
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * Right now this controls the media library and the catalog. In the future
  * we might split these two apart if we decide the catalog should be an
@@ -46,334 +46,334 @@
    };
    
    /** Public Media Library Controller namespace **/
-   bitmunk.medialibrary.controller =
+   bitmunk.medialibrary.controller = {};
+   
+   /**
+    * Via a task, this method loads and shows the current subset of files
+    * in the user's Media Library.
+    * 
+    * @param task the task to use when loading the library browser.
+    */
+   bitmunk.medialibrary.controller.loadBrowser = function(task)
    {
-      /**
-       * Via a task, this method loads and shows the current subset of files
-       * in the user's Media Library.
-       * 
-       * @param task the task to use when loading the library browser.
-       */
-      loadBrowser: function(task)
+      // clear ware rows from UI
+      task.next('MediaLibrary Prepare UI', function(task)
       {
-         // clear ware rows from UI
-         task.next('MediaLibrary Prepare UI', function(task)
-         {
-            // DEBUG: output
-            bitmunk.log.debug(sLogCategory, 'Prepare UI');
-            
-            // clear library browser
-            bitmunk.medialibrary.view.clearBrowserRows();
-            
-            // show loading indicator
-            bitmunk.medialibrary.view.showBrowserLoading(true);
-         });
+         // DEBUG: output
+         bitmunk.log.debug(sLogCategory, 'Prepare UI');
          
-         // load files from media library
-         task.next('MediaLibrary Fetch Files', function(task)
-         {
-            // FIXME: if you use page parameters to fetch a range of files
-            // and then use the same page parameters to try to get a slice
-            // of those files then you will get nothing
-            
-            // build the query options
-            // FIXME: fake query options for now
-            var options = 
-            {
-               start: 0,
-               num: 20,
-               query: sParams.query,
-               order: sParams.order,
-               /*
-               start: (sParams.page - 1) * sParams.num,
-               num: sParams.num,
-               query: sParams.query,
-               order: sParams.order
-               */
-               clearModel: true
-            };
-            
-            // FIXME: in the future we will want to load more than
-            // one page of files into the model
-            bitmunk.medialibrary.model.updateFiles(null, task, options);
-         });
+         // clear library browser
+         bitmunk.medialibrary.view.clearBrowserRows();
          
-         // watch the files in the media library for changes
-         task.next('MediaLibrary Files Watch', function(task)
-         {
-            // watch file table
-            bitmunk.model.watch(
-               bitmunk.medialibrary.model.name,
-               bitmunk.medialibrary.model.fileTable);
-         });
+         // show loading indicator
+         bitmunk.medialibrary.view.showBrowserLoading(true);
+      });
+      
+      // load files from media library
+      task.next('MediaLibrary Fetch Files', function(task)
+      {
+         // FIXME: if you use page parameters to fetch a range of files
+         // and then use the same page parameters to try to get a slice
+         // of those files then you will get nothing
          
-         // add the rows to the view
-         task.next('MediaLibrary Add Rows', function(task)
+         // build the query options
+         // FIXME: fake query options for now
+         var options = 
          {
-            // update page control
-            sParams.total = bitmunk.medialibrary.model.totalFiles;
-            bitmunk.medialibrary.view.setPageControl(sParams);
+            start: 0,
+            num: 20,
+            query: sParams.query,
+            order: sParams.order,
+            /*
+            start: (sParams.page - 1) * sParams.num,
+            num: sParams.num,
+            query: sParams.query,
+            order: sParams.order
+            */
+            clearModel: true
+         };
+         
+         // FIXME: in the future we will want to load more than
+         // one page of files into the model
+         bitmunk.medialibrary.model.updateFiles(null, task, options);
+      });
+      
+      // watch the files in the media library for changes
+      task.next('MediaLibrary Files Watch', function(task)
+      {
+         // watch file table
+         bitmunk.model.watch(
+            bitmunk.medialibrary.model.name,
+            bitmunk.medialibrary.model.fileTable);
+      });
+      
+      // add the rows to the view
+      task.next('MediaLibrary Add Rows', function(task)
+      {
+         // update page control
+         sParams.total = bitmunk.medialibrary.model.totalFiles;
+         bitmunk.medialibrary.view.setPageControl(sParams);
 
-            // update the contents of the media library display
-            if(sParams.total > 0)
-            {
-               // fetch a slice of the files that were added to the model
-               var files = bitmunk.model.slice(
-                  bitmunk.medialibrary.model.name,
-                  bitmunk.medialibrary.model.fileTable,
-                  (sParams.page - 1) * sParams.num, sParams.num);
-
-               // add each row
-               $.each(files, function(index, file)
-               {
-                  // DEBUG: output
-                  bitmunk.log.debug(sLogCategory, 'Add Row: ' + file.id);
-                  
-                  // get media
-                  var media = bitmunk.model.fetch(
-                     bitmunk.medialibrary.model.name,
-                     bitmunk.medialibrary.model.mediaTable,
-                     file.mediaId);
-                  
-                  // add the file/media information as a library row
-                  bitmunk.medialibrary.view.addBrowserRow(file, media);
-               });
-            }
-            else
-            {
-               bitmunk.medialibrary.view.setBrowserMessage(
-                  'Your Media Library is empty. ' +
-                  'Add new content to begin selling.');
-            }
-         });
-         
-         // load the wares from the catalog
-         task.next('MediaLibrary Fetch Wares', function(task)
+         // update the contents of the media library display
+         if(sParams.total > 0)
          {
-            // get the files from the model 
-            var fileIds = [];
-            
             // fetch a slice of the files that were added to the model
             var files = bitmunk.model.slice(
                bitmunk.medialibrary.model.name,
                bitmunk.medialibrary.model.fileTable,
                (sParams.page - 1) * sParams.num, sParams.num);
-            
-            // add each file ID to the list of fileIds to fetch
+
+            // add each row
             $.each(files, function(index, file)
             {
-               fileIds.push(file.id);
+               // DEBUG: output
+               bitmunk.log.debug(sLogCategory, 'Add Row: ' + file.id);
+               
+               // get media
+               var media = bitmunk.model.fetch(
+                  bitmunk.medialibrary.model.name,
+                  bitmunk.medialibrary.model.mediaTable,
+                  file.mediaId);
+               
+               // add the file/media information as a library row
+               bitmunk.medialibrary.view.addBrowserRow(file, media);
+            });
+         }
+         else
+         {
+            bitmunk.medialibrary.view.setBrowserMessage(
+               'Your Media Library is empty. ' +
+               'Add new content to begin selling.');
+         }
+      });
+      
+      // load the wares from the catalog
+      task.next('MediaLibrary Fetch Wares', function(task)
+      {
+         // get the files from the model 
+         var fileIds = [];
+         
+         // fetch a slice of the files that were added to the model
+         var files = bitmunk.model.slice(
+            bitmunk.medialibrary.model.name,
+            bitmunk.medialibrary.model.fileTable,
+            (sParams.page - 1) * sParams.num, sParams.num);
+         
+         // add each file ID to the list of fileIds to fetch
+         $.each(files, function(index, file)
+         {
+            fileIds.push(file.id);
+         });
+         
+         // FIXME: Remove debugging info before launch
+         bitmunk.log.debug(
+            sLogCategory, 'loadBrowser: model.updateWares', fileIds);
+         
+         // fetch the wares associated with the given files
+         bitmunk.catalog.model.updateWares(fileIds, task);
+      });
+
+      // watch the wares in the catalog for changes
+      task.next('MediaLibrary Wares Watch', function(task)
+      {
+         // watch file table
+         bitmunk.model.watch(
+            bitmunk.catalog.model.name,
+            bitmunk.catalog.model.wareTable);
+      });
+
+      // load payee schemes
+      task.next('MediaLibrary Fetch Payment', function(task)
+      {
+         bitmunk.catalog.model.updatePayeeSchemes(null, task);
+      });
+      
+      task.next('MediaLibrary Payment Watch', function(task)
+      {
+         // watch the payee schemes table
+         bitmunk.model.watch(
+            bitmunk.catalog.model.name,
+            bitmunk.catalog.model.payeeSchemeTable);
+      });
+      
+      task.next('MediaLibrary Update Ware Rows', function(task)
+      {
+         // update all of the rows in the UI
+         updateWareRows();
+      });
+      
+      // make final display changes to UI
+      task.next('MediaLibrary Finalize UI', function(task)
+      {
+         // hide loading indicator
+         bitmunk.medialibrary.view.showBrowserLoading(false);
+      });
+   };
+   
+   /**
+    * Starts a task to reload the library browser.
+    */
+   bitmunk.medialibrary.controller.reloadBrowser = function()
+   {
+      // reload library to display latest changes
+      bitmunk.task.start(
+      {
+         type: sLogCategory + '.loadBrowser',
+         run: bitmunk.medialibrary.controller.loadBrowser
+      });
+   };
+   
+   /**
+    * Resync the user's catalog with bitmunk.
+    */
+   bitmunk.medialibrary.controller.resyncCatalog = function()
+   {
+      // send event
+      bitmunk.events.sendEvents(
+      {
+         send: [{
+            type: 'bitmunk.common.SellerListing.sync',
+            details: { userId: bitmunk.user.getUserId() }
+         }]
+      });
+   };
+   
+   /**
+    * Deletes the wares indicated by the file IDs.
+    * 
+    * @param wareIds the IDs of the wares.
+    * @param removeFiles true to delete the associated files as well.
+    */
+   bitmunk.medialibrary.controller.deleteWares = function(wareIds, removeFiles)
+   {
+      bitmunk.log.debug(
+         sLogCategory, 'deleteWares,removeFiles', wareIds, removeFiles);
+      
+      // use a task to delete wares
+      bitmunk.task.start(
+      {
+         type: sLogCategory + '.deleteWares',
+         run: function(task)
+         {
+            // for storing parallel tasks
+            var tasks = [];
+            
+            task.next(function(task)
+            {
+               // do deletes in parallel
+               $.each(wareIds, function(i, wareId)
+               {
+                  tasks.push(function(task)
+                  {
+                     deleteWare(wareId, removeFiles, task);
+                  });
+               });
+               task.parallel(tasks);
             });
             
-            // FIXME: Remove debugging info before launch
-            bitmunk.log.debug(
-               sLogCategory, 'loadBrowser: model.updateWares', fileIds);
-            
-            // fetch the wares associated with the given files
-            bitmunk.catalog.model.updateWares(fileIds, task);
-         });
-
-         // watch the wares in the catalog for changes
-         task.next('MediaLibrary Wares Watch', function(task)
-         {
-            // watch file table
-            bitmunk.model.watch(
-               bitmunk.catalog.model.name,
-               bitmunk.catalog.model.wareTable);
-         });
-
-         // load payee schemes
-         task.next('MediaLibrary Fetch Payment', function(task)
-         {
-            bitmunk.catalog.model.updatePayeeSchemes(null, task);
-         });
-         
-         task.next('MediaLibrary Payment Watch', function(task)
-         {
-            // watch the payee schemes table
-            bitmunk.model.watch(
-               bitmunk.catalog.model.name,
-               bitmunk.catalog.model.payeeSchemeTable);
-         });
-         
-         task.next('MediaLibrary Update Ware Rows', function(task)
-         {
-            // update all of the rows in the UI
-            updateWareRows();
-         });
-         
-         // make final display changes to UI
-         task.next('MediaLibrary Finalize UI', function(task)
-         {
-            // hide loading indicator
-            bitmunk.medialibrary.view.showBrowserLoading(false);
-         });
-      },
-      
-      /**
-       * Starts a task to reload the library browser.
-       */
-      reloadBrowser: function()
-      {
-         // reload library to display latest changes
-         bitmunk.task.start(
-         {
-            type: sLogCategory + '.loadBrowser',
-            run: bitmunk.medialibrary.controller.loadBrowser
-         });
-      },
-      
-      /**
-       * Resync the user's catalog with bitmunk.
-       */
-      resyncCatalog: function()
-      {
-         // send event
-         bitmunk.events.sendEvents(
-         {
-            send: [{
-               type: 'bitmunk.common.SellerListing.sync',
-               details: { userId: bitmunk.user.getUserId() }
-            }]
-         });
-      },
-      
-      /**
-       * Deletes the wares indicated by the file IDs.
-       * 
-       * @param wareIds the IDs of the wares.
-       * @param removeFiles true to delete the associated files as well.
-       */
-      deleteWares: function(wareIds, removeFiles)
-      {
-         bitmunk.log.debug(
-            sLogCategory, 'deleteWares,removeFiles', wareIds, removeFiles);
-         
-         // use a task to delete wares
-         bitmunk.task.start(
-         {
-            type: sLogCategory + '.deleteWares',
-            run: function(task)
+            task.next(function(task)
             {
-               // for storing parallel tasks
-               var tasks = [];
-               
-               task.next(function(task)
+               // check tasks for failure
+               var exceptions = [];
+               $.each(tasks, function(i, t)
                {
-                  // do deletes in parallel
-                  $.each(wareIds, function(i, wareId)
+                  if(t.userData !== null)
                   {
-                     tasks.push(function(task)
-                     {
-                        deleteWare(wareId, removeFiles, task);
-                     });
-                  });
-                  task.parallel(tasks);
-               });
-               
-               task.next(function(task)
-               {
-                  // check tasks for failure
-                  var exceptions = [];
-                  $.each(tasks, function(i, t)
-                  {
-                     if(t.userData !== null)
-                     {
-                        // user data contains an exception
-                        exceptions.push(t.userData);
-                     }
-                  });
-                  
-                  if(exceptions.length > 0)
-                  {
-                     task.userData = exceptions;
-                     task.fail();
+                     // user data contains an exception
+                     exceptions.push(t.userData);
                   }
                });
-            },
-            success: function(task)
-            {
-               bitmunk.medialibrary.controller.reloadBrowser();
-            },
-            failure: function(task)
-            {
-               // FIXME: add feedback some how for failures
-               // task.userData may contain an array of exceptions or
-               // an exception
-               bitmunk.medialibrary.controller.reloadBrowser();
-            }
-         });
-      },
-      
-      /**
-       * Removes a specific file entry from the media library.
-       * 
-       * FIXME: optionally allow them to remove file from disk?
-       * 
-       * @param fileId the ID of the file to remove.
-       * @param task the task to use to synchronize the update.
-       */
-      removeFile: function(fileId, task)
-      {
-         bitmunk.log.debug(sLogCategory, 'removeFile', fileId);
-         
-         task.block();
-         bitmunk.api.proxy(
-         {
-            method: 'DELETE',
-            url: sFilesUrl + '/' + fileId,
-            params: { nodeuser: bitmunk.user.getUserId() },
-            success: function(data, status)
-            {
-               task.unblock();
-            },
-            error: function(xhr, textStatus, errorThrown)
-            {
-               try
+               
+               if(exceptions.length > 0)
                {
-                  // use exception from server
-                  task.userData = JSON.parse(xhr.responseText);
+                  task.userData = exceptions;
+                  task.fail();
                }
-               catch(e)
-               {
-                  // use error message
-                  task.userData = { message: textStatus };
-               }
-               task.fail();
-            }
-         });
-      },
-      
-      /**
-       * Called when the ware editor is closed in the view.
-       * 
-       * @param reload true if a reload of the library browser is necessary,
-       *        false if not.
-       * @param fileId the related file ID.
-       * @param mediaId the related media ID.
-       */
-      wareEditorClosed: function(reload, fileId, mediaId)
-      {
-         var file = fileId ? bitmunk.model.fetch(
-            bitmunk.medialibrary.model.name,
-            bitmunk.medialibrary.model.fileTable, fileId) : null;
-         var ware = file ? bitmunk.model.fetch(
-            bitmunk.catalog.model.name,
-            bitmunk.catalog.model.wareTable,
-            'bitmunk:file:' + file.mediaId + '-' + file.id) : null;
-         var scheme = ware ? bitmunk.model.fetch(
-            bitmunk.catalog.model.name,
-            bitmunk.catalog.model.payeeSchemeTable,
-            ware.payeeSchemeId) : null;
-         
-         bitmunk.log.debug(
-            sLogCategory, 'wareEditorClosed', ware, file, scheme);
-         if(reload)
+            });
+         },
+         success: function(task)
          {
-            // reload library to display latest changes
-            // (necessary to get newly added files in the correct sort order)
+            bitmunk.medialibrary.controller.reloadBrowser();
+         },
+         failure: function(task)
+         {
+            // FIXME: add feedback some how for failures
+            // task.userData may contain an array of exceptions or
+            // an exception
             bitmunk.medialibrary.controller.reloadBrowser();
          }
+      });
+   };
+   
+   /**
+    * Removes a specific file entry from the media library.
+    * 
+    * FIXME: optionally allow them to remove file from disk?
+    * 
+    * @param fileId the ID of the file to remove.
+    * @param task the task to use to synchronize the update.
+    */
+   bitmunk.medialibrary.controller.removeFile = function(fileId, task)
+   {
+      bitmunk.log.debug(sLogCategory, 'removeFile', fileId);
+      
+      task.block();
+      bitmunk.api.proxy(
+      {
+         method: 'DELETE',
+         url: sFilesUrl + '/' + fileId,
+         params: { nodeuser: bitmunk.user.getUserId() },
+         success: function(data, status)
+         {
+            task.unblock();
+         },
+         error: function(xhr, textStatus, errorThrown)
+         {
+            try
+            {
+               // use exception from server
+               task.userData = JSON.parse(xhr.responseText);
+            }
+            catch(e)
+            {
+               // use error message
+               task.userData = { message: textStatus };
+            }
+            task.fail();
+         }
+      });
+   };
+   
+   /**
+    * Called when the ware editor is closed in the view.
+    * 
+    * @param reload true if a reload of the library browser is necessary,
+    *        false if not.
+    * @param fileId the related file ID.
+    * @param mediaId the related media ID.
+    */
+   bitmunk.medialibrary.controller.wareEditorClosed = function(
+      reload, fileId, mediaId)
+   {
+      var file = fileId ? bitmunk.model.fetch(
+         bitmunk.medialibrary.model.name,
+         bitmunk.medialibrary.model.fileTable, fileId) : null;
+      var ware = file ? bitmunk.model.fetch(
+         bitmunk.catalog.model.name,
+         bitmunk.catalog.model.wareTable,
+         'bitmunk:file:' + file.mediaId + '-' + file.id) : null;
+      var scheme = ware ? bitmunk.model.fetch(
+         bitmunk.catalog.model.name,
+         bitmunk.catalog.model.payeeSchemeTable,
+         ware.payeeSchemeId) : null;
+      
+      bitmunk.log.debug(
+         sLogCategory, 'wareEditorClosed', ware, file, scheme);
+      if(reload)
+      {
+         // reload library to display latest changes
+         // (necessary to get newly added files in the correct sort order)
+         bitmunk.medialibrary.controller.reloadBrowser();
       }
    };
    
