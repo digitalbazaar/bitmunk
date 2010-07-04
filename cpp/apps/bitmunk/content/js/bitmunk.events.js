@@ -44,6 +44,7 @@
        */
       init: function(task)
       {
+         var timer = +new Date();
          task.block();
          bitmunk.events.subscribe(
          {
@@ -55,6 +56,9 @@
             }],
             success: function()
             {
+               timer = +new Date() - timer;
+               bitmunk.log.debug('timing',
+                  'event system initialized in ' + timer + ' ms');
                task.unblock();
             },
             error: function()

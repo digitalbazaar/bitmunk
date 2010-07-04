@@ -313,6 +313,8 @@ jQuery(function($) {
       {
          timer = +new Date() - timer;
          bitmunk.log.info(cat, 'full login completed in ' + timer + ' ms');
+         bitmunk.log.debug('timing',
+            'full login completed in ' + timer + ' ms');
       });
    };
    
@@ -341,6 +343,7 @@ jQuery(function($) {
     */
    var loadConfiguration = function(task)
    {
+      var timer = +new Date();
       task.block();
       bitmunk.api.proxy({
          method: 'GET',
@@ -352,8 +355,13 @@ jQuery(function($) {
          },
          success: function(data, textStatus)
          {
+            timer = +new Date() - timer;
+            bitmunk.log.debug(cat, 'config loaded in ' + timer + ' ms');
+            timer = +new Date();
             // store config
             sConfig = JSON.parse(data);
+            timer = +new Date() - timer;
+            bitmunk.log.debug(cat, 'config parsed in ' + timer + ' ms');
             // notify watchers of new config details
             triggerConfigChanged(sConfig);
             task.unblock();
@@ -396,6 +404,7 @@ jQuery(function($) {
     */
    var loadPluginInfo = function(task)
    {
+      var timer = +new Date();
       task.block();
       $.ajax({
          type: 'GET',
@@ -406,6 +415,9 @@ jQuery(function($) {
             bitmunk.log.debug(cat, 'loading plugins');
          },
          success: function(data, textStatus) {
+            timer = +new Date() - timer;
+            bitmunk.log.debug('timing',
+               'plugin info loaded in ' + timer + ' ms');
             // pass plugin info onto next task
             // FIXME: this seems hackish
             // would be nicer to be able to do something like:
@@ -431,6 +443,14 @@ jQuery(function($) {
     */
    var registerPluginLoaders = function(task)
    {
+      var timer = +new Date();
+      task.next(function(task)
+      {
+         timer = +new Date() - timer;
+         bitmunk.log.debug('timing',
+            'plugin loaders registered in ' + timer + ' ms');
+      });
+      
       // do registration in parallel for better performance
       var count = task.userData.pluginInfo.length;
       var parallel = task;
@@ -482,6 +502,13 @@ jQuery(function($) {
     */
    var configurePlugins = function(task)
    {
+      var timer = +new Date();
+      task.next(function(task)
+      {
+         timer = +new Date() - timer;
+         bitmunk.log.debug('timing', 'plugins configured in ' + timer + ' ms');
+      });
+      
       // notify watchers of config details
       triggerConfigChanged(sConfig);
    };
@@ -491,6 +518,8 @@ jQuery(function($) {
     */
    var callDidLoginHandlers = function(task)
    {
+      var timer = +new Date();
+      
       // get all resources
       var resources = bitmunk.resource.get();
       // list of all handlers to run in parallel
@@ -506,6 +535,13 @@ jQuery(function($) {
          }
       });
       task.parallel(handlers);
+      
+      task.next(function(task)
+      {
+         timer = +new Date() - timer;
+         bitmunk.log.debug('timing',
+            'did login handlers completed in ' + timer + ' ms');
+      });
    };
    
    /**
@@ -513,6 +549,8 @@ jQuery(function($) {
     */
    var setupNavigation = function(task)
    {
+      var timer = +new Date();
+      
       // create menu array for sorting items according to priority
       var menuItems = [];
       
@@ -554,6 +592,9 @@ jQuery(function($) {
       {
          sScreenPane.addMenuItem(item.name, item.viewId);
       });
+      
+      timer = +new Date() - timer;
+      bitmunk.log.debug('timing', 'navigation setup in ' + timer + ' ms');
    };
    
    /**
@@ -561,6 +602,8 @@ jQuery(function($) {
     */
    var pluginsLoaded = function(task)
    {
+      var timer = +new Date();
+      
       // cancel loading notification
       if(sLoadingTimeoutId !== null)
       {
@@ -575,6 +618,12 @@ jQuery(function($) {
       task.next(function(task)
       {
          bitmunk.load(sViewIds.last);
+      });
+      
+      task.next(function(task)
+      {
+         timer = +new Date() - timer;
+         bitmunk.log.debug('timing', 'main view loaded in ' + timer + ' ms');
       });
    };
    
@@ -1059,6 +1108,7 @@ jQuery(function($) {
                timer = +new Date() - timer;
                bitmunk.log.verbose(cat, 'main task: done');
                bitmunk.log.info(cat, 'started in ' + timer + ' ms');
+               bitmunk.log.debug('timing', 'started in ' + timer + ' ms');
             });
          },
          failure: function(task)

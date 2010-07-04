@@ -44,7 +44,7 @@
             success: function(data, textStatus) 
             {
                timer = +new Date() - timer;
-               bitmunk.log.info(cat,
+               bitmunk.log.debug('timing',
                   'network login completed in ' + timer + ' ms');
                $.event.trigger('bitmunk-login-success');
             },
