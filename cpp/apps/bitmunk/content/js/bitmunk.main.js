@@ -454,7 +454,6 @@ jQuery(function($) {
          {
             // FIXME: remove this once dlehn fixes double-registration
             // problems
-            console.log('XXX', 'info.id', info.id);
             
             // do not re-register login plugin
             if(info.id !== 'bitmunk.webui.Login')
