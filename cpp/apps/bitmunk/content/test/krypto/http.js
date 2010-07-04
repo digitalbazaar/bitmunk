@@ -403,7 +403,7 @@
       {
          try
          {
-            client.setCookie(cookie);
+            client.setCookie(cookies[i]);
          }
          catch(ex)
          {
