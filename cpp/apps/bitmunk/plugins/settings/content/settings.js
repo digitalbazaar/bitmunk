@@ -1,5 +1,6 @@
 /**
  * Bitmunk Web UI --- Settings
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
  * @author Manu Sporny <msporny@digitalbazaar.com>
@@ -32,83 +33,81 @@
    
    // Settings View namespace
    bitmunk.settings = bitmunk.settings || {};
-   bitmunk.settings.view =
+   bitmunk.settings.view = {};
+   
+   /**
+    * Sets the visibility of the directory dialog.
+    * 
+    * @param show true to show the dialog, false to hide it.
+    */
+   bitmunk.settings.view.showDirectoryDialog = function(show)
    {
-      /**
-       * Sets the visibility of the directory dialog.
-       * 
-       * @param show true to show the dialog, false to hide it.
-       */
-      showDirectoryDialog: function(show)
+      // toggle the overlay and directory dialog
+      $('#overlay').toggle(show);
+      $('#directoryDialog').toggle(show);
+      if(show)
       {
-         // toggle the overlay and directory dialog
-         $('#overlay').toggle(show);
-         $('#directoryDialog').toggle(show);
-         if(show)
-         {
-            sDirectoryBrowser.show();
-         }
-         else
-         {
-            sDirectoryBrowser.hide();
-         }
-      },
-      
-      /**
-       * Adds a feedback message to the UI.
-       * 
-       * @param name the name of the feedback widget.
-       * @param type the type of message.
-       * @param message the message to display.
-       */
-      addFeedback: function(name, type, message)
-      {
-         // FIXME: debug output
-         //bitmunk.log.debug(sLogCategory, 'Adding ' + type + ' message');
-         
-         var feedback = $('<p class="' + type + '">' + message + '</p>');
-         $('#feedback-' + name).prepend(feedback);
-
-         // show feedback box
-         $('#feedbackBox-' + name).slideDown('fast');
-      },
-      
-      /**
-       * Clears feedback messages.
-       * 
-       * @param name the name of the feedback widget.
-       */
-      clearFeedback: function(name)
-      {
-         // clear feedback
-         $('#feedback-' + name).empty();
-         
-         // hide feedback box
-         $('#feedbackBox-' + name).slideUp('fast');
+         sDirectoryBrowser.show();
       }
+      else
+      {
+         sDirectoryBrowser.hide();
+      }
+   };
+   
+   /**
+    * Adds a feedback message to the UI.
+    * 
+    * @param name the name of the feedback widget.
+    * @param type the type of message.
+    * @param message the message to display.
+    */
+   bitmunk.settings.view.addFeedback = function(name, type, message)
+   {
+      // FIXME: debug output
+      //bitmunk.log.debug(sLogCategory, 'Adding ' + type + ' message');
+      
+      var feedback = $('<p class="' + type + '">' + message + '</p>');
+      $('#feedback-' + name).prepend(feedback);
+
+      // show feedback box
+      $('#feedbackBox-' + name).slideDown('fast');
+   };
+   
+   /**
+    * Clears feedback messages.
+    * 
+    * @param name the name of the feedback widget.
+    */
+   bitmunk.settings.view.clearFeedback = function(name)
+   {
+      // clear feedback
+      $('#feedback-' + name).empty();
+      
+      // hide feedback box
+      $('#feedbackBox-' + name).slideUp('fast');
    };
    
    /** Settings Controller **/
    
-   bitmunk.settings.controller =
+   bitmunk.settings.controller = {};
+   
+   /**
+    * Called when a directory is selected in the directory browser.
+    * 
+    * @param path the path name of the file that was selected.
+    */
+   bitmunk.settings.controller.directorySelected = function(path)
    {
-      /**
-       * Called when a directory is selected in the directory browser.
-       * 
-       * @param path the path name of the file that was selected.
-       */
-      directorySelected: function(path)
-      {
-         // DEBUG: output
-         bitmunk.log.debug(sLogCategory, 'Directory Selected: ' + path);
-         
-         // set element
-         $('#' + sDirectoryBrowser.elementIdToSet)[0].value = path;
-         
-         // clear selection and hide file browser
-         sDirectoryBrowser.clearSelection();
-         bitmunk.settings.view.showDirectoryDialog(false);
-      }
+      // DEBUG: output
+      bitmunk.log.debug(sLogCategory, 'Directory Selected: ' + path);
+      
+      // set element
+      $('#' + sDirectoryBrowser.elementIdToSet)[0].value = path;
+      
+      // clear selection and hide file browser
+      sDirectoryBrowser.clearSelection();
+      bitmunk.settings.view.showDirectoryDialog(false);
    };
    
    /**
