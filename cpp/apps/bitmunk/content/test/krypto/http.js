@@ -513,7 +513,7 @@
                   };
                }
                // make sure url host ends in cookie.domain
-               else if(cookie.domain !== null &&
+               if(cookie.domain !== null &&
                   ('.' + url.host).indexOf(cookie.domain) !==
                    (url.host.length - cookie.domain.length))
                {
@@ -524,16 +524,14 @@
                      cookie: cookie
                   };
                }
-               else
+               
+               // add new cookie
+               if(!(cookie.name in client.cookies))
                {
-                  // add new cookie
-                  if(!(cookie.name in client.cookies))
-                  {
-                     client.cookies[cookie.name] = {};
-                  }
-                  client.cookies[cookie.name][cookie.path] = cookie;
-                  rval = true;
+                  client.cookies[cookie.name] = {};
                }
+               client.cookies[cookie.name][cookie.path] = cookie;
+               rval = true;
             }
          }
          
