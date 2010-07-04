@@ -58,31 +58,41 @@
       
       function client_init()
       {
-         var sp = net.createSocketPool({
-            flashId: 'socketPool',
-            policyPort: 19845,
-            msie: false
-         });
-         client = http.createClient({
-            //url: 'https://localhost:4433',
-            url: 'https://localhost:19300',
-            socketPool: sp,
-            connections: 10,
-            caCerts: [certificatePem],
-            verify: function(c, verified, depth, certs)
-            {
-               console.log('TLS certificate ' + depth + ' verified', verified);
-               // Note: change to always true to test verifying without cert
-               //return verified;
-               // FIXME: temporarily accept any cert to allow hitting any bpe
-               if(verified !== true)
-               {
-                  console.log('Certificate NOT verified. Ignored for test.');
-               }
-               return true;
-            }
-         });
-         document.getElementById('feedback').innerHTML = 'http client created';
+         try
+         {
+	         var sp = net.createSocketPool({
+	            flashId: 'socketPool',
+	            policyPort: 19845,
+	            msie: false
+	         });
+	         client = http.createClient({
+	            //url: 'https://localhost:4433',
+	            url: 'https://localhost:19300',
+	            socketPool: sp,
+	            connections: 10,
+	            caCerts: [certificatePem],
+	            verify: function(c, verified, depth, certs)
+	            {
+	               console.log(
+	   	            'TLS certificate ' + depth + ' verified', verified);
+	               // Note: change to always true to test verifying without cert
+	               //return verified;
+	               // FIXME: temporarily accept any cert to allow hitting any bpe
+	               if(verified !== true)
+	               {
+	                  console.log('Certificate NOT verified. Ignored for test.');
+	               }
+	               return true;
+	            }
+	         });
+	         document.getElementById('feedback').innerHTML =
+		         'http client created';
+         }
+         catch(ex)
+         {
+            console.log(ex);
+         }
+         
          return false;
       }
       
@@ -157,6 +167,11 @@
          client.setCookie(cookie);
          console.log('cookie', client.getCookie('test-cookie'));
       }
+
+      function client_clear_cookies()
+      {
+         client.clearCookies();
+      }
       
       </script>
    </head>
@@ -171,6 +186,7 @@
          <button id="send" onclick="javascript:return client_send();">send</button>
          <button id="send10" onclick="javascript:return client_send_10();">send 10</button>
          <button id="client_cookies" onclick="javascript:return client_cookies();">cookies</button>
+         <button id="clear_cookies" onclick="javascript:return client_clear_cookies();">clear cookies</button>
       </div>
       <p>Feedback from the flash SocketPool:</p>
       <div id="feedback">

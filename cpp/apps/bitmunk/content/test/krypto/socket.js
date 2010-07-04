@@ -37,6 +37,8 @@
       // create socket pool entry
       var sp =
       {
+         // ID of the socket pool
+         id: spId,
          // flash interface
          flashApi: api,
          // map of socket ID to sockets

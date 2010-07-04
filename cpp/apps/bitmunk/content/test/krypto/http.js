@@ -21,12 +21,111 @@
    var _parseUrl = function(str)
    {
       var regex = /^(https?):\/\/([^:&^\/]*):?(\d*)(.*)$/g;
+      regex.lastIndex = 0;
       var m = regex.exec(str);
       return (m === null) ? null : {
          scheme: m[1],
          host: m[2],
          port: m[3]
       };
+   };
+   
+   /**
+    * Gets the local storage ID for the given client.
+    * 
+    * @param client the client to get the local storage ID for.
+    * 
+    * @return the local storage ID to use.
+    */
+   var _getStorageId = function(client)
+   {
+      // TODO: include browser in ID to avoid sharing cookies between
+      // browsers (if this is undesirable)
+      // navigator.userAgent
+      return 'krypto.http.' +
+            client.url.scheme + '.' +
+            client.url.host + '.' +
+            client.url.port;
+   };
+   
+   /**
+    * Loads persistent cookies from disk for the given client.
+    * 
+    * @param client the client.
+    */
+   var _loadCookies = function(client)
+   {
+      if(client.persistCookies)
+      {
+         try
+         {
+            var cookies = krypto.util.getItem(
+               client.socketPool.flashApi,
+               _getStorageId(client), 'cookies');
+            client.cookies = cookies || {};
+         }
+         catch(ex)
+         {
+            // no flash storage available, just silently fail
+            // TODO: i assume we want this logged somewhere or
+            // should it actually generate an error
+            //console.log(ex);
+         }
+      }
+   };
+   
+   /**
+    * Saves persistent cookies on disk for the given client.
+    * 
+    * @param client the client.
+    */
+   var _saveCookies = function(client)
+   {
+      if(client.persistCookies)
+      {
+         try
+         {
+            krypto.util.setItem(
+               client.socketPool.flashApi,
+               _getStorageId(client), 'cookies', client.cookies);
+         }
+         catch(ex)
+         {
+            // no flash storage available, just silently fail
+            // TODO: i assume we want this logged somewhere or
+            // should it actually generate an error
+            //console.log(ex);
+         }
+      }
+      
+      // FIXME: remove me
+      _loadCookies(client);
+   };
+   
+   /**
+    * Clears persistent cookies on disk for the given client.
+    * 
+    * @param client the client.
+    */
+   var _clearCookies = function(client)
+   {
+      if(client.persistCookies)
+      {
+         try
+         {
+            // only thing stored is 'cookies', so clear whole storage
+            krypto.util.clearItems(
+               client.socketPool.flashApi,
+               _getStorageId(client));
+         }
+         catch(ex)
+         {
+            // no flash storage available, just silently fail
+            // TODO: i assume we want this logged somewhere or
+            // should it actually generate an error
+            //console.log(ex);
+         }
+      }
    };
    
    /**
@@ -314,6 +413,8 @@
     *           caCerts: an array of certificates to trust for TLS, certs may
     *              be PEM-formatted or cert objects produced via krypto.pki.
     *           verify: a custom TLS certificate verify callback to use.
+    *           persistCookies: true to use persistent cookies via flash local
+    *              storage, false to only keep cookies in javascript.
     * 
     * @return the client.
     */
@@ -357,8 +458,14 @@
          idle: [],
          // cookie jar (key'd off of name and then path, there is only 1 domain
          // and one setting for secure per client so name+path is unique)
-         cookies: {}
+         cookies: {},
+         // default to flash storage of cookies
+         persistCookies: (typeof(options.persistCookies) === 'undefined') ?
+            true : options.persistCookies 
       };
+      
+      // load cookies from disk
+      _loadCookies(client);
       
       // determine if TLS is used
       var tlsOptions = null;
@@ -532,6 +639,9 @@
                }
                client.cookies[cookie.name][cookie.path] = cookie;
                rval = true;
+               
+               // save cookies
+               _saveCookies(client);
             }
          }
          
@@ -611,6 +721,11 @@
                delete client.cookies[name];
             }
          }
+         if(rval)
+         {
+            // save cookies
+            _saveCookies(client);
+         }
          return rval;
       };
       
@@ -620,6 +735,7 @@
       client.clearCookies = function()
       {
          client.cookies = {};
+         _clearCookies(client);
       };
       
       return client;

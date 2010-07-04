@@ -607,7 +607,11 @@ package
          try
          {
             var store:SharedObject = SharedObject.getLocal(storeId);
-            store.data.key = data;
+            if(!('keys' in store.data))
+            {
+               store.data.keys = {};
+            }
+            store.data.keys[key] = data;
             store.flush();
             rval.rval = true;
          }
@@ -629,8 +633,8 @@ package
        * @param storeId the storage ID to use.
        * @param key the key for the item.
        * 
-       * @return an object with rval set to the item data, null on error with
-       *         error included.
+       * @return an object with rval set to the item data (which may be null),
+       *         check for error object if null.
        */
       private function getItem(storeId:String, key:String):Object
       {
@@ -638,9 +642,9 @@ package
          try
          {
             var store:SharedObject = SharedObject.getLocal(storeId);
-            if(key in store.data)
+            if('keys' in store.data && key in store.data.keys)
             {
-               rval.rval = store.data.key;
+               rval.rval = store.data.keys[key];
             }
          }
          catch(e:Error)
@@ -669,9 +673,9 @@ package
          try
          {
             var store:SharedObject = SharedObject.getLocal(storeId);
-            if(key in store.data)
+            if('keys' in store.data && key in store.data.keys)
             {
-               delete store.data.key;
+               delete store.data.keys[key];
                rval.rval = true;
             }
          }

@@ -591,9 +591,9 @@
     */
    util.setItem = function(api, id, key, data)
    {
-      // json-encode and then store compressed data
+      // json-encode and then store data
       var d = JSON.stringify(data);
-      var rval = api.setItem(id, key, api.deflate(util.encode64(d)).rval);
+      var rval = api.setItem(id, key, util.encode64(d));
       if(rval.rval !== true)
       {
          throw rval.error;
@@ -613,21 +613,23 @@
    {
       // get the base64-encoded data
       var rval = api.getItem(id, key);
-      if(rval.rval !== true)
+      if(rval.rval === null && rval.error)
       {
          throw rval.error;
       }
       
-      // inflate the data
-      rval = api.inflate(rval);
       if(rval.rval === null)
       {
-         throw rval.error;
+         // no error, but no item
+         rval = null;
+      }
+      else
+      {
+         // base64-decode and return json-decoded data
+         rval = JSON.parse(util.decode64(rval.rval));
       }
       
-      // base64-decode and return json-decoded data
-      rval = util.decode64(rval.rval);
-      return JSON.parse(rval);
+      return rval;
    };
    
    /**
