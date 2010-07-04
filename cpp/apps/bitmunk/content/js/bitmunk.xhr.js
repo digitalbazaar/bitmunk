@@ -1,10 +1,10 @@
 /**
- * Bitmunk Web UI --- Task Management Functions
+ * Bitmunk Web UI --- (deprecated) XHR api for flash HttpSocketPool
  *
  * @author Dave Longley
  * @author David I. Lehn <dlehn@digitalbazaar.com>
  *
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 (function($)
 {
