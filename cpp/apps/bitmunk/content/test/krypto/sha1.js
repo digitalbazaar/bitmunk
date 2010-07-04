@@ -41,7 +41,8 @@
    {
       // consume 512 bit (64 byte) chunks
       var tmp, a, b, c, d, e, f;
-      while(bytes.length() >= 64)
+      var len = bytes.length();
+      while(len >= 64)
       {
          // get sixteen 32-bit big-endian words
          for(var i = 0; i < 16; ++i)
@@ -118,6 +119,8 @@
          s.h2 += c;
          s.h3 += d;
          s.h4 += e;
+         
+         len -= 64;
       }
    };
    

@@ -67,7 +67,8 @@
    {
       // consume 512 bit (64 byte) chunks
       var t1, t2, a, b, c, d, f, r;
-      while(bytes.length() >= 64)
+      var len = bytes.length();
+      while(len >= 64)
       {
          // get sixteen 32-bit little-endian words
          for(var i = 0; i < 16; ++i)
@@ -133,6 +134,8 @@
          s.h1 = (s.h1 + b) & 0xFFFFFFFF;
          s.h2 = (s.h2 + c) & 0xFFFFFFFF;
          s.h3 = (s.h3 + d) & 0xFFFFFFFF;
+         
+         len -= 64;
       }
    };
    
