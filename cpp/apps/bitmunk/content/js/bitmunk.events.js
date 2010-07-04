@@ -370,6 +370,8 @@
             }
          });
          
+         var timer = +new Date();
+         
          // post to register observers for events
          bitmunk.api.proxy(
          {
@@ -379,6 +381,9 @@
             data: observers,
             success: function(data, textStatus)
             {
+               timer = +new Date() - timer;
+               bitmunk.log.debug('timing',
+                  'registered for events in ' + timer + ' ms');
                options.success(JSON.parse(data), textStatus);
             },
             error: options.error,
@@ -576,12 +581,18 @@
             complete: function() {}
          }, options || {});
          
+         var timer = +new Date();
+         
          // create new observer(s)
          var observerCount = options.eventGroups.length;
          bitmunk.events.createObservers(observerCount,
          {
             success: function(data)
             {
+               timer = +new Date() - timer;
+               bitmunk.log.debug('timing',
+                  'created observers in ' + timer + ' ms');
+               
                // get new observer IDs
                var ids = data;
                

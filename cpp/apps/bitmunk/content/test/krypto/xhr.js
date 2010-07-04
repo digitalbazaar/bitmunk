@@ -204,6 +204,9 @@
     *        logWarningOnError: If true and an HTTP error status code is
     *           received then log a warning, otherwise log a verbose
     *           message.
+    *        logVerbose: If true be very verbose in the output including
+    *           the response event and response body, otherwise only include
+    *           status, timing, and data size.
     * 
     * @return the XmlHttpRequest.
     */
@@ -462,17 +465,27 @@
                xhr.responseText = e.response.body;
                length = e.response.body.length;
             }
-            // TODO: provide log functions via options
-            var logFunction =
-               (xhr.status >= 400 && options.logWarningOnError) ?
-               window.bitmunk.log.warning : window.bitmunk.log.verbose;
+            // build logging output
             var req = _state.request;
-            logFunction(cat,
+            var output =
                req.method + ' ' + req.path + ' ' +
                xhr.status + ' ' + xhr.statusText + ' ' +
                length + 'B ' +
-               e.response.time + 'ms',
-               e, e.response.body ? '\n' + e.response.body : '\nNo content');
+               (e.request.time + e.response.time) + 'ms';
+            // TODO: provide log functions via options
+            if(options.logVerbose)
+            {
+               var lFunc = (xhr.status >= 400 && options.logWarningOnError) ?
+                  window.bitmunk.log.warning : window.bitmunk.log.verbose;
+               lFunc(cat, output,
+                  e, e.response.body ? '\n' + e.response.body : '\nNo content');
+            }
+            else
+            {
+               var lFunc = (xhr.status >= 400 && options.logWarningOnError) ?
+                  window.bitmunk.log.warning : window.bitmunk.log.debug;
+               lFunc(cat, output);
+            }
             if(xhr.onreadystatechange)
             {
                xhr.onreadystatechange();
