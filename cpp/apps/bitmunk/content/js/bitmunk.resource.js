@@ -3,7 +3,7 @@
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
  *
- * Copyright (c) 2008-2009 Digital Bazaar, Inc.  All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
  */
 (function($) {
    // logging category
@@ -174,635 +174,637 @@
          loading: 'loading',
          loaded: 'loaded',
          unloading: 'unloading'
-      },
-      
-      /**
-       * Register a resource.
-       *
-       * This function registers a named resource of some given type. It has
-       * the option to also load the resource or provide the resource data to
-       * register. If a resource is not immediately loaded its info is still
-       * available and it can be loaded with a load() call at any time. Using
-       * the 'data' option for supported resources will set the resource as
-       * immediately loaded. Care should be taken to use appropriate data.
-       *
-       * General options:
-       *    pluginId: plugin id of the owner of this resource
-       *       has the form: bitmunk.topic.Name
-       *    resourceId: resource id
-       *       for plugins: defaults to pluginId (ignored)
-       *       other resources: a resource id (required)
-       *    type: bitmunk.resource.types id (required)
-       *    depends: resources this resource depends on (optional)
-       *       has the form {pluginId:[resourceId, ...], ...}
-       *       
-       * Loadable resources (files, plugins):
-       *    load: load resource now (optional, default: true)
-       *    recursive: load sub-resources (optional, default: false)
-       *    cache: caching hint to browser (optional default: true)
-       *    save: save resource after loading (optional, default: true)
-       *       This can be used if data is just needed in success().
-       *    task: task to use for async calls (required)
-       *
-       * Data-like resources (data, dom, html, json, text, template):
-       *    data: reference to data (optional, default: undefined)
-       *
-       * File-like resources:
-       *    rootPath: override root resource path (optional)
-       *    pluginPath: override plugin path (optional, default: pluginId)
-       *    resourcePath: override resource path (optional, default: resourceId)
-       *    path: override the full path
-       *       (optional: default rootPath/pluginId/resourceId)
-       *
-       * Parsable resources (html, json, template):
-       *    parse: parse to native form (optional, default: true)
-       *       HTML => DOM, JSON => object/array, template => template object
-       *
-       * View options:
-       *    hash: hash id to access the view (optional)
-       *    name: name of the view (required)
-       *    html: html file name which contains the view contents (optional)
-       *    scripts: array of JavaScript file names (optional)
-       *    subScripts: if any of the entries in the "scripts" option are
-       *        virtual scripts then subScripts should list those scripts and
-       *        list the real files that compose each scripts.  This is done so
-       *        script loading can be synchronized and the loader knows what
-       *        real scripts to wait on. (required if using virtual scripts)
-       *        Map of script resource names to an array of real script
-       *        resource names.
-       *    css: array of CSS file names (optional)
-       *    templates: array of template file names to lazy load (optional)
-       *    menu: object of menu options (optional, default: no menu)
-       *        priority: 0.0 to 1.0 to sort menus in the UI
-       *    hide: function to call to hide a view
-       *    show: function to call to show a view
-       *
-       * Plugin Loader options:
-       *    loadInit: try and load the init script
-       *       (boolean, optional, default: true)
-       *    init: init script (string, optional, default: init.js)
-       *
-       * Plugin options:
-       *    name: simple text name (required)
-       *    homepage: homepage url (optional)
-       *    authors: array of objects: (optional)
-       *       name: name of author (required)
-       *       email: email of author (optional)
-       *    scripts: array of script resource to immediately load (optional)
-       *    resources: list of plugin resources (optional)
-       *
-       * FIXME: remove
-       *    // these should be done with login plugin hooks 
-       *    didLogin: function to call to initialize this plugin after a login
-       *          but before UI is shown.  Called as didLogin(callbacks).
-       *          Implementors MUST call one of the callbacks, success() or
-       *          error().
-       *    willLogout: function to call to cleanup this plugin after UI is
-       *          hidden but before logout.  Called as willLogout(callbacks).
-       *          Implementors MUST call one of the callbacks, success() or
-       *          error().  This call may not happen depending on user behavior.
-       *
-       * @param options see function description
-       */
-      register: function(options) {
-         // flag if we need to try and load
-         var loadCheck = false;
-         // General options
+      }
+   };
+   
+   /**
+    * Register a resource.
+    *
+    * This function registers a named resource of some given type. It has
+    * the option to also load the resource or provide the resource data to
+    * register. If a resource is not immediately loaded its info is still
+    * available and it can be loaded with a load() call at any time. Using
+    * the 'data' option for supported resources will set the resource as
+    * immediately loaded. Care should be taken to use appropriate data.
+    *
+    * General options:
+    *    pluginId: plugin id of the owner of this resource
+    *       has the form: bitmunk.topic.Name
+    *    resourceId: resource id
+    *       for plugins: defaults to pluginId (ignored)
+    *       other resources: a resource id (required)
+    *    type: bitmunk.resource.types id (required)
+    *    depends: resources this resource depends on (optional)
+    *       has the form {pluginId:[resourceId, ...], ...}
+    *       
+    * Loadable resources (files, plugins):
+    *    load: load resource now (optional, default: true)
+    *    recursive: load sub-resources (optional, default: false)
+    *    cache: caching hint to browser (optional default: true)
+    *    save: save resource after loading (optional, default: true)
+    *       This can be used if data is just needed in success().
+    *    task: task to use for async calls (required)
+    *
+    * Data-like resources (data, dom, html, json, text, template):
+    *    data: reference to data (optional, default: undefined)
+    *
+    * File-like resources:
+    *    rootPath: override root resource path (optional)
+    *    pluginPath: override plugin path (optional, default: pluginId)
+    *    resourcePath: override resource path (optional, default: resourceId)
+    *    path: override the full path
+    *       (optional: default rootPath/pluginId/resourceId)
+    *
+    * Parsable resources (html, json, template):
+    *    parse: parse to native form (optional, default: true)
+    *       HTML => DOM, JSON => object/array, template => template object
+    *
+    * View options:
+    *    hash: hash id to access the view (optional)
+    *    name: name of the view (required)
+    *    html: html file name which contains the view contents (optional)
+    *    scripts: array of JavaScript file names (optional)
+    *    subScripts: if any of the entries in the "scripts" option are
+    *        virtual scripts then subScripts should list those scripts and
+    *        list the real files that compose each scripts.  This is done so
+    *        script loading can be synchronized and the loader knows what
+    *        real scripts to wait on. (required if using virtual scripts)
+    *        Map of script resource names to an array of real script
+    *        resource names.
+    *    css: array of CSS file names (optional)
+    *    templates: array of template file names to lazy load (optional)
+    *    menu: object of menu options (optional, default: no menu)
+    *        priority: 0.0 to 1.0 to sort menus in the UI
+    *    hide: function to call to hide a view
+    *    show: function to call to show a view
+    *
+    * Plugin Loader options:
+    *    loadInit: try and load the init script
+    *       (boolean, optional, default: true)
+    *    init: init script (string, optional, default: init.js)
+    *
+    * Plugin options:
+    *    name: simple text name (required)
+    *    homepage: homepage url (optional)
+    *    authors: array of objects: (optional)
+    *       name: name of author (required)
+    *       email: email of author (optional)
+    *    scripts: array of script resource to immediately load (optional)
+    *    resources: list of plugin resources (optional)
+    *
+    * FIXME: remove
+    *    // these should be done with login plugin hooks 
+    *    didLogin: function to call to initialize this plugin after a login
+    *          but before UI is shown.  Called as didLogin(callbacks).
+    *          Implementors MUST call one of the callbacks, success() or
+    *          error().
+    *    willLogout: function to call to cleanup this plugin after UI is
+    *          hidden but before logout.  Called as willLogout(callbacks).
+    *          Implementors MUST call one of the callbacks, success() or
+    *          error().  This call may not happen depending on user behavior.
+    *
+    * @param options see function description
+    */
+   bitmunk.resource.register = function(options)
+   {
+      // flag if we need to try and load
+      var loadCheck = false;
+      // General options
+      options = $.extend({
+         pluginId: null,
+         resourceId: null,
+         type: null,
+         depends: {}
+      }, options);
+      var type = options.type;
+      // Task will be removed from options since options are saved with the
+      // resource and we don't want to leak tasks.  Use a local var instead.
+      var task = null;
+      // Loadable resources options
+      if(type == bitmunk.resource.types.css ||
+         type == bitmunk.resource.types.html ||
+         type == bitmunk.resource.types.javascript ||
+         type == bitmunk.resource.types.json ||
+         type == bitmunk.resource.types.pluginLoader ||
+         type == bitmunk.resource.types.plugin ||
+         type == bitmunk.resource.types.text ||
+         type == bitmunk.resource.types.template ||
+         type == bitmunk.resource.types.view)
+      {
+         loadCheck = true;
          options = $.extend({
-            pluginId: null,
-            resourceId: null,
-            type: null,
-            depends: {}
+            load: true,
+            recursive: false,
+            // use global option as default
+            cache: sConfig.cache.resources,
+            async: true,
+            save: true
          }, options);
-         var type = options.type;
-         // Task will be removed from options since options are saved with the
-         // resource and we don't want to leak tasks.  Use a local var instead.
-         var task = null;
-         // Loadable resources options
-         if(type == bitmunk.resource.types.css ||
-            type == bitmunk.resource.types.html ||
-            type == bitmunk.resource.types.javascript ||
-            type == bitmunk.resource.types.json ||
-            type == bitmunk.resource.types.pluginLoader ||
-            type == bitmunk.resource.types.plugin ||
-            type == bitmunk.resource.types.text ||
-            type == bitmunk.resource.types.template ||
-            type == bitmunk.resource.types.view)
+         // special handling for tasks so they don't leak when options are
+         // saved
+         if('task' in options)
          {
-            loadCheck = true;
-            options = $.extend({
-               load: true,
-               recursive: false,
-               // use global option as default
-               cache: sConfig.cache.resources,
-               async: true,
-               save: true
-            }, options);
-            // special handling for tasks so they don't leak when options are
-            // saved
-            if('task' in options)
+            task = options.task;
+            delete options.task;
+         }
+      }
+      // Data resources
+      if(type == bitmunk.resource.types.data ||
+         type == bitmunk.resource.types.dom ||
+         type == bitmunk.resource.types.html ||
+         type == bitmunk.resource.types.json ||
+         type == bitmunk.resource.types.text ||
+         type == bitmunk.resource.types.template)
+      {
+         // leave data undefined if not present
+      }
+      // File-like resources
+      if(type == bitmunk.resource.types.css ||
+         type == bitmunk.resource.types.html ||
+         type == bitmunk.resource.types.javascript ||
+         type == bitmunk.resource.types.json ||
+         type == bitmunk.resource.types.pluginLoader ||
+         type == bitmunk.resource.types.plugin ||
+         type == bitmunk.resource.types.text ||
+         type == bitmunk.resource.types.template ||
+         type == bitmunk.resource.types.view)
+      {
+         // use path if specified, else create
+         if(typeof(options.path) === 'undefined')
+         {
+            // create path using optional params
+            var rootPath = typeof(options.rootPath) === 'undefined' ?
+               sResourceRootPath : options.rootPath;
+            var pluginPath = typeof(options.pluginPath) === 'undefined' ?
+               options.pluginId : options.pluginPath;
+            var resourcePath = typeof(options.resourcePath) === 'undefined' ?
+               options.resourceId : options.resourcePath;
+            options.path = [rootPath, pluginPath, resourcePath].join('/');
+         }
+      }
+      // Parsable resources
+      if(type == bitmunk.resource.types.html ||
+         type == bitmunk.resource.types.json ||
+         type == bitmunk.resource.types.template)
+      {
+         options = $.extend({
+            parse: true
+         }, options);
+      }
+      // Views
+      if(type == bitmunk.resource.types.view)
+      {
+      }
+      // Plugin Related
+      if(type == bitmunk.resource.types.pluginLoader ||
+         type == bitmunk.resource.types.plugin)
+      {
+         // special case for plugins and pluginLoaders:
+         //    resourceId == pluginId
+         options.resourceId = options.pluginId;
+      }
+      // Plugin Loaders
+      if(type == bitmunk.resource.types.pluginLoader)
+      {
+         options = $.extend({
+            loadInit: true,
+            init: 'init.js'
+         }, options);
+      }
+      // Plugins
+      if(type == bitmunk.resource.types.plugin)
+      {
+         options = $.extend({
+            name: null,
+            homepage: null,
+            authors: [],
+            scripts: []
+            // ui field verified during load
+         }, options);
+      }
+      
+      // check for unset type
+      if(options.type === null)
+      {
+         bitmunk.log.error(cat,
+            'register called with unknown type:',
+            options.type, options);
+      }
+      // check for valid pluginId
+      else if(typeof(options.pluginId) !== 'string')
+      {
+         bitmunk.log.error(cat,
+            'register called with no plugin id', options);
+      }
+      // check for valid resourceId
+      else if(typeof(options.resourceId) !== 'string')
+      {
+         bitmunk.log.error(cat,
+            'register called with no resource id', options);
+      }
+      // everyting valid - do registration
+      else
+      {
+         var state = typeof(options.data) === 'undefined' ?
+            bitmunk.resource.loadState.unloaded :
+            bitmunk.resource.loadState.loaded;
+         // register
+         var r =
+         {
+            pluginId: options.pluginId,
+            resourceId: options.resourceId,
+            type: options.type,
+            data: options.data,
+            options: options,
+            state: state
+         };
+         setResource(r);
+         bitmunk.log.debug(cat, 'register: [%s][%s] (%s)',
+            r.pluginId, r.resourceId, r.type);
+         bitmunk.log.verbose(cat, 'register details:', options, r);
+         // call type specific register handler if available
+         if('register' in sTypeHandlers[r.type])
+         {
+            sTypeHandlers[r.type].register(task, r);
+         }
+         // fire resource related events
+         var fireEvents = function()
+         {
+            // trigger global events, future events are just on $(r)
+            $.event.trigger('bitmunk-resource-registered', [r]);
+            if(r.state === bitmunk.resource.loadState.loaded)
             {
-               task = options.task;
-               delete options.task;
+               $(r).trigger('bitmunk-resource-loaded', [r]);
             }
-         }
-         // Data resources
-         if(type == bitmunk.resource.types.data ||
-            type == bitmunk.resource.types.dom ||
-            type == bitmunk.resource.types.html ||
-            type == bitmunk.resource.types.json ||
-            type == bitmunk.resource.types.text ||
-            type == bitmunk.resource.types.template)
+         };
+         // fire events in a task if task is set, else just fire now
+         if(task)
          {
-            // leave data undefined if not present
+            task.next('register event', fireEvents);
          }
-         // File-like resources
-         if(type == bitmunk.resource.types.css ||
-            type == bitmunk.resource.types.html ||
-            type == bitmunk.resource.types.javascript ||
-            type == bitmunk.resource.types.json ||
-            type == bitmunk.resource.types.pluginLoader ||
-            type == bitmunk.resource.types.plugin ||
-            type == bitmunk.resource.types.text ||
-            type == bitmunk.resource.types.template ||
-            type == bitmunk.resource.types.view)
-         {
-            // use path if specified, else create
-            if(typeof(options.path) === 'undefined')
-            {
-               // create path using optional params
-               var rootPath = typeof(options.rootPath) === 'undefined' ?
-                  sResourceRootPath : options.rootPath;
-               var pluginPath = typeof(options.pluginPath) === 'undefined' ?
-                  options.pluginId : options.pluginPath;
-               var resourcePath = typeof(options.resourcePath) === 'undefined' ?
-                  options.resourceId : options.resourcePath;
-               options.path = [rootPath, pluginPath, resourcePath].join('/');
-            }
-         }
-         // Parsable resources
-         if(type == bitmunk.resource.types.html ||
-            type == bitmunk.resource.types.json ||
-            type == bitmunk.resource.types.template)
-         {
-            options = $.extend({
-               parse: true
-            }, options);
-         }
-         // Views
-         if(type == bitmunk.resource.types.view)
-         {
-         }
-         // Plugin Related
-         if(type == bitmunk.resource.types.pluginLoader ||
-            type == bitmunk.resource.types.plugin)
-         {
-            // special case for plugins and pluginLoaders:
-            //    resourceId == pluginId
-            options.resourceId = options.pluginId;
-         }
-         // Plugin Loaders
-         if(type == bitmunk.resource.types.pluginLoader)
-         {
-            options = $.extend({
-               loadInit: true,
-               init: 'init.js'
-            }, options);
-         }
-         // Plugins
-         if(type == bitmunk.resource.types.plugin)
-         {
-            options = $.extend({
-               name: null,
-               homepage: null,
-               authors: [],
-               scripts: []
-               // ui field verified during load
-            }, options);
-         }
-         
-         // check for unset type
-         if(options.type === null)
-         {
-            bitmunk.log.error(cat,
-               'register called with unknown type:',
-               options.type, options);
-         }
-         // check for valid pluginId
-         else if(typeof(options.pluginId) !== 'string')
-         {
-            bitmunk.log.error(cat,
-               'register called with no plugin id', options);
-         }
-         // check for valid resourceId
-         else if(typeof(options.resourceId) !== 'string')
-         {
-            bitmunk.log.error(cat,
-               'register called with no resource id', options);
-         }
-         // everyting valid - do registration
          else
          {
-            var state = typeof(options.data) === 'undefined' ?
-               bitmunk.resource.loadState.unloaded :
-               bitmunk.resource.loadState.loaded;
-            // register
-            var r =
+            fireEvents();
+         }
+         // 
+         if(options.load)
+         {
+            bitmunk.log.verbose(cat, 'register should load: [%s][%s] (%s)',
+               r.pluginId, r.resourceId, r.type, options, r);
+            task.next('register load', function(task)
             {
-               pluginId: options.pluginId,
-               resourceId: options.resourceId,
-               type: options.type,
-               data: options.data,
-               options: options,
-               state: state
-            };
-            setResource(r);
-            bitmunk.log.debug(cat, 'register: [%s][%s] (%s)',
-               r.pluginId, r.resourceId, r.type);
-            bitmunk.log.verbose(cat, 'register details:', options, r);
-            // call type specific register handler if available
-            if('register' in sTypeHandlers[r.type])
-            {
-               sTypeHandlers[r.type].register(task, r);
-            }
-            // fire resource related events
-            var fireEvents = function()
-            {
-               // trigger global events, future events are just on $(r)
-               $.event.trigger('bitmunk-resource-registered', [r]);
-               if(r.state === bitmunk.resource.loadState.loaded)
-               {
-                  $(r).trigger('bitmunk-resource-loaded', [r]);
-               }
-            };
-            // fire events in a task if task is set, else just fire now
-            if(task)
-            {
-               task.next('register event', fireEvents);
-            }
-            else
-            {
-               fireEvents();
-            }
-            // 
-            if(options.load)
-            {
-               bitmunk.log.verbose(cat, 'register should load: [%s][%s] (%s)',
+               bitmunk.log.verbose(cat, 'register loading: [%s][%s] (%s)',
                   r.pluginId, r.resourceId, r.type, options, r);
-               task.next('register load', function(task)
-               {
-                  bitmunk.log.verbose(cat, 'register loading: [%s][%s] (%s)',
-                     r.pluginId, r.resourceId, r.type, options, r);
-                  bitmunk.resource.load({
-                     resource: r,
-                     task: task
-                  });
+               bitmunk.resource.load({
+                  resource: r,
+                  task: task
                });
-            }
+            });
          }
-      },
+      }
+   };
 
-      /**
-       * Unregister a resource.
-       *
-       * This function unregisters a named resource. It first makes sure the
-       * resource is unloaded.
-       *
-       * General options:
-       *    id: resource id (required)
-       *    pluginId: plugin id (required)
-       *    success: callback on successful unregistration (optional)
-       *    error: callback on unregistration error (optional)
-       *    complete: callback always called after success or error (optional)
-       *
-       * @param options see function description
-       */
-      unregister: function(options) {
-         // General options
-         options = $.extend({
-            id: null,
-            pluginId: null,
-            sucess: function() {},
-            error: function() {},
-            complete: function() {}
-         }, options);
-         /*
-         bitmunk.resource.unload({
-            success: function() {
-               // do unreg
-               // call success
-            },
-            error: function() {
-               // log
-               // call error
-            },
-            complete: function() {
-               // log
-               // call complete
-            },
-         });
-         */
-         // unregister
-         var r = getResource(options.pluginId, options.id, true);
-         deleteResource(r);
-         bitmunk.log.debug(cat, 'unregister: [%s][%s] (%s)',
-            r.pluginId, r.id, r.type);
-         // trigger event and cleanup
-         $(r).trigger('bitmunk-resource-unregistered', [r]);
-         $(r).unbind();
-      },
+   /**
+    * Unregister a resource.
+    *
+    * This function unregisters a named resource. It first makes sure the
+    * resource is unloaded.
+    *
+    * General options:
+    *    id: resource id (required)
+    *    pluginId: plugin id (required)
+    *    success: callback on successful unregistration (optional)
+    *    error: callback on unregistration error (optional)
+    *    complete: callback always called after success or error (optional)
+    *
+    * @param options see function description
+    */
+   bitmunk.resource.unregister = function(options)
+   {
+      // General options
+      options = $.extend({
+         id: null,
+         pluginId: null,
+         sucess: function() {},
+         error: function() {},
+         complete: function() {}
+      }, options);
+      /*
+      bitmunk.resource.unload({
+         success: function() {
+            // do unreg
+            // call success
+         },
+         error: function() {
+            // log
+            // call error
+         },
+         complete: function() {
+            // log
+            // call complete
+         },
+      });
+      */
+      // unregister
+      var r = getResource(options.pluginId, options.id, true);
+      deleteResource(r);
+      bitmunk.log.debug(cat, 'unregister: [%s][%s] (%s)',
+         r.pluginId, r.id, r.type);
+      // trigger event and cleanup
+      $(r).trigger('bitmunk-resource-unregistered', [r]);
+      $(r).unbind();
+   };
 
-      /**
-       * Load a resource.
-       *
-       * Most options are specified when registering a resource. Loading one
-       * resource will also ensure any resources it depends on are also loaded.
-       * Loading will block until the dependency chain is fully loaded.
-       *
-       * Types specific actions when loading and unloading:
-       * (see bitmunk.resources.types for MIME types)
-       * css: CSS stylesheet
-       *    load: insert element into HEAD
-       *    unload: remove element from HEAD
-       * data, dom:
-       *    load: reference options data
-       *    unload: remove 'data' field
-       * html: HTML
-       *    load: async load, parse, and store jQuery object in 'data' field
-       *    unload: delete 'data' field
-       * javascript: JavaScript file 
-       *    load: insert element into HEAD (will run the script)
-       *    unload: nothing
-       * json: JSON file 
-       *    load: async load, parse, and store in 'data' field
-       *    unload: delete 'data' field
-       * text: plain text
-       *    load: async load and store in 'data' field
-       *    unload: delete 'data' field
-       * template: plain text
-       *    load: async load, create TrimPath template, and store in 'data'
-       *       field (use obj.process(data) to render)
-       *    unload: delete 'data' field
-       * plugin, view:
-       *    load: recursively async load sub resources and store info in 'data'
-       *    unload: delete 'data' field
-       *
-       * @param options object with plugin options:
-       *    resource: resource object (optional if ids specified)
-       *    pluginId: plugin id of form bitmunk.topic.Name
-       *       (optional if resource specified)
-       *    resourceId: name of this resource
-       *       (optional if resource specified or resource is a plugin)
-       *    cache: override cache config setting
-       *    force: force reload if resource is already loaded (Note: turns off
-       *       caching and has no effect if resource is currently loading)
-       *    task: task to use while loading
-       */
-      load: function(options)
+   /**
+    * Load a resource.
+    *
+    * Most options are specified when registering a resource. Loading one
+    * resource will also ensure any resources it depends on are also loaded.
+    * Loading will block until the dependency chain is fully loaded.
+    *
+    * Types specific actions when loading and unloading:
+    * (see bitmunk.resources.types for MIME types)
+    * css: CSS stylesheet
+    *    load: insert element into HEAD
+    *    unload: remove element from HEAD
+    * data, dom:
+    *    load: reference options data
+    *    unload: remove 'data' field
+    * html: HTML
+    *    load: async load, parse, and store jQuery object in 'data' field
+    *    unload: delete 'data' field
+    * javascript: JavaScript file 
+    *    load: insert element into HEAD (will run the script)
+    *    unload: nothing
+    * json: JSON file 
+    *    load: async load, parse, and store in 'data' field
+    *    unload: delete 'data' field
+    * text: plain text
+    *    load: async load and store in 'data' field
+    *    unload: delete 'data' field
+    * template: plain text
+    *    load: async load, create TrimPath template, and store in 'data'
+    *       field (use obj.process(data) to render)
+    *    unload: delete 'data' field
+    * plugin, view:
+    *    load: recursively async load sub resources and store info in 'data'
+    *    unload: delete 'data' field
+    *
+    * @param options object with plugin options:
+    *    resource: resource object (optional if ids specified)
+    *    pluginId: plugin id of form bitmunk.topic.Name
+    *       (optional if resource specified)
+    *    resourceId: name of this resource
+    *       (optional if resource specified or resource is a plugin)
+    *    cache: override cache config setting
+    *    force: force reload if resource is already loaded (Note: turns off
+    *       caching and has no effect if resource is currently loading)
+    *    task: task to use while loading
+    */
+   bitmunk.resource.load = function(options)
+   {
+      options = $.extend({
+         resource: null,
+         pluginId: null,
+         resourceId: null,
+         force: false,
+         task: null
+         // FIXME: more defaults?
+      }, options);
+      // get the resource if needed
+      if(options.resource === null)
       {
-         options = $.extend({
-            resource: null,
-            pluginId: null,
-            resourceId: null,
-            force: false,
-            task: null
-            // FIXME: more defaults?
-         }, options);
-         // get the resource if needed
-         if(options.resource === null)
-         {
-            options.resource = bitmunk.resource.get(
-               options.pluginId, options.resourceId, false);
-         }
-         // options.resource alias
-         var r = options.resource;
-         if(options.task === null)
-         {
-            // guess which id info is more valid
-            var rInfo = typeof(r) === 'undefined' ? options : r;
-            bitmunk.log.error(cat,
-               'load: no task specified [%s][%s]',
-               rInfo.pluginId, rInfo.resourceId);
-            bitmunk.log.verbose(cat, 'load: details:', options);
-         }
-         else if(typeof(r) === 'undefined')
-         {
-            bitmunk.log.error(cat,
-               'load: unknown resource [%s][%s]',
-               options.pluginId, options.resourceId);
-            bitmunk.log.verbose(cat, 'load: details:', options);
-            options.task.fail();
-         }
-         else
-         {
-            // setup cache if needed 
-            if(typeof(options.cache) === 'undefined')
-            {
-               options.cache = r.options.cache;
-            }
-            bitmunk.log.debug(cat, 'load: [%s][%s] (%s)',
-               r.pluginId, r.resourceId, r.type);
-            bitmunk.log.verbose(cat, 'load details:', options);
-            
-            switch(r.state)
-            {
-               case bitmunk.resource.loadState.unloaded:
-                  if(r.type in sTypeHandlers)
-                  {
-                     r.state = bitmunk.resource.loadState.loading;
-                     options.task.next('load handler', function(task)
-                     {
-                        sTypeHandlers[r.type].load(options);
-                     });
-                     options.task.next('load done', function(task)
-                     {
-                        r.state = bitmunk.resource.loadState.loaded;
-                        $.event.trigger('bitmunk-resource-loaded', [r]);
-                     });
-                  }
-                  else
-                  {
-                     bitmunk.log.error(cat,
-                        'load: unknown type [%s][%s] (%s)',
-                        r.pluginId, r.resourceId, r.type);
-                     bitmunk.log.verbose(cat, 'load: details:', options);
-                     options.task.fail();
-                  }
-                  break;
-               case bitmunk.resource.loadState.unloading:
-                  // FIXME
-                  break;
-               case bitmunk.resource.loadState.loading:
-                  // FIXME
-                  break;
-               case bitmunk.resource.loadState.loaded:
-                  // already loaded, do nothing
-                  // FIXME check force flag to reload
-                  break;
-            }
-         }
-      },
-       
-      /**
-       */
-      unload: function(options)
+         options.resource = bitmunk.resource.get(
+            options.pluginId, options.resourceId, false);
+      }
+      // options.resource alias
+      var r = options.resource;
+      if(options.task === null)
       {
-         bitmunk.log.error(cat, 'FIXME: unload', options);
-      },
-      
-      /**
-       * Get a resource.  The value depends on the object type.
-       * See load() for details.
-       *
-       * @param pluginId id of plugin that registered or loaded the resource
-       * @param resourceId id of the resource
-       * @param data true to get data, false for resource object (default: true)
-       */
-      get: function(pluginId, resourceId, getData)
+         // guess which id info is more valid
+         var rInfo = typeof(r) === 'undefined' ? options : r;
+         bitmunk.log.error(cat,
+            'load: no task specified [%s][%s]',
+            rInfo.pluginId, rInfo.resourceId);
+         bitmunk.log.verbose(cat, 'load: details:', options);
+      }
+      else if(typeof(r) === 'undefined')
       {
-         bitmunk.log.verbose(cat,
-            'getting resource [%s] [%s]', pluginId, resourceId);
+         bitmunk.log.error(cat,
+            'load: unknown resource [%s][%s]',
+            options.pluginId, options.resourceId);
+         bitmunk.log.verbose(cat, 'load: details:', options);
+         options.task.fail();
+      }
+      else
+      {
+         // setup cache if needed 
+         if(typeof(options.cache) === 'undefined')
+         {
+            options.cache = r.options.cache;
+         }
+         bitmunk.log.debug(cat, 'load: [%s][%s] (%s)',
+            r.pluginId, r.resourceId, r.type);
+         bitmunk.log.verbose(cat, 'load details:', options);
          
-         var path = [];
-         if(typeof(pluginId) !== 'undefined')
+         switch(r.state)
          {
-            path.push(pluginId);
+            case bitmunk.resource.loadState.unloaded:
+               if(r.type in sTypeHandlers)
+               {
+                  r.state = bitmunk.resource.loadState.loading;
+                  options.task.next('load handler', function(task)
+                  {
+                     sTypeHandlers[r.type].load(options);
+                  });
+                  options.task.next('load done', function(task)
+                  {
+                     r.state = bitmunk.resource.loadState.loaded;
+                     $.event.trigger('bitmunk-resource-loaded', [r]);
+                  });
+               }
+               else
+               {
+                  bitmunk.log.error(cat,
+                     'load: unknown type [%s][%s] (%s)',
+                     r.pluginId, r.resourceId, r.type);
+                  bitmunk.log.verbose(cat, 'load: details:', options);
+                  options.task.fail();
+               }
+               break;
+            case bitmunk.resource.loadState.unloading:
+               // FIXME
+               break;
+            case bitmunk.resource.loadState.loading:
+               // FIXME
+               break;
+            case bitmunk.resource.loadState.loaded:
+               // already loaded, do nothing
+               // FIXME check force flag to reload
+               break;
          }
-         if(typeof(resourceId) !== 'undefined')
-         {
-            path.push(resourceId);
-         }
-         if(typeof(getData) === 'boolean' ? getData : false)
-         {
-            path.push('data');
-         }
-         return bitmunk.util.getPath(sResources, path);
-      },
+      }
+   };
+   
+   /**
+    */
+   bitmunk.resource.unload = function(options)
+   {
+      bitmunk.log.error(cat, 'FIXME: unload', options);
+   };
+   
+   /**
+    * Get a resource.  The value depends on the object type.
+    * See load() for details.
+    *
+    * @param pluginId id of plugin that registered or loaded the resource
+    * @param resourceId id of the resource
+    * @param data true to get data, false for resource object (default: true)
+    */
+   bitmunk.resource.get = function(pluginId, resourceId, getData)
+   {
+      bitmunk.log.verbose(cat,
+         'getting resource [%s] [%s]', pluginId, resourceId);
       
-      /**
-       * Get a named view.
-       *
-       * When plugins are registered they store a map from a 'hash' variable
-       * to the view resource information.  The view can then be retrieved with
-       * this call.
-       *
-       * @param viewId id of a view registered with a 'hash' value
-       */
-      getNamedView: function(viewId)
+      var path = [];
+      if(typeof(pluginId) !== 'undefined')
       {
-         var rval;
-         if(viewId in sNamedViews)
-         {
-            var info = sNamedViews[viewId];
-            rval = bitmunk.resource.get(info.pluginId, info.resourceId);
-         }
-         else
-         {
-            bitmunk.log.error(cat, 'getNamedView: unknown view:', viewId);
-         }
-         return rval;
-      },
-      
-      /**
-       * Setup a resource.
-       *
-       * This method will update the values in a stored resource and unblock
-       * waiters on that resource. This should be used from plugin scripts to
-       * update resources.
-       * 
-       * @param options:
-       *    pluginId: the plugin id (required)
-       *    resourceId: the resource id (required)
-       *    *: any other parameters to update
-       */
-      setupResource: function(options)
+         path.push(pluginId);
+      }
+      if(typeof(resourceId) !== 'undefined')
       {
-         var r = bitmunk.resource.get(options.pluginId, options.resourceId);
-         $.extend(r.options, options);
-      },
-      
-      /**
-       * Get the list of real scripts for a script resource.
-       *
-       * @param pluginId a resource plugin id.
-       * @param resourceId a resource id.
-       *
-       * @return a list of script resource names.
-       */
-      getScriptResources: function(pluginId, resourceId)
+         path.push(resourceId);
+      }
+      if(typeof(getData) === 'boolean' ? getData : false)
       {
-         var r = bitmunk.resource.get(pluginId, pluginId);
-         // get sub scripts if they exist
-         var resources = bitmunk.util.getPath(r.options,
-            ['subScripts', resourceId]);
-         if(typeof(resources) === 'undefined')
-         {
-            // just a normal resource
-            resources = [resourceId];
-         }
-         return resources;
-      },
-      
-      /**
-       * Initialize access to tasks for dynamically loaded scripts and block
-       * the task.
-       *
-       * @param pluginId a resource plugin id.
-       * @param resourceId a resource id.
-       * @param task the task used for loading a script.
-       */
-      initScriptTask: function(pluginId, resourceId, task)
+         path.push('data');
+      }
+      return bitmunk.util.getPath(sResources, path);
+   };
+   
+   /**
+    * Get a named view.
+    *
+    * When plugins are registered they store a map from a 'hash' variable
+    * to the view resource information.  The view can then be retrieved with
+    * this call.
+    *
+    * @param viewId id of a view registered with a 'hash' value
+    */
+   bitmunk.resource.getNamedView = function(viewId)
+   {
+      var rval;
+      if(viewId in sNamedViews)
       {
-         var resources = bitmunk.resource.getScriptResources(
-            pluginId, resourceId);
-         // setup the tasks 
-         $.each(resources, function(i, resource)
-         {
-            bitmunk.util.setPath(sScriptTasks,
-               [pluginId, resource], task);
-         });
-         // increase task block count by one for each script
-         task.block(resources.length);
-      },
-      
-      /**
-       * Get the task used for loading a script.
-       *
-       * @param pluginId a resource plugin id.
-       * @param resourceId a resource id.
-       */
-      getScriptTask: function(pluginId, resourceId)
+         var info = sNamedViews[viewId];
+         rval = bitmunk.resource.get(info.pluginId, info.resourceId);
+      }
+      else
       {
-         // should exist so just use simple access
-         var task = sScriptTasks[pluginId][resourceId];
-         if(typeof(task) === 'undefined')
-         {
-            bitmunk.log.error(
-               cat, 'getScriptTask unknown resource:', pluginId, resourceId);
-         }
-         return task;
-      },
-      
-      /**
-       * Delete the task used for loading a script.
-       *
-       * @param pluginId a resource plugin id.
-       * @param resourceId a resource id.
-       */
-      cleanupScriptTask: function(pluginId, resourceId, task)
+         bitmunk.log.error(cat, 'getNamedView: unknown view:', viewId);
+      }
+      return rval;
+   };
+   
+   /**
+    * Setup a resource.
+    *
+    * This method will update the values in a stored resource and unblock
+    * waiters on that resource. This should be used from plugin scripts to
+    * update resources.
+    * 
+    * @param options:
+    *    pluginId: the plugin id (required)
+    *    resourceId: the resource id (required)
+    *    *: any other parameters to update
+    */
+   bitmunk.resource.setupResource = function(options)
+   {
+      var r = bitmunk.resource.get(options.pluginId, options.resourceId);
+      $.extend(r.options, options);
+   };
+   
+   /**
+    * Get the list of real scripts for a script resource.
+    *
+    * @param pluginId a resource plugin id.
+    * @param resourceId a resource id.
+    *
+    * @return a list of script resource names.
+    */
+   bitmunk.resource.getScriptResources = function(pluginId, resourceId)
+   {
+      var r = bitmunk.resource.get(pluginId, pluginId);
+      // get sub scripts if they exist
+      var resources = bitmunk.util.getPath(r.options,
+         ['subScripts', resourceId]);
+      if(typeof(resources) === 'undefined')
       {
-         var resources = bitmunk.resource.getScriptResources(
-            pluginId, resourceId);
-         // setup the tasks 
-         $.each(resources, function(i, resource)
-         {
-            // remove the resourceId entry
-            delete sScriptTasks[pluginId][resource];
-         });
-         if(bitmunk.util.isEmpty(sScriptTasks[pluginId]))
-         {
-            delete sScriptTasks[pluginId];
-         }
+         // just a normal resource
+         resources = [resourceId];
+      }
+      return resources;
+   };
+   
+   /**
+    * Initialize access to tasks for dynamically loaded scripts and block
+    * the task.
+    *
+    * @param pluginId a resource plugin id.
+    * @param resourceId a resource id.
+    * @param task the task used for loading a script.
+    */
+   bitmunk.resource.initScriptTask = function(pluginId, resourceId, task)
+   {
+      var resources = bitmunk.resource.getScriptResources(
+         pluginId, resourceId);
+      // setup the tasks 
+      $.each(resources, function(i, resource)
+      {
+         bitmunk.util.setPath(sScriptTasks,
+            [pluginId, resource], task);
+      });
+      // increase task block count by one for each script
+      task.block(resources.length);
+   };
+   
+   /**
+    * Get the task used for loading a script.
+    *
+    * @param pluginId a resource plugin id.
+    * @param resourceId a resource id.
+    */
+   bitmunk.resource.getScriptTask = function(pluginId, resourceId)
+   {
+      // should exist so just use simple access
+      var task = sScriptTasks[pluginId][resourceId];
+      if(typeof(task) === 'undefined')
+      {
+         bitmunk.log.error(
+            cat, 'getScriptTask unknown resource:', pluginId, resourceId);
+      }
+      return task;
+   };
+   
+   /**
+    * Delete the task used for loading a script.
+    *
+    * @param pluginId a resource plugin id.
+    * @param resourceId a resource id.
+    */
+   bitmunk.resource.cleanupScriptTask = function(pluginId, resourceId, task)
+   {
+      var resources = bitmunk.resource.getScriptResources(
+         pluginId, resourceId);
+      // setup the tasks 
+      $.each(resources, function(i, resource)
+      {
+         // remove the resourceId entry
+         delete sScriptTasks[pluginId][resource];
+      });
+      if(bitmunk.util.isEmpty(sScriptTasks[pluginId]))
+      {
+         delete sScriptTasks[pluginId];
       }
    };
    
@@ -812,7 +814,8 @@
    sTypeHandlers[bitmunk.resource.types.template] =
    {
       /**
-       * Internal support to load a simple data types (html, json, text, template).
+       * Internal support to load a simple data types (html, json, text,
+       * template).
        * See bitmunk.resource.register()/load() for documentation.
        */
       load: function(options)
@@ -820,16 +823,22 @@
          var r = options.resource;
          bitmunk.log.verbose(cat, 'loadSimple [%s][%s]',
             r.pluginId, r.resourceId, options);
-            
+         
          options.task.block();
-
+         
+         var timer = +new Date();
          $.ajax({
             type: 'GET',
             url: r.options.path,
             dataType: bitmunk.resource.typeInfo[r.type].ajaxType,
             async: true,
             cache: options.cache,
-            success: function(data) {
+            success: function(data)
+            {
+               timer = +new Date() - timer;
+               bitmunk.log.debug('timing',
+                  'loaded resource [%s][%s] (%s) in %s ms',
+                  r.pluginId, r.resourceId, r.type, timer);
                if(r.options.save)
                {
                   var rdata;
@@ -865,8 +874,8 @@
    sTypeHandlers[bitmunk.resource.types.javascript] =
    {
       /**
-       * Internal support to load a JavaScript file via DHTML script tag addition.
-       * See bitmunk.resource.register()/load() for documentation.
+       * Internal support to load a JavaScript file via DHTML script tag
+       * addition. See bitmunk.resource.register()/load() for documentation.
        */
       load: function(options)
       {
@@ -878,6 +887,7 @@
             // setup task access and block task
             bitmunk.resource.initScriptTask(
                r.pluginId, r.resourceId, options.task);
+            var timer = +new Date();
             $.ajax({
                type: 'GET',
                url: r.options.path,
@@ -886,6 +896,12 @@
                success: function() {
                   // save approx loaded date
                   r.at = new Date();
+                  
+                  timer = +(r.at) - timer;
+                  bitmunk.log.debug('timing',
+                     'loaded resource [%s][%s] (%s) in %s ms',
+                     r.pluginId, r.resourceId, r.type, timer);
+                  
                   // scripts must call getScriptTask(...).unblock()
                },
                error: function() {
