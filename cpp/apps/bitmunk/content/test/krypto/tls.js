@@ -3803,7 +3803,7 @@
        */
       tlsSocket.isConnected = function()
       {
-         socket.isConnected();
+         return c.isConnected && socket.isConnected();
       };
       
       /**
