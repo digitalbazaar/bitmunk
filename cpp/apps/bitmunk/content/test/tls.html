@@ -56,7 +56,7 @@
 
       var client;
       
-      function client_init()
+      function client_init(primed)
       {
          try
          {
@@ -83,7 +83,8 @@
 	                  console.log('Certificate NOT verified. Ignored for test.');
 	               }
 	               return true;
-	            }
+	            },
+	            primeTlsSockets: primed
 	         });
 	         document.getElementById('feedback').innerHTML =
 		         'http client created';
@@ -181,7 +182,8 @@
       </div>
       <p>Use the controls below to test the http client.</p>
       <div id="controls">
-         <button id="init" onclick="javascript:return client_init();">init</button>
+         <button id="init" onclick="javascript:return client_init(false);">init</button>
+         <button id="init_primed" onclick="javascript:return client_init(true);">init primed</button>
          <button id="cleanup" onclick="javascript:return client_cleanup();">cleanup</button>
          <button id="send" onclick="javascript:return client_send();">send</button>
          <button id="send10" onclick="javascript:return client_send_10();">send 10</button>

@@ -207,25 +207,34 @@
       // set up handlers
       socket.connected = function(e)
       {
-         var request = socket.options.request;
-         request.connectTime = +new Date() - request.connectTime;
-         socket.options.connected(e);
-         if(request.aborted)
+         // socket primed by caching TLS session, handle next request
+         if(!socket.options)
          {
-            socket.close();
             _handleNextRequest(client, socket);
          }
+         // socket in use
          else
          {
-            var out = request.toString();
-            if(request.body)
+            var request = socket.options.request;
+            request.connectTime = +new Date() - request.connectTime;
+            socket.options.connected(e);
+            if(request.aborted)
             {
-               out += request.body;
+               socket.close();
+               _handleNextRequest(client, socket);
             }
-            request.time = +new Date();
-            socket.send(out);
-            request.time = +new Date() - request.time;
-            socket.options.response.time = +new Date();
+            else
+            {
+               var out = request.toString();
+               if(request.body)
+               {
+                  out += request.body;
+               }
+               request.time = +new Date();
+               socket.send(out);
+               request.time = +new Date() - request.time;
+               socket.options.response.time = +new Date();
+            }
          }
       };
       socket.closed = function(e)
@@ -320,12 +329,31 @@
                return verified;
             }
          });
+         
+         socket.idle = true;
+         socket.buffer = krypto.util.createBuffer();
+         client.sockets.push(socket);
+         if(tlsOptions.prime)
+         {
+            // prime socket by connecting and caching TLS session, will do
+            // next request from there
+            socket.idle = false;
+            socket.connect(client.url);
+         }
+         else
+         {
+            // do not prime socket, just add as idle
+            client.idle.push(socket);
+         }
       }
-      
-      socket.idle = true;
-      socket.buffer = krypto.util.createBuffer();
-      client.sockets.push(socket);
-      client.idle.push(socket);
+      else
+      {
+         // no need to prime non-TLS sockets
+         socket.idle = true;
+         socket.buffer = krypto.util.createBuffer();
+         client.sockets.push(socket);
+         client.idle.push(socket);
+      }
    };
    
    /**
@@ -428,6 +456,9 @@
     *           verify: a custom TLS certificate verify callback to use.
     *           persistCookies: true to use persistent cookies via flash local
     *              storage, false to only keep cookies in javascript.
+    *           primeTlsSockets: true to immediately connect TLS sockets on
+    *              their creation so that they will cache TLS sessions for
+    *              reuse.
     * 
     * @return the client.
     */
@@ -487,7 +518,8 @@
          tlsOptions =
          {
             caStore: caStore,
-            verify: options.verify
+            verify: options.verify,
+            prime: options.primeTlsSockets || false
          };
       }
       
