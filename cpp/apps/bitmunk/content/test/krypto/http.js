@@ -557,7 +557,26 @@
          // use an idle socket
          else
          {
-            var socket = client.idle.pop();
+            // prefer an idle *connected* socket first
+            var socket = null;
+            var len = client.idle.length;
+            for(var i = 0; socket === null && i < len; ++i)
+            {
+               socket = client.idle[i];
+               if(socket.isConnected())
+               {
+                  client.idle(i, 1);
+               }
+               else
+               {
+                  socket = null;
+               }
+            }
+            // no connected socket available, get unconnected socket
+            if(socket === null)
+            {
+               socket = client.idle.pop();
+            }
             socket.options = opts;
             _doRequest(client, socket);
          }
