@@ -847,6 +847,38 @@
    };
    
    /**
+    * Supported cipher suites.
+    */
+   tls.CipherSuites =
+   {
+      TLS_RSA_WITH_AES_128_CBC_SHA: [0x00,0x2f],
+      TLS_RSA_WITH_AES_256_CBC_SHA: [0x00,0x35]
+   };
+   
+   /**
+    * Gets a supported cipher suite from 2 bytes.
+    * 
+    * @param twoBytes two bytes in a string.
+    * 
+    * @return the matching supported cipher suite or null.
+    */
+   tls.getCipherSuite = function(twoBytes)
+   {
+      var rval = null;
+      for(var key in tls.CipherSuites)
+      {
+         var cs = tls.CipherSuites[key];
+         if(cs[0] === twoBytes.charCodeAt(0) &&
+            cs[1] === twoBytes.charCodeAt(1))
+         {
+            rval = cs;
+            break;
+         }
+      }
+      return rval;
+   };
+   
+   /**
     * Called when an unexpected record is encountered.
     * 
     * @param c the connection.
@@ -969,7 +1001,23 @@
             });
          }
          
-         // TODO: error out if cipher_suite not supported
+         // get the chosen cipher suite
+         var cSuite = tls.getCipherSuite(msg.cipher_suite);
+         
+         // cipher suite not supported
+         if(cSuite === null)
+         {
+            c.error(c, {
+               message: 'Cipher suite not supported.',
+               send: true,
+               origin: 'client',
+               alert: {
+                  level: tls.Alert.Level.fatal,
+                  description: tls.Alert.Description.handshake_failure
+               },
+               cipherSuite: krypto.util.bytesToHex(msg.cipher_suite)
+            });
+         }
          
          if(!c.fail)
          {
@@ -1000,6 +1048,19 @@
                
                // TODO: handle other options from server when more supported
                
+               // only AES CBC is presently supported, so just change the key
+               // length based on the chosen cipher suite
+               var keyLength;
+               switch(cSuite)
+               {
+                  case tls.CipherSuites.TLS_RSA_WITH_AES_128_CBC_SHA:
+                     keyLength = 16;
+                     break;
+                  case tls.CipherSuites.TLS_RSA_WITH_AES_256_CBC_SHA:
+                     keyLength = 32;
+                     break;
+               }
+               
                // create new security parameters
                c.handshakeState.sp =
                {
@@ -1007,7 +1068,7 @@
                   prf_algorithm: tls.PRFAlgorithm.tls_prf_sha256,
                   bulk_cipher_algorithm: tls.BulkCipherAlgorithm.aes,
                   cipher_type: tls.CipherType.block,
-                  enc_key_length: 16,
+                  enc_key_length: keyLength,
                   block_length: 16,
                   fixed_iv_length: 16,
                   record_iv_length: 16,
@@ -1963,12 +2024,13 @@
     */
    tls.generateKeys = function(c, sp)
    {
-      // TLS_RSA_WITH_AES_128_CBC_SHA (required to be compliant with TLS 1.2)
-      // is the only cipher suite implemented at present
+      // TLS_RSA_WITH_AES_128_CBC_SHA (required to be compliant with TLS 1.2) &
+      // TLS_RSA_WITH_AES_128_CBC_SHA are the only cipher suites implemented
+      // at present
       
       // TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA is required to be compliant with
-      // TLS 1.0 but we don't care because AES is better and we have an
-      // implementation for it
+      // TLS 1.0 but we don't care right now because AES is better and we have
+      // an implementation for it
       
       // TODO: TLS 1.2 implementation
       /*
@@ -2384,6 +2446,22 @@
     */
    tls.createClientHello = function(sessionId, random)
    {
+      // create supported cipher suites, only 2 at present
+      // TLS_RSA_WITH_AES_128_CBC_SHA = { 0x00,0x2F }
+      // TLS_RSA_WITH_AES_128_CBC_SHA = { 0x00,0x35 }
+      // TODO: enable user preference
+      var cipherSuites = krypto.util.createBuffer();
+      cipherSuites.putByte(0x00);
+      cipherSuites.putByte(0x2F);
+      cipherSuites.putByte(0x00);
+      cipherSuites.putByte(0x35);
+      var cSuites = cipherSuites.length();
+      
+      // create supported compression methods, only null supported
+      var compressionMethods = krypto.util.createBuffer();
+      compressionMethods.putByte(0x00);
+      var cMethods = compressionMethods.length();
+      
       // determine length of the handshake message
       // cipher suites and compression methods size will need to be
       // updated if more get added to the list
@@ -2391,20 +2469,10 @@
          sessionId.length + 1 + // session ID vector
          2 +                    // version (major + minor)
          4 + 28 +               // random time and random bytes
-         2 + 2 +                // cipher suites vector (1 supported)
-         1 + 1 +                // compression methods vector
+         2 + cSuites +          // cipher suites vector
+         1 + cMethods +         // compression methods vector
          0;                     // no extensions (TODO: add TLS SNI)
       
-      // create supported cipher suites, only 1 at present
-      // TLS_RSA_WITH_AES_128_CBC_SHA = { 0x00,0x2F }
-      var cipherSuites = krypto.util.createBuffer();
-      cipherSuites.putByte(0x00);
-      cipherSuites.putByte(0x2F);
-      
-      // create supported compression methods, only null supported
-      var compressionMethods = krypto.util.createBuffer();
-      compressionMethods.putByte(0x00);
-
       // build record fragment
       var rval = krypto.util.createBuffer();
       rval.putByte(tls.HandshakeType.client_hello);
@@ -3526,6 +3594,9 @@
    
    // expose TLS alerts
    krypto.tls.Alert = tls.Alert;
+   
+   // expose cipher suites
+   krypto.tls.CipherSuites = tls.CipherSuites;
    
    /**
     * Creates a new TLS connection. This does not make any assumptions about
