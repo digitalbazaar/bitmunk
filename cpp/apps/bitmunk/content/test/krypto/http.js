@@ -323,11 +323,7 @@
             sessionCache: {},
             caStore: tlsOptions.caStore,
             socket: socket,
-            verify: tlsOptions.verify || function(c, verified, depth, certs)
-            {
-               // FIXME: if depth === 0, check certs[0] common name
-               return verified;
-            }
+            verify: tlsOptions.verify
          });
          
          socket.idle = true;
@@ -515,21 +511,10 @@
       var tlsOptions = null;
       if(url.scheme === 'https')
       {
-         var defaultVerify = function(c, verified, depth, certs)
-         {
-            if(verified === true)
-            {
-               // TODO: compare common name to url host
-               //var cn = cert.subject.getField('CN');
-               // FIXME:
-            }
-            return verified;
-         };
-         
          tlsOptions =
          {
             caStore: caStore,
-            verify: options.verify || defaultVerify,
+            verify: options.verify || http.defaultCertificateVerify,
             prime: options.primeTlsSockets || false
          };
       }
@@ -889,6 +874,34 @@
    {
       var utc = +d + d.getTimezoneOffset() * 60000;
       return Math.floor(+new Date() / 1000);
+   };
+   
+   /**
+    * A default certificate verify function that checks a certificate common
+    * name against the client's URL host.
+    * 
+    * @param c the TLS connection.
+    * @param verified true if cert is verified, otherwise alert number.
+    * @param depth the chain depth.
+    * @param certs the cert chain.
+    * 
+    * @return true if verified and the common name matches the host, error
+    *         otherwise.
+    */
+   http.defaultCertificateVerify = function(c, verified, depth, certs)
+   {
+      if(depth === 0 && verified === true)
+      {
+         // compare common name to url host
+         var cn = certs[depth].subject.getField('CN');
+         if(cn === null || client.url.host !== cn.value)
+         {
+            verified = {
+               message: 'Certificate common name does not match url host.'
+            };
+         }
+      }
+      return verified;
    };
    
    /**
