@@ -3,15 +3,16 @@
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
  * @author Dave Longley
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // logging category
    var cat = 'bitmunk.webui.Purchase';
    
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Purchase', 'init.js');
-      
    bitmunk.log.debug(cat, 'will init');
    
    bitmunk.resource.register(
@@ -137,9 +138,17 @@
          $(window).unbind('bitmunk-purchase-DownloadState-licenseAcquired');
          $(window).unbind('bitmunk-directive-started');
          $(window).unbind('bitmunk-directive-error');
-      },      
-      task: sScriptTask
+      }
    });
-   sScriptTask.unblock();
+   
    bitmunk.log.debug(cat, 'did init');
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Purchase',
+   resourceId: 'init.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

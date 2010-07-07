@@ -650,5 +650,15 @@
    };
    
    bitmunk.model.addModel(bitmunk.catalog.model.name, {start: start});
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Help',
+   resourceId: 'help.js',
+   depends: {},
+   init: init
+});
+
+
    sScriptTask.unblock();
 })(jQuery);

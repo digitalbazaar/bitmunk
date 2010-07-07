@@ -1,19 +1,18 @@
 /**
  * Bitmunk Download States Model
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * @author Mike Johnson
  * @author Manu Sporny
  * @author Dave Longley
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // category for logger
    var sLogCategory = 'downloadstates.model';
    
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Purchase', 'downloadstates.model.js');
-      
    // url to retrieve a download state
    var sDownloadStatesUrl =
       bitmunk.api.localRoot + 'purchase/contracts/downloadstates';
@@ -442,5 +441,13 @@
    };
    
    bitmunk.model.addModel(sModelName, {start: start});
-   sScriptTask.unblock();
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Purchase',
+   resourceId: 'downloadstates.model.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

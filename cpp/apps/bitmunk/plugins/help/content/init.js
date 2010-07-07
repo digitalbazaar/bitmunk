@@ -2,17 +2,18 @@
  * Bitmunk Web UI --- Help
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // logging category
    var cat = 'bitmunk.webui.Help';
    
    bitmunk.log.debug(cat, 'will init');
    
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Help', 'init.js');
-      
    bitmunk.resource.register({
       type: bitmunk.resource.types.plugin,
       pluginId: 'bitmunk.webui.Help',
@@ -74,9 +75,17 @@
                'help.js'
             ]
          }
-      ],
-      task: sScriptTask
+      ]
    });
-   sScriptTask.unblock();
+   
    bitmunk.log.debug(cat, 'did init');
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Help',
+   resourceId: 'init.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

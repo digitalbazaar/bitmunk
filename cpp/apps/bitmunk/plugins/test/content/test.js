@@ -2,14 +2,15 @@
  * Bitmunk Web UI --- Test
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
  */
-(function($) 
+(function($) {
+
+var init = function(task)
 {
    // logging category
    var cat = 'bitmunk.webui.Test';
-   
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Test', 'test.js');
    
    // FIXME: should be in a model
    var updateAccessRules = function()
@@ -610,7 +611,7 @@
       $.event.trigger('bitmunk-interface-hidden');
    };
    
-   bitmunk.resource.setupResource(
+   bitmunk.resource.extendResource(
    {
       pluginId: 'bitmunk.webui.Test',
       resourceId: 'test',
@@ -618,5 +619,13 @@
       show: show,
       hide: hide
    });
-   sScriptTask.unblock();
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Test',
+   resourceId: 'test.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

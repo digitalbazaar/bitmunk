@@ -2,15 +2,16 @@
  * Bitmunk Web UI --- Plugins
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // logging category
    var cat = 'bitmunk.webui.Debug';
    
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Debug', 'plugins.js');
-      
    var show = function(task)
    {
       // get all resources
@@ -57,12 +58,20 @@
    {
    };
    
-   bitmunk.resource.setupResource(
+   bitmunk.resource.extendResource(
    {
       pluginId: 'bitmunk.webui.Debug',
       resourceId: 'plugins',
       show: show,
       hide: hide
    });
-   sScriptTask.unblock();
+}
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Debug',
+   resourceId: 'plugins.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

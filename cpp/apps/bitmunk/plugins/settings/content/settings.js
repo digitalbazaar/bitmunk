@@ -5,13 +5,12 @@
  * @author David I. Lehn <dlehn@digitalbazaar.com>
  * @author Manu Sporny <msporny@digitalbazaar.com>
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // log category
    var sLogCategory = 'bitmunk.webui.Settings';
-   
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Settings', 'settings.js');
    
    // event namespace
    var sNS = '.bitmunk-webui-Settings';
@@ -608,7 +607,7 @@
       bitmunk.settings.view.clearFeedback('general');
    };
    
-   bitmunk.resource.setupResource(
+   bitmunk.resource.extendResource(
    {
       pluginId: 'bitmunk.webui.Settings',
       resourceId: 'settings',
@@ -616,5 +615,15 @@
       show: show,
       hide: hide
    });
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Settings',
+   resourceId: 'settings.js',
+   depends: {},
+   init: init
+});
+
+
    sScriptTask.unblock();
 })(jQuery);

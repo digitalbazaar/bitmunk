@@ -703,6 +703,15 @@
       
       // FIXME: tell the controller the sorting has changed
    };
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Help',
+   resourceId: 'help.js',
+   depends: {},
+   init: init
+});
+
    
    sScriptTask.unblock();
 })(jQuery);

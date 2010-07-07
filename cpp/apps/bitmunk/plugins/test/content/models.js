@@ -2,15 +2,16 @@
  * Bitmunk Web UI --- Test Models
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
  */
-(function($) 
+(function($) {
+
+var init = function(task)
 {
    // logging category
    var cat = 'bitmunk.webui.Test.models';
    
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Test', 'models.js');
-      
    bitmunk.log.debug(cat, 'will load model');
    
    var sTestModelName = 'TEST';
@@ -42,6 +43,15 @@
    };
    
    bitmunk.model.addModel(sTestModelName, {start: start});
-   sScriptTask.unblock();
+   
    bitmunk.log.debug(cat, 'did load model');
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Test',
+   resourceId: 'models.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

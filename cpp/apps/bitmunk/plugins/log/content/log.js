@@ -181,6 +181,15 @@
             sLogView.maxChunks = capacity / sLogView.chunkSize;
          }
       });
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Help',
+   resourceId: 'help.js',
+   depends: {},
+   init: init
+});
+
    
    sScriptTask.unblock();
 })(jQuery);

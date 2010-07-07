@@ -85,6 +85,16 @@
       },
       task: sScriptTask
    });
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Help',
+   resourceId: 'help.js',
+   depends: {},
+   init: init
+});
+
+
    sScriptTask.unblock();
    bitmunk.log.debug(cat, 'did init');
 })(jQuery);

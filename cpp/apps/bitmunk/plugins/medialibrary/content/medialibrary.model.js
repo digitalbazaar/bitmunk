@@ -402,6 +402,15 @@
       $.event.trigger(
          event.type.replace(/\./g, '-'), [event.details.fileId, file]);
    };
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Help',
+   resourceId: 'help.js',
+   depends: {},
+   init: init
+});
+
    
    bitmunk.model.addModel(bitmunk.medialibrary.model.name, {start: start});
    sScriptTask.unblock();

@@ -2,15 +2,16 @@
  * Bitmunk Web UI --- Support
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // logging category
    var cat = 'bitmunk.webui.CustomerSupport';
    
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.CustomerSupport', 'init.js');
-      
    bitmunk.log.debug(cat, 'will init');
    bitmunk.resource.register({
       type: bitmunk.resource.types.plugin,
@@ -37,9 +38,17 @@
                'theme/support.css'
             ]
          }
-      ],
-      task: sScriptTask
+      ]
    });
-   sScriptTask.unblock();
+   
    bitmunk.log.debug(cat, 'did init');
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.CustomerSupport',
+   resourceId: 'init.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

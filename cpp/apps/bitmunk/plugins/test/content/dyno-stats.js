@@ -2,8 +2,12 @@
  * Bitmunk Web UI --- DynamicObject Statistics Test
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // logging category
    var cat = 'bitmunk.webui.Test.dyno-stats';
@@ -164,14 +168,21 @@
       bitmunk.log.debug(cat, 'hide');
    };
    
-   bitmunk.resource.setupResource(
+   bitmunk.resource.extendResource(
    {
       pluginId: 'bitmunk.webui.Test',
       resourceId: 'test-dyno-stats',
       show: show,
       hide: hide
    });
-   bitmunk.resource
-      .getScriptTask('bitmunk.webui.Test', 'dyno-stats.js')
-      .unblock();
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Test',
+   resourceId: 'dyno-stats.js',
+   depends: {},
+   init: init
+});
+
+
 })(jQuery);

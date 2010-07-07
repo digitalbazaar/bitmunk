@@ -10,14 +10,13 @@
  * @author Manu Sporny
  * @author Dave Longley
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // log category
    var sLogCategory = 'purchases.controller';
 
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Purchase', 'purchases.controller.js');
-   
    // URL to post a download action
    var sDownloadActionUrl = bitmunk.api.localRoot + 'purchase/contracts/';
    
@@ -733,7 +732,7 @@
       $(window).unbind('bitmunk-directives-queued');
    };
 
-   bitmunk.resource.setupResource(
+   bitmunk.resource.extendResource(
    {
       pluginId: 'bitmunk.webui.Purchase',
       resourceId: 'purchases',
@@ -741,6 +740,13 @@
       show: show,
       hide: hide
    });
-   
-   sScriptTask.unblock();
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Purchase',
+   resourceId: 'purchases.controller.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

@@ -97,6 +97,13 @@
       show: about.show,
       hide: about.hide
    });
-   
-   sScriptTask.unblock();
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Help',
+   resourceId: 'help.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

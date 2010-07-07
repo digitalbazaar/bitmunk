@@ -646,6 +646,15 @@
       $('#payeeSelectAll').unbind('click');
       $('.payeeSelect').die('click');
    };
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Help',
+   resourceId: 'help.js',
+   depends: {},
+   init: init
+});
+
    
    sScriptTask.unblock();
 })(jQuery);

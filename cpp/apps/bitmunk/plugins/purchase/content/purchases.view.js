@@ -1,18 +1,17 @@
 /**
  * Bitmunk Purchases View
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * @author Mike Johnson
  * @author Manu Sporny
  * @author Dave Longley
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // log category
    var sLogCategory = 'purchases.view';
-   
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Purchase', 'purchases.view.js');
    
    // Main Content Image URL
    var sContentImageUrl = '/bitmunk/images/';
@@ -1335,6 +1334,13 @@
       //bitmunk.model.remove(sDownloadStatesModel, 'feedback', dsId);
       //bitmunk.purchases.controller.clearFeedback(dsId);
    };
-   
-   sScriptTask.unblock();
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Purchase',
+   resourceId: 'purchases.view.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

@@ -2,15 +2,16 @@
  * Bitmunk Web UI --- Debug
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // logging category
    var cat = 'bitmunk.webui.Debug';
    
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Debug', 'init.js');
-      
    bitmunk.log.debug(cat, 'will init');
    
    var load = function() {
@@ -86,9 +87,17 @@
             }
          }
          */
-      ],
-      task: sScriptTask
+      ]
    });
-   sScriptTask.unblock();
+   
    bitmunk.log.debug(cat, 'did init');
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Debug',
+   resourceId: 'init.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

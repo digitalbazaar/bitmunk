@@ -259,6 +259,15 @@
    {
       task.next(stopNetAccessWatch);
    };
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Help',
+   resourceId: 'help.js',
+   depends: {},
+   init: init
+});
+
    
    sScriptTask.unblock();
 })(jQuery);
