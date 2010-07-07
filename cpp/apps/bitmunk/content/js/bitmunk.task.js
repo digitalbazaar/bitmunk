@@ -354,10 +354,9 @@
        * requesting N permits via block(), then it will only continue
        * running once enough permits have been released via unblock() calls.
        * 
-       * It is not an error to release more permits than have been acquired as
-       * this is a useful feature for allowing multiple processes to notify
-       * a single task to wake up. The number of blocks on a task will never
-       * drop below 0.
+       * If multiple processes need to synchronize with a single task then
+       * use a condition variable (see bitmunk.task.createCondition). It is
+       * an error to unblock a task more times than it has been blocked.
        * 
        * @param n number of permits to release (default: 1).
        *
@@ -367,9 +366,8 @@
       {
          n = typeof(n) === 'undefined' ? 1 : n;
          task.blocks -= n;
-         if(task.blocks <= 0)
+         if(task.blocks === 0 && task.state !== DONE)
          {
-            task.blocks = 0;
             task.state = RUNNING;
             runNext(task, 0);
          }
@@ -391,6 +389,20 @@
             task.state = RUNNING;
             runNext(task, 0);
          }, n);
+      };
+      
+      /**
+       * Waits on a condition variable until notified. The next task will
+       * not be scheduled until notification. A condition variable can be
+       * created with bitmunk.task.createCondition().
+       * 
+       * Once cond.notify() is called, the task will continue.
+       * 
+       * @param cond the condition variable to wait on.
+       */
+      task.wait = function(cond)
+      {
+         cond.wait(task);
       };
       
       /**
@@ -758,6 +770,55 @@
          // empty all but the current task from the queue
          sTaskQueues[type] = [sTaskQueues[type][0]];
       }
+   };
+   
+   /**
+    * Creates a condition variable to synchronize tasks. To make a task wait
+    * on the condition variable, call task.wait(condition). To notify all
+    * tasks that are waiting, call condition.notify().
+    * 
+    * @return the condition variable.
+    */
+   bitmunk.task.createCondition = function()
+   {
+      var cond =
+      {
+         // all tasks that are blocked
+         tasks: {}
+      };
+      
+      /**
+       * Causes the given task to block until notify is called. If the task
+       * is already waiting on this condition then this is a no-op.
+       * 
+       * @param task the task to cause to wait.
+       */
+      cond.wait = function(task)
+      {
+         // only block once
+         if(!(task.id in cond.tasks))
+         {
+            task.block();
+            cond.tasks[task.id] = task;
+         }
+      };
+      
+      /**
+       * Notifies all waiting tasks to wake up.
+       */
+      cond.notify = function()
+      {
+         // since unblock() will run the next task from here, make sure to
+         // clear the condition's blocked task list before unblocking
+         var tmp = cond.tasks;
+         cond.tasks = {};
+         for(var id in tmp)
+         {
+            tmp[id].unblock();
+         }
+      };
+      
+      return cond;
    };
    
    // NOTE: task support is implicit and not a required dependency

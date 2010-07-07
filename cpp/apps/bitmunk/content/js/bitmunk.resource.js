@@ -67,6 +67,11 @@
     */
    var sInitQueue = [];
    
+   /**
+    * Shared condition variable for loading resources.
+    */
+   var sLoadCondition = bitmunk.task.createCondition();
+   
    // FIXME change this way of named views to something else?
    /**
     * Map of ids to named views.
@@ -706,25 +711,14 @@
       // load resources in load queue
       task.next(function(task)
       {
-         /* Note: Here we use task blocking as a notification mechanism for
-            progress. We only block once to prevent the task from continuing
-            until at least one resource has loaded. Once the task resumes, it
-            checks to see if there are any more resources that need loading,
-            calls load again and then waits to be notified again.
-          */
-         var blocked = false;
-         
          // iterate over pending resources
          $.each(sLoadQueue, function(i, r)
          {
             // if the resource is unloaded, start loading it
             if(r.state === bitmunk.resource.state.unloaded)
             {
-               if(!blocked)
-               {
-                  task.block();
-                  blocked = true;
-               }
+               // wait until notified to run again
+               task.wait(sLoadCondition);
                
                // update state
                r.state = bitmunk.resource.state.loading;
@@ -781,7 +775,7 @@
          // block if there are still resources loading
          else if(sInitQueue.length > 0)
          {
-            task.block();
+            task.wait(sLoadCondition);
          }
       });
       
@@ -927,6 +921,7 @@
                bitmunk.log.debug('timing',
                   'loaded resource [%s][%s] (%s) in %s ms',
                   r.pluginId, r.resourceId, r.type, timer);
+               
                var rdata;
                switch(r.type)
                {
@@ -947,7 +942,7 @@
                
                // notify load completed
                r.state = bitmunk.resource.state.loaded;
-               r.options.task.unblock();
+               sLoadCondition.notify();
             },
             error: function()
             {
@@ -990,7 +985,7 @@
                
                // notify load completed
                r.state = bitmunk.resource.state.loaded;
-               r.options.task.unblock();
+               sLoadCondition.notify();
             },
             error: function()
             {
@@ -1075,7 +1070,7 @@
          
          // notify load completed
          r.state = bitmunk.resource.state.loaded;
-         r.options.task.unblock();
+         sLoadCondition.notify();
       }
    };
 
@@ -1122,7 +1117,7 @@
             cat, 'loadPluginLoader [%s] loaded', r.pluginId, opt);
          // notify load completed
          r.state = bitmunk.resource.state.loaded;
-         opt.task.unblock();
+         sLoadCondition.notify();
       }
    };
 
@@ -1229,7 +1224,7 @@
          bitmunk.log.verbose(cat, 'loadPlugin:', r.pluginId, opt);
          // notify load completed
          r.state = bitmunk.resource.state.loaded;
-         opt.task.unblock();
+         sLoadCondition.notify();
       }
    };
 
@@ -1337,7 +1332,7 @@
          
          // notify load completed
          r.state = bitmunk.resource.state.loaded;
-         r.options.task.unblock();
+         sLoadCondition.notify();
       }
    };
    
@@ -1351,7 +1346,7 @@
       {
          // notify load completed
          r.state = bitmunk.resource.state.loaded;
-         r.options.task.unblock();
+         sLoadCondition.notify();
       }
    };
    
