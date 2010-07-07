@@ -278,7 +278,7 @@
                });
                
                // load all of a view's resources
-               bitmunk.resource.require(view.pluginId, view.resourceId);
+               bitmunk.resource.require({resource: view});
                task.next(
                   'bitmunk.view.TabbedPane.loadView',
                   bitmunk.resource.load);

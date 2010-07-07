@@ -480,7 +480,7 @@
       // require resource immediately if requested
       if(r.required)
       {
-         bitmunk.resource.require(options.pluginId, options.resourceId);
+         bitmunk.resource.require({resource: r});
       }
       
       // log registration
@@ -539,29 +539,49 @@
    };
    
    /**
-    * Gets a resource or its data. The value depends on the object type.
+    * Gets resource(s) or resouce data. The value depends on the object type.
     * See load() for details.
     *
     * @param pluginId id of plugin that registered or loaded the resource.
     * @param resourceId id of the resource.
     * @param data true to get data, false for resource object (default: true).
     * 
-    * @return the resource or its data (if requested) or null if not found.
+    * @return resource(s) with the given pluginId/resourceId, the resource
+    *         data or null if not found.
     */
    bitmunk.resource.get = function(pluginId, resourceId, getData)
    {
       var rval;
       
-      bitmunk.log.verbose(cat,
-         'getting resource [%s] [%s]', pluginId, resourceId);
+      var undefPluginId = (typeof(pluginId) === 'undefined');
+      var undefResourceId = (typeof(resourceId) === 'undefined');
+      if(undefPluginId && undefResourceId)
+      {
+         bitmunk.log.verbose(cat, 'getting all resources');
+      }
+      else if(undefPluginId)
+      {
+         bitmunk.log.verbose(cat,
+            'getting all resources with resource id [%s]', resourceId);
+      }
+      else if(undefResourceId)
+      {
+         bitmunk.log.verbose(cat,
+            'getting all resources with plugin id [%s]', pluginId);
+      }
+      else
+      {
+         bitmunk.log.verbose(cat,
+            'getting resource [%s][%s]', pluginId, resourceId);
+      }
       
       // build look up path
       var path = [];
-      if(typeof(pluginId) !== 'undefined')
+      if(!undefPluginId)
       {
          path.push(pluginId);
       }
-      if(typeof(resourceId) !== 'undefined')
+      if(!undefResourceId)
       {
          path.push(resourceId);
       }
@@ -609,22 +629,35 @@
     * time load() is called the resource will be loaded and initialized before
     * the load task completes.
     * 
-    * @param pluginId the plugin ID of the required resource.
-    * @param resourceId the resource ID of the required resource.
+    * The options must contain either 'resource' or the plugin ID and resource
+    * ID to require.
+    * 
+    * @param options:
+    *           resource: the resource.
+    *           pluginId: the plugin ID of the required resource.
+    *           resourceId the resource ID of the required resource.
     */
-   bitmunk.resource.require = function(pluginId, resourceId)
+   bitmunk.resource.require = function(options)
    {
       // get the resource
-      var r = bitmunk.resource.get(pluginId, resourceId);
+      var r = null;
+      if(options.resource)
+      {
+         r = options.resource;
+      }
+      else
+      {
+         r = bitmunk.resource.get(options.pluginId, options.resourceId);
+      }
       if(r === null)
       {
          bitmunk.log.error(cat,
             'require called with unregistered resource: [%s][%s]',
-            pluginId, resourceId);
+            options.pluginId, options.resourceId);
          throw {
             message: 'Resource is not registered.',
-            pluginId: pluginId,
-            resourceId: resourceId
+            pluginId: options.pluginId,
+            resourceId: options.resourceId
          };
       }
       
@@ -633,7 +666,10 @@
       {
          $.each(array, function()
          {
-            bitmunk.resource.require(key, this);
+            bitmunk.resource.require({
+               pluginId: key,
+               resourceId: this
+            });
          });
       });
       
@@ -778,6 +814,10 @@
          init: function(task){}
       }, options);
       
+      bitmunk.log.verbose(
+         cat, 'registerScript [%s][%s]',
+         options.pluginId, options.resourceId, options);
+      
       // validate options
       if(typeof(options.pluginId) === 'undefined')
       {
@@ -833,7 +873,7 @@
       });
       
       // requiring the resource will mark all new dependencies as required
-      bitmunk.resource.require(options.pluginId, options.resourceId);
+      bitmunk.resource.require({resource: r});
       
       // set init function on resource
       r.init = options.init;
@@ -1076,7 +1116,8 @@
       load: function(r)
       {
          var opt = r.options;
-         bitmunk.log.verbose(cat, 'loadPluginLoader [%s]', r.pluginId, opt);
+         bitmunk.log.verbose(
+            cat, 'loadPluginLoader [%s] loaded', r.pluginId, opt);
          // notify load completed
          r.state = bitmunk.resource.state.loaded;
          opt.task.unblock();
@@ -1134,9 +1175,9 @@
             $.each(opt.scripts, function(i, script)
             {
                // see if the script is virtual
-               if(opt.subScripts && script in opt.subScripts)
+               if(opt.subScripts && (script in opt.subScripts))
                {
-                  scripts.concat(opt.subScripts[scripts]);
+                  scripts = scripts.concat(opt.subScripts[script]);
                }
                else
                {
@@ -1147,6 +1188,9 @@
             // register each real script
             $.each(scripts, function(i, script)
             {
+               bitmunk.log.verbose(
+                  cat, 'registerPlugin script:', r.pluginId, script);
+               
                bitmunk.resource.register({
                   pluginId: r.pluginId,
                   resourceId: script,

@@ -488,13 +488,6 @@ jQuery(function($) {
     */
    var configurePlugins = function(task)
    {
-      var timer = +new Date();
-      task.next(function(task)
-      {
-         timer = +new Date() - timer;
-         bitmunk.log.debug('timing', 'plugins configured in ' + timer + ' ms');
-      });
-      
       // notify watchers of config details
       triggerConfigChanged(sConfig);
    };
