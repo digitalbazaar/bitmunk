@@ -949,7 +949,7 @@
                // notify load failed
                r.options.task.fail();
             }
-            // FIXME: add xhr: window.krypto.xhr.create to use TLS
+            // FIXME: add xhr: bitmunk.xhr.create to use TLS
          });
       }
    };
@@ -992,7 +992,7 @@
                // notify load failed
                r.options.task.fail();
             }
-            // FIXME: add xhr: window.krypto.xhr.create to use TLS
+            // FIXME: add xhr: bitmunk.xhr.create to use TLS
          });
       },
       

@@ -43,7 +43,7 @@ var init = function(task)
          {
             ruleNode.html('<li>Error: Failed to fetch user access rules.</li>');
          },
-         xhr: window.krypto.xhr.create
+         xhr: bitmunk.xhr.create
       });
    };
       
@@ -361,7 +361,7 @@ var init = function(task)
                ruleNode.html('<li>Error: ' + access + ' ' + entry.username +
                   ' @ ' + entry.ip + '</li>');
             },
-            xhr: window.krypto.xhr.create
+            xhr: bitmunk.xhr.create
          });
       });
       

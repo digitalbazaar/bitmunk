@@ -515,10 +515,21 @@
       var tlsOptions = null;
       if(url.scheme === 'https')
       {
+         var defaultVerify = function(c, verified, depth, certs)
+         {
+            if(verified === true)
+            {
+               // TODO: compare common name to url host
+               //var cn = cert.subject.getField('CN');
+               // FIXME:
+            }
+            return verified;
+         };
+         
          tlsOptions =
          {
             caStore: caStore,
-            verify: options.verify,
+            verify: options.verify || defaultVerify,
             prime: options.primeTlsSockets || false
          };
       }

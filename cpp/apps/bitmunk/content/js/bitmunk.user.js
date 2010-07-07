@@ -99,7 +99,7 @@
          complete: function(xhr, textStatus) {
             //bitmunk.log.debug(cat, 'login complete', arguments);
          },
-         xhr: window.krypto.xhr.create
+         xhr: bitmunk.xhr.create
       });
    };
    
@@ -126,13 +126,13 @@
          complete: function(xhr, textStatus) {
             bitmunk.log.debug(cat, 'logout', xhr, textStatus);
             // ensure cookie cleared
-            window.krypto.xhr.removeCookie('bitmunk-user-id');
-            window.krypto.xhr.removeCookie('bitmunk-session');
+            bitmunk.xhr.removeCookie('bitmunk-user-id');
+            bitmunk.xhr.removeCookie('bitmunk-session');
             $.event.trigger('bitmunk-logout', [details]);
          },
          // do not use global failure handler
          global: false,
-         xhr: window.krypto.xhr.create
+         xhr: bitmunk.xhr.create
       });
    };
    
@@ -143,7 +143,7 @@
     */
    bitmunk.user.isLoggedIn = function()
    {
-      return window.krypto.xhr.getCookie('bitmunk-user-id') ? true : false;
+      return bitmunk.xhr.getCookie('bitmunk-user-id') ? true : false;
    };
    
    /**
@@ -153,7 +153,7 @@
     */
    bitmunk.user.getUserId = function()
    {
-      var cookie = window.krypto.xhr.getCookie('bitmunk-user-id');
+      var cookie = bitmunk.xhr.getCookie('bitmunk-user-id');
       return cookie === null ? null : cookie.value;
    };
    
@@ -164,7 +164,7 @@
     */
    bitmunk.user.getUsername = function()
    {
-      var cookie = window.krypto.xhr.getCookie('bitmunk-username');
+      var cookie = bitmunk.xhr.getCookie('bitmunk-username');
       return cookie === null ? null : unescape(cookie.value);
    };
    

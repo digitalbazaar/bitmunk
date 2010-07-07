@@ -179,7 +179,7 @@
          complete: options.complete,
          xhr: function()
          {
-            return window.krypto.xhr.create(options.xhrOptions);
+            return bitmunk.xhr.create(options.xhrOptions);
          }
       };
       // optional options

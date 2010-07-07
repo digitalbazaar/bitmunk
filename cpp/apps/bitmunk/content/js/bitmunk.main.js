@@ -434,7 +434,7 @@ jQuery(function($) {
             // ajax error also handled via global handler
             task.fail();
          },
-         xhr: window.krypto.xhr.create
+         xhr: bitmunk.xhr.create
       });
    };
    
@@ -991,7 +991,7 @@ jQuery(function($) {
                bitmunk.log.verbose(cat, 'main task: started');
             });
             task.next('sys/init', bitmunk.sys.init);
-            task.next('xhr/init', window.krypto.xhr.init);
+            task.next('xhr/init', bitmunk.xhr.init);
             task.next('main/init/screen-interface', initScreenInterface);
             task.next('main/init/desktop-interface', initDesktopInterface);
             task.next('main/init', initMain);

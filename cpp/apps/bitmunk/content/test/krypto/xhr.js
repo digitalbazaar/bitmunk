@@ -87,55 +87,42 @@
    /**
     * Initializes flash XHR support.
     * 
-    * @param task the task to use to synchronize initialization.
+    * @param options:
+    *           url: the base URL to connect to, ie: https://myserver.com
+    *              (current implementation only supports one host).
+    *           flashId: the dom ID of the flash SocketPool.
+    *           policyPort: the port that provides the server's flash policy.
+    *           msie: true if browser is internet explorer, false if not.
+    *           connections: the maximum number of concurrent connections.
+    *           caCerts: a list of PEM-formatted certificates to trust.
+    *           verify: optional TLS certificate verify callback to use (see
+    *              krypto.tls for details).
+    *           persistCookies: true to use persistent cookies via flash local
+    *              storage, false to only keep cookies in javascript.
+    *           primeTlsSockets: true to immediately connect TLS sockets on
+    *              their creation so that they will cache TLS sessions for
+    *              reuse.
     */
-   xhrApi.init = function(task)
+   xhrApi.init = function(options)
    {
-      // TODO: abstract this away, pass in config to xhr init
-      
-      // get flash config
-      var cfg;
-      task.block();
-      $.ajax(
-      {
-         type: 'GET',
-         url: bitmunk.api.localRoot + 'webui/config/flash',
-         contentType: 'application/json',
-         success: function(data)
-         {
-            // get config
-            cfg = JSON.parse(data);
-            task.unblock();
-         },
-         error: function()
-         {
-            task.fail();
-         }
+      // TODO: create this only once when multiple hosts are supported
+      // create the flash socket pool
+      _sp = net.createSocketPool({
+         flashId: options.flashId,
+         policyPort: options.policyPort || _policyPort,
+         msie: options.msie || false
       });
       
-      task.next(function(task)
-      {
-         // create the flash socket pool
-         _sp = net.createSocketPool({
-            flashId: 'socketPool',
-            policyPort: _policyPort,
-            msie: $.browser.msie
-         });
-         
-         // TODO: allow 1 client per domain
-         // create http client
-         _client = http.createClient({
-            // FIXME: get host from config
-            url: 'https://' + window.location.host,
-            socketPool: _sp,
-            connections: _maxConnections,
-            caCerts: cfg.ssl.certificates,
-            verify: function(c, verified, depth, certs)
-            {
-               // TODO: check a specific common name?
-               return verified;
-            }
-         });
+      // TODO: allow 1 client per domain
+      // create http client
+      _client = http.createClient({
+         url: options.url,
+         socketPool: _sp,
+         connections: options.connections || _maxConnections,
+         caCerts: options.caCerts,
+         persistCookies: options.persistCookies || true,
+         primeTlsSockets: options.primeTlsSockets || false,
+         verify: options.verify
       });
    };
    
@@ -206,9 +193,17 @@
     *        logWarningOnError: If true and an HTTP error status code is
     *           received then log a warning, otherwise log a verbose
     *           message.
-    *        logVerbose: If true be very verbose in the output including
+    *        verbose: If true be very verbose in the output including
     *           the response event and response body, otherwise only include
     *           status, timing, and data size.
+    *        logError: a multi-var log function for warnings that takes
+    *           the log category as the first var.
+    *        logWarning: a multi-var log function for warnings that takes
+    *           the log category as the first var.
+    *        logDebug: a multi-var log function for warnings that takes
+    *           the log category as the first var.
+    *        logVerbose: a multi-var log function for warnings that takes
+    *           the log category as the first var.
     * 
     * @return the XmlHttpRequest.
     */
@@ -217,7 +212,12 @@
       // set option defaults
       options = $.extend(
       {
-         logWarningOnError: true
+         logWarningOnError: true,
+         verbose: false,
+         logError: function(){},
+         logWarning: function(){},
+         logDebug: function(){},
+         logVerbose: function(){}
       }, options || {});
       
       // private xhr state
@@ -233,6 +233,15 @@
          sendFlag: false,
          // errorFlag, true if a network error occurred
          errorFlag: false
+      };
+      
+      // private log functions
+      var _log =
+      {
+         error: options.logError,
+         warning: options.logWarning,
+         debug: options.logDebug,
+         verbose: options.logVerbose
       };
       
       // create public xhr interface
@@ -476,17 +485,17 @@
                (e.request.connectTime + e.request.time + e.response.time) +
                'ms';
             // TODO: provide log functions via options
-            if(options.logVerbose)
+            if(options.verbose)
             {
                var lFunc = (xhr.status >= 400 && options.logWarningOnError) ?
-                  window.bitmunk.log.warning : window.bitmunk.log.verbose;
+                  _log.warning : _log.verbose;
                lFunc(cat, output,
                   e, e.response.body ? '\n' + e.response.body : '\nNo content');
             }
             else
             {
                var lFunc = (xhr.status >= 400 && options.logWarningOnError) ?
-                  window.bitmunk.log.warning : window.bitmunk.log.debug;
+                  _log.warning : _log.debug;
                lFunc(cat, output);
             }
             if(xhr.onreadystatechange)
@@ -497,7 +506,7 @@
          options.error = function(e)
          {
             var req = _state.request;
-            bitmunk.log.error(cat, req.method + ' ' + req.path, e);
+            _log.error(cat, req.method + ' ' + req.path, e);
             
             // 1. set response body to null
             xhr.responseText = '';
