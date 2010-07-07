@@ -3,15 +3,16 @@
  *
  * @author Mike Johnson
  * @author Manu Sporny <msporny@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // logging category
    var cat = 'bitmunk.webui.MediaLibrary';
    
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.MediaLibrary', 'init.js');
-      
    bitmunk.log.debug(cat, 'will init');
    
    bitmunk.resource.register(
@@ -82,19 +83,17 @@
       },
       willLogout: function(task) {
          bitmunk.medialibrary.willLogout(task);
-      },
-      task: sScriptTask
+      }
    });
+   
+   bitmunk.log.debug(cat, 'did init');
 };
 
 bitmunk.resource.registerScript({
-   pluginId: 'bitmunk.webui.Help',
-   resourceId: 'help.js',
+   pluginId: 'bitmunk.webui.MediaLibrary',
+   resourceId: 'init.js',
    depends: {},
    init: init
 });
 
-
-   sScriptTask.unblock();
-   bitmunk.log.debug(cat, 'did init');
 })(jQuery);

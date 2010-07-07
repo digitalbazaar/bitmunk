@@ -7,10 +7,11 @@
  */
 (function($) {
 
+// plugin id
+var sPluginId = 'bitmunk.webui.Test';
+
 var init = function(task)
 {
-   // plugin id
-   var sPluginId = 'bitmunk.webui.Test';
    // logging category
    var cat = sPluginId;
    

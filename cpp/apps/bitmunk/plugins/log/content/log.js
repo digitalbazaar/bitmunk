@@ -2,14 +2,15 @@
  * Bitmunk Web UI --- LogView
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // category for LogView
    var sLogCategory = 'bitmunk.webui.LogUI';
-   
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.LogUI', 'log.js');
    
    // event namespace
    var sNS = '.bitmunk-webui-LogUI';
@@ -92,7 +93,7 @@
       $('#clearLog').unbind('click');
    };
    
-   bitmunk.resource.setupResource(
+   bitmunk.resource.extendResource(
    {
       pluginId: 'bitmunk.webui.LogUI',
       resourceId: 'log',
@@ -184,12 +185,10 @@
 };
 
 bitmunk.resource.registerScript({
-   pluginId: 'bitmunk.webui.Help',
-   resourceId: 'help.js',
+   pluginId: 'bitmunk.webui.LogUI',
+   resourceId: 'log.js',
    depends: {},
    init: init
 });
 
-   
-   sScriptTask.unblock();
 })(jQuery);

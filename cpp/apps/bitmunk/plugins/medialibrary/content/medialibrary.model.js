@@ -6,13 +6,12 @@
  * @author Manu Sporny
  * @author Dave Longley
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // logging category
    var sLogCategory = 'models.medialibrary';
-   
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.MediaLibrary', 'medialibrary.model.js');
    
    // URL to access/modify media library files
    var sFilesUrl = bitmunk.api.localRoot32 + 'medialibrary/files';
@@ -402,16 +401,15 @@
       $.event.trigger(
          event.type.replace(/\./g, '-'), [event.details.fileId, file]);
    };
+   
+   bitmunk.model.addModel(bitmunk.medialibrary.model.name, {start: start});
 };
 
 bitmunk.resource.registerScript({
-   pluginId: 'bitmunk.webui.Help',
-   resourceId: 'help.js',
+   pluginId: 'bitmunk.webui.MediaLibrary',
+   resourceId: 'medialibrary.model.js',
    depends: {},
    init: init
 });
 
-   
-   bitmunk.model.addModel(bitmunk.medialibrary.model.name, {start: start});
-   sScriptTask.unblock();
 })(jQuery);

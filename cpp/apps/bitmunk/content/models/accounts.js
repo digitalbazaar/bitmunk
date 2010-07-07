@@ -1,10 +1,12 @@
 /**
  * Bitmunk Accounts Model
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * @author Dave Longley
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // model name
    var sModel = 'accounts';
@@ -12,9 +14,6 @@
    // category for logger
    var sLogCategory = 'models.accounts';
    
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Main', 'accounts.js');
-      
    // used to schedule account update polling events
    var sIntervalId = null;
    
@@ -128,5 +127,13 @@
    };
    
    bitmunk.model.addModel(sModel, {start: start, stop: stop});
-   sScriptTask.unblock();
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Main',
+   resourceId: 'accounts.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

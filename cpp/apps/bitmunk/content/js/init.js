@@ -2,11 +2,13 @@
  * Bitmunk Web UI --- Main
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Main', 'js/init.js');
    // Note: This plugin is *also* registered in the main script.  This will
    // overwrite those registered settings.  The other low-level resources will
    // still be registered and pre-loaded.
@@ -42,8 +44,15 @@
             resourceId: 'filebrowser.html',
             load: true
          }
-      ],
-      task: sScriptTask
+      ]
    });
-   sScriptTask.unblock();
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Main',
+   resourceId: 'js/init.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

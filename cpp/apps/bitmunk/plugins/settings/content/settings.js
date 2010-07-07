@@ -624,6 +624,4 @@ bitmunk.resource.registerScript({
    init: init
 });
 
-
-   sScriptTask.unblock();
 })(jQuery);

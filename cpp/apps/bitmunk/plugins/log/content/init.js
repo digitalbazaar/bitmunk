@@ -2,15 +2,16 @@
  * Bitmunk Web UI --- Main and Context Log
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // logging category
    var cat = 'bitmunk.webui.LogUI';
    
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.LogUI', 'init.js');
-      
    bitmunk.log.debug(cat, 'will init');
    bitmunk.resource.register({
       type: bitmunk.resource.types.plugin,
@@ -56,15 +57,15 @@
          bitmunk.logui.willLogout(task);
       }
    });
+   
+   bitmunk.log.debug(cat, 'did init');
 };
 
 bitmunk.resource.registerScript({
-   pluginId: 'bitmunk.webui.Help',
-   resourceId: 'help.js',
+   pluginId: 'bitmunk.webui.LogUI',
+   resourceId: 'init.js',
    depends: {},
    init: init
 });
 
-   sScriptTask.unblock();
-   bitmunk.log.debug(cat, 'did init');
 })(jQuery);

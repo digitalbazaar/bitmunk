@@ -4,7 +4,7 @@
  * @author David I. Lehn <dlehn@digitalbazaar.com>
  * @author Dave Longley
  * 
- * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 (function($) {
 

@@ -3,7 +3,7 @@
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
  * 
- * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 (function($) {
 

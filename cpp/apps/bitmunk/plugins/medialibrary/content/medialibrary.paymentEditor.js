@@ -6,13 +6,12 @@
  * @author Manu Sporny
  * @author Dave Longley
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // log category
    var sLogCategory = 'bitmunk.medialibrary.paymentEditor';
-   
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.MediaLibrary', 'medialibrary.paymentEditor.js');
    
    // store the number of payee rows so we can give each a unique ID
    var sPayeeRows = 0;
@@ -649,12 +648,10 @@
 };
 
 bitmunk.resource.registerScript({
-   pluginId: 'bitmunk.webui.Help',
-   resourceId: 'help.js',
+   pluginId: 'bitmunk.webui.MediaLibrary',
+   resourceId: 'medialibrary.paymentEditor.js',
    depends: {},
    init: init
 });
 
-   
-   sScriptTask.unblock();
 })(jQuery);

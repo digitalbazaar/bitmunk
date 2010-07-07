@@ -3,7 +3,7 @@
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
  * 
- * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc. All rights reserved.
  */
 (function($) {
 
@@ -65,7 +65,7 @@ var init = function(task)
       show: show,
       hide: hide
    });
-}
+};
 
 bitmunk.resource.registerScript({
    pluginId: 'bitmunk.webui.Debug',

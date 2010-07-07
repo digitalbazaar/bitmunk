@@ -1,6 +1,6 @@
 /**
  * Bitmunk Feedback Model
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * This model is used to store feedback messages from the backend. Its
  * tables are dynamically created by individual plugins to suit their
@@ -9,16 +9,15 @@
  * 
  * @author Dave Longley
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // model name
    var sModel = 'feedback';
    
    // category for logger
    var sLogCategory = 'models.feedback';
-   
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Main', 'feedback.js');
    
    /**
     * Starts updating the feedback data model.
@@ -37,5 +36,13 @@
    };
    
    bitmunk.model.addModel(sModel, {start: start});
-   sScriptTask.unblock();
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Main',
+   resourceId: 'feedback.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

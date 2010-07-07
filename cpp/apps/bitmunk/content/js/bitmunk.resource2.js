@@ -384,6 +384,7 @@
     *    name: name of the view (required)
     *    html: html file name which contains the view contents (optional)
     *    scripts: array of JavaScript file names (optional)
+    *    // FIXME: still needed? handle w/script registration?
     *    subScripts: if any of the entries in the "scripts" option are
     *        virtual scripts then subScripts should list those scripts and
     *        list the real files that compose each scripts. This is done so

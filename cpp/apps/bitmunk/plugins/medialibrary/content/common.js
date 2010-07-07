@@ -1,16 +1,15 @@
 /**
  * Bitmunk Media Library Common
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * @author David I. Lehn
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // log category
    var sLogCategory = 'bitmunk.medialibrary.common';
-   
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.MediaLibrary', 'common.js');
    
    // current event ids
    var sNetAccessEventIds = null;
@@ -262,12 +261,10 @@
 };
 
 bitmunk.resource.registerScript({
-   pluginId: 'bitmunk.webui.Help',
-   resourceId: 'help.js',
+   pluginId: 'bitmunk.webui.MediaLibrary',
+   resourceId: 'common.js',
    depends: {},
    init: init
 });
 
-   
-   sScriptTask.unblock();
 })(jQuery);

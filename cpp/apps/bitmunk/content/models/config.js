@@ -1,16 +1,15 @@
 /**
  * Bitmunk Config Model
- * Copyright (c) 2009 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  * 
  * @author Dave Longley
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // category for logger
    var sLogCategory = 'models.config';
-   
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Main', 'config.js');
    
    // model and table names
    var sModel = 'config';
@@ -338,5 +337,13 @@
    };
    
    bitmunk.model.addModel(sModel, {start: start});
-   sScriptTask.unblock();
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Main',
+   resourceId: 'config.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);
