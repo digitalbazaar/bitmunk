@@ -972,12 +972,6 @@ jQuery(function($) {
       });
       // load all required resources
       task.next(bitmunk.resource.load);
-      
-      // FIXME: remove me
-      task.next(function(task)
-      {
-         console.log('ZZZ', 'init main done');
-      });
    };
    
    /**

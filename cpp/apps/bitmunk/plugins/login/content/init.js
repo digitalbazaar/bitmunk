@@ -9,8 +9,6 @@
 
 var init = function(task)
 {
-   console.log('XXX', 'IN LOGIN INIT');
-   
    // logging category
    var cat = 'bitmunk.webui.Login';
    
@@ -53,8 +51,6 @@ var init = function(task)
       }
    });
    bitmunk.log.debug(cat, 'did init');
-   
-   console.log('XXX', 'LOGIN INIT FINISHED');
 };
 
 bitmunk.resource.registerScript({
