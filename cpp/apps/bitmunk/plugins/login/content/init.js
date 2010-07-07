@@ -2,14 +2,18 @@
  * Bitmunk Web UI --- Login
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
  */
 (function($) {
+
+var init = function(task)
+{
+   console.log('XXX', 'IN LOGIN INIT');
+   
    // logging category
    var cat = 'bitmunk.webui.Login';
    
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Login', 'init.js');
-      
    bitmunk.log.debug(cat, 'will init');
    bitmunk.resource.register({
       type: bitmunk.resource.types.plugin,
@@ -35,6 +39,7 @@
             scripts: [
                'login.js'
             ],
+            // FIXME: css not loading!
             css: [
                'theme/login.css'
             ]
@@ -45,9 +50,18 @@
       },
       willLogout: function(task) {
          bitmunk.login.willLogout(task);
-      },
-      task: sScriptTask
+      }
    });
-   sScriptTask.unblock();
    bitmunk.log.debug(cat, 'did init');
+   
+   console.log('XXX', 'LOGIN INIT FINISHED');
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Login',
+   resourceId: 'init.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

@@ -123,18 +123,6 @@
          bitmunk.log.debug(sLogCategory, 'showing view [%s][%s]',
             opts.pluginId, opts.resourceId, view);
          
-         // load all of a views resources
-         task.next('view load for show', function(task)
-         {
-            bitmunk.resource.load(
-            {
-               pluginId: opts.pluginId,
-               resourceId: opts.resourceId,
-               recursive: true,
-               task: task
-            });
-         });
-         
          // next attach it to all its models
          $.each(opts.models, function(i, model)
          {

@@ -2,15 +2,16 @@
  * Bitmunk Web UI --- Login Startup
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // log category
    var sLogCategory = 'bitmunk.webui.Login';
 
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Login', 'startup.js');
-   
    // event namespace
    var sNS = 'bitmunk-webui-Login';
    
@@ -39,6 +40,13 @@
       // remove username from status bar
       $('#logged-in').empty();
    };
-   
-   sScriptTask.unblock();
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Login',
+   resourceId: 'startup.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

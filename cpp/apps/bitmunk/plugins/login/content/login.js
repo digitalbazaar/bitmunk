@@ -2,14 +2,15 @@
  * Bitmunk Web UI --- Login
  *
  * @author David I. Lehn <dlehn@digitalbazaar.com>
+ * 
+ * Copyright (c) 2008-2010 Digital Bazaar, Inc.  All rights reserved.
  */
-(function($)
+(function($) {
+
+var init = function(task)
 {
    // log category
    var sLogCategory = 'bitmunk.webui.Login';
-
-   var sScriptTask = bitmunk.resource.getScriptTask(
-      'bitmunk.webui.Login', 'login.js');
    
    // event namespace
    var sNS = '.bitmunk-webui-Login';
@@ -258,13 +259,20 @@
       $.event.trigger('bitmunk-interface-hidden');
    };
    
-   bitmunk.resource.setupResource(
+   bitmunk.resource.extendResource(
    {
       pluginId: 'bitmunk.webui.Login',
       resourceId: 'login',
       show: show,
       hide: hide
    });
-   
-   sScriptTask.unblock();
+};
+
+bitmunk.resource.registerScript({
+   pluginId: 'bitmunk.webui.Login',
+   resourceId: 'login.js',
+   depends: {},
+   init: init
+});
+
 })(jQuery);

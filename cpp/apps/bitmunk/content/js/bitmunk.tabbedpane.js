@@ -278,17 +278,10 @@
                });
                
                // load all of a view's resources
-               task.next('bitmunk.view.TabbedPane.loadView',
-               function(task)
-               {
-                  bitmunk.resource.load(
-                  {
-                     pluginId: view.pluginId,
-                     resourceId: view.resourceId,
-                     recursive: true,
-                     task: task
-                  });
-               });
+               bitmunk.resource.require(view.pluginId, view.resourceId);
+               task.next(
+                  'bitmunk.view.TabbedPane.loadView',
+                  bitmunk.resource.load);
                
                // update and show the view
                task.next('bitmunk.view.TabbedPane.showView',

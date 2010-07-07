@@ -354,6 +354,11 @@
        * requesting N permits via block(), then it will only continue
        * running once enough permits have been released via unblock() calls.
        * 
+       * It is not an error to release more permits than have been acquired as
+       * this is a useful feature for allowing multiple processes to notify
+       * a single task to wake up. The number of blocks on a task will never
+       * drop below 0.
+       * 
        * @param n number of permits to release (default: 1).
        *
        * @return the current block count (task is unblocked when count is 0) 
@@ -362,8 +367,9 @@
       {
          n = typeof(n) === 'undefined' ? 1 : n;
          task.blocks -= n;
-         if(task.blocks === 0)
+         if(task.blocks <= 0)
          {
+            task.blocks = 0;
             task.state = RUNNING;
             runNext(task, 0);
          }

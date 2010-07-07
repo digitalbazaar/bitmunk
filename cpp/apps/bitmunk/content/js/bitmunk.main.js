@@ -896,33 +896,43 @@ jQuery(function($) {
                   resourceId: sViewIds.loading,
                   hash: sViewIds.loading,
                   name: 'Loading',
-                  html: 'loading.html'
+                  html: 'loading.html',
+                  required: true
                },
                {
                   type: bitmunk.resource.types.view,
                   resourceId: sViewIds.errorLoading,
                   hash: sViewIds.errorLoading,
                   name: 'Error Loading',
-                  html: 'errorLoading.html'
+                  html: 'errorLoading.html',
+                  required: true
                },
                {
                   type: bitmunk.resource.types.view,
                   resourceId: sViewIds.unknown,
                   hash: sViewIds.unknown,
                   name: 'Unknown',
-                  html: 'unknown.html'
+                  html: 'unknown.html',
+                  required: true
                },
                {
+                  /**
+                   * HTML node and content to use when node is offline.
+                   * This may be used when node is shutdown or repeated errors
+                   * occur. In either case, the loaded JS can no longer contact
+                   * the backend to retrieve any other HTML to display.
+                   * Required immediately.
+                   */
                   type: bitmunk.resource.types.view,
                   resourceId: sViewIds.offline,
                   hash: sViewIds.offline,
                   name: 'Offline',
                   html: 'offline.html',
                   show: sOffline.show,
-                  hide: sOffline.hide
+                  hide: sOffline.hide,
+                  required: true
                }
-            ],
-            task: task
+            ]
          });
          bitmunk.resource.register({
             pluginId: bitmunk.mainPluginId,
@@ -930,9 +940,8 @@ jQuery(function($) {
             type: bitmunk.resource.types.view,
             name: 'Bitmunk Application',
             data: sDesktopPane,
-            task: task
+            required: true
          });
-         // FIXME: do this here?
          bitmunk.resource.register({
             pluginId: bitmunk.mainPluginId,
             resourceId: sViewIds.main,
@@ -942,65 +951,32 @@ jQuery(function($) {
             show: sScreenPane.show,
             hide: sScreenPane.hide,
             html: 'screenPane.html',
-            task: task
+            required: true
          });
          bitmunk.resource.register({
             pluginId: bitmunk.mainPluginId,
             resourceId: 'screenPane.html',
             path: 'bitmunk/screenPane.html',
             type: bitmunk.resource.types.html,
-            task: task
+            required: true
          });
       });
-      // pre-load static app resources in parallel
-      task.parallel('pre-load static resources', [
-         function(task)
-         {
-            bitmunk.resource.load({
-               pluginId: bitmunk.mainPluginId,
-               resourceId: 'loading.html',
-               task: task
-            });
-         },
-         function(task)
-         {
-            bitmunk.resource.load({
-               pluginId: bitmunk.mainPluginId,
-               resourceId: 'errorLoading.html',
-               task: task
-            });
-         },
-         function(task)
-         {
-            bitmunk.resource.load({
-               pluginId: bitmunk.mainPluginId,
-               resourceId: 'unknown.html',
-               task: task
-            });
-         },
-         function(task)
-         {
-            /**
-             * HTML node and content to use when node is offline.
-             * This may be used when node is shutdown or repeated errors occur.
-             * In either case, the loaded JS can no longer contact the backend to
-             * retrieve any other HTML to display.  Ensure it is pre-loaded. 
-             */
-            bitmunk.resource.load({
-               pluginId: bitmunk.mainPluginId,
-               resourceId: 'offline.html',
-               task: task
-            });
-         }
-      ]);
       task.next('register bitmunk.webui.Login', function(task)
       {
          // login plugin must always be available
          bitmunk.resource.register({
             pluginId: 'bitmunk.webui.Login',
             type: bitmunk.resource.types.pluginLoader,
-            task: task
+            required: true
          });
+      });
+      // load all required resources
+      task.next(bitmunk.resource.load);
+      
+      // FIXME: remove me
+      task.next(function(task)
+      {
+         console.log('ZZZ', 'init main done');
       });
    };
    
