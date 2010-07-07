@@ -386,7 +386,7 @@
     *    name: name of the view (required)
     *    html: html file name which contains the view contents (optional)
     *    scripts: array of JavaScript file names (optional)
-    *    // FIXME: still needed? handle w/script registration?
+    *    // FIXME: still needed? handle w/registerScript()?
     *    subScripts: if any of the entries in the "scripts" option are
     *        virtual scripts then subScripts should list those scripts and
     *        list the real files that compose each scripts. This is done so
@@ -824,11 +824,11 @@
       {
          if(key in r.depends)
          {
-            r.depends.key = r.depends.key.concat(array);
+            r.depends[key] = r.depends[key].concat(array);
          }
          else
          {
-            r.depends.key = array;
+            r.depends[key] = array;
          }
       });
       
@@ -1086,7 +1086,7 @@
    sTypeHandlers[bitmunk.resource.types.plugin] =
    {
       /**
-       * Custom register for a plugin. Registers subresources.
+       * Custom register for a plugin. Registers subresources and scripts.
        * 
        * @param r the resource to custom register.
        */
@@ -1129,13 +1129,23 @@
             bitmunk.log.verbose(
                cat, 'loadPlugin: will register scripts:', r.pluginId, opt);
             
-            if(!(r.pluginId in r.depends))
-            {
-               r.depends[r.pluginId] = [];
-            }
-            
-            // register scripts
+            // build a list of real scripts (converting virtual ones as needed)
+            var scripts = [];
             $.each(opt.scripts, function(i, script)
+            {
+               // see if the script is virtual
+               if(opt.subScripts && script in opt.subScripts)
+               {
+                  scripts.concat(opt.subScripts[scripts]);
+               }
+               else
+               {
+                  scripts.push(script);
+               }
+            });
+            
+            // register each real script
+            $.each(scripts, function(i, script)
             {
                bitmunk.resource.register({
                   pluginId: r.pluginId,
@@ -1144,9 +1154,18 @@
                   // require the scripts immediately
                   required: true
                });
-               // add script as a dependency
-               r.depends[r.pluginId].push(script);
             });
+            
+            // add scripts as dependencies
+            if(!(r.pluginId in r.depends))
+            {
+               r.depends[r.pluginId] = scripts;
+            }
+            else
+            {
+               r.depends[r.pluginId].concat(scripts);
+            }
+            
             bitmunk.log.verbose(
                cat, 'loadPlugin: did register scripts:', r.pluginId, opt);
          }
