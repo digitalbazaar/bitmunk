@@ -39,7 +39,7 @@
    };
    
    /**
-    * Use the system task queue to load plugins.  This will queue up plugin
+    * Use the system task queue to load plugins. This will queue up plugin
     * loading if init() has not yet been called.
     */
    bitmunk.sys.register = function(options)

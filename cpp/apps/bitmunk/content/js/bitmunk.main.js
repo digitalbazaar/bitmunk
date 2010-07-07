@@ -439,44 +439,46 @@ jQuery(function($) {
    };
    
    /**
-    * Register plugin loaders.
+    * Register and load plugin loaders.
+    * 
+    * @param task the task to use.
     */
    var registerPluginLoaders = function(task)
    {
-      var timer = +new Date();
-      
-      // do registration in parallel for better performance
-      var count = task.userData.pluginInfo.length;
-      var handlers = [];
-      $.each(task.userData.pluginInfo, function(i, info)
+      // register plugin loaders
+      task.next(function(task)
       {
-         handlers.push(function(task)
+         $.each(task.userData.pluginInfo, function(i, info)
          {
-            // FIXME: remove this once dlehn fixes double-registration
-            // problems
-            
-            // do not re-register login plugin
+            // FIXME: do not double-register login plugin, fix this so we
+            // don't need this hack here (keep in mind that other plugins
+            // do double-register in the current design (ie: Main registers
+            // again in js/init.js)
             if(info.id !== 'bitmunk.webui.Login')
             {
-               // register resource
+               // register each resource
                bitmunk.resource.register(
                {
                   pluginId: info.id,
                   type: bitmunk.resource.types.pluginLoader,
-                  loadInit: info.loadInit,
                   init: info.init,
-                  task: task
+                  required: true
                });
             }
          });
       });
-      task.parallel(handlers);
       
+      // load plugin loaders
       task.next(function(task)
       {
-         timer = +new Date() - timer;
-         bitmunk.log.debug('timing',
-            'plugin loaders registered in ' + timer + ' ms');
+         var timer = +new Date();
+         task.next(bitmunk.resource.load);
+         task.next(function(task)
+         {
+            timer = +new Date() - timer;
+            bitmunk.log.debug('timing',
+               'plugin loaders loaded in ' + timer + ' ms');
+         });
       });
    };
    
@@ -886,10 +888,12 @@ jQuery(function($) {
       task.next('register pre-main plugin', function(task)
       {
          bitmunk.log.debug(cat, 'pre-load pre-main plugin');
-         bitmunk.resource.register(
+         
+         var defaults = $.extend(true, {}, bitmunk.sys.corePluginDefaults);
+         bitmunk.resource.register($.extend(defaults,
          {
-            type: bitmunk.resource.types.plugin,
             pluginId: bitmunk.mainPluginId,
+            name: 'Bitmunk Main',
             resources: [
                {
                   type: bitmunk.resource.types.view,
@@ -933,7 +937,7 @@ jQuery(function($) {
                   required: true
                }
             ]
-         });
+         }));
          bitmunk.resource.register({
             pluginId: bitmunk.mainPluginId,
             resourceId: 'content',
@@ -953,12 +957,11 @@ jQuery(function($) {
             html: 'screenPane.html',
             required: true
          });
-         bitmunk.resource.register({
+         // add path to screen pane resource
+         bitmunk.resource.extendResource({
             pluginId: bitmunk.mainPluginId,
             resourceId: 'screenPane.html',
-            path: 'bitmunk/screenPane.html',
-            type: bitmunk.resource.types.html,
-            required: true
+            path: 'bitmunk/screenPane.html'
          });
       });
       task.next('register bitmunk.webui.Login', function(task)
@@ -1082,11 +1085,4 @@ jQuery(function($) {
    {
       return sScreenPane.currentViewId;
    };
-   
-   // register plugin
-   var defaults = $.extend(true, {}, bitmunk.sys.corePluginDefaults);
-   bitmunk.sys.register($.extend(defaults, {
-      pluginId: cat,
-      name: 'Bitmunk Main'
-   }));
 });

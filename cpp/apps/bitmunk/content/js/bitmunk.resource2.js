@@ -311,16 +311,18 @@
       {
       }
       // plugin related options
-      if(type == bitmunk.resource.types.pluginLoader ||
-         type == bitmunk.resource.types.plugin)
+      if(type == bitmunk.resource.types.plugin)
       {
-         // special case for plugins and pluginLoaders:
+         // special case for plugins:
          //    resourceId == pluginId
          options.resourceId = options.pluginId;
       }
       // plugin loader options
       if(type == bitmunk.resource.types.pluginLoader)
       {
+         // special case for pluginLoaders:
+         //    resourceId == pluginId.loader
+         options.resourceId = options.pluginId + '.loader';
          options = $.extend({
             init: 'init.js'
          }, options);
@@ -446,6 +448,15 @@
          };
       }
       
+      // FIXME: prevent double-registrations... can't enable just yet since
+      // Main plugin is currently double-registered intentionally in js/init.js
+      // ... that should be fixed
+      /*
+      if(bitmunk.resource.get(options.pluginId, options.resourceId) !== null)
+      {
+         return;
+      }*/
+      
       // set state to loaded if data is provided
       var state = typeof(options.data) === 'undefined' ?
          bitmunk.resource.state.unloaded :
@@ -534,9 +545,13 @@
     * @param pluginId id of plugin that registered or loaded the resource.
     * @param resourceId id of the resource.
     * @param data true to get data, false for resource object (default: true).
+    * 
+    * @return the resource or its data (if requested) or null if not found.
     */
    bitmunk.resource.get = function(pluginId, resourceId, getData)
    {
+      var rval;
+      
       bitmunk.log.verbose(cat,
          'getting resource [%s] [%s]', pluginId, resourceId);
       
@@ -554,7 +569,15 @@
       {
          path.push('data');
       }
-      return bitmunk.util.getPath(sResources, path);
+      
+      // get resource from path
+      rval = bitmunk.util.getPath(sResources, path);
+      if(typeof(rval) === 'undefined')
+      {
+         rval = null;
+      }
+      
+      return rval;
    };
    
    /**

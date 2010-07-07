@@ -9,8 +9,8 @@
 
 var init = function(task)
 {
-   // Note: This plugin is *also* registered in the main script.  This will
-   // overwrite those registered settings.  The other low-level resources will
+   // Note: This plugin is *also* registered in the main script. This will
+   // overwrite those registered settings. The other low-level resources will
    // still be registered and pre-loaded.
    bitmunk.sys.register({
       type: bitmunk.resource.types.plugin,

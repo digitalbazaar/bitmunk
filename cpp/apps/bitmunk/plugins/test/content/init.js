@@ -13,7 +13,7 @@ var sPluginId = 'bitmunk.webui.Test';
 var init = function(task)
 {
    // logging category
-   var cat = sPluginId;
+   var cat = 'bitmunk.webui.Test';
    
    bitmunk.log.debug(cat, 'will init');
    bitmunk.resource.register({
