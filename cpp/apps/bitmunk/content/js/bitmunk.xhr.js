@@ -51,7 +51,8 @@
             {
                // TODO: do bitmunk-peer-specific checks
                return verified;
-            }
+            },
+            persistCookies: true
          });
       });
    };
