@@ -41,13 +41,6 @@ var init = function(task)
             'medialibrary.model.js',
             'catalog.model.js',
             'common.js'
-         ],
-         'medialibrary.js':
-          [
-            'medialibrary.controller.js',
-            'medialibrary.view.js',
-            'medialibrary.wareEditor.js',
-            'medialibrary.paymentEditor.js'
          ]
       },
       resources: [
@@ -61,6 +54,15 @@ var init = function(task)
             scripts: [
                'medialibrary.js'
             ],
+            subScripts: {
+               'medialibrary.js':
+               [
+                  'medialibrary.controller.js',
+                  'medialibrary.view.js',
+                  'medialibrary.wareEditor.js',
+                  'medialibrary.paymentEditor.js'
+               ]
+            },
             css: [
                'theme/medialibrary.css'
             ],

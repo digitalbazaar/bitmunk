@@ -39,11 +39,6 @@ var init = function(task)
          'models.js':
          [
             'downloadstates.model.js'
-         ],
-         'purchases.js':
-         [
-            'purchases.controller.js',
-            'purchases.view.js'
          ]
       },
       resources: [
@@ -57,6 +52,14 @@ var init = function(task)
             scripts: [
                'purchases.js'
             ],
+            subScripts:
+            {
+               'purchases.js':
+               [
+                  'purchases.controller.js',
+                  'purchases.view.js'
+               ]
+            }, 
             css: [
                'theme/purchases.css'
             ],

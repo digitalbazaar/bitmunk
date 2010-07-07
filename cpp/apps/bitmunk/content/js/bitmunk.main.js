@@ -506,6 +506,7 @@ jQuery(function($) {
       // iterate over plugins to find handlers
       $.each(resources, function(id, pluginResources)
       {
+         console.log('XXX', 'resources[id]', id, resources[id]);
          var options = resources[id][id].options;
          if(options.type == bitmunk.resource.types.plugin &&
             'didLogin' in options)

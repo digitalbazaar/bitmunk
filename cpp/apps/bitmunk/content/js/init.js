@@ -33,9 +33,9 @@ var init = function(task)
       {
          'models/models.js':
          [
-            'config.js',
-            'accounts.js',
-            'feedback.js'
+            'models/config.js',
+            'models/accounts.js',
+            'models/feedback.js'
          ]
       },
       resources: [

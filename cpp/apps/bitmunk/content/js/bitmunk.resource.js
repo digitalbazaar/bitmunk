@@ -1259,14 +1259,37 @@
          ];
          
          // register each subresource of the view
+         var opt = r.options;
          $.each(loadinfo, function(i, info)
          {
             var typeName = info[0];
             var dataType = info[1];
-            if(typeName in r.options)
+            if(typeName in opt)
             {
+               // get all subresources of the given type
+               var subResources = opt[typeName];
+               
+               // for scripts, convert virtual scripts into real ones
+               if(typeName === 'scripts')
+               {
+                  var scripts = [];
+                  $.each(subResources, function(i, script)
+                  {
+                     // see if the script is virtual
+                     if(opt.subScripts && (script in opt.subScripts))
+                     {
+                        scripts = scripts.concat(opt.subScripts[script]);
+                     }
+                     else
+                     {
+                        scripts.push(script);
+                     }
+                  });
+                  subResources = scripts;
+               }
+               
                // make an array to handle single resources
-               var typeValues = $.makeArray(r.options[typeName]);
+               var typeValues = $.makeArray(subResources);
                $.each(typeValues, function(i, value)
                {
                   bitmunk.resource.register(

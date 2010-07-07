@@ -40,7 +40,7 @@ var init = function(task)
 
 bitmunk.resource.registerScript({
    pluginId: 'bitmunk.webui.Main',
-   resourceId: 'feedback.js',
+   resourceId: 'models/feedback.js',
    depends: {},
    init: init
 });

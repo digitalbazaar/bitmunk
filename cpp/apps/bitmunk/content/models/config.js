@@ -341,7 +341,7 @@ var init = function(task)
 
 bitmunk.resource.registerScript({
    pluginId: 'bitmunk.webui.Main',
-   resourceId: 'config.js',
+   resourceId: 'models/config.js',
    depends: {},
    init: init
 });
