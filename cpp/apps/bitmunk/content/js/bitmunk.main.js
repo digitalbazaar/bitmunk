@@ -954,7 +954,7 @@ jQuery(function($) {
          bitmunk.resource.extendResource({
             pluginId: bitmunk.mainPluginId,
             resourceId: 'screenPane.html',
-            path: 'bitmunk/screenPane.html'
+            path: '/bitmunk/screenPane.html'
          });
       });
       task.next('register bitmunk.webui.Login', function(task)
@@ -978,14 +978,14 @@ jQuery(function($) {
       bitmunk.log.verbose(cat, 'main: started');
       bitmunk.log.info(cat, 'starting up...');
       
-      // startup timer
-      var timer = +new Date();
-      
       bitmunk.task.start({
          type: 'bitmunk.main',
          name: 'main',
          run: function(task)
          {
+           // startup timer
+            var timer = +new Date();
+            
             task.next('main/start', function(task)
             {
                bitmunk.log.verbose(cat, 'main task: started');
@@ -1058,7 +1058,7 @@ jQuery(function($) {
                timer = +new Date() - timer;
                bitmunk.log.verbose(cat, 'main task: done');
                bitmunk.log.info(cat, 'started in ' + timer + ' ms');
-               bitmunk.log.debug('timing', 'started in ' + timer + ' ms');
+               bitmunk.log.debug('timing', 'main started in ' + timer + ' ms');
             });
          },
          failure: function(task)
