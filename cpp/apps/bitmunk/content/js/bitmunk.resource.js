@@ -948,8 +948,15 @@
             {
                // notify load failed
                r.options.task.fail();
+            },
+            xhr: function()
+            {
+               // FIXME: remove url option to use TLS... necessary or not
+               // since there's no private data?
+               return bitmunk.xhr.create({
+                  url: 'http://' + window.location.host
+               });
             }
-            // FIXME: add xhr: bitmunk.xhr.create to use TLS
          });
       }
    };
@@ -991,8 +998,15 @@
             {
                // notify load failed
                r.options.task.fail();
+            },
+            xhr: function()
+            {
+               // FIXME: remove url option to use TLS... necessary or not
+               // since there's no private data?
+               return bitmunk.xhr.create({
+                  url: 'http://' + window.location.host
+               });
             }
-            // FIXME: add xhr: bitmunk.xhr.create to use TLS
          });
       },
       

@@ -66,14 +66,15 @@
    bitmunk.xhr.removeCookie = window.krypto.xhr.removeCookie;
    
    // create krypto.xhr with bitmunk logging
-   bitmunk.xhr.create = function()
+   bitmunk.xhr.create = function(options)
    {
-      return window.krypto.xhr.create({
+      options = $.extend({
          logError: bitmunk.log.error,
          logWarning: bitmunk.log.warning,
          logDebug: bitmunk.log.debug,
          logVerbose: bitmunk.log.verbose
-      });
+      }, options);
+      return window.krypto.xhr.create(options);
    };
    
    // NOTE: xhr support is implicit and not a required dependency
