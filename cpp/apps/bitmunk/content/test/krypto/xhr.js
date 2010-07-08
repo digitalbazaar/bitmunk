@@ -117,7 +117,8 @@
       
       // create default http client
       _client = http.createClient({
-         url: options.url,
+         url: options.url || (
+            window.location.protocol + '//' + window.location.host),
          socketPool: _sp,
          policyPort: options.policyPort || _policyPort,
          connections: options.connections || _maxConnections,
