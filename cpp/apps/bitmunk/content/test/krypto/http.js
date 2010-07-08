@@ -152,7 +152,11 @@
       {
          // connect
          socket.options.request.connectTime = +new Date();
-         socket.connect(client.url);
+         socket.connect({
+            host: client.url.host,
+            port: client.url.port,
+            policyPort: client.policyPort
+         });
       }
    };
    
@@ -446,6 +450,8 @@
     * @param options:
     *           url: the url to connect to (scheme://host:port).
     *           socketPool: the flash socket pool to use.
+    *           policyPort: the flash policy port to use (if other than the
+    *              socket pool default).
     *           connections: number of connections to use to handle requests.
     *           caCerts: an array of certificates to trust for TLS, certs may
     *              be PEM-formatted or cert objects produced via krypto.pki.
@@ -490,6 +496,8 @@
          url: url,
          // socket pool
          socketPool: sp,
+         // the policy port to use
+         policyPort: options.policyPort || null,
          // queue of requests to service
          requests: [],
          // all sockets

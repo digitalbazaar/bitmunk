@@ -174,7 +174,7 @@
           * 
           * @param options:
           *           host: the host to connect to.
-          *           port: the port to connec to.
+          *           port: the port to connect to.
           *           policyPort: the policy port to use (if non-default). 
           */
          socket.connect = function(options)
