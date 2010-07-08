@@ -12,9 +12,18 @@
    window.krypto.socketPool.ready = function()
    {
       // init krypto xhr
-      bitmunk.task.start({
-         type: 'krypto.xhr.init',
-         run: krypto.xhr.init
+      krypto.xhr.init({
+         url: 'https://' + window.location.host,
+         flashId: 'socketPool',
+         policyPort: 19845,
+         msie: $.browser.msie,
+         connections: 10,
+         caCerts: [],
+         verify: function(c, verified, depth, certs)
+         {
+            // don't care about cert verification for test
+            return true;
+         }
       });
    };
    swfobject.embedSWF(

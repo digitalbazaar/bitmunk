@@ -73,6 +73,7 @@
    // all clients including the default, key'd by full base url
    // (multiple cross-domain http clients are permitted so there may be more
    // than one client in this map)
+   // TODO: provide optional clean up API for non-default clients
    var _clients = {};
    
    // the default maximum number of concurrents connections per client
