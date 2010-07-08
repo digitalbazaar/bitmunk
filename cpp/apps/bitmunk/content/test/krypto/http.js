@@ -17,19 +17,6 @@
          function(a){return a.toUpperCase();});
    };
    
-   // parses the scheme, host, and port from a url
-   var _parseUrl = function(str)
-   {
-      var regex = /^(https?):\/\/([^:&^\/]*):?(\d*)(.*)$/g;
-      regex.lastIndex = 0;
-      var m = regex.exec(str);
-      return (m === null) ? null : {
-         scheme: m[1],
-         host: m[2],
-         port: m[3]
-      };
-   };
-   
    /**
     * Gets the local storage ID for the given client.
     * 
@@ -474,7 +461,7 @@
       }
       
       // get scheme, host, and port from url
-      var url = _parseUrl(options.url);
+      var url = http.parseUrl(options.url);
       if(!url)
       {
          throw {
@@ -504,6 +491,8 @@
          sockets: [],
          // idle sockets
          idle: [],
+         // whether or not the connections are secure
+         secure: (url.scheme === 'https'),
          // cookie jar (key'd off of name and then path, there is only 1 domain
          // and one setting for secure per client so name+path is unique)
          cookies: {},
@@ -517,7 +506,7 @@
       
       // determine if TLS is used
       var tlsOptions = null;
-      if(url.scheme === 'https')
+      if(client.secure)
       {
          tlsOptions =
          {
@@ -680,10 +669,8 @@
                cookie.version = cookie.version || null;
                cookie.created = _getUtcTime(new Date());
                
-               // do domain check
-               var url = client.url;
-               if((cookie.secure && url.scheme !== 'https') ||
-                  (!cookie.secure && url.scheme !== 'http'))
+               // do secure check
+               if(cookie.secure !== client.secure)
                {
                   throw {
                      message: 'Http client url scheme is incompatible ' +
@@ -692,10 +679,8 @@
                      cookie: cookie
                   };
                }
-               // make sure url host ends in cookie.domain
-               if(cookie.domain !== null &&
-                  ('.' + url.host).indexOf(cookie.domain) !==
-                   (url.host.length - cookie.domain.length))
+               // make sure url host is within cookie.domain
+               if(!http.withinCookieDomain(client.url, cookie))
                {
                   throw {
                      message: 'Http client url host is incompatible with ' +
@@ -882,34 +867,6 @@
    {
       var utc = +d + d.getTimezoneOffset() * 60000;
       return Math.floor(+new Date() / 1000);
-   };
-   
-   /**
-    * A default certificate verify function that checks a certificate common
-    * name against the client's URL host.
-    * 
-    * @param c the TLS connection.
-    * @param verified true if cert is verified, otherwise alert number.
-    * @param depth the chain depth.
-    * @param certs the cert chain.
-    * 
-    * @return true if verified and the common name matches the host, error
-    *         otherwise.
-    */
-   http.defaultCertificateVerify = function(c, verified, depth, certs)
-   {
-      if(depth === 0 && verified === true)
-      {
-         // compare common name to url host
-         var cn = certs[depth].subject.getField('CN');
-         if(cn === null || client.url.host !== cn.value)
-         {
-            verified = {
-               message: 'Certificate common name does not match url host.'
-            };
-         }
-      }
-      return verified;
    };
    
    /**
@@ -1416,6 +1373,103 @@
       };
            
       return response;
+   };
+   
+   /**
+    * Parses the scheme, host, and port from an http(s) url.
+    * 
+    * @param str the url string.
+    * 
+    * @return the parsed url object or null if the url is invalid.
+    */
+   http.parseUrl = function(str)
+   {
+      var regex = /^(https?):\/\/([^:&^\/]*):?(\d*)(.*)$/g;
+      regex.lastIndex = 0;
+      var m = regex.exec(str);
+      var url = (m === null) ? null : {
+         full: str,
+         scheme: m[1],
+         host: m[2],
+         port: m[3]
+      };
+      if(url)
+      {
+         url.full = url.scheme + '://' + url.host;
+         if(url.port)
+         {
+            if(url.port !== 80 && url.scheme === 'http') 
+            {
+               url.full += ':' + url.port;
+            }
+            else if(url.port !== 443 && url.scheme === 'https')
+            {
+               url.full += ':' + url.port;
+            }
+         }
+         else if(url.scheme === 'http')
+         {
+            url.port = 80;
+         }
+         else if(url.scheme === 'https')
+         {
+            url.port = 443;
+         }
+      }
+      return url;
+   };
+   
+   /**
+    * Returns true if the given url is within the given cookie's domain.
+    * 
+    * @param url the url to check.
+    * @param cookie the cookie to check.
+    */
+   http.withinCookieDomain = function(url, cookie)
+   {
+      var rval = false;
+      
+      if(url.constructor == String)
+      {
+         url = http.parseUrl(url);
+      }
+      
+      if(cookie.domain === null ||
+         ('.' + url.host).indexOf(cookie.domain) ===
+         (url.host.length - cookie.domain.length))
+      {
+         rval = true;
+      }
+      
+      return rval;
+   };
+   
+   /**
+    * A default certificate verify function that checks a certificate common
+    * name against the client's URL host.
+    * 
+    * @param c the TLS connection.
+    * @param verified true if cert is verified, otherwise alert number.
+    * @param depth the chain depth.
+    * @param certs the cert chain.
+    * 
+    * @return true if verified and the common name matches the host, error
+    *         otherwise.
+    */
+   http.defaultCertificateVerify = function(c, verified, depth, certs)
+   {
+      if(depth === 0 && verified === true)
+      {
+         // compare common name to url host
+         var cn = certs[depth].subject.getField('CN');
+         if(cn === null || client.url.host !== cn.value)
+         {
+            verified = {
+               message: 'Certificate common name does not match url host.'
+            };
+         }
+      }
+      return verified;
    };
    
    // public access to http namespace

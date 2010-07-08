@@ -67,12 +67,15 @@
    var _sp = null;
    var _policyPort = 19845;
    
-   // TODO: allow multiple http clients (this xhr can do cross-domain
-   // so there is 1 http client per domain but each client can have N
-   // connections
+   // default client (used if no special URL provided when creating an XHR)
    var _client = null;
    
-   // the maximum number of concurrents connections per client
+   // all clients including the default, key'd by full base url
+   // (multiple cross-domain http clients are permitted so there may be more
+   // than one client in this map)
+   var _clients = {};
+   
+   // the default maximum number of concurrents connections per client
    var _maxConnections = 10;
    
    // local aliases
@@ -81,15 +84,14 @@
    var http = krypto.http;
    
    // define the xhr interface
-   // TODO: change to monarch or js lib name
    var xhrApi = {};
    
    /**
     * Initializes flash XHR support.
     * 
     * @param options:
-    *           url: the base URL to connect to, ie: https://myserver.com
-    *              (current implementation only supports one host).
+    *           url: the default base URL to connect to if xhr URLs are
+    *              relative, ie: https://myserver.com.
     *           flashId: the dom ID of the flash SocketPool.
     *           policyPort: the port that provides the server's flash policy.
     *           msie: true if browser is internet explorer, false if not.
@@ -105,7 +107,6 @@
     */
    xhrApi.init = function(options)
    {
-      // TODO: create this only once when multiple hosts are supported
       // create the flash socket pool
       _sp = net.createSocketPool({
          flashId: options.flashId,
@@ -113,17 +114,18 @@
          msie: options.msie || false
       });
       
-      // TODO: allow 1 client per domain
-      // create http client
+      // create default http client
       _client = http.createClient({
          url: options.url,
          socketPool: _sp,
+         policyPort: options.policyPort || _policyPort,
          connections: options.connections || _maxConnections,
          caCerts: options.caCerts,
          persistCookies: options.persistCookies || true,
          primeTlsSockets: options.primeTlsSockets || false,
          verify: options.verify
       });
+      _clients[_client.url.full] = _client;
    };
    
    /**
@@ -131,8 +133,17 @@
     */
    xhrApi.cleanup = function()
    {
-      _client.destroy();
+      // destroy all clients
+      for(var key in _clients)
+      {
+         _clients[key].destroy();
+      }
+      _clients = {};
+      _client = null;
+      
+      // destroy socket pool
       _sp.destroy();
+      _sp = null;
    };
    
    /**
@@ -153,41 +164,126 @@
     */
    xhrApi.setCookie = function(cookie)
    {
-      // TODO: when multiple http clients are supported, set the cookie on
-      // the one with the correct domain (or on all of them if domain is null)
-      // also handle 'secure' flag in a similar way
-      
       // default cookie expiration to never
       cookie.maxAge = cookie.maxAge || -1;
-      _client.setCookie(cookie);
+      
+      // if the cookie's domain is set, use the appropriate client
+      if(cookie.domain)
+      {
+         // add the cookies to the applicable domains
+         for(var key in _clients)
+         {
+            var client = _clients[key];
+            if(http.withinCookieDomain(client.url, cookie) &&
+               client.secure === cookie.secure)
+            {
+               client.setCookie(cookie);
+            }
+         }
+      }
+      // use the default domain
+      // FIXME: should a null domain cookie be added to all clients? should
+      // this be an option?
+      else
+      {
+         _client.setCookie(cookie);
+      }
    };
    
    /**
     * Gets a cookie.
     * 
     * @param name the name of the cookie.
+    * @param path an optional path for the cookie (if there are multiple
+    *           cookies with the same name but different paths).
+    * @param domain an optional domain for the cookie (if not using the
+    *           default domain).
     * 
-    * @return the cookie or null if not found.
+    * @return the cookie, cookies (if multiple matches), or null if not found.
     */
-   xhrApi.getCookie = function(name)
+   xhrApi.getCookie = function(name, path, domain)
    {
-      return _client.getCookie(name);
+      var rval = null;
+      
+      if(domain)
+      {
+         // get the cookies from the applicable domains
+         for(var key in _clients)
+         {
+            var client = _clients[key];
+            if(http.withinCookieDomain(client.url, cookie))
+            {
+               var cookie = client.getCookie(name, path);
+               if(cookie !== null)
+               {
+                  if(rval === null)
+                  {
+                     rval = cookie;
+                  }
+                  else if(rval.constructor != Array)
+                  {
+                     rval = [rval, cookie];
+                  }
+                  else
+                  {
+                     rval.push(cookie);
+                  }
+               }
+            }
+         }
+      }
+      else
+      {
+         // get cookie from default domain
+         rval = _client.getCookie(name, path);
+      }
+      
+      return rval;
    };
    
    /**
     * Removes a cookie.
     * 
     * @param name the name of the cookie.
+    * @param path an optional path for the cookie (if there are multiple
+    *           cookies with the same name but different paths).
+    * @param domain an optional domain for the cookie (if not using the
+    *           default domain).
     * 
     * @return true if a cookie was removed, false if not.
     */
-   xhrApi.removeCookie = function(name)
+   xhrApi.removeCookie = function(name, path, domain)
    {
-      return _client.removeCookie(name);
+      var rval = false;
+      
+      if(domain)
+      {
+         // remove the cookies from the applicable domains
+         for(var key in _clients)
+         {
+            var client = _clients[key];
+            if(http.withinCookieDomain(client.url, cookie))
+            {
+               if(client.removeCookie(name, path))
+               {
+                  rval = true;
+               }
+            }
+         }
+      }
+      else
+      {
+         // remove cookie from default domain
+         rval = _client.removeCookie(name, path);
+      }
+      
+      return rval;
    };
    
    /**
-    * Creates a new XmlHttpRequest.
+    * Creates a new XmlHttpRequest. By default the base URL, flash policy port,
+    * etc, will be used. However, an XHR can be created to point at another
+    * cross-domain URL.
     * 
     * @param options:
     *        logWarningOnError: If true and an HTTP error status code is
@@ -204,6 +300,20 @@
     *           the log category as the first var.
     *        logVerbose: a multi-var log function for warnings that takes
     *           the log category as the first var.
+    *        url: the default base URL to connect to if xhr URLs are
+    *           relative, ie: https://myserver.com, and note that the
+    *           following options will be ignored if the URL is absent or
+    *           the same as the default base URL.
+    *        policyPort: the port that provides the server's flash policy.
+    *        connections: the maximum number of concurrent connections.
+    *        caCerts: a list of PEM-formatted certificates to trust.
+    *        verify: optional TLS certificate verify callback to use (see
+    *           krypto.tls for details).
+    *        persistCookies: true to use persistent cookies via flash local
+    *           storage, false to only keep cookies in javascript.
+    *        primeTlsSockets: true to immediately connect TLS sockets on
+    *           their creation so that they will cache TLS sessions for
+    *           reuse.
     * 
     * @return the XmlHttpRequest.
     */
@@ -217,12 +327,15 @@
          logError: function(){},
          logWarning: function(){},
          logDebug: function(){},
-         logVerbose: function(){}
+         logVerbose: function(){},
+         url: null
       }, options || {});
       
       // private xhr state
       var _state =
       {
+         // the http client to use
+         client: null,
          // request storage
          request: null,
          // response storage
@@ -260,6 +373,48 @@
          // readonly, returns the HTTP status message (i.e. 'Not Found')
          statusText: ''
       };
+      
+      // determine which http client to use
+      if(options.url === null)
+      {
+         // use default
+         _state.client = _client;
+      }
+      else
+      {
+         var url = http.parseUrl(options.url);
+         if(!url)
+         {
+            throw {
+               message: 'Invalid url.',
+               details: {
+                  url: options.url
+               }
+            };
+         }
+         
+         // find client
+         if(url.full in _clients)
+         {
+            // client found
+            _state.client = _clients[url.full];
+         }
+         else
+         {
+            // create client
+            _state.client = http.createClient({
+               url: options.url,
+               socketPool: _sp,
+               policyPort: options.policyPort || _policyPort,
+               connections: options.connections || _maxConnections,
+               caCerts: options.caCerts,
+               persistCookies: options.persistCookies || true,
+               primeTlsSockets: options.primeTlsSockets || false,
+               verify: options.verify
+            });
+            _clients[url.full] = _state.client;
+         }
+      }
       
       /**
        * Opens the request. This method will create the HTTP request to send.
@@ -528,7 +683,7 @@
          };
          
          // 7. send request
-         _client.send(options);
+         _state.client.send(options);
       };
       
       /**
