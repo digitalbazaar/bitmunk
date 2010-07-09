@@ -272,6 +272,10 @@ static bool run(TestRunner& tr)
    if(tr.isDefaultEnabled())
    {
       runNodeTest(tr);
+   }
+
+   if(tr.isTestEnabled("login-required"))
+   {
       runNodeConfigTest(tr);
       runLoginTest(tr);
       runNodeStopEventTest(tr);

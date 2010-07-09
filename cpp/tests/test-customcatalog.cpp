@@ -2463,7 +2463,7 @@ static void runUpdateCrashTest(Node& node, Catalog* cat, TestRunner& tr)
 
 static bool run(TestRunner& tr)
 {
-   if(tr.isDefaultEnabled())
+   if(tr.isTestEnabled("login-required"))
    {
       // load and start node
       Node* node = Tester::loadNode(tr, "test-customcatalog");
