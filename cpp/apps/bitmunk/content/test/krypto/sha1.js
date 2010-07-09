@@ -146,9 +146,6 @@
       // input buffer
       var _input = krypto.util.createBuffer();
       
-      // length of message so far (does not including padding)
-      var _length = 0;
-      
       // used for word storage
       var _w = new Array(80);
       
@@ -157,7 +154,9 @@
       {
          algorithm: 'sha1',
          blockLength: 64,
-         digestLength: 20
+         digestLength: 20,
+         // length of message so far (does not including padding)
+         messageLength: 0
       };
       
       /**
@@ -165,7 +164,7 @@
        */
       md.start = function()
       {
-         _length = 0;
+         md.messageLength = 0;
          _input = krypto.util.createBuffer();
          _state =
          {
@@ -187,7 +186,7 @@
       md.update = function(bytes)
       {
          // update message length
-         _length += bytes.length;
+         md.messageLength += bytes.length;
          
          // add bytes to input buffer
          _input.putBytes(bytes);
@@ -231,9 +230,10 @@
          // 512 bits == 64 bytes, 448 bits == 56 bytes, 64 bits = 8 bytes
          // _padding starts with 1 byte with first bit is set in it which
          // is byte value 128, then there may be up to 63 other pad bytes
+         var len = md.messageLength;
          var padBytes = krypto.util.createBuffer();
          padBytes.putBytes(_input.bytes());
-         padBytes.putBytes(_padding.substr(0, 64 - ((_length + 8) % 64)));
+         padBytes.putBytes(_padding.substr(0, 64 - ((len + 8) % 64)));
          
          /* Now append length of the message. The length is appended in bits
             as a 64-bit number in big-endian order. Since we store the length
@@ -242,8 +242,8 @@
             64-bit number and the lower 5 bits in the high end of the second
             32-bits.
           */
-         padBytes.putInt32((_length >>> 29) & 0xFF);
-         padBytes.putInt32((_length << 3) & 0xFFFFFFFF);
+         padBytes.putInt32((len >>> 29) & 0xFF);
+         padBytes.putInt32((len << 3) & 0xFFFFFFFF);
          var s2 =
          {
             h0: _state.h0,
