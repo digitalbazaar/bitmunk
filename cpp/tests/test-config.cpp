@@ -43,16 +43,24 @@ static void runConfigTest(Node& node, TestRunner& tr)
       assertNoExceptionSet();
       assert(loggedin);
       {
-         printf("raw user %" PRIu64 " config:\n", userId);
          Config c = node.getConfigManager()->getUserConfig(userId, true);
-         JsonWriter::writeToStdOut(c, false, false);
-         assertNoExceptionSet();
+         assert(!c.isNull());
+         if(tr.getVerbosityLevel() > 1)
+         {
+            printf("raw user %" PRIu64 " config:\n", userId);
+            JsonWriter::writeToStdOut(c, false, false);
+            assertNoExceptionSet();
+         }
       }
       {
-         printf("user %" PRIu64 " config:\n", userId);
          Config c = node.getConfigManager()->getUserConfig(userId);
-         JsonWriter::writeToStdOut(c, false, false);
-         assertNoExceptionSet();
+         assert(!c.isNull());
+         if(tr.getVerbosityLevel() > 1)
+         {
+            printf("user %" PRIu64 " config:\n", userId);
+            JsonWriter::writeToStdOut(c, false, false);
+            assertNoExceptionSet();
+         }
       }
       node.logout(userId);
       assertNoExceptionSet();
@@ -64,7 +72,7 @@ static void runConfigTest(Node& node, TestRunner& tr)
 
 static bool run(TestRunner& tr)
 {
-   if(tr.isDefaultEnabled())
+   if(tr.isTestEnabled("login-required"))
    {
       // load bitmunk node
       Node* node = Tester::loadNode(tr);

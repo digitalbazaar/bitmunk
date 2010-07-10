@@ -480,12 +480,15 @@ static void runPayeeResolveTest(TestRunner& tr)
          "0.01", "", "", "Bitmunk Fee", PayeeTaxExempt);
 
       BigDecimal total = license + data;
-      //dumpDynamicObject(dataList);
-      //dumpDynamicObject(dataListCheck);
-      printf("d:%s l:%s t: %s\n",
-         data.toString(true).c_str(),
-         license.toString(true).c_str(),
-         total.toString(true).c_str());
+      if(tr.getVerbosityLevel() > 1)
+      {
+         //dumpDynamicObject(dataList);
+         //dumpDynamicObject(dataListCheck);
+         printf("d:%s l:%s t: %s\n",
+            data.toString(true).c_str(),
+            license.toString(true).c_str(),
+            total.toString(true).c_str());
+      }
       assert(data == "0.0313");
       assertComparePayeeLists(dataList, dataListCheck);
       assert(total == "0.87355");
@@ -579,12 +582,15 @@ static void runPayeeResolveTest(TestRunner& tr)
          "0.01", "", "", "Bitmunk Key Fee", PayeeTaxExempt);
 
       BigDecimal total = license + data;
-      //dumpDynamicObject(dataList);
-      //dumpDynamicObject(dataListCheck);
-      printf("d:%s l:%s t: %s\n",
-         data.toString(true).c_str(),
-         license.toString(true).c_str(),
-         total.toString(true).c_str());
+      if(tr.getVerbosityLevel() > 1)
+      {
+         //dumpDynamicObject(dataList);
+         //dumpDynamicObject(dataListCheck);
+         printf("d:%s l:%s t: %s\n",
+            data.toString(true).c_str(),
+            license.toString(true).c_str(),
+            total.toString(true).c_str());
+      }
       assert(data == "0.952525");
       assertComparePayeeLists(dataList, dataListCheck);
       assert(total == "13.102525");
@@ -648,12 +654,15 @@ static void runPayeeResolveTest(TestRunner& tr)
          PayeeTaxExempt);
 
       BigDecimal total = license + data;
-      //dumpDynamicObject(dataList);
-      //dumpDynamicObject(dataListCheck);
-      printf("d:%s l:%s t: %s\n",
-         data.toString(true).c_str(),
-         license.toString(true).c_str(),
-         total.toString(true).c_str());
+      if(tr.getVerbosityLevel() > 1)
+      {
+         //dumpDynamicObject(dataList);
+         //dumpDynamicObject(dataListCheck);
+         printf("d:%s l:%s t: %s\n",
+            data.toString(true).c_str(),
+            license.toString(true).c_str(),
+            total.toString(true).c_str());
+      }
       assert(data == "0.0640000");
       assertComparePayeeLists(dataList, dataListCheck);
       assert(total == "0.8640000");
