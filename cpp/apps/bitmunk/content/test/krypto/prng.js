@@ -73,42 +73,7 @@
          // do first seed if necessary
          if(ctx.key === null)
          {
-            // not enough seed data... but we need to get going so just
-            // be sad and add some weak random data
-            if(ctx.pools[0].messageLength < 32)
-            {
-               /* Draws from Park-Miller "minimal standard" 31 bit PRNG,
-               implemented with David G. Carta's optimization: with 32 bit math
-               and without division (Public Domain). */
-               var needed = (32 - ctx.pools[0].messageLength) << 5;
-               var b = '';
-               var hi, lo, next;
-               var seed = Math.floor(Math.random() * 0xFFFF);
-               while(b.length < needed)
-               {
-                  lo = 16807 * (seed & 0xFFFF);
-                  hi = 16807 * (seed >> 16);
-                  lo += (hi & 0x7FFF) << 16;
-                  lo += hi >> 15;
-                  lo = (lo & 0x7FFFFFFF) + (lo >> 31);
-                  seed = lo & 0xFFFFFFFF;
-                  
-                  // consume lower 3 bytes of seed
-                  for(var i = 0; i < 3; ++i)
-                  {
-                     // throw in more pseudo random
-                     next = seed >>> (i << 3);
-                     next ^= Math.floor(Math.random() * 0xFF);
-                     b += String.fromCharCode(next & 0xFF);
-                  }
-               }
-               // will automatically reseed in collect
-               ctx.collect(b);
-            }
-            else
-            {
-               _reseed();
-            }
+            _reseed();
          }
          
          // simple generator using counter-based CBC
@@ -150,40 +115,76 @@
        */
       _reseed = function()
       {
-         // create a SHA-1 message digest
-         var md = krypto.md.sha1.create();
-         
-         // digest pool 0's entropy and restart it
-         md.update(ctx.pools[0].digest().getBytes());
-         ctx.pools[0].start();
-         
-         // digest the entropy of other pools whose index k meet the condition
-         // 2^k mod n == 0 where n is the number of reseeds
-         var k = 1;
-         for(var i = 1; i < 32; ++i)
+         // not enough seed data... but we need to get going so just
+         // be sad and add some weak random data
+         if(ctx.pools[0].messageLength < 32)
          {
-            // prevent signed numbers from being used
-            k = (k == 31) ? 2147483648 : (k << 2);
-            if(k % ctx.reseeds === 0)
+            console.log('XXX', 'doing it');
+            /* Draws from Park-Miller "minimal standard" 31 bit PRNG,
+            implemented with David G. Carta's optimization: with 32 bit math
+            and without division (Public Domain). */
+            var needed = (32 - ctx.pools[0].messageLength) << 5;
+            var b = '';
+            var hi, lo, next;
+            var seed = Math.floor(Math.random() * 0xFFFF);
+            while(b.length < needed)
             {
-               md.update(ctx.pools[i].digest().getBytes());
-               ctx.pools[i].start();
+               lo = 16807 * (seed & 0xFFFF);
+               hi = 16807 * (seed >> 16);
+               lo += (hi & 0x7FFF) << 16;
+               lo += hi >> 15;
+               lo = (lo & 0x7FFFFFFF) + (lo >> 31);
+               seed = lo & 0xFFFFFFFF;
+               
+               // consume lower 3 bytes of seed
+               for(var i = 0; i < 3; ++i)
+               {
+                  // throw in more pseudo random
+                  next = seed >>> (i << 3);
+                  next ^= Math.floor(Math.random() * 0xFF);
+                  b += String.fromCharCode(next & 0xFF);
+               }
             }
+            // will automatically reseed in collect
+            ctx.collect(b);
          }
-         
-         // get digest for the key bytes and iterate again for the seed bytes
-         var keyBytes = md.digest().getBytes();
-         md.start();
-         md.update(keyBytes);
-         var seedBytes = md.digest().getBytes();
-         var out = ctx.plugin.changeKey(keyBytes, seedBytes);
-         
-         // update
-         ctx.key = out.key;
-         ctx.seed = out.seed;
-         ++ctx.reseeds;
-         ctx.generated = 0;
-         ctx.time = +new Date();
+         else
+         {
+            // create a SHA-1 message digest
+            var md = krypto.md.sha1.create();
+            
+            // digest pool 0's entropy and restart it
+            md.update(ctx.pools[0].digest().getBytes());
+            ctx.pools[0].start();
+            
+            // digest the entropy of other pools whose index k meet the
+            // condition '2^k mod n == 0' where n is the number of reseeds
+            var k = 1;
+            for(var i = 1; i < 32; ++i)
+            {
+               // prevent signed numbers from being used
+               k = (k == 31) ? 2147483648 : (k << 2);
+               if(k % ctx.reseeds === 0)
+               {
+                  md.update(ctx.pools[i].digest().getBytes());
+                  ctx.pools[i].start();
+               }
+            }
+            
+            // get digest for key bytes and iterate again for seed bytes
+            var keyBytes = md.digest().getBytes();
+            md.start();
+            md.update(keyBytes);
+            var seedBytes = md.digest().getBytes();
+            var out = ctx.plugin.changeKey(keyBytes, seedBytes);
+            
+            // update
+            ctx.key = out.key;
+            ctx.seed = out.seed;
+            ++ctx.reseeds;
+            ctx.generated = 0;
+            ctx.time = +new Date();
+         }
       };
       
       /**
