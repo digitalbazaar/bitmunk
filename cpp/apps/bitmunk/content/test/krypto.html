@@ -18,6 +18,7 @@
       <script type="text/javascript" src="/bitmunk/test/krypto/asn1.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/jsbn.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/jsbn2.js"></script>
+      <script type="text/javascript" src="/bitmunk/test/krypto/prng.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/random.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/pki.js"></script>
       <script type="text/javascript" src="/bitmunk/test/krypto/tls.js"></script>
@@ -51,6 +52,12 @@
       var random_krypto = function()
       {
          do_random(krypto.random);
+      };
+
+      var test_random_krypto = function()
+      {
+         console.log('XXX', 'ten bytes',
+            krypto.util.bytesToHex(krypto.random.getBytes(10)));
       };
 
       var random_pidcrypt = function()
@@ -1512,6 +1519,7 @@
          <button id="clear" onclick="javascript:return canvas_clear();">clear</button>
          <button id="random1" onclick="javascript:return random_krypto();">krypto</button>
          <button id="random2" onclick="javascript:return random_pidcrypt();">pidcrypt</button>
+         <button id="random3" onclick="javascript:return test_random_krypto();">test random</button>
       </div>
       <canvas id="canvas" width="300" height="300"></canvas>
       <div id="util_controls">

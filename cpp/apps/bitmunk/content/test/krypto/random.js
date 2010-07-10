@@ -1,48 +1,107 @@
 /**
- * Pseudo-random number generator.
+ * An API for getting cryptographically-secure random bytes. The bytes are
+ * generated using the Fortuna algorithm devised by Bruce Schneier and
+ * Niels Ferguson.
  * 
  * Getting strong random bytes is not yet easy to do in javascript. The only
- * truish random data that can be collected is from the mouse or from timing
- * with respect to page loads, etc. This generator makes a poor attempt at
- * providing slightly more random bytes (in a timely fashion and without
- * blocking to wait for user input) than would be provided from an purely
- * arithmetic-PRNG.
+ * truish random entropy that can be collected is from the mouse, keyboard, or
+ * from timing with respect to page loads, etc. This generator makes a poor
+ * attempt at providing random bytes when those sources haven't yet provided
+ * enough entropy to initially seed or to reseed the PRNG.
  * 
- * FIXME: Use Blum Blum Shub? What about new algorithm by Ribeiro Alvo?
- *
  * @author Dave Longley
  *
  * Copyright (c) 2009-2010 Digital Bazaar, Inc. All rights reserved.
  */
 (function($)
 {
-   // state information for random byte generation
-   var lt = +new Date();
-   var state =
-   {
-      loadTime: lt,
-      lastTime: lt,
-      seed: lt + Math.random() * lt,
-      pool: [(lt >> 8) & 0xFF, lt & 0xFF],
-      poolSize: 1024
-   };
+   // local alias
+   var krypto = window.krypto;
    
-   // set up mouse data capture
+   // the default prng plugin, uses AES-128
+   var prng_aes = {};
+   var _prng_aes_output = new Array(4);
+   var _prng_aes_buffer = krypto.util.createBuffer();
+   prng_aes.changeKey = function(key, seed)
+   {
+      // convert the key into 32-bit integers
+      var tmp = krypto.util.createBuffer(key);
+      key = new Array(4);
+      key[0] = tmp.getInt32();
+      key[1] = tmp.getInt32();
+      key[2] = tmp.getInt32();
+      key[3] = tmp.getInt32();
+      
+      // convert seed into 32-bit integers
+      var tmp = krypto.util.createBuffer(seed);
+      seed = new Array(4);
+      seed[0] = tmp.getInt32();
+      seed[1] = tmp.getInt32();
+      seed[2] = tmp.getInt32();
+      seed[3] = tmp.getInt32();
+      
+      return {
+         // expand the key
+         key: krypto.aes._expandKey(key, false),
+         seed: seed
+      };
+   };
+   prng_aes.cipher = function(key, seed)
+   {
+      krypto.aes._updateBlock(key, seed, _prng_aes_output, false);
+      _prng_aes_buffer.putInt32(_prng_aes_output[0]);
+      _prng_aes_buffer.putInt32(_prng_aes_output[1]);
+      _prng_aes_buffer.putInt32(_prng_aes_output[2]);
+      _prng_aes_buffer.putInt32(_prng_aes_output[3]);
+      return _prng_aes_buffer.getBytes();
+   };
+   prng_aes.increment = function(seed)
+   {
+      // FIXME: do we care about carry or signed issues?
+      ++seed[3];
+      return seed;
+   };
+   prng_aes.md = krypto.md.sha1;
+   
+   // create default prng context
+   var _ctx = krypto.prng.create(prng_aes);
+   
+   // get load time entropy
+   _ctx.collectInt(+new Date(), 32);
+   
+   // add some entropy from navigator object
+   var _navBytes = '';
+   for(var key in navigator)
+   {
+      if(navigator[key].constructor == String)
+      {
+         _navBytes += navigator[key];
+      }
+   }
+   _ctx.collect(_navBytes);
+   _navBytes = null;
+   
+   // set up mouse entropy capture
    $().mousemove(function(e)
    {
-      if(state.pool.length < state.poolSize)
-      {
-         // add mouse coords
-         state.pool.push(e.clientX & 0xFF);
-         state.pool.push(e.clientY & 0xFF);
-      }
+      // add mouse coords
+      _ctx.collectInt(e.clientX, 16);
+      _ctx.collectInt(e.clientY, 16);
    });
+   
+   // set up keyboard entropy capture
+   $().keypress(function(e)
+   {
+      _ctx.collectInt(e.charCode, 8);
+   });
+   
+   // local alias
+   var krypto = window.krypto;
    
    /**
     * The crypto namespace and random API.
     */
-   window.krypto = window.krypto || {};
-   window.krypto.random = {};
+   krypto.random = {};
    
    /**
     * Gets random bytes. This method tries to make the bytes more
@@ -53,37 +112,8 @@
     * 
     * @return the random bytes in a string.
     */
-   window.krypto.random.getBytes = function(count)
+   krypto.random.getBytes = function(count)
    {
-      var b = '';
-      
-      // consume random bytes from pool
-      var pb = state.pool.splice(0, count);
-      
-      /* Draws from Park-Miller "minimal standard" 31 bit PRNG, implemented
-      with David G. Carta's optimization: with 32 bit math and without
-      division (Public Domain). */
-      var hi, lo, next;
-      while(b.length < count)
-      {
-         lo = 16807 * (state.seed & 0xFFFF);
-         hi = 16807 * (state.seed >> 16);
-         lo += (hi & 0x7FFF) << 16;
-         lo += hi >> 15;
-         lo = (lo & 0x7FFFFFFF) + (lo >> 31);
-         state.seed = lo & 0xFFFFFFFF;
-         
-         // consume lower 3 bytes of seed
-         for(var i = 0; i < 3 && b.length < count; i++)
-         {
-            // throw in random or pseudo-random byte (WEAK)
-            next = state.seed >> (i << 3) & 0xFF;
-            next ^= (b.length < pb.length) ?
-               pb[b.length] : Math.random() * 0xFF;
-            b += String.fromCharCode(next & 0xFF);
-         }
-      }
-      
-      return b;
+      return _ctx.generate(count);
    };
 })(jQuery);
