@@ -107,7 +107,7 @@
             }
             else
             {
-               _reseed(ctx);
+               _reseed();
             }
          }
          
@@ -137,7 +137,7 @@
                var now = +new Date();
                if(now - ctx.time < 100)
                {
-                  _reseed(ctx);
+                  _reseed();
                }
             }
          }
@@ -147,10 +147,8 @@
       
       /**
        * Private function that reseeds a generator.
-       * 
-       * @param ctx the context with generator to reseed.
        */
-      _reseed = function(ctx)
+      _reseed = function()
       {
          // create a SHA-1 message digest
          var md = krypto.md.sha1.create();
@@ -166,7 +164,7 @@
          {
             // prevent signed numbers from being used
             k = (k == 31) ? 2147483648 : (k << 2);
-            if(k % ctx.reseeds == 0)
+            if(k % ctx.reseeds === 0)
             {
                md.update(ctx.pools[i].digest().getBytes());
                ctx.pools[i].start();
@@ -211,7 +209,7 @@
             var now = +new Date();
             if(ctx.time === null || (now - ctx.time < 100))
             {
-               _reseed(ctx);
+               _reseed();
             }
          }
       };
