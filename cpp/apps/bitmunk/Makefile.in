@@ -10,14 +10,23 @@ DYNAMIC_LINK_LIBRARIES = mort momodest moutil moio mologging mocrypto monet moht
 DYNAMIC_LINUX_LINK_LIBRARIES = pthread crypto ssl expat sqlite3
 DYNAMIC_WINDOWS_LIBRARIES = sqlite3
 
-EXTRA_WINDOWS_LIBRARIES = $(WINDOWS_LIB_DIR)/pthreadGCE2.dll $(WINDOWS_LIB_DIR)/libeay32.dll $(WINDOWS_LIB_DIR)/ssleay32.dll $(WINDOWS_LIB_DIR)/libexpat.dll $(WINDOWS_LIB_DIR)/sqlite3.dll -lws2_32
+EXTRA_WINDOWS_LIBRARIES = \
+	$(WINDOWS_LIB_DIR)/pthreadGCE2.dll \
+	$(WINDOWS_LIB_DIR)/libeay32.dll \
+	$(WINDOWS_LIB_DIR)/ssleay32.dll \
+	$(WINDOWS_LIB_DIR)/libexpat.dll \
+	$(WINDOWS_LIB_DIR)/sqlite3.dll \
+	-lws2_32
 
 # conditional Flash build
 ifeq (@BUILD_FLASH@,yes)
-ALL_FLASH = content/test/Test.swf content/HttpPoolManager.swf content/SocketPool.swf
+ALL_FLASH = content/test/Test.swf content/HttpPoolManager.swf
 endif
 
 #ALL_MIN_JS = $(find ...)
+
+# need a symlink to forge js/swf dir
+ALL_EXTRA = content/js/forge
 
 # ----------- Standard Makefile
 include @BITMUNK_DIR@/setup/Makefile.base
@@ -29,23 +38,13 @@ else
 FLASH_FLAGS = -define=CONFIG::debugging,false -define=CONFIG::release,true
 endif
 
-content/test/Test.swf: flash/Test.as flash/db/net/*.as flash/as3crypto/*.swc
-	@echo "Building $@..."
-	$(PCMD) @MXMLC@ $(FLASH_FLAGS) \
-		-load-config+=build-flash.xml \
-		-debug=@MXMLC_DEBUG_MODE@ \
-		-output=$@ $<
+#content/example/Flash.swf: flash/Flash.as
+#	@echo "Building $@..."
+#	$(PCMD) @MXMLC@ $(FLASH_FLAGS) \
+#		-load-config+=build-flash.xml \
+#		-debug=@MXMLC_DEBUG_MODE@ \
+#		-output=$@ $<
 
-content/HttpPoolManager.swf: flash/HttpPoolManager.as flash/db/net/*.as flash/as3crypto/*.swc
-	@echo "Building $@..."
-	$(PCMD) @MXMLC@ $(FLASH_FLAGS) \
-		-load-config+=build-flash.xml \
-		-debug=@MXMLC_DEBUG_MODE@ \
-		-output=$@ $<
-
-content/SocketPool.swf: flash/SocketPool.as flash/PooledSocket.as flash/SocketEvent.as
-	@echo "Building $@..."
-	$(PCMD) @MXMLC@ $(FLASH_FLAGS) \
-		-load-config+=build-flash.xml \
-		-debug=@MXMLC_DEBUG_MODE@ \
-		-output=$@ $<
+content/js/forge: @FORGE_DIR@
+	@echo "Linking $< to $@..."
+	$(PCMD) ln -sf $< $@

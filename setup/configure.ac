@@ -585,6 +585,30 @@ AC_SUBST(BUILD_GTK_UI)
 AC_SUBST(GTK_INCLUDES)
 AC_SUBST(GTK_LIBS)
 
+dnl ----------------- Forge dir -----------------
+
+dnl Location of Forge dir.
+FORGE_DIR="$BITMUNK_DIR/../forge/dist/forge"
+
+AC_ARG_WITH(forge-dir,
+   AC_HELP_STRING([--with-forge-dir=DIR],
+      [use DIR for Forge JavaScript [BITMUNK_DIR/../forge/dist/forge]]),
+   [
+      case "${withval}" in
+         yes) AC_MSG_ERROR(bad value ${withval} for --with-forge-dir) ;;
+         no)  AC_MSG_ERROR(bad value ${withval} for --with-forge-dir) ;;
+         *)   FORGE_DIR="${withval}" ;;
+      esac
+   ],
+   [:]) dnl Default value
+
+dnl Check Forge available.
+if test ! -d "$FORGE_DIR"; then
+   AC_MSG_ERROR(Forge dir "$FORGE_DIR" not found.  Use --with-forge-dir.)
+fi
+
+AC_SUBST(FORGE_DIR)
+
 dnl ----------------- mxmlc debug -----------------
 
 if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
@@ -950,5 +974,6 @@ fi
 
 echo "BFP API Version   : $BITMUNK_BFP_API_VERSION"
 echo "GTK UI enabled    : $BUILD_GTK_UI"
+echo "Forge dir         : $FORGE_DIR"
 echo "Release build     : $BITMUNK_RELEASE_MODE"
 

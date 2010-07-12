@@ -145,6 +145,7 @@ all: link-monarch-libs link-monarch-bins
 	@$(foreach dir,$(SUBDIRS),$(MAKE_DIR) build-objects build-libraries &&) true
 	@$(foreach dir,$(EXECUTABLE_SUBDIRS),$(MAKE_DIR) build-executables &&) true
 	@$(foreach dir,$(FLASH_SUBDIRS),$(MAKE_DIR) build-flash &&) true
+	@$(foreach dir,$(SUBDIRS),$(MAKE_DIR) build-extra &&) true
 	@$(MAKE_CMD) link-modules
 
 clean:
