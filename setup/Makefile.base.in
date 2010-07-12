@@ -1,9 +1,11 @@
 # This file contains basic Makefile includes that contain all 
 # common building instructions for all binaries and packages.
 
-.PHONY: all build-setup build-clean build-directories build-headers build-objects build-libraries build-executables build-xpts build-flash build-min-js clean clean-objects clean-libraries clean-executables clean-flash clean-min-js clean-xpts
+.PHONY: all \
+	build-setup build-clean build-directories build-headers build-objects build-libraries build-executables build-xpts build-flash build-min-js build-extra \
+	clean clean-objects clean-libraries clean-executables clean-flash clean-min-js clean-xpts clean-extra
 
-all: build-headers build-objects build-libraries build-executables build-flash build-min-js build-xpts
+all: build-headers build-objects build-libraries build-executables build-flash build-min-js build-xpts build-extra
 
 PLATFORM=@BITMUNK_PLATFORM@
 BUILD_FOR_LINUX=@BUILD_FOR_LINUX@
@@ -110,7 +112,7 @@ build-clean:
 $(ALL_DIRECTORIES):
 	mkdir -p $@
 
-clean: build-clean clean-objects clean-libraries clean-executables clean-flash clean-min-js clean-xpts
+clean: build-clean clean-objects clean-libraries clean-executables clean-flash clean-min-js clean-xpts clean-extra
 
 build-headers: $(ALL_HEADERS)
 
@@ -126,6 +128,8 @@ build-min-js: $(ALL_DIRECTORIES) $(ALL_MIN_JS)
 
 build-xpts: $(ALL_DIRECTORIES) $(ALL_XPTS)
 
+build-extra: $(ALL_DIRECTORIES) $(ALL_EXTRA)
+
 clean-executables:
 	$(PCMD) rm -rf $(ALL_EXECUTABLES)
 
@@ -137,3 +141,6 @@ clean-min-js:
 
 clean-xpts:
 	$(PCMD) rm -rf $(ALL_GENERATED_HEADERS) $(ALL_XPTS)
+
+clean-extra:
+	$(PCMD) rm -rf $(ALL_EXTRA)
