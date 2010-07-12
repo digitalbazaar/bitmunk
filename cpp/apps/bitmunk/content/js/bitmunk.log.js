@@ -23,7 +23,7 @@
             ['loggers', 'console', 'level']);
          if(typeof(level) !== 'undefined')
          {
-            bitmunk.log.setLevel(sConsoleLogger, level);
+            bitmunk.log.setLevel(bitmunk.log.consoleLogger, level);
          }
       });
    

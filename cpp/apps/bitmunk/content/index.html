@@ -7,11 +7,14 @@
       <link href="bitmunk/theme/page.css" rel="stylesheet" type="text/css" />
       <link rel="shortcut icon" href="bitmunk/images/favicon.ico" />
       
+      <!-- Include everything at once. -->
+      <script type="text/javascript" src="bitmunk/js/all.js"></script>
+      
       <!-- 'nonbitmunk.all.js' is a virtual name that contains all core
       non-bitmunk javascript files. See the plugin config file for main
       to edit. -->
-      <script type="text/javascript" src="bitmunk/js/nonbitmunk.all.js"></script>
       <!--
+      <script type="text/javascript" src="bitmunk/js/nonbitmunk.all.js"></script>
       <script type="text/javascript" src="bitmunk/js/jquery.js"></script>
       <script type="text/javascript" src="bitmunk/js/jquery.cookie.js"></script>
       <script type="text/javascript" src="bitmunk/js/jquery.form.js"></script>
@@ -26,8 +29,8 @@
       
       <!-- 'bitmunk.all.js' is a virtual name that contains all core bitmunk
       javascript files. See the plugin config file for main to edit. -->
-      <script type="text/javascript" src="bitmunk/js/bitmunk.all.js"></script>
       <!--
+      <script type="text/javascript" src="bitmunk/js/bitmunk.all.js"></script>
       <script type="text/javascript" src="bitmunk/js/bitmunk.js"></script>
       <script type="text/javascript" src="bitmunk/js/bitmunk.debug.js"></script>
       <script type="text/javascript" src="bitmunk/js/bitmunk.util.js"></script>
@@ -45,8 +48,8 @@
       -->
       <script type="text/javascript">
       // called when flash is ready
-      window.krypto.socketPool = {};
-      window.krypto.socketPool.ready = function()
+      window.forge.socketPool = {};
+      window.forge.socketPool.ready = function()
       {
          if($.browser.msie === true)
          {
@@ -66,7 +69,7 @@
       
       // embed flash xhr proxy
 	   swfobject.embedSWF(
-	      '/bitmunk/SocketPool.swf', 'socketPool', '0', '0', '9.0.0',
+	      '/bitmunk/js/forge/SocketPool.swf', 'socketPool', '0', '0', '9.0.0',
 	      '/bitmunk/js/swfobject/expressInstall.swf',
 	      {}, {allowscriptaccess: 'always'}, {},
          function(e)
