@@ -1,5 +1,5 @@
 /**
- * Bitmunk Web UI XHR api (krypto.xhr backend)
+ * Bitmunk Web UI XHR api (forge.xhr backend)
  *
  * @author Dave Longley
  *
@@ -37,10 +37,10 @@
          }
       });
       
-      // initialize krypto.xhr
+      // initialize forge.xhr
       task.next(function(task)
       {
-         window.krypto.xhr.init({
+         window.forge.xhr.init({
             url: 'https://' + window.location.host,
             flashId: 'socketPool',
             policyPort: cfg.policyServer.port,
@@ -58,14 +58,14 @@
    };
    
    /**
-    * Extend krypto.xhr.
+    * Extend forge.xhr.
     */
-   bitmunk.xhr.cleanup = window.krypto.xhr.cleanup;
-   bitmunk.xhr.setCookie = window.krypto.xhr.setCookie;
-   bitmunk.xhr.getCookie = window.krypto.xhr.getCookie;
-   bitmunk.xhr.removeCookie = window.krypto.xhr.removeCookie;
+   bitmunk.xhr.cleanup = window.forge.xhr.cleanup;
+   bitmunk.xhr.setCookie = window.forge.xhr.setCookie;
+   bitmunk.xhr.getCookie = window.forge.xhr.getCookie;
+   bitmunk.xhr.removeCookie = window.forge.xhr.removeCookie;
    
-   // create krypto.xhr with bitmunk logging
+   // create forge.xhr with bitmunk logging
    bitmunk.xhr.create = function(options)
    {
       options = $.extend({
@@ -74,7 +74,7 @@
          logDebug: bitmunk.log.debug,
          logVerbose: bitmunk.log.verbose
       }, options);
-      return window.krypto.xhr.create(options);
+      return window.forge.xhr.create(options);
    };
    
    // NOTE: xhr support is implicit and not a required dependency
