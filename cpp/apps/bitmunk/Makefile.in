@@ -20,7 +20,8 @@ EXTRA_WINDOWS_LIBRARIES = \
 
 # conditional Flash build
 ifeq (@BUILD_FLASH@,yes)
-ALL_FLASH = content/test/Test.swf content/HttpPoolManager.swf
+ALL_FLASH = 
+#content/example/Example.swf
 endif
 
 #ALL_MIN_JS = $(find ...)
