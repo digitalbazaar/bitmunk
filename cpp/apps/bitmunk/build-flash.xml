@@ -1,7 +1,7 @@
 <flex-config>
    <compiler>
       <include-libraries>
-         <library>flash/as3crypto/as3crypto.swc</library>
+         <library>flash/example/example.swc</library>
       </include-libraries>
       <source-path>
          <path-element>flash</path-element>
