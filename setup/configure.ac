@@ -133,10 +133,11 @@ dnl ----------------- release mode -----------------
 AC_ARG_ENABLE([release],
    AC_HELP_STRING(
       [--release-mode],
-      [set the release mode to (dev or official) [[dev]]]),
+      [set the release mode to (dev, sandbox, or official) [[dev]]]),
    [
    case "${enableval}" in
       dev) BITMUNK_RELEASE_MODE=dev ;;
+      sandbox)  BITMUNK_RELEASE_MODE=sandbox ;;
       official)  BITMUNK_RELEASE_MODE=official ;;
       *)   AC_MSG_ERROR(bad value ${enableval} for --release-mode) ;;
    esac
@@ -215,6 +216,9 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
 fi
 fi
+
+BITMUNK_SHARE_DIR="@datadir/bitmunk$BITMUNK_MAJOR_VERSION"
+AC_SUBST(BITMUNK_SHARE_DIR)
 
 dnl if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
 dnl    dnl === Linux === Release ===
@@ -853,18 +857,7 @@ AC_CONFIG_FILES([
    cpp/webui/Makefile
 ])
 
-if test "x$BITMUNK_RELEASE_MODE" = "xofficial"; then
-AC_CONFIG_FILES([
-	configs/official.d/bitmunk.bfp.Bfp.config
-	configs/official.d/bitmunk.catalog.CustomCatalog.config
-	configs/official.d/bitmunk.medialibrary.MediaLibrary.config
-	configs/official.d/bitmunk.purchase.Purchase.config
-	configs/official.d/bitmunk.sell.Sell.config
-	configs/official.d/bitmunk.system.System.config
-	configs/official.d/bitmunk.webui.WebUi.config
-	configs/official.d/node.config
-])
-else
+if test "x$BITMUNK_RELEASE_MODE" = "xdev"; then
 AC_CONFIG_FILES([
 	configs/apps/bpe.config
 	configs/apps/bfp-file-id.config

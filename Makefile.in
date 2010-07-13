@@ -55,16 +55,16 @@ INSTALL_BASE_LIBS := \
 	dist/lib/libbmnode.so
 
 INSTALL_BASE_CONFIGS := \
-	configs/$(BITMUNK_RELEASE_MODE).d/events.config \
-	configs/$(BITMUNK_RELEASE_MODE).d/login.config \
-	configs/$(BITMUNK_RELEASE_MODE).d/node.config
+	configs/$(BITMUNK_RELEASE_MODE)-base.d/events.config \
+	configs/$(BITMUNK_RELEASE_MODE)-base.d/login.config \
+	configs/$(BITMUNK_RELEASE_MODE)-base.d/node.config
 
 INSTALL_BASE_MODS := \
 	dist/lib/libbitmunk.so \
 	dist/lib/libbmnodemodule.so
 
 INSTALL_SYSTEM_MOD_CONFIGS := \
-	configs/$(BITMUNK_RELEASE_MODE).d/bitmunk.system.System.config
+	configs/$(BITMUNK_RELEASE_MODE)-base.d/bitmunk.system.System.config
 
 INSTALL_SYSTEM_MODS := \
 	dist/lib/libbmsystem.so
@@ -223,7 +223,7 @@ endif
 install: install-base
 
 install-base:
-	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
+	@mkdir -p $(PREFIX)@BITMUNK_SHARE_DIR@
 	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@
 	@mkdir -p $(PREFIX)@sysconfdir@/init.d
 	@mkdir -p $(PREFIX)@bindir@
@@ -236,9 +236,9 @@ install-base:
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base libraries in $(PREFIX)@libdir@..."
 	@$(foreach lib,$(INSTALL_BASE_LIBS),install -m 644 $(lib) $(PREFIX)@libdir@/$(notdir $(lib)) &&) true
 
-	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base configs in $(PREFIX)@BITMUNK_SHARE_DIR@..."
 	@install -m 644 $(INSTALL_BASE_CONFIG) $(PREFIX)@BITMUNK_SYSTEM_CONFIG@
-	@install -m 644 $(INSTALL_BASE_CONFIGS) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
+	@install -m 644 $(INSTALL_BASE_CONFIGS) $(PREFIX)@BITMUNK_SHARE_DIR@
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base templates in $(PREFIX)@datadir@/bitmunk@BITMUNK_VERSION_MAJOR@/templates..."
 	@install -m 644 templates/*tpl $(PREFIX)@datadir@/bitmunk@BITMUNK_VERSION_MAJOR@/templates
@@ -247,9 +247,9 @@ install-base:
 	@$(foreach lib,$(INSTALL_BASE_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
 
 install-system:
-	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
+	@mkdir -p $(PREFIX)@BITMUNK_SHARE_DIR@
 	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@
-	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ system configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
-	@$(foreach conf,$(INSTALL_SYSTEM_MOD_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@/$(notdir $(conf)) &&) true
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ system configs in $(PREFIX)@BITMUNK_SHARE_DIR@..."
+	@$(foreach conf,$(INSTALL_SYSTEM_MOD_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SHARE_DIR@/$(notdir $(conf)) &&) true
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ system modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
 	@$(foreach lib,$(INSTALL_SYSTEM_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
