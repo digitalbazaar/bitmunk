@@ -59,17 +59,16 @@ MODULE_LIBRARIES = \
 
 WEBUI_PLUGINS = help log login main purchase medialibrary settings
 
-ifeq (@BITMUNK_RELEASE_MODE@,no)
+ifeq (@BITMUNK_RELEASE_MODE@,dev)
 PKI_FILES = test-bitmunk-ca-file.pem
 else
 PKI_FILES = bitmunk-ca-file.pem
 endif
 
-ifeq (@BITMUNK_RELEASE_MODE@,no)
+ifeq (@BITMUNK_RELEASE_MODE@,dev)
 WEBUI_PLUGINS += support debug test
 endif
 
-ifeq (@BITMUNK_RELEASE_MODE@,yes)
 CONFIG_FILES = \
    bitmunk.bfp.Bfp.config \
    bitmunk.catalog.CustomCatalog.config \
@@ -80,18 +79,6 @@ CONFIG_FILES = \
    bitmunk.webui.WebUi.config \
    events.config \
    node.config
-else
-CONFIG_FILES = \
-   bitmunk.bfp.Bfp.config \
-   bitmunk.catalog.CustomCatalog.config \
-   bitmunk.medialibrary.MediaLibrary.config \
-   bitmunk.purchase.Purchase.config \
-   bitmunk.sell.Sell.config \
-   bitmunk.system.System.config \
-   bitmunk.webui.WebUi.config \
-   events.config \
-   node.config
-endif
 
 EXTERNAL_WINDOWS_LIBRARIES = \
    pthreadGCE2.dll \
@@ -198,7 +185,7 @@ endif
 	# Copy the proper configuration files over
 	cp @BITMUNK_DIR@/configs/firefox-plugin.config \
 		extension/platform/@FIREFOX_PLATFORM@/configs/default.config
-ifeq (@BITMUNK_RELEASE_MODE@,yes)
+ifeq (@BITMUNK_RELEASE_MODE@,official)
 	$(foreach config,$(CONFIG_FILES),cp -LR @BITMUNK_DIR@/configs/live.d/$(config) extension/platform/@FIREFOX_PLATFORM@/configs/conf.d/ &&) true
 else
 	$(foreach config,$(CONFIG_FILES),cp -LR @BITMUNK_DIR@/configs/dev.d/$(config) extension/platform/@FIREFOX_PLATFORM@/configs/conf.d/ &&) true

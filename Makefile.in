@@ -3,7 +3,9 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
 
-# Setup variables needed for source distribution
+# Setup variables needed for package distribution
+BITMUNK_RELEASE_MODE = @BITMUNK_RELEASE_MODE@
+BITMUNK_PLATFORM = @BITMUNK_PLATFORM@
 
 # setup conditional GTK subdirs
 ifeq (@BUILD_GTK_UI@,yes)
@@ -13,8 +15,7 @@ GTKUI_TEST_MODULES = bmtest-gtkbuilder
 endif
 
 FLASH_SUBDIRS := cpp/apps/bitmunk
-EXECUTABLE_SUBDIRS := \
-	cpp/tests
+EXECUTABLE_SUBDIRS := cpp/tests
 
 SUBDIRS := \
 	cpp/common \
@@ -54,16 +55,16 @@ INSTALL_BASE_LIBS := \
 	dist/lib/libbmnode.so
 
 INSTALL_BASE_CONFIGS := \
-	configs/live.d/events.config \
-	configs/live.d/login.config \
-	configs/live.d/node.config
+	configs/$(BITMUNK_RELEASE_MODE).d/events.config \
+	configs/$(BITMUNK_RELEASE_MODE).d/login.config \
+	configs/$(BITMUNK_RELEASE_MODE).d/node.config
 
 INSTALL_BASE_MODS := \
 	dist/lib/libbitmunk.so \
 	dist/lib/libbmnodemodule.so
 
 INSTALL_SYSTEM_MOD_CONFIGS := \
-	configs/live.d/bitmunk.system.System.config
+	configs/$(BITMUNK_RELEASE_MODE).d/bitmunk.system.System.config
 
 INSTALL_SYSTEM_MODS := \
 	dist/lib/libbmsystem.so

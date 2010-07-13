@@ -132,66 +132,66 @@ dnl ----------------- release mode -----------------
 
 AC_ARG_ENABLE([release],
    AC_HELP_STRING(
-      [--enable-release],
-      [enable release build [[no]]]),
+      [--release-mode],
+      [set the release mode to (dev or official) [[dev]]]),
    [
    case "${enableval}" in
-      yes) BITMUNK_RELEASE_MODE=yes ;;
-      no)  BITMUNK_RELEASE_MODE=no ;;
-      *)   AC_MSG_ERROR(bad value ${enableval} for --enable-release) ;;
+      dev) BITMUNK_RELEASE_MODE=dev ;;
+      official)  BITMUNK_RELEASE_MODE=official ;;
+      *)   AC_MSG_ERROR(bad value ${enableval} for --release-mode) ;;
    esac
    ],
-   [BITMUNK_RELEASE_MODE=no]) dnl Default value
+   [BITMUNK_RELEASE_MODE=dev]) dnl Default value
 
 AC_SUBST(BITMUNK_RELEASE_MODE)
 
 dnl ------------- Bitmunk SSL information --------------------
-if test "x$BITMUNK_RELEASE_MODE" = xyes; then
-   if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
-      NODE_SSL_GENERATE=true
-      NODE_SSL_CERTIFICATE="{RESOURCE_PATH}/pki/nodessl.crt"
-      NODE_SSL_KEY="{RESOURCE_PATH}/pki/nodessl.key"
-      NODE_SSL_CA_FILE="{RESOURCE_PATH}/pki/bitmunk-ca-file.pem"
-   else
-      # Often setup in a config file.
-      NODE_SSL_GENERATE=false
-      NODE_SSL_CERTIFICATE="/etc/bitmunk3/mysite.com.crt"
-      NODE_SSL_KEY="/etc/bitmunk3/mysite.com.key"
-      NODE_SSL_CA_FILE="/etc/bitmunk3/mysite-ca-file.pem"
-   fi
+dnl if test "x$BITMUNK_RELEASE_MODE" = xyes; then
+dnl    if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
+dnl       NODE_SSL_GENERATE=true
+dnl       NODE_SSL_CERTIFICATE="{RESOURCE_PATH}/pki/nodessl.crt"
+dnl       NODE_SSL_KEY="{RESOURCE_PATH}/pki/nodessl.key"
+dnl       NODE_SSL_CA_FILE="{RESOURCE_PATH}/pki/bitmunk-ca-file.pem"
+dnl    else
+dnl       # Often setup in a config file.
+dnl       NODE_SSL_GENERATE=false
+dnl       NODE_SSL_CERTIFICATE="/etc/bitmunk3/mysite.com.crt"
+dnl       NODE_SSL_KEY="/etc/bitmunk3/mysite.com.key"
+dnl       NODE_SSL_CA_FILE="/etc/bitmunk3/mysite-ca-file.pem"
+dnl    fi
+dnl else
+if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
+   NODE_SSL_GENERATE=true
+   NODE_SSL_CERTIFICATE="{RESOURCE_PATH}/pki/nodessl.crt"
+   NODE_SSL_KEY="{RESOURCE_PATH}/pki/nodessl.key"
+   NODE_SSL_CA_FILE="{RESOURCE_PATH}/pki/test-bitmunk-ca-file.pem"
 else
-   if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
-      NODE_SSL_GENERATE=true
-      NODE_SSL_CERTIFICATE="{RESOURCE_PATH}/pki/nodessl.crt"
-      NODE_SSL_KEY="{RESOURCE_PATH}/pki/nodessl.key"
-      NODE_SSL_CA_FILE="{RESOURCE_PATH}/pki/test-bitmunk-ca-file.pem"
-   else
-      NODE_SSL_GENERATE=true
-      NODE_SSL_CERTIFICATE="$BITMUNK_DIR/pki/nodessl.crt"
-      NODE_SSL_KEY="$BITMUNK_DIR/pki/nodessl.key"
-      NODE_SSL_CA_FILE="$BITMUNK_DIR/pki/test-bitmunk-ca-file.pem"
-   fi
+   NODE_SSL_GENERATE=true
+   NODE_SSL_CERTIFICATE="$BITMUNK_DIR/pki/nodessl.crt"
+   NODE_SSL_KEY="$BITMUNK_DIR/pki/nodessl.key"
+   NODE_SSL_CA_FILE="$BITMUNK_DIR/pki/test-bitmunk-ca-file.pem"
 fi
+dnl fi
 
 
 dnl ------------- Bitmunk API port numbers -------------------
 BITMUNK_LOCAL_API_HOST="0.0.0.0"
-if test "x$BITMUNK_RELEASE_MODE" = xyes; then
-   BITMUNK_API_HOST=bitmunk.com
-   BITMUNK_API_PORT=80
-   BITMUNK_LOCAL_API_PORT=80
-   BITMUNK_FLASH_POLICY_PORT=8843
-else
-   BITMUNK_API_HOST=dev.bitmunk.com
-   BITMUNK_API_PORT=19100
-   BITMUNK_LOCAL_API_PORT=19100
-   BITMUNK_FLASH_POLICY_PORT=19843
-fi
+BITMUNK_API_HOST=dev.bitmunk.com
+BITMUNK_API_PORT=19100
+BITMUNK_LOCAL_API_PORT=19100
+BITMUNK_FLASH_POLICY_PORT=19843
+
+dnl if test "x$BITMUNK_RELEASE_MODE" = xyes; then
+dnl    BITMUNK_API_HOST=bitmunk.com
+dnl    BITMUNK_API_PORT=80
+dnl    BITMUNK_LOCAL_API_PORT=80
+dnl    BITMUNK_FLASH_POLICY_PORT=8843
+dnl fi
 
 
 dnl ---------- Linux configuration settings -----------------
 
-if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
+if test "x$BUILD_FOR_LINUX" = "xyes"; then
    dnl === Linux === Development ===
    BITMUNK_MODULES_DIR="$BITMUNK_DIR/dist/modules/bpe"
    BITMUNK_WEBUI_PLUGINS_DIR="$BITMUNK_DIR/cpp/apps/bitmunk/plugins"
@@ -200,6 +200,7 @@ if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
    BITMUNK_SYSTEM_CONFIG_DIR="$BITMUNK_DIR/configs"
    BITMUNK_SYSTEM_CONFIG="$BITMUNK_DIR/configs/dev.config"
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
+
 if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    dnl === Linux === Development === Firefox Plugin ===
    BITMUNK_LOCAL_API_HOST="0.0.0.0"
@@ -214,45 +215,46 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
 fi
 fi
-if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
-   dnl === Linux === Release ===
-   # If we're releasing the software, ensure that at least the prefix,
-   # sysconfdir, and localstatedir variables are defined.
-   if test "$prefix" = "NONE"; then
-      prefix="/usr"
-   fi
-   if test "$sysconfdir" = "\${prefix}/etc"; then
-      sysconfdir="/etc"
-   fi
-   if test "$localstatedir" = "\${prefix}/var"; then
-      localstatedir="/var"
-   fi
 
-   BITMUNK_LOCAL_API_HOST=bitmunk.com
-   BITMUNK_MODULES_DIR="/usr/lib/bitmunk$BITMUNK_VERSION_MAJOR"
-   BITMUNK_WEBUI_PLUGINS_DIR="NOT_USED"
-   BITMUNK_PURCHASE_TEMP_DIR="NOT_USED"
-   BITMUNK_PURCHASE_DOWNLOAD_DIR="NOT_USED"
-   BITMUNK_SYSTEM_CONFIG_DIR="$sysconfdir/bitmunk3/conf.d"
-   BITMUNK_SYSTEM_CONFIG="$sysconfdir/bitmunk3/system.config"
-   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
-if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
-   dnl === Linux === Release === Firefox Plugin ===
-   BITMUNK_LOCAL_API_HOST="0.0.0.0"
-   BITMUNK_LOCAL_API_PORT=8200
-   BITMUNK_MODULES_DIR="{RESOURCE_PATH}/modules"
-   BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
-   BITMUNK_PURCHASE_TEMP_DIR="tmp"
-   BITMUNK_PURCHASE_DOWNLOAD_DIR="~/Music/Bitmunk"
-   BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
-   BITMUNK_SYSTEM_CONFIG="/etc/bitmunk3/system.config"
-   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
-fi
-fi
+dnl if test "x$BUILD_FOR_LINUX" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
+dnl    dnl === Linux === Release ===
+dnl    # If we're releasing the software, ensure that at least the prefix,
+dnl    # sysconfdir, and localstatedir variables are defined.
+dnl    if test "$prefix" = "NONE"; then
+dnl       prefix="/usr"
+dnl    fi
+dnl    if test "$sysconfdir" = "\${prefix}/etc"; then
+dnl       sysconfdir="/etc"
+dnl    fi
+dnl    if test "$localstatedir" = "\${prefix}/var"; then
+dnl       localstatedir="/var"
+dnl    fi
+dnl 
+dnl    BITMUNK_LOCAL_API_HOST=bitmunk.com
+dnl    BITMUNK_MODULES_DIR="/usr/lib/bitmunk$BITMUNK_VERSION_MAJOR"
+dnl    BITMUNK_WEBUI_PLUGINS_DIR="NOT_USED"
+dnl    BITMUNK_PURCHASE_TEMP_DIR="NOT_USED"
+dnl    BITMUNK_PURCHASE_DOWNLOAD_DIR="NOT_USED"
+dnl    BITMUNK_SYSTEM_CONFIG_DIR="$sysconfdir/bitmunk3/conf.d"
+dnl    BITMUNK_SYSTEM_CONFIG="$sysconfdir/bitmunk3/system.config"
+dnl    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
+dnl if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
+dnl    dnl === Linux === Release === Firefox Plugin ===
+dnl    BITMUNK_LOCAL_API_HOST="0.0.0.0"
+dnl    BITMUNK_LOCAL_API_PORT=8200
+dnl    BITMUNK_MODULES_DIR="{RESOURCE_PATH}/modules"
+dnl    BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
+dnl    BITMUNK_PURCHASE_TEMP_DIR="tmp"
+dnl    BITMUNK_PURCHASE_DOWNLOAD_DIR="~/Music/Bitmunk"
+dnl    BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
+dnl    BITMUNK_SYSTEM_CONFIG="/etc/bitmunk3/system.config"
+dnl    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
+dnl fi
+dnl fi
 
 dnl ---------- Mac OS X configuration settings -----------------
 
-if test "x$BUILD_FOR_MACOS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
+if test "x$BUILD_FOR_MACOS" = "xyes"; then
    dnl === Mac OS === Development ===
    BITMUNK_MODULES_DIR="$BITMUNK_DIR/modules/macos"
    BITMUNK_WEBUI_PLUGINS_DIR="$BITMUNK_DIR/cpp/apps/bitmunk/plugins"
@@ -274,32 +276,33 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
 fi
 fi
-if test "x$BUILD_FOR_MACOS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
-   dnl === Mac OS === Release ===
-   BITMUNK_MODULES_DIR="${libdir}/bitmunk$BITMUNK_VERSION_MAJOR"
-   BITMUNK_WEBUI_PLUGINS_DIR="NOT_USED"
-   BITMUNK_PURCHASE_TEMP_DIR="NOT_USED"
-   BITMUNK_PURCHASE_DOWNLOAD_DIR="NOT_USED"
-   BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
-   BITMUNK_SYSTEM_CONFIG="/etc/bitmunk3/system.config"
-   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
-if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
-   dnl === Mac OS === Release === Firefox Plugin ===
-   BITMUNK_LOCAL_API_HOST="0.0.0.0"
-   BITMUNK_LOCAL_API_PORT=8200
-   BITMUNK_MODULES_DIR="{RESOURCE_PATH}/modules"
-   BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
-   BITMUNK_PURCHASE_TEMP_DIR="tmp"
-   BITMUNK_PURCHASE_DOWNLOAD_DIR="~/Music/Bitmunk"
-   BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
-   BITMUNK_SYSTEM_CONFIG="/etc/bitmunk3/system.config"
-   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
-fi
-fi
+
+dnl if test "x$BUILD_FOR_MACOS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
+dnl    dnl === Mac OS === Release ===
+dnl    BITMUNK_MODULES_DIR="${libdir}/bitmunk$BITMUNK_VERSION_MAJOR"
+dnl    BITMUNK_WEBUI_PLUGINS_DIR="NOT_USED"
+dnl    BITMUNK_PURCHASE_TEMP_DIR="NOT_USED"
+dnl    BITMUNK_PURCHASE_DOWNLOAD_DIR="NOT_USED"
+dnl    BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
+dnl    BITMUNK_SYSTEM_CONFIG="/etc/bitmunk3/system.config"
+dnl    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
+dnl if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
+dnl    dnl === Mac OS === Release === Firefox Plugin ===
+dnl    BITMUNK_LOCAL_API_HOST="0.0.0.0"
+dnl    BITMUNK_LOCAL_API_PORT=8200
+dnl    BITMUNK_MODULES_DIR="{RESOURCE_PATH}/modules"
+dnl    BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
+dnl    BITMUNK_PURCHASE_TEMP_DIR="tmp"
+dnl    BITMUNK_PURCHASE_DOWNLOAD_DIR="~/Music/Bitmunk"
+dnl    BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
+dnl    BITMUNK_SYSTEM_CONFIG="/etc/bitmunk3/system.config"
+dnl    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
+dnl fi
+dnl fi
 
 dnl ---------- Windows configuration settings -----------------
 
-if test "x$BUILD_FOR_WINDOWS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xno; then
+if test "x$BUILD_FOR_WINDOWS" = "xyes"; then
    dnl === Windows === Development ===
    BITMUNK_MODULES_DIR="../../bpe"
    BITMUNK_WEBUI_PLUGINS_DIR="../../plugins"
@@ -321,29 +324,30 @@ if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
 fi
 fi
-if test "x$BUILD_FOR_WINDOWS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
-   dnl === Windows === Release ===
-   BITMUNK_MODULES_DIR="NOT_USED"
-   BITMUNK_WEBUI_PLUGINS_DIR="NOT_USED"
-   BITMUNK_PURCHASE_TEMP_DIR="NOT_USED"
-   BITMUNK_PURCHASE_DOWNLOAD_DIR="NOT_USED"
-   BITMUNK_SYSTEM_CONFIG="NOT_USED"
-   BITMUNK_SYSTEM_USER_CONFIG="NOT_USED"
-if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
-   dnl === Windows === Release === Firefox Plugin ===
-   BITMUNK_LOCAL_API_HOST="0.0.0.0"
-   BITMUNK_LOCAL_API_PORT=8200
-   BITMUNK_MODULES_DIR="{RESOURCE_PATH}/modules"
-   BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
-   BITMUNK_PURCHASE_TEMP_DIR="tmp"
-   BITMUNK_PURCHASE_DOWNLOAD_DIR="~/My Documents/My Music/Bitmunk"
-   # NOTE: Not loading a system default file on Windows.
-   # In the future, change "C:" to a magic %%-type of var.
-   #BITMUNK_SYSTEM_CONFIG="C:/Program Files/Bitmunk3/configs/system.config"
-   BITMUNK_SYSTEM_CONFIG=""
-   BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
-fi
-fi
+
+dnl if test "x$BUILD_FOR_WINDOWS" = "xyes" -a "x$BITMUNK_RELEASE_MODE" = xyes; then
+dnl    dnl === Windows === Release ===
+dnl    BITMUNK_MODULES_DIR="NOT_USED"
+dnl    BITMUNK_WEBUI_PLUGINS_DIR="NOT_USED"
+dnl    BITMUNK_PURCHASE_TEMP_DIR="NOT_USED"
+dnl    BITMUNK_PURCHASE_DOWNLOAD_DIR="NOT_USED"
+dnl    BITMUNK_SYSTEM_CONFIG="NOT_USED"
+dnl    BITMUNK_SYSTEM_USER_CONFIG="NOT_USED"
+dnl if test "x$BUILD_FIREFOX_PLUGIN" = xyes; then
+dnl    dnl === Windows === Release === Firefox Plugin ===
+dnl    BITMUNK_LOCAL_API_HOST="0.0.0.0"
+dnl    BITMUNK_LOCAL_API_PORT=8200
+dnl    BITMUNK_MODULES_DIR="{RESOURCE_PATH}/modules"
+dnl    BITMUNK_WEBUI_PLUGINS_DIR="{RESOURCE_PATH}/webuiplugins"
+dnl    BITMUNK_PURCHASE_TEMP_DIR="tmp"
+dnl    BITMUNK_PURCHASE_DOWNLOAD_DIR="~/My Documents/My Music/Bitmunk"
+dnl    # NOTE: Not loading a system default file on Windows.
+dnl    # In the future, change "C:" to a magic %%-type of var.
+dnl    #BITMUNK_SYSTEM_CONFIG="C:/Program Files/Bitmunk3/configs/system.config"
+dnl    BITMUNK_SYSTEM_CONFIG=""
+dnl    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/default.config"
+dnl fi
+dnl fi
 
 AC_SUBST(NODE_SSL_GENERATE)
 AC_SUBST(NODE_SSL_CERTIFICATE)
@@ -386,7 +390,7 @@ dnl ----------------- tests -----------------
 
 if test "x$BUILD_FIREFOX_PLUGIN" = "xyes" ; then
    BUILD_TESTS=no
-elif test "x$BITMUNK_RELEASE_MODE" = "xyes"; then
+elif test "x$BITMUNK_RELEASE_MODE" = "xofficial"; then
    BUILD_TESTS=no
 else
    BUILD_TESTS=yes
@@ -419,7 +423,7 @@ AC_ARG_ENABLE([log-line-numbers],
    ],
    [MO_DISABLE_LOG_LINE_NUMBERS=no]) dnl Default value
 if test "x$BUILD_FIREFOX_PLUGIN" = "xyes"; then
-   if test "x$BITMUNK_RELEASE_MODE" = "xyes"; then
+   if test "x$BITMUNK_RELEASE_MODE" = "xofficial"; then
       MO_DISABLE_LOG_LINE_NUMBERS=yes
    fi
 fi
@@ -444,22 +448,22 @@ AC_ARG_WITH(system-config,
 
 dnl ----------------- system user home dir -----------------
 
-dnl default system user bitmunk home dir 
-if test "x$BITMUNK_RELEASE_MODE" = xyes; then
-   case "${BITMUNK_PLATFORM}" in
-      linux) BITMUNK_HOME_DIR="~/.bitmunk3" ;;
-      windows) BITMUNK_HOME_DIR="~/Application Data/Bitmunk3" ;;
-      macos) BITMUNK_HOME_DIR="~/Library/Application Support/Bitmunk3" ;;
-      *) AC_MSG_ERROR(home dir unknown for platform ${BITMUNK_PLATFORM}) ;;
-   esac
-else
-   case "${BITMUNK_PLATFORM}" in
-      linux) BITMUNK_HOME_DIR="/tmp/dev" ;;
-      windows) BITMUNK_HOME_DIR="~/Application Data/Bitmunk3/dev" ;;
-      macos) BITMUNK_HOME_DIR="~/Library/Application Support/Bitmunk3/dev" ;;
-      *) AC_MSG_ERROR(home dir unknown for platform ${BITMUNK_PLATFORM}) ;;
-   esac
-fi
+dnl dnl default system user bitmunk home dir 
+dnl if test "x$BITMUNK_RELEASE_MODE" = xyes; then
+dnl    case "${BITMUNK_PLATFORM}" in
+dnl       linux) BITMUNK_HOME_DIR="~/.bitmunk3" ;;
+dnl       windows) BITMUNK_HOME_DIR="~/Application Data/Bitmunk3" ;;
+dnl       macos) BITMUNK_HOME_DIR="~/Library/Application Support/Bitmunk3" ;;
+dnl       *) AC_MSG_ERROR(home dir unknown for platform ${BITMUNK_PLATFORM}) ;;
+dnl    esac
+dnl else
+case "${BITMUNK_PLATFORM}" in
+   linux) BITMUNK_HOME_DIR="/tmp/dev" ;;
+   windows) BITMUNK_HOME_DIR="~/Application Data/Bitmunk3/dev" ;;
+   macos) BITMUNK_HOME_DIR="~/Library/Application Support/Bitmunk3/dev" ;;
+   *) AC_MSG_ERROR(home dir unknown for platform ${BITMUNK_PLATFORM}) ;;
+esac
+dnl fi
 
 AC_ARG_WITH(home-dir,
   AC_HELP_STRING([--with-home-dir=DIR],
@@ -490,17 +494,17 @@ AC_ARG_WITH(config,
 dnl ----------------- profiles dir -----------------
 
 dnl default location of profiles.
-if test "x$BITMUNK_RELEASE_MODE" = xyes \
-   -o "x$BUILD_FIREFOX_PLUGIN" = "xyes" ; then
-   BITMUNK_PROFILES_DIR="profiles"
+dnl if test "x$BITMUNK_RELEASE_MODE" = xyes \
+dnl    -o "x$BUILD_FIREFOX_PLUGIN" = "xyes" ; then
+dnl    BITMUNK_PROFILES_DIR="profiles"
+dnl else
+if test -d "${BITMUNK_DIR}/pki"; then
+   BITMUNK_PROFILES_DIR="$BITMUNK_DIR/pki"
 else
-   if test -d "${BITMUNK_DIR}/pki"; then
-      BITMUNK_PROFILES_DIR="$BITMUNK_DIR/pki"
-   else
-      AC_MSG_NOTICE(pki profiles dir not found)
-      BITMUNK_PROFILES_DIR="profiles"
-   fi
+   AC_MSG_NOTICE(pki profiles dir not found)
+   BITMUNK_PROFILES_DIR="profiles"
 fi
+dnl fi
 
 AC_ARG_WITH(profiles-dir,
   AC_HELP_STRING([--with-profiles-dir=DIR],
@@ -613,7 +617,7 @@ dnl ----------------- mxmlc debug -----------------
 
 if test "$BUILD_FIREFOX_PLUGIN" = "yes" ; then
    MXMLC_DEBUG_MODE=false
-elif test "$BITMUNK_RELEASE_MODE" = "yes"; then
+elif test "x$BITMUNK_RELEASE_MODE" = "xofficial"; then
    MXMLC_DEBUG_MODE=false
 else
    MXMLC_DEBUG_MODE=true
@@ -849,16 +853,16 @@ AC_CONFIG_FILES([
    cpp/webui/Makefile
 ])
 
-if test "x$BITMUNK_RELEASE_MODE" = "xyes"; then
+if test "x$BITMUNK_RELEASE_MODE" = "xofficial"; then
 AC_CONFIG_FILES([
-	configs/live.d/bitmunk.bfp.Bfp.config
-	configs/live.d/bitmunk.catalog.CustomCatalog.config
-	configs/live.d/bitmunk.medialibrary.MediaLibrary.config
-	configs/live.d/bitmunk.purchase.Purchase.config
-	configs/live.d/bitmunk.sell.Sell.config
-	configs/live.d/bitmunk.system.System.config
-	configs/live.d/bitmunk.webui.WebUi.config
-	configs/live.d/node.config
+	configs/official.d/bitmunk.bfp.Bfp.config
+	configs/official.d/bitmunk.catalog.CustomCatalog.config
+	configs/official.d/bitmunk.medialibrary.MediaLibrary.config
+	configs/official.d/bitmunk.purchase.Purchase.config
+	configs/official.d/bitmunk.sell.Sell.config
+	configs/official.d/bitmunk.system.System.config
+	configs/official.d/bitmunk.webui.WebUi.config
+	configs/official.d/node.config
 ])
 else
 AC_CONFIG_FILES([
@@ -975,5 +979,5 @@ fi
 echo "BFP API Version   : $BITMUNK_BFP_API_VERSION"
 echo "GTK UI enabled    : $BUILD_GTK_UI"
 echo "Forge dir         : $FORGE_DIR"
-echo "Release build     : $BITMUNK_RELEASE_MODE"
+echo "Release mode      : $BITMUNK_RELEASE_MODE"
 
