@@ -228,7 +228,7 @@ install-base:
 	@mkdir -p $(PREFIX)@sysconfdir@/init.d
 	@mkdir -p $(PREFIX)@bindir@
 	@mkdir -p $(PREFIX)@libdir@
-	@mkdir -p $(PREFIX)@datadir@/bitmunk@BITMUNK_VERSION_MAJOR@/templates
+	@mkdir -p $(PREFIX)@BITMUNK_SHARE_DIR@/configs/base
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ executables in $(PREFIX)@bindir@..."
 	@$(foreach app,$(INSTALL_APPLICATIONS),install -m 755 $(app) $(PREFIX)@bindir@/$(notdir $(app))@BITMUNK_VERSION_MAJOR@ &&) true
@@ -237,11 +237,7 @@ install-base:
 	@$(foreach lib,$(INSTALL_BASE_LIBS),install -m 644 $(lib) $(PREFIX)@libdir@/$(notdir $(lib)) &&) true
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base configs in $(PREFIX)@BITMUNK_SHARE_DIR@..."
-	@install -m 644 $(INSTALL_BASE_CONFIG) $(PREFIX)@BITMUNK_SYSTEM_CONFIG@
-	@install -m 644 $(INSTALL_BASE_CONFIGS) $(PREFIX)@BITMUNK_SHARE_DIR@
-
-	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base templates in $(PREFIX)@datadir@/bitmunk@BITMUNK_VERSION_MAJOR@/templates..."
-	@install -m 644 templates/*tpl $(PREFIX)@datadir@/bitmunk@BITMUNK_VERSION_MAJOR@/templates
+	@install -m 644 $(INSTALL_BASE_CONFIGS) $(PREFIX)@BITMUNK_SHARE_DIR@/configs/base
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
 	@$(foreach lib,$(INSTALL_BASE_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
