@@ -79,6 +79,10 @@ CONFIG_FILES = \
    bitmunk.webui.WebUi.config \
    events.config \
    node.config
+   
+ifeq (@BITMUNK_RELEASE_MODE@,official)
+CONFIG_FILES += @BITMUNK_PLATFORM@/paths.config
+endif
 
 EXTERNAL_WINDOWS_LIBRARIES = \
    pthreadGCE2.dll \
