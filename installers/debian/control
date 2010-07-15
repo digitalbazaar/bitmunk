@@ -1,4 +1,4 @@
-Source: bitmunk3
+Source: bitmunk
 Section: net
 Priority: optional
 Maintainer: Digital Bazaar, Inc. <support@digitalbazaar.com>
@@ -20,7 +20,7 @@ Description: Legal peer-to-peer media purchase and sales engine
 
 Package: bitmunk3-mod-system
 Architecture: any
-Depends: ${shlibs:Depends}, bitmunk3 (>= 3.2)
+Depends: ${shlibs:Depends}, bitmunk3-core (>= 3.2)
 Description: Bitmunk System modules
  The Bitmunk software suite is a complete reference implementation of the 
  PaySwarm standard. PaySwarm software is used to legally 
@@ -32,7 +32,7 @@ Description: Bitmunk System modules
 
 Package: bitmunk3-mod-bfp
 Architecture: any
-Depends: ${shlibs:Depends}, bitmunk3 (>= 3.2)
+Depends: ${shlibs:Depends}, bitmunk3-core (>= 3.2)
 Description: Bitmunk Binary File Processor modules
  The Bitmunk software suite is a complete reference implementation of the 
  PaySwarm standard. PaySwarm software is used to legally 
@@ -45,7 +45,7 @@ Description: Bitmunk Binary File Processor modules
 
 Package: bitmunk3-mod-sell
 Architecture: any
-Depends: ${shlibs:Depends}, bitmunk3 (>= 3.2)
+Depends: ${shlibs:Depends}, bitmunk3-core (>= 3.2)
 Description: Bitmunk sales processing modules
  The Bitmunk software suite is a complete reference implementation of the 
  PaySwarm standard. PaySwarm software is used to legally 
@@ -57,7 +57,7 @@ Description: Bitmunk sales processing modules
 
 Package: bitmunk3-bpe
 Architecture: any
-Depends: ${shlibs:Depends}, bitmunk3 (>= 3.2), bitmunk3-mod-system (>= 3.2), bitmunk3-mod-bfp (>= 3.2)
+Depends: ${shlibs:Depends}, bitmunk3-core (>= 3.2), bitmunk3-mod-system (>= 3.2), bitmunk3-mod-bfp (>= 3.2)
 Description: Bitmunk Personal Edition interface
  The Bitmunk software suite is a complete reference implementation of the 
  PaySwarm standard. PaySwarm software is used to legally 

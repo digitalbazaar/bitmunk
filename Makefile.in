@@ -78,7 +78,7 @@ INSTALL_BFP_MODS := \
 INSTALL_BFP_CONFIGS := \
 	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/bitmunk.bfp.Bfp.config
 
-INSTALL_BPE_LIBS := \
+INSTALL_BFP_LIBS := \
 	dist/lib/libbmdata.so
 
 INSTALL_SELL_MODS := \
@@ -274,7 +274,10 @@ install-base:
 	@$(foreach script,$(INSTALL_SCRIPTS),install -m 755 $(script) $(PREFIX)@bindir@/$(notdir $(script)) &&) true
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base libraries in $(PREFIX)@libdir@..."
-	@$(foreach lib,$(INSTALL_BASE_LIBS),install -m 644 $(lib) $(PREFIX)@libdir@/$(notdir $(lib)) &&) true
+	@$(foreach lib,$(INSTALL_BASE_LIBS),install -m 644 $(lib) $(PREFIX)@libdir@/$(notdir $(lib).@FULL_DOTTED_VERSION@) &&) true
+	@$(foreach lib,$(INSTALL_BASE_LIBS),ln -s $(notdir $(lib)).@FULL_DOTTED_VERSION@ $(PREFIX)@libdir@/$(notdir $(lib)).@BITMUNK_VERSION_MAJOR@.@BITMUNK_VERSION_MINOR@ &&) true
+	@$(foreach lib,$(INSTALL_BASE_LIBS),ln -s $(notdir $(lib)).@FULL_DOTTED_VERSION@ $(PREFIX)@libdir@/$(notdir $(lib)).@BITMUNK_VERSION_MAJOR@ &&) true
+	@$(foreach lib,$(INSTALL_BASE_LIBS),ln -s $(notdir $(lib)).@FULL_DOTTED_VERSION@ $(PREFIX)@libdir@/$(notdir $(lib)) &&) true
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
 	@install -m 644 $(INSTALL_BASE_CONFIGS) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
@@ -295,6 +298,11 @@ install-bfp:
 	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BFP configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
 	@$(foreach conf,$(INSTALL_BFP_MOD_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@/$(notdir $(conf)) &&) true
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BFP libs in $(PREFIX)@libdir@..."
+	@$(foreach lib,$(INSTALL_BFP_LIBS),install -m 644 $(lib) $(PREFIX)@libdir@/$(notdir $(lib).@FULL_DOTTED_VERSION@) &&) true
+	@$(foreach lib,$(INSTALL_BFP_LIBS),ln -s $(notdir $(lib)).@FULL_DOTTED_VERSION@ $(PREFIX)@libdir@/$(notdir $(lib)).@BITMUNK_VERSION_MAJOR@.@BITMUNK_VERSION_MINOR@ &&) true
+	@$(foreach lib,$(INSTALL_BFP_LIBS),ln -s $(notdir $(lib)).@FULL_DOTTED_VERSION@ $(PREFIX)@libdir@/$(notdir $(lib)).@BITMUNK_VERSION_MAJOR@ &&) true
+	@$(foreach lib,$(INSTALL_BFP_LIBS),ln -s $(notdir $(lib)).@FULL_DOTTED_VERSION@ $(PREFIX)@libdir@/$(notdir $(lib)) &&) true
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BFP modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
 	@$(foreach lib,$(INSTALL_BFP_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
 
