@@ -254,7 +254,7 @@ else
 	@ln -s installers/debian debian
 	@LD_LIBRARY_PATH=libs/@BITMUNK_PLATFORM@/ dpkg-buildpackage -us -uc -rfakeroot -b 
 	@echo "Moving packages to installers/packages..."
-	@rm ../bitmunk@BITMUNK_VERSION_MAJOR@*changes
+	@rm ../bitmunk*changes
 	@mkdir -p installers/packages
 	@mv ../bitmunk@BITMUNK_VERSION_MAJOR@*deb installers/packages
 endif
