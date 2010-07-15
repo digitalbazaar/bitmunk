@@ -45,13 +45,41 @@ SUBDIRS := \
 	cpp/apps/tester \
 	$(EXECUTABLE_SUBDIRS)
 
+INSTALL_BPE_LIBS := \
+   dist/lib/libbmdata.so
+
+INSTALL_BPE_MODS := \
+   libbmcustomcatalog.so \
+   libbmeventreactor.so \
+   libbmeventreactor-downloadstate.so \
+   libbmfilebrowser.so \
+   libbmmedialibrary.so \
+   libbmnegotiate.so \
+   libbmperuserdb.so \
+   libbmportmapper.so \
+   libbmpurchase.so \
+   libbmsell.so \
+   libbmwebui.so
+
+INSTALL_BFP_MODS := \
+   libbmbfp.so
+
+INSTALL_BFP_CONFIGS := \
+   bitmunk.bfp.Bfp.config
+
+INSTALL_BPE_CONFIGS := \
+   bitmunk.catalog.CustomCatalog.config \
+   bitmunk.medialibrary.MediaLibrary.config \
+   bitmunk.purchase.Purchase.config \
+   bitmunk.sell.Sell.config \
+   bitmunk.webui.WebUi.config
+
 INSTALL_APPLICATIONS := \
 	dist/bin/bitmunk
 
 INSTALL_BASE_LIBS := \
 	dist/lib/libbmcommon.so \
 	dist/lib/libbmprotocol.so \
-	dist/lib/libbmapp.so \
 	dist/lib/libbmnode.so
 
 INSTALL_BASE_CONFIGS := \
@@ -61,6 +89,7 @@ INSTALL_BASE_CONFIGS := \
 
 INSTALL_BASE_MODS := \
 	dist/lib/libbitmunk.so \
+	dist/lib/libbmapp.so \
 	dist/lib/libbmnodemodule.so
 
 INSTALL_SYSTEM_MOD_CONFIGS := \
@@ -249,3 +278,4 @@ install-system:
 	@$(foreach conf,$(INSTALL_SYSTEM_MOD_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SHARE_DIR@/$(notdir $(conf)) &&) true
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ system modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
 	@$(foreach lib,$(INSTALL_SYSTEM_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
+
