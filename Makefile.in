@@ -45,37 +45,11 @@ SUBDIRS := \
 	cpp/apps/tester \
 	$(EXECUTABLE_SUBDIRS)
 
-INSTALL_BPE_LIBS := \
-   dist/lib/libbmdata.so
-
-INSTALL_BPE_MODS := \
-   libbmcustomcatalog.so \
-   libbmeventreactor.so \
-   libbmeventreactor-downloadstate.so \
-   libbmfilebrowser.so \
-   libbmmedialibrary.so \
-   libbmnegotiate.so \
-   libbmperuserdb.so \
-   libbmportmapper.so \
-   libbmpurchase.so \
-   libbmsell.so \
-   libbmwebui.so
-
-INSTALL_BFP_MODS := \
-   libbmbfp.so
-
-INSTALL_BFP_CONFIGS := \
-   bitmunk.bfp.Bfp.config
-
-INSTALL_BPE_CONFIGS := \
-   bitmunk.catalog.CustomCatalog.config \
-   bitmunk.medialibrary.MediaLibrary.config \
-   bitmunk.purchase.Purchase.config \
-   bitmunk.sell.Sell.config \
-   bitmunk.webui.WebUi.config
-
 INSTALL_APPLICATIONS := \
 	dist/bin/bitmunk
+
+INSTALL_SCRIPTS := \
+	installers/debian/bitmunk
 
 INSTALL_BASE_LIBS := \
 	dist/lib/libbmcommon.so \
@@ -83,9 +57,9 @@ INSTALL_BASE_LIBS := \
 	dist/lib/libbmnode.so
 
 INSTALL_BASE_CONFIGS := \
-	configs/$(BITMUNK_RELEASE_MODE)-base.d/events.config \
-	configs/$(BITMUNK_RELEASE_MODE)-base.d/login.config \
-	configs/$(BITMUNK_RELEASE_MODE)-base.d/node.config
+	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/events.config \
+	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/login.config \
+	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/node.config
 
 INSTALL_BASE_MODS := \
 	dist/lib/libbitmunk.so \
@@ -93,10 +67,46 @@ INSTALL_BASE_MODS := \
 	dist/lib/libbmnodemodule.so
 
 INSTALL_SYSTEM_MOD_CONFIGS := \
-	configs/$(BITMUNK_RELEASE_MODE)-base.d/bitmunk.system.System.config
+	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/bitmunk.system.System.config
 
 INSTALL_SYSTEM_MODS := \
 	dist/lib/libbmsystem.so
+
+INSTALL_BFP_MODS := \
+	dist/lib/libbmbfp.so
+
+INSTALL_BFP_CONFIGS := \
+	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/bitmunk.bfp.Bfp.config
+
+INSTALL_BPE_LIBS := \
+	dist/lib/libbmdata.so
+
+INSTALL_SELL_MODS := \
+	dist/lib/libbmsell.so
+
+INSTALL_SELL_CONFIGS := \
+	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/bitmunk.sell.Sell.config
+
+INSTALL_BPE_MODS := \
+	dist/lib/libbmcustomcatalog.so \
+	dist/lib/libbmeventreactor.so \
+	dist/lib/libbmeventreactor-downloadstate.so \
+	dist/lib/libbmfilebrowser.so \
+	dist/lib/libbmmedialibrary.so \
+	dist/lib/libbmnegotiate.so \
+	dist/lib/libbmperuserdb.so \
+	dist/lib/libbmportmapper.so \
+	dist/lib/libbmpurchase.so \
+	dist/lib/libbmwebui.so
+
+INSTALL_BPE_CONFIG := \
+  configs/$(BITMUNK_RELEASE_MODE)-bpe.config
+
+INSTALL_BPE_CONFIGS := \
+	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/bitmunk.catalog.CustomCatalog.config \
+	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/bitmunk.medialibrary.MediaLibrary.config \
+	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/bitmunk.purchase.Purchase.config \
+	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/bitmunk.webui.WebUi.config
 
 ifndef PRINT_DIRECTORIES
 PRINT_DIRECTORIES_OPTS = --no-print-directory -s
@@ -252,7 +262,7 @@ endif
 install: install-base
 
 install-base:
-	@mkdir -p $(PREFIX)@BITMUNK_SHARE_DIR@
+	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
 	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@
 	@mkdir -p $(PREFIX)@sysconfdir@/init.d
 	@mkdir -p $(PREFIX)@bindir@
@@ -261,21 +271,48 @@ install-base:
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ executables in $(PREFIX)@bindir@..."
 	@$(foreach app,$(INSTALL_APPLICATIONS),install -m 755 $(app) $(PREFIX)@bindir@/$(notdir $(app))@BITMUNK_VERSION_MAJOR@ &&) true
+	@$(foreach script,$(INSTALL_SCRIPTS),install -m 755 $(script) $(PREFIX)@bindir@/$(notdir $(script)) &&) true
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base libraries in $(PREFIX)@libdir@..."
 	@$(foreach lib,$(INSTALL_BASE_LIBS),install -m 644 $(lib) $(PREFIX)@libdir@/$(notdir $(lib)) &&) true
 
-	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base configs in $(PREFIX)@BITMUNK_SHARE_DIR@..."
-	@install -m 644 $(INSTALL_BASE_CONFIGS) $(PREFIX)@BITMUNK_SHARE_DIR@/configs/base
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
+	@install -m 644 $(INSTALL_BASE_CONFIGS) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
 	@$(foreach lib,$(INSTALL_BASE_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
 
 install-system:
-	@mkdir -p $(PREFIX)@BITMUNK_SHARE_DIR@
+	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
 	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@
-	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ system configs in $(PREFIX)@BITMUNK_SHARE_DIR@..."
-	@$(foreach conf,$(INSTALL_SYSTEM_MOD_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SHARE_DIR@/$(notdir $(conf)) &&) true
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ system configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
+	@$(foreach conf,$(INSTALL_SYSTEM_MOD_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@/$(notdir $(conf)) &&) true
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ system modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
 	@$(foreach lib,$(INSTALL_SYSTEM_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
+
+install-bfp:
+	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
+	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BFP configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
+	@$(foreach conf,$(INSTALL_BFP_MOD_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@/$(notdir $(conf)) &&) true
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BFP modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
+	@$(foreach lib,$(INSTALL_BFP_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
+
+install-sell:
+	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
+	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ sell configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
+	@$(foreach conf,$(INSTALL_SELL_MOD_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@/$(notdir $(conf)) &&) true
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ sell modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
+	@$(foreach lib,$(INSTALL_SELL_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
+
+install-bpe:
+	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
+	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@/bpe
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BPE top-level config in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
+	@$(foreach conf,$(INSTALL_BPE_CONFIG),install -m 644 $(conf) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@/../bpe.config &&) true
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BPE configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
+	@$(foreach conf,$(INSTALL_BPE_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@/$(notdir $(conf)) &&) true
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BPE modules in $(PREFIX)@BITMUNK_MODULES_DIR@/bpe..."
+	@$(foreach lib,$(INSTALL_BPE_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/bpe/$(notdir $(lib)) &&) true
 

@@ -179,15 +179,16 @@ dnl ---------- Linux configuration settings -----------------
 if test "x$BUILD_FOR_LINUX" = "xyes"; then
    dnl === Linux === Development ===
    BITMUNK_MODULES_DIR="$BITMUNK_DIR/dist/modules/bpe"
-   if test "x$BITMUNK_RELEASE_MODE" = "xofficial"; then
-      BITMUNK_MODULES_DIR="/usr/lib/bitmunk$BITMUNK_VERSION_MAJOR"
-   fi
    BITMUNK_WEBUI_PLUGINS_DIR="$BITMUNK_DIR/cpp/apps/bitmunk/plugins"
    BITMUNK_PURCHASE_TEMP_DIR="tmp"
    BITMUNK_PURCHASE_DOWNLOAD_DIR="downloads"
    BITMUNK_SYSTEM_CONFIG_DIR="$BITMUNK_DIR/configs"
    BITMUNK_SYSTEM_CONFIG="$BITMUNK_DIR/configs/dev.config"
    BITMUNK_SYSTEM_USER_CONFIG="{BITMUNK_HOME}/dev.config"
+   if test "x$BITMUNK_RELEASE_MODE" = "xofficial"; then
+      BITMUNK_MODULES_DIR="/usr/lib/bitmunk$BITMUNK_VERSION_MAJOR"
+      BITMUNK_SYSTEM_CONFIG_DIR="/etc/bitmunk3/conf.d"
+   fi
 fi
 
 dnl ---------- Mac OS X configuration settings -----------------

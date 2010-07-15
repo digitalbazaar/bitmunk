@@ -71,8 +71,11 @@ install-arch:
 
 	# Add here commands to install the arch part of the package into 
 	# debian/tmp.
-	$(MAKE) PREFIX=$(CURDIR)/debian/bitmunk@BITMUNK_VERSION_MAJOR@ install-base
+	$(MAKE) PREFIX=$(CURDIR)/debian/bitmunk@BITMUNK_VERSION_MAJOR@-core install-base
 	$(MAKE) PREFIX=$(CURDIR)/debian/bitmunk@BITMUNK_VERSION_MAJOR@-mod-system install-system
+	$(MAKE) PREFIX=$(CURDIR)/debian/bitmunk@BITMUNK_VERSION_MAJOR@-mod-bfp install-bfp
+	$(MAKE) PREFIX=$(CURDIR)/debian/bitmunk@BITMUNK_VERSION_MAJOR@-mod-sell install-sell
+	$(MAKE) PREFIX=$(CURDIR)/debian/bitmunk@BITMUNK_VERSION_MAJOR@-bpe install-bpe
 
 	dh_install -a
 # Must not depend on anything. This is to be called by

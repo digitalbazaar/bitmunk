@@ -1,0 +1,20 @@
+#!/bin/sh -e
+#
+# A simple script to execute the bitmunk3 application with the proper config 
+# file.
+
+# Load the defaults if they exist
+test -f /etc/default/bitmunk3 && . /etc/default/bitmunk3
+
+# If BITMUNK_CONFIG doesn't exist, create it
+[ "$BITMUNK_CONFIG" ] || BITMUNK_CONFIG="/etc/bitmunk3/bpe.config"
+
+# Run the app if it exists
+if [ -f $BITMUNK_CONFIG ]; then
+   /usr/bin/bitmunk3 --log-level m --log ~/.bitmunk3/bitmunk3.log \
+      --log-rotation-size 10485760 --log-max-rotated 30 \
+      --config $BITMUNK_CONFIG $* &
+else
+   echo "Could not find Bitmunk configuration file at /etc/bitmunk3/bpe.config"
+fi
+

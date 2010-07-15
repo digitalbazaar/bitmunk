@@ -6,26 +6,65 @@ Homepage: http://bitmunk.com/
 Build-Depends: debhelper (>= 6.0.0), autotools-dev
 Standards-Version: 3.8.0
 
-Package: bitmunk3
+Package: bitmunk3-core
 Architecture: any
 Depends: ${shlibs:Depends}, monarch3 (>= 3.2)
 Description: Legal peer-to-peer media purchase and sales engine
- Bitmunk 3.0 is a complete re-write of the Bitmunk software in C++. This
- software can be used to legally purchase and sell digital content via
- peer-to-peer networks.
+ The Bitmunk software suite is a complete reference implementation of the 
+ PaySwarm standard. PaySwarm software is used to legally 
+ purchase and sell digital content over the Internet and via the Web. More
+ information about PaySwarm is available at http://payswarm.com/
  .
- This package contains the base software for a Bitmunk node, which is usually
- specialized and extended by using plug-ins.
+ This package contains the base software for a Bitmunk software, which is 
+ usually specialized and extended by using plug-ins.
 
 Package: bitmunk3-mod-system
 Architecture: any
-Depends: ${shlibs:Depends}, bitmunk3 (>= 3.0)
+Depends: ${shlibs:Depends}, bitmunk3 (>= 3.2)
 Description: Bitmunk System modules
- Bitmunk 3.0 is a complete re-write of the Bitmunk software in C++. This
- software can be used to legally purchase and sell digital content via
- peer-to-peer networks.
+ The Bitmunk software suite is a complete reference implementation of the 
+ PaySwarm standard. PaySwarm software is used to legally 
+ purchase and sell digital content over the Internet and via the Web. More
+ information about PaySwarm is available at http://payswarm.com/
  .
  This package contains the Bitmunk System modules which are used to 
  process robot.txt requests, statistics, directives, and events.
 
+Package: bitmunk3-mod-bfp
+Architecture: any
+Depends: ${shlibs:Depends}, bitmunk3 (>= 3.2)
+Description: Bitmunk Binary File Processor modules
+ The Bitmunk software suite is a complete reference implementation of the 
+ PaySwarm standard. PaySwarm software is used to legally 
+ purchase and sell digital content over the Internet and via the Web. More
+ information about PaySwarm is available at http://payswarm.com/
+ .
+ This package contains the Binary File Processor module, which is used
+ to process all audio, video, image and data files purchased and sold
+ via Bitmunk-compatible networks.
+
+Package: bitmunk3-mod-sell
+Architecture: any
+Depends: ${shlibs:Depends}, bitmunk3 (>= 3.2)
+Description: Bitmunk sales processing modules
+ The Bitmunk software suite is a complete reference implementation of the 
+ PaySwarm standard. PaySwarm software is used to legally 
+ purchase and sell digital content over the Internet and via the Web. More
+ information about PaySwarm is available at http://payswarm.com/
+ .
+ This package contains the sales processing module, which is used to
+ process sales transactions between peers on the network.
+
+Package: bitmunk3-bpe
+Architecture: any
+Depends: ${shlibs:Depends}, bitmunk3 (>= 3.2), bitmunk3-mod-system (>= 3.2), bitmunk3-mod-bfp (>= 3.2)
+Description: Bitmunk Personal Edition interface
+ The Bitmunk software suite is a complete reference implementation of the 
+ PaySwarm standard. PaySwarm software is used to legally 
+ purchase and sell digital content over the Internet and via the Web. More
+ information about PaySwarm is available at http://payswarm.com/
+ .
+ This package contains the Bitmunk Personal Edition software, which provides
+ a P2P server as well as a web-based interface for buying and selling digital
+ content over Bitmunk.
 
