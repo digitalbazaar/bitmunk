@@ -13,6 +13,7 @@
 
 #include <algorithm>
 
+using namespace std;
 using namespace monarch::config;
 using namespace monarch::data::json;
 using namespace monarch::event;
@@ -137,14 +138,23 @@ bool ConfigService::getFlashConfig(
       certs->setType(Array);
 
       // create files here so we can size the read buffer properly
-      File caFile(nodeConfig["sslCAFile"]->getString());
-      File sslCertFile(nodeConfig["sslCertificate"]->getString());
-
-      // size the buffer to max of all files we will read
-      ByteBuffer buf(std::max(caFile->getLength(), sslCertFile->getLength()));
-
-      // read certificates from node's SSL CA file
+      string caFilePath;
+      string sslCertPath;
+      rval =
+         node->getConfigManager()->expandBitmunkHomePath(
+            nodeConfig["sslCAFile"]->getString(), caFilePath) &&
+         node->getConfigManager()->expandBitmunkHomePath(
+            nodeConfig["sslCertificate"]->getString(), sslCertPath);
+      if(rval)
       {
+         File caFile(caFilePath.c_str());
+         File sslCertFile(sslCertPath.c_str());
+
+         // size the buffer to max of all files we will read
+         ByteBuffer buf(
+            std::max(caFile->getLength(), sslCertFile->getLength()));
+
+         // read certificates from node's SSL CA file
          if(!caFile.readBytes(&buf))
          {
             rval = false;
@@ -170,21 +180,21 @@ bool ConfigService::getFlashConfig(
             }
             while(end != NULL && !buf.isEmpty());
          }
-      }
 
-      // read in default certificate
-      if(rval)
-      {
-         buf.clear();
-         if(!sslCertFile.readBytes(&buf))
+         // read in default certificate
+         if(rval)
          {
-            rval = false;
-         }
-         else
-         {
-            // add null-terminator to buffer, add certificate
-            buf.putByte(0, 1, true);
-            certs->append() = buf.data();
+            buf.clear();
+            if(!sslCertFile.readBytes(&buf))
+            {
+               rval = false;
+            }
+            else
+            {
+               // add null-terminator to buffer, add certificate
+               buf.putByte(0, 1, true);
+               certs->append() = buf.data();
+            }
          }
       }
 

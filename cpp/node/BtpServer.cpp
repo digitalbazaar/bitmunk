@@ -52,14 +52,20 @@ bool BtpServer::initialize(Config& cfg)
    mSslContext = new SslContext("ALL", false);
 
    // setup certificate file and private key
+   File certFile((FileImpl*)NULL);
+   File pkeyFile((FileImpl*)NULL);
    string certPath;
    string pkeyPath;
-   mNode->getConfigManager()->expandBitmunkHomePath(
-      cfg["sslCertificate"]->getString(), certPath);
-   mNode->getConfigManager()->expandBitmunkHomePath(
-      cfg["sslPrivateKey"]->getString(), pkeyPath);
-   File certFile(certPath.c_str());
-   File pkeyFile(pkeyPath.c_str());
+   rval =
+      mNode->getConfigManager()->expandBitmunkHomePath(
+         cfg["sslCertificate"]->getString(), certPath) &&
+      mNode->getConfigManager()->expandBitmunkHomePath(
+         cfg["sslPrivateKey"]->getString(), pkeyPath);
+   if(rval)
+   {
+      certFile = File(certPath.c_str());
+      pkeyFile = File(pkeyPath.c_str());
+   }
 
    // generate new private key and self-signed certificate if requested
    // and if no private key or certificate file already exists
