@@ -115,13 +115,20 @@ bool Node::initialize()
       MO_CAT_INFO(BM_NODE_CAT,
          "Bitmunk HTTPS URL: %s", cfg["secureBitmunkUrl"]->getString());
 
+      MO_CAT_DEBUG(BM_NODE_CAT, "Initializing BTP client...");
+
       // setup messenger
       mMessenger = new Messenger(this, cfg);
       mPublicKeySource.setMessenger(mMessenger);
       BtpClient* btpc = mMessenger->getBtpClient();
 
+      MO_CAT_DEBUG(BM_NODE_CAT, "Setting BTP client CA file to: %s",
+         cfg["sslCAFile"]->getString());
+
       // setup verify certificate authority (CA) file
       File caFile(cfg["sslCAFile"]->getString());
+
+      MO_CAT_DEBUG(BM_NODE_CAT, "BTP client initialized.");
 
       // init btp server, set up client SSL context, init event handling
       rval =
