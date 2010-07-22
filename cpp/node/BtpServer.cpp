@@ -45,6 +45,8 @@ bool BtpServer::initialize(Config& cfg)
 {
    bool rval = true;
 
+   MO_CAT_DEBUG(BM_NODE_CAT, "Initializing BtpServer...");
+
    // create SSL server context ("TLS" is most secure and recent SSL but we
    // must use "ALL" to handle browsers that hit the api using earlier SSL
    // versions ... TLS is only required for BTP and not all SSL traffic to
@@ -85,17 +87,23 @@ bool BtpServer::initialize(Config& cfg)
 
    if(rval)
    {
+      MO_CAT_DEBUG(BM_NODE_CAT, "Setting SSL certificate and private key...");
+
       // set certificate and private key for SSL context
       rval =
          mSslContext->setCertificate(certFile) &&
          mSslContext->setPrivateKey(pkeyFile);
       if(rval)
       {
+         MO_CAT_DEBUG(BM_NODE_CAT, "Reading SSL certificate...");
+
          // set default virtual host based on certificate common name
          ByteBuffer b(certFile->getLength());
          rval = certFile.readBytes(&b);
          if(rval)
          {
+            MO_CAT_DEBUG(BM_NODE_CAT, "Loading SSL certificate from PEM...");
+
             AsymmetricKeyFactory afk;
             X509CertificateRef cert = afk.loadCertificateFromPem(
                b.data(), b.length());
@@ -104,10 +112,15 @@ bool BtpServer::initialize(Config& cfg)
             {
                DynamicObject subject = cert->getSubject();
                string commonName = cert->getField(subject, "CN");
+               MO_CAT_DEBUG(BM_NODE_CAT,
+                  "Setting default virtual host to common name: %s",
+                  commonName.c_str());
                mSslContext->setVirtualHost(commonName.c_str());
             }
          }
       }
+
+      MO_CAT_DEBUG(BM_NODE_CAT, "SSL setup complete.");
    }
 
    if(rval)
@@ -144,6 +157,11 @@ bool BtpServer::initialize(Config& cfg)
 
       MO_CAT_INFO(BM_NODE_CAT, "Running services on domains: %s",
          JsonWriter::writeToString(mDefaultDomains, false, false).c_str());
+   }
+
+   if(rval)
+   {
+      MO_CAT_DEBUG(BM_NODE_CAT, "BtpServer initialized.");
    }
 
    return rval;
