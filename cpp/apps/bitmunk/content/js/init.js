@@ -42,7 +42,7 @@ var init = function(task)
          {
             type: bitmunk.resource.types.template,
             resourceId: 'filebrowser.html',
-            load: true
+            required: true
          }
       ]
    });

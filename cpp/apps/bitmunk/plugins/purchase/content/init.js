@@ -74,7 +74,7 @@ var init = function(task)
          {
             type: bitmunk.resource.types.html,
             resourceId: 'messages.html',
-            load: true
+            required: true
          }
       ],
       didLogin: function(task)
