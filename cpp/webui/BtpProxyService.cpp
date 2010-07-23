@@ -465,6 +465,12 @@ static bool _proxyResponse(
       {
          ch->setField("Transfer-Encoding", "chunked");
       }
+      else
+      {
+         // connection must be closed after transfer of unspecified
+         // content-length
+         ch->setField("Connection", "close");
+      }
    }
 
    // proxy response header from btp service to client
