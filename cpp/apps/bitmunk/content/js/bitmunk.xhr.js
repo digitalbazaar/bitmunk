@@ -45,8 +45,9 @@
             flashId: 'socketPool',
             policyPort: cfg.policyServer.port,
             msie: $.browser.msie,
-            // use 2 concurrent TLS connections
-            connections: 2,
+            // use 3 concurrent TLS connections, 1 for event polling, 2
+            // for api calls
+            connections: 3,
             caCerts: cfg.ssl.certificates,
             verify: function(c, verified, depth, certs)
             {
