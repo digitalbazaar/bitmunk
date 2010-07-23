@@ -954,7 +954,9 @@
                // FIXME: remove url option to use TLS... necessary or not
                // since there's no private data?
                return bitmunk.xhr.create({
-                  url: 'http://' + window.location.host
+                  url: 'http://' + window.location.host,
+                  // use 10 non-TLS concurrent connections
+                  connections: 10
                });
             }
          });
