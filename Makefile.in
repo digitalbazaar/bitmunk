@@ -51,20 +51,25 @@ INSTALL_APPLICATIONS := \
 INSTALL_SCRIPTS := \
 	installers/debian/bitmunk
 
-INSTALL_BASE_LIBS := \
+INSTALL_CORE_LIBS := \
+	dist/lib/libbmapp.so \
 	dist/lib/libbmcommon.so \
 	dist/lib/libbmprotocol.so \
 	dist/lib/libbmnode.so
 
-INSTALL_BASE_CONFIGS := \
+INSTALL_CORE_CONFIGS := \
 	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/events.config \
 	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/login.config \
 	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/node.config
 
-INSTALL_BASE_MODS := \
-	dist/lib/libbitmunk.so \
-	dist/lib/libbmapp.so \
+INSTALL_CORE_MODS := \
 	dist/lib/libbmnodemodule.so
+
+INSTALL_CORE_PKI := \
+	pki/bitmunk-ca-file.pem
+
+INSTALL_CORE_APPS := \
+	dist/lib/libbitmunk.so
 
 INSTALL_SYSTEM_MOD_CONFIGS := \
 	configs/$(BITMUNK_RELEASE_MODE)-bpe.d/bitmunk.system.System.config
@@ -98,6 +103,10 @@ INSTALL_BPE_MODS := \
 	dist/lib/libbmportmapper.so \
 	dist/lib/libbmpurchase.so \
 	dist/lib/libbmwebui.so
+
+INSTALL_BPE_WEBUI_PLUGINS = help log login main purchase medialibrary settings
+
+INSTALL_BPE_WEBUI_CONTENT = cpp/apps/bitmunk/content
 
 INSTALL_BPE_CONFIG := \
   configs/$(BITMUNK_RELEASE_MODE)-bpe.config
@@ -261,29 +270,35 @@ endif
 
 install: install-base
 
-install-base:
+install-core:
 	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
-	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@
+	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@/app
 	@mkdir -p $(PREFIX)@sysconfdir@/init.d
+	@mkdir -p $(PREFIX)@sysconfdir@/bitmunk3/pki
 	@mkdir -p $(PREFIX)@bindir@
 	@mkdir -p $(PREFIX)@libdir@
-	@mkdir -p $(PREFIX)@BITMUNK_SHARE_DIR@/configs/base
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ executables in $(PREFIX)@bindir@..."
 	@$(foreach app,$(INSTALL_APPLICATIONS),install -m 755 $(app) $(PREFIX)@bindir@/$(notdir $(app))@BITMUNK_VERSION_MAJOR@ &&) true
 	@$(foreach script,$(INSTALL_SCRIPTS),install -m 755 $(script) $(PREFIX)@bindir@/$(notdir $(script)) &&) true
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base libraries in $(PREFIX)@libdir@..."
-	@$(foreach lib,$(INSTALL_BASE_LIBS),install -m 644 $(lib) $(PREFIX)@libdir@/$(notdir $(lib).@FULL_DOTTED_VERSION@) &&) true
-	@$(foreach lib,$(INSTALL_BASE_LIBS),ln -s $(notdir $(lib)).@FULL_DOTTED_VERSION@ $(PREFIX)@libdir@/$(notdir $(lib)).@BITMUNK_VERSION_MAJOR@.@BITMUNK_VERSION_MINOR@ &&) true
-	@$(foreach lib,$(INSTALL_BASE_LIBS),ln -s $(notdir $(lib)).@FULL_DOTTED_VERSION@ $(PREFIX)@libdir@/$(notdir $(lib)).@BITMUNK_VERSION_MAJOR@ &&) true
-	@$(foreach lib,$(INSTALL_BASE_LIBS),ln -s $(notdir $(lib)).@FULL_DOTTED_VERSION@ $(PREFIX)@libdir@/$(notdir $(lib)) &&) true
+	@$(foreach lib,$(INSTALL_CORE_LIBS),install -m 644 $(lib) $(PREFIX)@libdir@/$(notdir $(lib).@FULL_DOTTED_VERSION@) &&) true
+	@$(foreach lib,$(INSTALL_CORE_LIBS),ln -s $(notdir $(lib)).@FULL_DOTTED_VERSION@ $(PREFIX)@libdir@/$(notdir $(lib)).@BITMUNK_VERSION_MAJOR@.@BITMUNK_VERSION_MINOR@ &&) true
+	@$(foreach lib,$(INSTALL_CORE_LIBS),ln -s $(notdir $(lib)).@FULL_DOTTED_VERSION@ $(PREFIX)@libdir@/$(notdir $(lib)).@BITMUNK_VERSION_MAJOR@ &&) true
+	@$(foreach lib,$(INSTALL_CORE_LIBS),ln -s $(notdir $(lib)).@FULL_DOTTED_VERSION@ $(PREFIX)@libdir@/$(notdir $(lib)) &&) true
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
-	@install -m 644 $(INSTALL_BASE_CONFIGS) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
+	@install -m 644 $(INSTALL_CORE_CONFIGS) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
-	@$(foreach lib,$(INSTALL_BASE_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
+	@$(foreach lib,$(INSTALL_CORE_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
+
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ application modules in $(PREFIX)@BITMUNK_MODULES_DIR@/app..."
+	@$(foreach app,$(INSTALL_CORE_APPS),install -m 644 $(app) $(PREFIX)@BITMUNK_MODULES_DIR@/app/$(notdir $(app)) &&) true
+
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ pki files in $(PREFIX)@sysconfdir@/bitmunk3/pki..."
+	@$(foreach pki,$(INSTALL_CORE_PKI),install -m 644 $(pki) $(PREFIX)@sysconfdir@/bitmunk3/pki/$(notdir $(pki)) &&) true
 
 install-system:
 	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
@@ -310,17 +325,23 @@ install-sell:
 	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
 	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ sell configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
-	@$(foreach conf,$(INSTALL_SELL_MOD_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@/$(notdir $(conf)) &&) true
+	@$(foreach conf,$(INSTALL_SELL_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@/$(notdir $(conf)) &&) true
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ sell modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
 	@$(foreach lib,$(INSTALL_SELL_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
 
 install-bpe:
 	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
 	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@/bpe
+	@mkdir -p $(PREFIX)@BITMUNK_SHARE_DIR@/webui-plugins
+
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BPE top-level config in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
 	@$(foreach conf,$(INSTALL_BPE_CONFIG),install -m 644 $(conf) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@/../bpe.config &&) true
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BPE configs in $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@..."
 	@$(foreach conf,$(INSTALL_BPE_CONFIGS),install -m 644 $(conf) $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@/$(notdir $(conf)) &&) true
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BPE modules in $(PREFIX)@BITMUNK_MODULES_DIR@/bpe..."
 	@$(foreach lib,$(INSTALL_BPE_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/bpe/$(notdir $(lib)) &&) true
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BPE webui plugins in $(PREFIX)@BITMUNK_SHARE_DIR@/webui-plugins..."
+	@$(foreach plugin,$(INSTALL_BPE_WEBUI_PLUGINS),cp -LR @BITMUNK_DIR@/cpp/apps/bitmunk/plugins/$(plugin) $(PREFIX)@BITMUNK_SHARE_DIR@/webui-plugins &&) true
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ BPE webui content in $(PREFIX)@BITMUNK_SHARE_DIR@/content..."
+	@$(foreach dir,$(INSTALL_BPE_WEBUI_CONTENT),cp -LR $(dir) $(PREFIX)@BITMUNK_SHARE_DIR@ &&) true
 
