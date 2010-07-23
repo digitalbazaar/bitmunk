@@ -23,20 +23,7 @@
          "color": false,
          "level": "max"
       },
-      "bitmunk.webui.WebUi": {
-         "flash": {
-            "policyServer": {
-               "host": "@BITMUNK_LOCAL_API_HOST@",
-               "port": @BITMUNK_FLASH_POLICY_PORT@
-            }
-         }
-      },
       "node": {
-         "host": "@BITMUNK_LOCAL_API_HOST@",
-         "port": @BITMUNK_LOCAL_API_PORT@,
-         "domains": [
-            "*"
-         ],
          "login": {
             "auto": false
          }
