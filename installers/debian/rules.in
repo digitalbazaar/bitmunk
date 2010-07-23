@@ -71,7 +71,7 @@ install-arch:
 
 	# Add here commands to install the arch part of the package into 
 	# debian/tmp.
-	$(MAKE) PREFIX=$(CURDIR)/debian/bitmunk@BITMUNK_VERSION_MAJOR@-core install-base
+	$(MAKE) PREFIX=$(CURDIR)/debian/bitmunk@BITMUNK_VERSION_MAJOR@-core install-core
 	$(MAKE) PREFIX=$(CURDIR)/debian/bitmunk@BITMUNK_VERSION_MAJOR@-mod-system install-system
 	$(MAKE) PREFIX=$(CURDIR)/debian/bitmunk@BITMUNK_VERSION_MAJOR@-mod-bfp install-bfp
 	$(MAKE) PREFIX=$(CURDIR)/debian/bitmunk@BITMUNK_VERSION_MAJOR@-mod-sell install-sell
@@ -105,7 +105,7 @@ binary-common:
 #	dh_perl
 	dh_makeshlibs
 	dh_installdeb
-	dh_shlibdeps
+	dh_shlibdeps -l@BITMUNK_DIR@/dist/lib
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
