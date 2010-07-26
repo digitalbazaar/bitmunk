@@ -272,7 +272,7 @@ install: install-base
 
 install-core:
 	@mkdir -p $(PREFIX)@BITMUNK_SYSTEM_CONFIG_DIR@
-	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@/app
+	@mkdir -p $(PREFIX)@BITMUNK_MODULES_DIR@/apps
 	@mkdir -p $(PREFIX)@sysconfdir@/init.d
 	@mkdir -p $(PREFIX)@sysconfdir@/bitmunk3/pki
 	@mkdir -p $(PREFIX)@bindir@
@@ -294,8 +294,8 @@ install-core:
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ base modules in $(PREFIX)@BITMUNK_MODULES_DIR@..."
 	@$(foreach lib,$(INSTALL_CORE_MODS),install -m 644 $(lib) $(PREFIX)@BITMUNK_MODULES_DIR@/$(notdir $(lib)) &&) true
 
-	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ application modules in $(PREFIX)@BITMUNK_MODULES_DIR@/app..."
-	@$(foreach app,$(INSTALL_CORE_APPS),install -m 644 $(app) $(PREFIX)@BITMUNK_MODULES_DIR@/app/$(notdir $(app)) &&) true
+	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ application modules in $(PREFIX)@BITMUNK_MODULES_DIR@/apps..."
+	@$(foreach app,$(INSTALL_CORE_APPS),install -m 644 $(app) $(PREFIX)@BITMUNK_MODULES_DIR@/apps/$(notdir $(app)) &&) true
 
 	@echo "Installing bitmunk@BITMUNK_VERSION_MAJOR@ pki files in $(PREFIX)@sysconfdir@/bitmunk3/pki..."
 	@$(foreach pki,$(INSTALL_CORE_PKI),install -m 644 $(pki) $(PREFIX)@sysconfdir@/bitmunk3/pki/$(notdir $(pki)) &&) true
